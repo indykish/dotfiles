@@ -44,7 +44,6 @@ Plugin 'sickill/vim-pasta'
 
 " ----- Syntax plugins ------------------------------------------------
 Plugin 'w0rp/ale'
-" Plugin 'vim-syntastic/syntastic'
 " Plugin 'Quramy/tsuquyomi'
 Plugin 'pangloss/vim-javascript'
 Plugin 'leafgarland/typescript-vim'
@@ -358,32 +357,6 @@ let g:NERDTreeIndicatorMapCustom = {
 " let g:workspace_session_disable_on_args = 1
 " let g:workspace_autosave_ignore = ['gitcommit']
 
-" ----- scrooloose/syntastic settings -----
-" NOT USED currently, moved to ale. the typescript syntaxcheck is very slow
-" let g:syntastic_error_symbol = '❌'
-" let g:syntastic_style_error_symbol = '⁉️'
-" let g:syntastic_warning_symbol = '⚠️'
-" let g:syntastic_style_warning_symbol = '💩'
-
-" let g:syntastic_javascript_checkers = ['eslint']
-" let g:syntastic_handlebars_checkers  = ['handlebars']
-" let g:syntastic_typescript_checkers = ['tsuquyomi'] " You shouldn't use 'tsc' checker.
-
-" let g:syntastic_ocaml_checkers = ['merlin']
-" let g:syntastic_rust_checkers = ['cargo']
-
-" set statusline+=%#warningmsg#
-" set statusline+=%{SyntasticStatuslineFlag()}
-" set statusline+=%*
-
-" let g:rustfmt_autosave = 1
-" let g:syntastic_always_populate_loc_list = 1
-" let g:syntastic_auto_loc_list = 1
-" let g:syntastic_check_on_open = 1
-" let g:syntastic_check_on_wq = 0
-" --- turn on to debug syntastic
-" let g:syntastic_debug = 3
-
 
 " ALE {{{
 " ALE doesn't format and show the results ASAP. or atleast when do C-S
@@ -407,9 +380,12 @@ let g:NERDTreeIndicatorMapCustom = {
   \}
   let g:ale_fixers = {}
   let g:ale_fixers['javascript'] = ['prettier']
-  let g:ale_fixers['typescript'] = ['tsserver', 'tslint']
+  let g:ale_fixers['typescript'] = ['prettier']
   let g:ale_fixers['json'] = ['prettier']
   let g:ale_fixers['css'] = ['prettier']
+  let g:ale_fixers['rust'] = ['rustfmt']
+  let g:ale_rust_cargo_use_clippy = executable('cargo-clippy')
+
   let g:ale_javascript_prettier_use_local_config = 1
   let g:ale_fix_on_save = 0
   " Write this in your vimrc file
