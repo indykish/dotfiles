@@ -52,7 +52,8 @@ Plugin 'leafgarland/typescript-vim'
 " ---- Extras/Advanced plugins ----------------------------------------
 " Rainbow match parenthesis  get different colors, to help track
 " mis mathed parens
-Plugin 'luochen1990/rainbow'
+" Plugin 'luochen1990/rainbow'
+Plugin 'vim-scripts/Rainbow-parenthesis'
 Plugin 'tpope/vim-dispatch'
 " Plugin 'thaerkh/vim-workspace'
 
@@ -376,7 +377,7 @@ let g:NERDTreeIndicatorMapCustom = {
   \   'javascript': ['eslint'],
   \   'typescript': ['tslint', 'tsserver'],
   \   'ocaml': ['merlin'],
-  \   'html': []
+  \   'html': ['prettier']
   \}
   let g:ale_fixers = {}
   let g:ale_fixers['javascript'] = ['prettier']
@@ -387,7 +388,7 @@ let g:NERDTreeIndicatorMapCustom = {
   let g:ale_rust_cargo_use_clippy = executable('cargo-clippy')
 
   let g:ale_javascript_prettier_use_local_config = 1
-  let g:ale_fix_on_save = 0
+  let g:ale_fix_on_save = 1
   " Write this in your vimrc file
   let g:ale_lint_on_text_changed = 'never'
   " You can disable this option too
