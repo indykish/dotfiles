@@ -669,7 +669,7 @@ export RUBY_GC_HEAP_INIT_SLOTS=600000
 export RUBY_GC_MALLOC_LIMIT=59000000
 export RUBY_GC_HEAP_FREE_SLOTS=100000
 
-export PATH="$PATH:$HOME/bin:$HOME/.cargo/bin:$MY_BIN_HOME:$GOROOT/bin:$GOPATH/bin:$HOME/.yarn/bin:$HOME/bin/sbt/bin"
+export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/.cargo/bin:$MY_BIN_HOME:$GOROOT/bin:$GOPATH/bin:$HOME/.yarn/bin:$HOME/bin/sbt/bin"
 
 . $HOME/.opam/opam-init/init.sh > /dev/null 2> /dev/null || true
 
