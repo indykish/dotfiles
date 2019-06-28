@@ -337,6 +337,9 @@ nmap <silent> <leader>k :call ToggleNerdTree()<cr>
 nmap <silent> <leader>y :NERDTreeFind<cr>
 
 let NERDTreeShowHidden=1
+let g:NERDTreeIgnore=['\.rbc$', '\~$', '\.pyc$', '\.db$', '\.sqlite$', '__pycache__']
+let g:NERDTreeSortOrder=['^__\.py$', '\/$', '*', '\.swp$', '\.bak$', '\~$']
+let g:NERDTreeChDirMode=2
 let g:NERDTreeIndicatorMapCustom = {
   \ "Modified"  : "✹",
   \ "Staged"    : "✚",
@@ -375,7 +378,7 @@ let g:NERDTreeIndicatorMapCustom = {
 
   let g:ale_linters = {
   \   'javascript': ['eslint'],
-  \   'typescript': ['tslint', 'tsserver'],
+  \   'typescript': ['tsserver', 'tslint'],
   \   'ocaml': ['merlin'],
   \   'html': ['prettier']
   \}
@@ -390,11 +393,8 @@ let g:NERDTreeIndicatorMapCustom = {
   let g:ale_javascript_prettier_use_local_config = 1
   let g:ale_fix_on_save = 1
   " Write this in your vimrc file
-  let g:ale_lint_on_text_changed = 'never'
-  " You can disable this option too
-  " if you don't want linters to run on opening a file
-  let g:ale_lint_on_enter = 0
-  " }}}
+  " let g:ale_lint_on_text_changed = 'never'
+ " }}}
 
 " ---------------------------- sirver/utilsnips -----------
 " Trigger configuration. Do not use <tab> if you use https://github.com/Valloric/YouCompleteMe.
