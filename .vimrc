@@ -29,7 +29,7 @@ Plugin 'mbbill/undotree', { 'on': 'UndotreeToggle' }
 Plugin 'jiangmiao/auto-pairs'
 Plugin 'ervandew/supertab'
 Plugin 'christoomey/vim-system-copy'
-
+Plugin 'vim/killersheep'
 " Reads any .editorconfig files and sets spacing etc automatically
 Plugin 'editorconfig/editorconfig-vim'
 
@@ -43,8 +43,7 @@ Plugin 'Yggdroot/indentLine'
 Plugin 'sickill/vim-pasta'
 
 " ----- Syntax plugins ------------------------------------------------
-Plugin 'w0rp/ale'
-" Plugin 'Quramy/tsuquyomi'
+Plugin 'dense-analysis/ale'
 Plugin 'pangloss/vim-javascript'
 Plugin 'leafgarland/typescript-vim'
 "Plugin 'rust-lang/rust.vim'
@@ -74,10 +73,10 @@ Plugin 'ryanoasis/vim-devicons'
 Plugin 'mhinz/vim-startify'
 
 " React code snippets
-Plugin 'epilande/vim-react-snippets'
+" lugin 'epilande/vim-react-snippets'
 
 " Ultisnips
-Plugin 'SirVer/ultisnips'
+" Plugin 'SirVer/ultisnips'
 
 call vundle#end()
 
@@ -267,7 +266,7 @@ set backupdir   =~/.vim/tmp/backup
 set undodir     =~/.vim/tmp/undo
 set history       =1000
 set lazyredraw
-set directory   =~/.vim/tmp/swap//
+set directory   =~/.vim/tmp/swap/
 set more
 
 " remap 0 to first non-empty character
@@ -298,8 +297,7 @@ endif
 " download all the .ttf files, double-click on them and click Install
 " Finally, uncomment the next line
 let g:typescript_indent_disable = 1
-let g:tsuquyomi_disable_quickfix = 1
-
+let g:typescript_ignore_browserwords = 1
 
 let g:airline_powerline_fonts = 1
 
@@ -372,26 +370,35 @@ let g:NERDTreeIndicatorMapCustom = {
   let g:ale_echo_msg_error_str = '✖'
   let g:ale_echo_msg_warning_str = '⚠'
   let g:ale_echo_msg_format = '%severity% %s% [%linter%% code%]'
-  
+
   let g:opamshare = substitute(system('opam config var share'),'\n$','','''')
   execute "set rtp+=" . g:opamshare . "/merlin/vim"
 
-  let g:ale_linters = {
+   let g:ale_linters = {
   \   'javascript': ['eslint'],
   \   'typescript': ['tsserver', 'tslint'],
+  \   'typescriptreact': ['tsserver', 'tslint'],
   \   'ocaml': ['merlin'],
+   \  'sh': ['shfmt', 'shellcheck'],
   \   'html': ['prettier']
   \}
   let g:ale_fixers = {}
   let g:ale_fixers['javascript'] = ['prettier']
   let g:ale_fixers['typescript'] = ['prettier']
+  let g:ale_fixers['typescriptreact'] = ['prettier']
   let g:ale_fixers['json'] = ['prettier']
   let g:ale_fixers['css'] = ['prettier']
   let g:ale_fixers['rust'] = ['rustfmt']
+  let g:ale_fixers['sh'] = ['shfmt']
   let g:ale_rust_cargo_use_clippy = executable('cargo-clippy')
 
   let g:ale_javascript_prettier_use_local_config = 1
   let g:ale_fix_on_save = 1
+  
+" augroup SyntaxSettings
+"    autocmd BufNewFile,BufRead *.tsx set filetype=typescript
+" augroup END
+
   " Write this in your vimrc file
   " let g:ale_lint_on_text_changed = 'never'
  " }}}
@@ -566,7 +573,6 @@ augroup vimrcEx
   autocmd FileType css,scss,sass,less setlocal iskeyword+=-
 augroup END
 
-
 " ## added by OPAM user-setup for vim / base ## 93ee63e278bdfc07d1139a748ed3fff2 ## you can edit, but keep this line
 let s:opam_share_dir = system("opam config var share")
 let s:opam_share_dir = substitute(s:opam_share_dir, '[\r\n]*$', '', '')
@@ -599,3 +605,8 @@ for tool in s:opam_packages
   endif
 endfor
 " ## end of OPAM user-setup addition for vim / base ## keep this line
+"
+"Fix for  https://github.com/leafgarland/typescript-vim/issues/168
+"au BufNewFile,BufRead *.ts set filetype=typescriptreact
+
+
