@@ -649,31 +649,33 @@ _isroot=false
 bind -r '\C-s'
 stty -ixon
 
-export MY_BIN_HOME=~/bin
-export GOPATH=$GOPATH:~/code/rioos/go/src
-export GOROOT=~/software/go
-
+# When we want to use dockerhub
 export DOCKER_USER=indykish
-
-
-#OLD GPGKEY
-#export GPGKEY=B3E0C1B7
-#NEW GPG KEY
-export GPGKEY=9B46B611
-
-export LENDSMART_HOME=$HOME/code/lendsmart/home
-
 export DOCKER_HOST="tcp://127.0.0.1:2375"
 
-export RUBY_GC_HEAP_INIT_SLOTS=600000
-export RUBY_GC_MALLOC_LIMIT=59000000
-export RUBY_GC_HEAP_FREE_SLOTS=100000
+export GPGKEY=9B46B611
 
-export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/.cargo/bin:$MY_BIN_HOME:$GOROOT/bin:$GOPATH/bin:$HOME/.yarn/bin:$HOME/bin/sbt/bin"
+## The local path
+export USR_LOCAL_BIN_HOME=/usr/local/bin
+export MY_BIN_HOME=~/bin
+export MY_BIN_YARN_HOME=$MY_BIN_HOME/yarn/bin
+export MY_BIN_NODE_HOME=$MY_BIN_HOME/node/bin
+export GOPATH=$GOPATH:~/code/dl/go/src
+export GOROOT=~/software/go
+export LENDSMART_HOME=$HOME/code/dl/home
+
+export PATH="$PATH:$USR_LOCAL_BIN_HOME:$HOME/bin:$HOME/.local/bin"
+
+export PATH="$PATH:$HOME/.cargo/bin:$MY_BIN_HOME:$GOROOT/bin:$GOPATH/bin:$HOME/.yarn/bin"
+
+export PATH="$PATH:$MY_BIN_YARN_HOME:$MY_BIN_NODE_HOME"
 
 . $HOME/.opam/opam-init/init.sh > /dev/null 2> /dev/null || true
 
 # Add RVM to PATH for scripting. Make sure this is the last PATH variable chang$
 export PATH="$PATH:$HOME/.rvm/bin"
 
+export RUBY_GC_HEAP_INIT_SLOTS=600000
+export RUBY_GC_MALLOC_LIMIT=59000000
+export RUBY_GC_HEAP_FREE_SLOTS=100000
 [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM$
