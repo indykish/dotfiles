@@ -17,7 +17,7 @@ Either
 
 At the moment I am on [ArchLinux](https://archlinux.org/) + Gnome, 
 
-I find Archlinux much faster.
+I find Archlinux much faster but eventually move to Free or OpenBSD for OCaml dev.
 
 # K380 cheat sheet
 
