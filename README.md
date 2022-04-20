@@ -39,8 +39,8 @@ As a (type of user), I want to (perform some action) so that I (can achieve some
 
 ## [Writing a good acceptance criteria](https://rubygarage.org/blog/clear-acceptance-criteria-and-why-its-important)
 
-
-**Scenario:** User submits feedback form with the valid data
+```
+Scenario #1: User submits feedback form with the valid data
 *Given I’m in a role of logged-in or guest user
 When I open the Feedback page
 Then the system shows me the Submit Feedback form containing “Email”,“Name” and “Comment” fields which are required
@@ -51,7 +51,7 @@ And I click the “Submit Feedback” button
 Then the system submits my feedback
 And the system shows the “You’ve successfully submitted your feedback” flash message
 And the system clears the fields of the Submit Feedback form*
-
+```
 
 
 # Upon install
