@@ -17,7 +17,7 @@ Either
 
 At the moment I am on [ArchLinux](https://archlinux.org/) + Gnome, 
 
-I find Archlinux much faster but eventually move to Free or OpenBSD for OCaml dev.
+I find Archlinux much faster but eventually move to FreeBSD or OpenBSD for OCaml dev.
 
 # K380 cheat sheet
 
@@ -73,26 +73,6 @@ What tweaks are needed to bring my workstation.
 ```
 pacman trizen
 ```
-
-
-## VIM
-
-### Cheat sheet
-
-
-1. [https://vim.rtorr.com/](https://vim.rtorr.com/)
-
-
-2. Search with spaces
-
-    :Ack foo\ bar
-This approach to escaping is taken in order to make it straightfoward to use
-powerful Perl-compatible regular expression syntax in an unambiguous way
-without having to worry about shell escaping rules:
-
-:Ack \blog\((['"]).*?\1\) -i --ignore-dir=src/vendor src dist build
-
-
 
 ### Install from trizen package (recommended)
 
