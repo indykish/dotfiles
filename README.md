@@ -97,35 +97,47 @@ sudo make install
 ```
 ### VIM plugins
 
+ℹ️ Install Vundle(plugin manager)
+
 https://github.com/VundleVim/Vundle.vim
 
+ℹ️ Powerline fonts
 
+```
 trizen nerd-fonts-source-code-pro
+```
+
+ℹ️ Search using ripgrep
+
+```
+trizen ripgrep
+```
+
+ℹ️ Clipboard
 
 trizen xsel
 
-trizel ripgrep
+```
+vim --version | grep clipboard
+```
 
+If you see `+clipboard` or `+xterm_clipboard`, you are good to go. 
+
+If it's `-clipboard` and `-xterm_clipboard`, 
+you will need to install
+
+```
+trizen gvim vim
+```
 
 ### Node
 
-> Note, as of this writing 16.14.2 was  the latest, but replace the wget `https` **url** with the latest by visiting [Node.js](https://nodejs.org) to grab the latest LTS
+> Note, as of this writing 18.16.0 was  the latest, but replace the wget `https` **url** with the latest by visiting [Node.js](https://nodejs.org) to grab the latest LTS
 
 ```
-cd ~/bin; wget https://nodejs.org/dist/v16.14.2/node-v16.14.2-linux-x64.tar.xz
+cd ~/bin; wget https://nodejs.org/dist/v18.16.0/node-v18.16.0-linux-x64.tar
 
 tar -xvf node*.tar.xz; mv ~/bin/node* ~/bin/node
-
-```
-
-### Yarn 1.x
-
-```
-cd ~/bin; wget https://yarnpkg.com/latest.tar.gz
-
-tar zvxf latest.tar.gz
-
-mv ~/bin/yarn*  ~/bin/yarn
 
 ```
 
@@ -149,4 +161,4 @@ These packages are installed by searching in trizen.
 
 # WIP
 
-Need to write a bash script to all of the above gets done by clone this repo. 
+Need to write a perl (or) bash script to all of the above gets done by clone this repo. 
