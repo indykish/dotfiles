@@ -213,8 +213,6 @@ trizen vlc
 ⚓ May be use ChatGPT to generate a pl script.
 
 
----
-
 # FreeBSD Migration
 
 The following must be tested and completed prior to the move.
