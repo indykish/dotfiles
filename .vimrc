@@ -97,6 +97,14 @@ set pastetoggle=<F2> "F2 before pasting to preserve indentation
 map <silent><Leader>p :set paste<CR>o<esc>"*]p:set nopaste<cr>"
 map <silent><Leader><S-p> :set paste<CR>O<esc>"*]p:set nopaste<cr>"
 
+" Use Ctrl+C for clipboard copy in normal and visual mode
+nnoremap <C-C> "+y
+vnoremap <C-C> "+y
+
+" Use Ctrl+V for clipboard paste in normal and insert mode
+nnoremap <C-V> "+p
+inoremap <C-V> <C-O>"+p
+
 " Stop highlight after searching
 nnoremap <silent> <leader>, :noh<cr> 
 set incsearch
@@ -379,7 +387,8 @@ let g:NERDTreeIndicatorMapCustom = {
   \   'typescript': ['tsserver', 'tslint'],
   \   'typescriptreact': ['tsserver', 'tslint'],
   \   'ocaml': ['merlin'],
-   \  'sh': ['shfmt', 'shellcheck'],
+  \   'sh': ['shfmt', 'shellcheck'],
+  \   'perl': ['perltidy', 'perlcritic'],
   \   'html': ['prettier']
   \}
   let g:ale_fixers = {}
@@ -387,6 +396,7 @@ let g:NERDTreeIndicatorMapCustom = {
   let g:ale_fixers['typescript'] = ['prettier']
   let g:ale_fixers['typescriptreact'] = ['prettier']
   let g:ale_fixers['json'] = ['prettier']
+  let g:ale_fixers['perl'] = ['perltidy']
   let g:ale_fixers['css'] = ['prettier']
   let g:ale_fixers['rust'] = ['rustfmt']
   let g:ale_fixers['sh'] = ['shfmt']
@@ -608,5 +618,3 @@ endfor
 "
 "Fix for  https://github.com/leafgarland/typescript-vim/issues/168
 "au BufNewFile,BufRead *.ts set filetype=typescriptreact
-
-
