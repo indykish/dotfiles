@@ -1,8 +1,9 @@
-# My development setup
+# Kishore's development setup
 
-This repo contains my bash, vim and other (.) files. 
+This is an opinionated repo that contains out bash, vim and other (.) files. 
 
-> This is an opioniated repo for [Kishorekumar Neelamegam](https://www.linkedin.com/in/kishorekumarneelamegam/?originalSubdomain=in). I am recording my setup just so i dont forget how to bring back my workstation when there is a crash
+> This is an opioniated repo for [Kishorekumar Neelamegam](https://www.linkedin.com/in/kishorekumarneelamegam/?originalSubdomain=in).
+> We have recorded our setup just so we dont forget how to bring back the workstation when there is a crash
 
 
 # OS
@@ -15,11 +16,11 @@ Either
 
 [ArchLinux](https://archlinux.org/)
 
-At the moment I am on [ArchLinux](https://archlinux.org/) + Gnome, 
+At the moment on [ArchLinux](https://archlinux.org/) + Gnome, 
 
-I find Archlinux much faster but eventually move to FreeBSD or OpenBSD for OCaml dev.
+Archlinux is much faster but eventually will move to FreeBSD or OpenBSD for OCaml dev.
 
-# K380 cheat sheet
+# Logitech K380 cheat sheet
 
 The cheat sheet for the K380, need this to refer 
 
@@ -62,19 +63,22 @@ What tweaks are needed to bring my workstation.
 2. VIM & Vundle
 3. Yarn
 4. Node
-3. Rust
-4. OCaml
-5. Slack
-6. Flameshot
-7. Libreoffice
+5. Rust
+6. OCaml
+7. Flameshot
+8. Libreoffice
+9. Brave
+10. VLC
 
-## Trizen
+## 1 Trizen
+
+
 
 ```
 pacman trizen
 ```
 
-### Install from trizen package (recommended)
+## 2 Vim
 
 This is recommended and have moved to this approach
 
@@ -86,15 +90,6 @@ trizen vim
 
 ```
 
-### Install from source
-
-- Download release tar ball https://github.com/vim/vim/
-
-```
-mv ~/Downloads/vim*.tar.gz ~/bin; tar -xvf vim*.tar.gz
-make
-sudo make install
-```
 ### VIM plugins
 
 ℹ️ Install Vundle(plugin manager)
@@ -130,7 +125,15 @@ you will need to install
 trizen gvim vim
 ```
 
-### Node
+To verify a mapping for CTRL-C and CTRL-V
+
+```
+::verbose map <C-V>
+
+```
+![image](https://github.com/kishoreneelamegam/dotfiles/assets/1402479/8630d6c4-1108-482d-a49d-0c489b2088d2)
+
+## 3 Yarn
 
 > Note, as of this writing 18.16.0 was  the latest, but replace the wget `https` **url** with the latest by visiting [Node.js](https://nodejs.org) to grab the latest LTS
 
@@ -141,7 +144,18 @@ tar -xvf node*.tar.xz; mv ~/bin/node* ~/bin/node
 
 ```
 
-### Rust
+## 4 Node
+
+> Note, as of this writing 18.16.0 was  the latest, but replace the wget `https` **url** with the latest by visiting [Node.js](https://nodejs.org) to grab the latest LTS
+
+```
+cd ~/bin; wget https://nodejs.org/dist/v18.16.0/node-v18.16.0-linux-x64.tar
+
+tar -xvf node*.tar.xz; mv ~/bin/node* ~/bin/node
+
+```
+
+## 5 Rust
 
 ```
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -150,15 +164,71 @@ trizen postgresql-libs
 
 ```
 
-### OCaml
+## 6 OCaml
 
 trizen ocaml
 
-### Slack/Flameshot/Libreoffice
+## 7 Flameshot
 
-These packages are installed by searching in trizen.
+```
+
+trizen flameshot
+
+```
+
+The app indicator extension is gnome is needed. 
+
+```
+
+trizen gnome-shell-extension-appindicator
+
+```
+
+## 8 Libreoffice
+
+```
+
+trizen libreoffice
+
+```
+
+## 9 Brave
+
+```
+
+trizen brave
+
+```
+## 10 VLC
+
+```
+
+trizen vlc
+
+```
+
+# Jumpup.pl(for Kishore only)
+
+🩹 Need to write a perl script that can setup a my stuff.
+⚓ May be use ChatGPT to generate a pl script.
 
 
-# WIP
+---
 
-Need to write a perl (or) bash script to all of the above gets done by clone this repo. 
+# FreeBSD Migration
+
+The following must be tested and completed prior to the move.
+
+The workarounds can be additional workstation (Zoom) or Mobile can help.
+
+- [x] Slack (Completed)
+- [ ] Zoom (Incomplete)
+- [ ] Team (Incomplete)
+- [ ] Vim (Completed)
+- [ ] OCaml (Incomplete)
+- [ ] Rust (Incomplete)
+- [x] Perl (Completed)
+- [ ] Typescript (Incomplete)
+- [ ] Dry run ui (Incomplete)
+- [ ] Dry run coreapi/auth (Completed)
+- [ ] Dry run python, perl scripts (Incomplete)
