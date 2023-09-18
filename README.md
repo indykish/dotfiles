@@ -209,7 +209,7 @@ trizen vlc
 
 # Jumpup.pl(for Kishore only)
 
-🩹 Need to write a perl script that can setup a my stuff.
+🩹 Need to write a perl script that can setup the above stuff.
 ⚓ May be use ChatGPT to generate a pl script.
 
 
