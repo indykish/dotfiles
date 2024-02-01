@@ -207,6 +207,14 @@ trizen vlc
 
 ```
 
+## 11 Nautilus extensions
+
+```
+
+trizen nautilus-open-any-terminal
+
+```
+
 # Jumpup.pl(for Kishore only)
 
 🩹 Need to write a perl script that can setup the above stuff.
