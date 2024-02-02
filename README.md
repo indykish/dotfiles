@@ -156,7 +156,7 @@ To verify a mapping for CTRL-C and CTRL-V
 > Note, as of this writing 20.x was  the latest, but replace the wget `https` **url** with the latest by visiting [Node.js](https://nodejs.org) to grab the latest LTS
 
 ```
-cd ~/bin; wget https://nodejs.org/dist/v18.16.0/node-v18.16.0-linux-x64.tar
+cd ~/bin; wget https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz
 
 tar -xvf node*.tar.xz; mv ~/bin/node* ~/bin/node
 
@@ -177,6 +177,10 @@ trizen postgresql-libs
 
 trizen ocaml
 
+cd ~/bin; wget https://github.com/ocaml/opam/releases/download/2.1.5/opam-2.1.5-x86_64-linux
+mv ~/bin/opam* ~/bin/opam
+opam init
+opam install dune
 ```
 
 ## 6 Flameshot
@@ -222,6 +226,9 @@ trizen vlc
 
 ```
 
+trizen docker
+trizen docker-buildx
+trizen docker-compose
 
 ```
 
