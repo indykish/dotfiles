@@ -8,27 +8,27 @@ This is an opinionated repo that contains our bash, vim and other (.) files.
 
 # OS
 
-Either
-
-[FreeBSD](https://www.freebsd.org/) 
-
-(or)
+My primary OS is either
 
 [ArchLinux](https://archlinux.org/)
+(or)
+[FreeBSD](https://www.freebsd.org/) Please refer the section below for the status of the migration.
+(or)
+Chromebook eventually - with everything on cloud 😄
 
-At the moment on [ArchLinux](https://archlinux.org/) + Gnome, 
+At the moment on [ArchLinux](https://archlinux.org/) + Gnome. 
 
 Archlinux is much faster but eventually will move to FreeBSD or OpenBSD for OCaml dev.
 
 # Logitech K380 cheat sheet
 
-The cheat sheet for the K380, need this to refer 
+The K380 cheat sheet is available for referencing the shortcut keys mentioned below.
 
 - PrntScrn
 - Home
 - End
 - Page up
-- PAge down
+- Page down
 
 ![image](https://user-images.githubusercontent.com/1402479/161395539-2b1ec230-97d1-4994-a394-af56070d3d2b.png)
 
@@ -55,9 +55,9 @@ And the system clears the fields of the Submit Feedback form*
 ```
 
 
-# Upon install
+# ArchLinux
 
-What tweaks are needed to bring my workstation.
+Upon install, what tweaks are needed to bring my workstation up to the state for dev.
 
 1.  Trizen
 2.  VIM & Vundle
@@ -226,17 +226,32 @@ trizen nautilus-open-any-terminal
 
 ```
 
-# jumpup.pl(for Kishore only)
+## 12 [1Password](https://support.1password.com/install-linux/#arch-linux)
 
-🩹 Need to write a perl script that can setup the above stuff.
-⚓ May be use ChatGPT to generate a pl script.
+```
+curl -sS https://downloads.1password.com/linux/keys/1password.asc | gpg --import
 
+trizen 1password
+
+```
+
+# 🩹 Work in progress - Using Ansible, Chef, or SaltStack 
+
+Compose Ansible, Chef, or SaltStack code to configure the workstation during the OS installation. 
+
+The objective is to have the script operate solely locally without running any daemons or agents.
+
+⚓ Perhaps leverage ChatGPT to generate the script.
 
 # FreeBSD Migration
 
-The following must be tested and completed prior to the move.
+The current status of my FreeBSD migration is as follows:
 
-The workarounds can be additional workstation (Zoom) or Mobile can help.
+I haven't had much luck with a full switch yet. I am not inclined to work using an emulation layer.
+
+I prefer native solutions or workarounds. However, the list below is still a work in progress:
+
+Workarounds for Teams and Zoom can function as additional workstations, running either Windows or Linux or connecting via mobile.
 
 - [x] Slack (Completed)
 - [ ] Zoom (Incomplete)
