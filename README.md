@@ -11,9 +11,14 @@ This is an opinionated repo that contains our bash, vim and other (.) files.
 My primary OS is either
 
 [ArchLinux](https://archlinux.org/)
+
 (or)
-[FreeBSD](https://www.freebsd.org/) Please refer the section below for the status of the migration.
+
+[FreeBSD](https://www.freebsd.org/) 
+Please refer the section below for the status of the migration.
+
 (or)
+
 Chromebook eventually - with everything on cloud 😄
 
 At the moment on [ArchLinux](https://archlinux.org/) + Gnome. 
