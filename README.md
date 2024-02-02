@@ -76,6 +76,7 @@ Upon install, what tweaks are needed to bring my workstation up to the state for
 9.  VLC
 10. Docker
 11. Nautilus extensions
+12. 1Password
 
 ## 1 Trizen
 
