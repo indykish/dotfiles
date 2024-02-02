@@ -249,14 +249,48 @@ trizen 1password
 
 ```
 
-# 🩹 Work in progress - Using Ansible, Chef, or SaltStack 
+# 🩹 Experimental Using Ansible 
 
-Compose Ansible, Chef, or SaltStack code to configure the workstation during the OS installation. 
+Compose Ansible playbook to configure the workstation during the OS installation. 
 
 The objective is to have the script operate solely locally without running any daemons or agents.
 
 ⚓ Perhaps leverage ChatGPT to generate the script.
 
+## 1 Install Ansible
+
+```
+
+trizen -S ansible
+
+ansible --version
+
+```
+
+## 2 Connect GDrive
+
+I have backed up my files in a standard repo. Hence I will apply both the GDrive private + the public files.
+
+Use the Gnome online account and connect the GDrive account.
+
+
+## 3 Clone [indykish/dotfiles.git](https://github.com/indykish/dotfiles.git)
+
+```
+
+git clone https://github.com/indykish/dotfiles.git
+
+```
+
+## 4 Execute the playbook
+
+```
+
+cd dotfiles
+
+ansible-playbook -K workstation_setup.yml
+
+```
 # FreeBSD Migration
 
 The current status of my FreeBSD migration is as follows:
