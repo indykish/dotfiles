@@ -15,7 +15,7 @@ My primary OS is either
 (or)
 
 [FreeBSD](https://www.freebsd.org/) 
-Please refer the section below for the status of the migration.
+Please refer [the section below ](https://github.com/indykish/dotfiles/blob/master/README.md#freebsd-migration) for the status of the migration.
 
 (or)
 
