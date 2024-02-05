@@ -1,5 +1,5 @@
 ---
-- name: Workstation Setup
+- name: Arch Workstation Setup
   hosts: localhost
   gather_facts: true
   become: true
@@ -37,10 +37,10 @@
         state: present
 
     - name: Install Node
-      become_user: your_username
+      become_user: kishore
       shell: |
         cd ~/bin
-        wget https://nodejs.org/dist/v18.16.0/node-v18.16.0-linux-x64.tar
+        wget https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz
         tar -xvf node*.tar.xz
         mv ~/bin/node* ~/bin/node
 
@@ -94,32 +94,34 @@
         name: 1password
         state: present
 
-    - name: Download and Install cfssl
-      become_user: your_username
+    - name: Download and Install cfssl and cfssljson 1.5.0
+      become_user: kishore
       shell: |
         mkdir -p ~/bin
-        wget -O ~/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_linux_amd64
-        wget -O ~/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssljson_linux_amd64
+        wget -O ~/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64
+        wget -O ~/bin/cfssljson hhttps://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64
         chmod +x ~/bin/cfssl ~/bin/cfssljson
 
-    - name: Download and Install ShellCheck
-      become_user: your_username
+    - name: Download and Install ShellCheck 0.9.0
+      become_user: kishore
       shell: |
         mkdir -p ~/bin
-        wget -O ~/bin/shellcheck https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-linux-x86_64
+        wget -O ~/bin/shellcheck.tar.xz  https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.x86_64.tar.xz
+        tar -xvf ~/bin/shellcheck.tar.xz
+        mv ~/bin/shellcheck* ~/bin/shellcheck
         chmod +x ~/bin/shellcheck
 
-    - name: Download and Install shfmt
-      become_user: your_username
+    - name: Download and Install shfmt 3.7.0
+      become_user: kishore
       shell: |
         mkdir -p ~/bin
-        wget -O ~/bin/shfmt https://github.com/mvdan/sh/releases/download/v3.2.2/shfmt_v3.2.2_linux_amd64
+        wget -O ~/bin/shfmt https://github.com/mvdan/sh/releases/download/v3.7.0/shfmt_v3.7.0_linux_amd64
         chmod +x ~/bin/shfmt
 
-    - name: Download and Install OPAM
-      become_user: your_username
+    - name: Download and Install OPAM 2.1.5
+      become_user: kishore
       shell: |
         mkdir -p ~/bin
-        wget -O ~/bin/opam https://github.com/ocaml/opam/releases/download/2.1.0/opam-full-2.1.0
+        wget -O ~/bin/opam hhttps://github.com/ocaml/opam/releases/download/2.1.5/opam-2.1.5-i686-linux
         chmod +x ~/bin/opam
 
