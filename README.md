@@ -65,6 +65,10 @@ And the system clears the fields of the Submit Feedback form*
 
 Upon install, what tweaks are needed to bring my workstation up to the state for dev.
 
+## Solution for git permission errors.
+![image](https://github.com/indykish/dotfiles/assets/1402479/bcef5bc1-f56c-4716-a577-81830f442cf0)
+
+
 1.  Trizen
 2.  VIM & Vundle
 3.  Node
