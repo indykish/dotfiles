@@ -282,7 +282,7 @@ git clone https://github.com/indykish/dotfiles.git
 
 ```
 
-## 4 Execute the playbook
+## 4 Execute the [playbook](https://github.com/indykish/dotfiles/blob/master/workstation_setup.yml)
 
 ```
 
