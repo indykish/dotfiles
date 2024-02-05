@@ -2,7 +2,7 @@
 	name = Kishorekumar Neelamegam
 	email = kishore@lendsmart.ai
 [core]
-	excludesfile = /home/ram/.gitignore_global
+	excludesfile = /home/kishore.gitignore_global
 [push]
 	default = simple
 [http]

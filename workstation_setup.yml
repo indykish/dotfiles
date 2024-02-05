@@ -1,0 +1,125 @@
+---
+- name: Workstation Setup
+  hosts: localhost
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Install Trizen
+      pacman:
+        name: trizen
+        state: present
+
+    - name: Install VIM and Vundle
+      pacman:
+        name: vim
+        state: present
+
+    - name: Install Vundle
+      git:
+        repo: https://github.com/VundleVim/Vundle.vim.git
+        dest: ~/.vim/bundle/Vundle.vim
+        update: yes
+
+    - name: Install Powerline Fonts
+      pacman:
+        name: nerd-fonts-source-code-pro
+        state: present
+
+    - name: Install ripgrep
+      pacman:
+        name: ripgrep
+        state: present
+
+    - name: Install xsel for clipboard support
+      pacman:
+        name: xsel
+        state: present
+
+    - name: Install Node
+      become_user: your_username
+      shell: |
+        cd ~/bin
+        wget https://nodejs.org/dist/v18.16.0/node-v18.16.0-linux-x64.tar
+        tar -xvf node*.tar.xz
+        mv ~/bin/node* ~/bin/node
+
+    - name: Install Rust
+      shell: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+      args:
+        executable: /bin/bash
+
+    - name: Install OCaml
+      pacman:
+        name: ocaml
+        state: present
+
+    - name: Install Flameshot
+      pacman:
+        name: flameshot
+        state: present
+
+    - name: Install GNOME Shell Extension AppIndicator
+      pacman:
+        name: gnome-shell-extension-appindicator
+        state: present
+
+    - name: Install LibreOffice
+      pacman:
+        name: libreoffice-fresh
+        state: present
+
+    - name: Install Brave
+      pacman:
+        name: brave
+        state: present
+
+    - name: Install VLC
+      pacman:
+        name: vlc
+        state: present
+
+    - name: Install Nautilus Open Any Terminal extension
+      pacman:
+        name: nautilus-open-any-terminal
+        state: present
+
+    - name: Import 1Password GPG key
+      shell: |
+        curl -sS https://downloads.1password.com/linux/keys/1password.asc | gpg --import
+
+    - name: Install 1Password
+      pacman:
+        name: 1password
+        state: present
+
+    - name: Download and Install cfssl
+      become_user: your_username
+      shell: |
+        mkdir -p ~/bin
+        wget -O ~/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_linux_amd64
+        wget -O ~/bin/cfssljson https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssljson_linux_amd64
+        chmod +x ~/bin/cfssl ~/bin/cfssljson
+
+    - name: Download and Install ShellCheck
+      become_user: your_username
+      shell: |
+        mkdir -p ~/bin
+        wget -O ~/bin/shellcheck https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-linux-x86_64
+        chmod +x ~/bin/shellcheck
+
+    - name: Download and Install shfmt
+      become_user: your_username
+      shell: |
+        mkdir -p ~/bin
+        wget -O ~/bin/shfmt https://github.com/mvdan/sh/releases/download/v3.2.2/shfmt_v3.2.2_linux_amd64
+        chmod +x ~/bin/shfmt
+
+    - name: Download and Install OPAM
+      become_user: your_username
+      shell: |
+        mkdir -p ~/bin
+        wget -O ~/bin/opam https://github.com/ocaml/opam/releases/download/2.1.0/opam-full-2.1.0
+        chmod +x ~/bin/opam
+

@@ -1,6 +1,0 @@
- for file in $(<1.txt); do
-   echo $file
-   cp "$file" --parents ../esy_ui;
-   echo "..."
- done
-

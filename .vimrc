@@ -618,3 +618,5 @@ endfor
 "
 "Fix for  https://github.com/leafgarland/typescript-vim/issues/168
 "au BufNewFile,BufRead *.ts set filetype=typescriptreact
+
+
