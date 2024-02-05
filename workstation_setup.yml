@@ -10,7 +10,17 @@
         name: trizen
         state: present
 
-    - name: Install VIM and Vundle
+    - name: Install powerline-go
+      pacman:
+        name: powerline-go-bin
+        state: present
+
+    - name: Install powerline-fonts
+      pacman:
+        name: powerline-fonts
+        state: present
+
+    - name: Install vim
       pacman:
         name: vim
         state: present
@@ -21,9 +31,9 @@
         dest: ~/.vim/bundle/Vundle.vim
         update: yes
 
-    - name: Install Powerline Fonts
+    - name: Install Terminus Font
       pacman:
-        name: nerd-fonts-source-code-pro
+        name: terminus-font
         state: present
 
     - name: Install ripgrep
@@ -35,25 +45,50 @@
       pacman:
         name: xsel
         state: present
+ 
+    - name: Check if ~/bin/node directory exists
+      stat:
+        path: ~/bin/node
+      register: node_directory
 
-    - name: Install Node
+    - name: Download and unpack Node if directory does not exist
       become_user: kishore
       shell: |
-        cd ~/bin
-        wget https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz
-        tar -xvf node*.tar.xz
-        mv ~/bin/node* ~/bin/node
-
-    - name: Install Rust
-      shell: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        if [ ! -d ~/bin/node ]; then
+          mkdir -p ~/bin
+          wget -O ~/bin/node.tar.xz https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz
+          tar -xvf ~/bin/node.tar.xz -C ~/bin/
+          rm node.tar.xz
+          mv ~/bin/node* ~/bin/node
+        fi
       args:
         executable: /bin/bash
 
-    - name: Install OCaml
+    
+    - name: Check if Rust is installed
+      command: rustc --version
+      ignore_errors: true
+      register: rust_installed
+
+    - name: Install Rust if not already installed
+      shell: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source $HOME/.cargo/env
+      args:
+        executable: /bin/bash
+      when: rust_installed.rc != 0
+      
+    - name: Check OCaml version
+      command: ocamlc -version
+      ignore_errors: true
+      register: ocaml_version
+
+    - name: Install OCaml if not found or version is less than 5.0
       pacman:
         name: ocaml
         state: present
+      when: ocaml_version.rc != 0
+
 
     - name: Install Flameshot
       pacman:
@@ -72,56 +107,79 @@
 
     - name: Install Brave
       pacman:
-        name: brave
+        name: brave-bin
         state: present
 
     - name: Install VLC
       pacman:
         name: vlc
         state: present
+    - name: Check if Nautilus Open Any Terminal is installed
+      ansible.builtin.shell:
+        cmd: trizen -Qq nautilus-open-any-terminal
+      register: nautilus_open_any_terminal_check
+      ignore_errors: true
 
-    - name: Install Nautilus Open Any Terminal extension
-      pacman:
-        name: nautilus-open-any-terminal
-        state: present
-
+    - name: Install Nautilus Open Any Terminal extension using trizen
+      ansible.builtin.shell:
+        cmd: trizen -S --noconfirm nautilus-open-any-terminal
+      become_user: kishore
+      when: nautilus_open_any_terminal_check.rc != 0
+          
+    
     - name: Import 1Password GPG key
-      shell: |
+      ansible.builtin.shell: |
         curl -sS https://downloads.1password.com/linux/keys/1password.asc | gpg --import
+    
+    - name: Check if 1Password is installed
+      ansible.builtin.shell:
+        cmd: trizen -Qq 1password
+      register: onepassword_check
+      ignore_errors: true
 
-    - name: Install 1Password
-      pacman:
-        name: 1password
-        state: present
+    - name: Install 1Password using trizen
+      ansible.builtin.shell:
+        cmd: trizen -S --noconfirm 1password
+      become_user: kishore
+      when: onepassword_check.rc != 0
 
     - name: Download and Install cfssl and cfssljson 1.5.0
       become_user: kishore
       shell: |
         mkdir -p ~/bin
-        wget -O ~/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64
-        wget -O ~/bin/cfssljson hhttps://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64
+        if [ ! -d ~/bin/cfssl ]; then
+              wget -O ~/bin/cfssl https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64
+        fi
+        if [ ! -d ~/bin/cfssljson ]; then
+              wget -O ~/bin/cfssljson hhttps://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64
+        fi      
         chmod +x ~/bin/cfssl ~/bin/cfssljson
 
     - name: Download and Install ShellCheck 0.9.0
       become_user: kishore
       shell: |
         mkdir -p ~/bin
-        wget -O ~/bin/shellcheck.tar.xz  https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.x86_64.tar.xz
-        tar -xvf ~/bin/shellcheck.tar.xz
-        mv ~/bin/shellcheck* ~/bin/shellcheck
-        chmod +x ~/bin/shellcheck
+        if [ ! -d ~/bin/shellcheck ]; then
+            wget -O ~/bin/shellcheck.tar.xz  https://github.com/koalaman/shellcheck/releases/download/v0.9.0/shellcheck-v0.9.0.linux.x86_64.tar.xz
+            tar -xvf ~/bin/shellcheck.tar.xz
+            mv ~/bin/shellcheck* ~/bin/shellcheck
+            chmod +x ~/bin/shellcheck
+        fi    
 
     - name: Download and Install shfmt 3.7.0
       become_user: kishore
       shell: |
         mkdir -p ~/bin
-        wget -O ~/bin/shfmt https://github.com/mvdan/sh/releases/download/v3.7.0/shfmt_v3.7.0_linux_amd64
-        chmod +x ~/bin/shfmt
+        if [ ! -d ~/bin/shfmt ]; then
+            wget -O ~/bin/shfmt https://github.com/mvdan/sh/releases/download/v3.7.0/shfmt_v3.7.0_linux_amd64
+            chmod +x ~/bin/shfmt
+        fi    
 
     - name: Download and Install OPAM 2.1.5
       become_user: kishore
       shell: |
         mkdir -p ~/bin
-        wget -O ~/bin/opam hhttps://github.com/ocaml/opam/releases/download/2.1.5/opam-2.1.5-i686-linux
-        chmod +x ~/bin/opam
-
+        if [ ! -d ~/bin/opam ]; then
+            wget -O ~/bin/opam hhttps://github.com/ocaml/opam/releases/download/2.1.5/opam-2.1.5-i686-linux
+            chmod +x ~/bin/opam
+        fi    
