@@ -91,6 +91,17 @@ pacman trizen
 
 ```
 
+## 1a Powerline-go
+
+
+```
+
+trizen powerline-go-bin
+trizen powerline-common
+trizen powerline-fonts
+
+```
+
 ## 2 Vim
 
 This is recommended and have moved to this approach.
@@ -125,9 +136,9 @@ trizen ripgrep
 
 ```
 
-ℹ️ Clipboard
+ℹ️ Clipboard (wayland)
 
-trizen xsel
+trizen wl-clipboard
 
 ```
 
