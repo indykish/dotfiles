@@ -109,11 +109,11 @@ trizen vim
 
 https://github.com/VundleVim/Vundle.vim
 
-ℹ️ Powerline fonts
+ℹ️ vim-devicon fonts
 
 ```
 
-trizen nerd-fonts-source-code-pro
+trizen ttf-nerd-fonts-symbols
 
 ```
 
