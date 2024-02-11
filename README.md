@@ -26,6 +26,21 @@ At the moment on [ArchLinux](https://archlinux.org/) + Gnome.
 
 Archlinux is much faster but eventually will move to FreeBSD or OpenBSD for OCaml dev.
 
+# Rapoo E9050 cheat sheet
+
+This key board is much better with the Fn + combination available directly for the below options
+
+ - PrntScrn
+- Home
+- End
+- Page up
+- Page down
+
+Believe Logitech must learn from Rapoo guys. 
+
+![20240211_213549](https://github.com/indykish/dotfiles/assets/1402479/0c127ed6-6cf6-4465-bc68-14070958cbfe)
+
+
 # Logitech K380 cheat sheet
 
 The K380 cheat sheet is available for referencing the shortcut keys mentioned below.
