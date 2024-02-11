@@ -28,7 +28,7 @@ Archlinux is much faster but eventually will move to FreeBSD or OpenBSD for OCam
 
 # Rapoo E9050 cheat sheet
 
-This key board is much better with the Fn + combination available directly for the below options
+This key board is much better than Logitech K380 where these keys are mapped with the Fn + combination, but in Rapoo they are available directly
 
  - PrntScrn
 - Home
