@@ -659,9 +659,11 @@ export PATH="$PATH:$USR_LOCAL_BIN_HOME:$MY_BIN_HOME:$MY_BIN_DOTLOCAL_HOME"
 
 # langs home
 export MY_BIN_NODE_HOME=$MY_BIN_HOME/node/bin
+export SHELLSPEC_HOME=$MY_BIN_HOME/shellspec
 export GOROOT=$MY_BIN_HOME/go
 export MY_BIN_PERL5_HOME=$HOME/perl5/bin
-export PATH="$PATH:$HOME/.cargo/bin:$MY_BIN_NODE_HOME:$HOME/.rvm/bin:$GOROOT/bin:$MY_BIN_PERL5_HOME"
+export PATH="$PATH:$HOME/.cargo/bin:$MY_BIN_NODE_HOME:$HOME/.rvm/bin:$GOROOT/bin:$MY_BIN_PERL5_HOME:$SHELLSPEC_HOME"
+
 
 # OCAML
 . $HOME/.opam/opam-init/init.sh >/dev/null 2>/dev/null || true
