@@ -1,4 +1,0 @@
-rvm_silence_path_mismatch_check_flag=1 
-rvm_autoupdate_flag=latest
-# Ignore RVMRC warning
-rvm_ignore_rvmrc_warning_flag=1

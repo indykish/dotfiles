@@ -33,16 +33,6 @@ if $_isxrunning; then
 		[[ $UID == 0 ]] && echo "#" || echo "\$"
 	}
 
-	# cool powerline-go settings
-	# Refer trizen powerline-go
-	function _update_ps1() {
-		PS1=$(powerline-go $?)
-	}
-
-	if [[ $TERM != linux && ! $PROMPT_COMMAND =~ _update_ps1 ]]; then
-		PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
-	fi
-
 else
 	[[ -f $HOME/.dircolors ]] && eval $(dircolors -b $HOME/.dircolors)
 fi
@@ -158,6 +148,8 @@ alias mkdir='mkdir -p -v'
 alias more='less'
 alias nano='nano -w'
 alias ping='ping -c 5'
+alias cleanup_packages='(set -x; sudo pacman -Rs $(pacman -Qdtq))'
+
 #}}}
 # PRIVILEGED ACCESS {{{
 if ! $_isroot; then
@@ -488,7 +480,7 @@ extract() {
 		echo -e "${clrstart}Extracting $1 to $DESTDIR: (rar compressed file)${clrend}"
 		unrar x "$1" "$DESTDIR"
 		;;
-	7z)
+	7z)☁️  
 		echo -e "${clrstart}Extracting $1 to $DESTDIR: (7zip compressed file)${clrend}"
 		7za e "$1" -o"$DESTDIR"
 		;;
@@ -654,43 +646,12 @@ stty -ixon
 ## The home paths
 export MY_BIN_HOME=~/bin
 export MY_BIN_DOTLOCAL_HOME=~/.local/bin
-export USR_LOCAL_BIN_HOME=/usr/local/bin
-export PATH="$PATH:$USR_LOCAL_BIN_HOME:$MY_BIN_HOME:$MY_BIN_DOTLOCAL_HOME"
-
-# langs home
-export MY_BIN_NODE_HOME=$MY_BIN_HOME/node/bin
-export SHELLSPEC_HOME=$MY_BIN_HOME/shellspec
-export GOROOT=$MY_BIN_HOME/go
-export MY_BIN_PERL5_HOME=$HOME/perl5/bin
-export PATH="$PATH:$HOME/.cargo/bin:$MY_BIN_NODE_HOME:$HOME/.rvm/bin:$GOROOT/bin:$MY_BIN_PERL5_HOME:$SHELLSPEC_HOME"
+export PATH="$PATH:$MY_BIN_HOME:$MY_BIN_DOTLOCAL_HOME"
 
 
 # OCAML
 . $HOME/.opam/opam-init/init.sh >/dev/null 2>/dev/null || true
 
-# RUBY
-export RUBY_GC_HEAP_INIT_SLOTS=600000
-export RUBY_GC_MALLOC_LIMIT=59000000
-export RUBY_GC_HEAP_FREE_SLOTS=100000
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM$
+eval "$(~/.local/bin/mise activate bash)"
 
-### PERL5
-PERL5LIB="$HOME/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"
-export PERL5LIB
-PERL_LOCAL_LIB_ROOT="$HOME/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"
-export PERL_LOCAL_LIB_ROOT
-PERL_MB_OPT="--install_base \"$HOME/perl5\""
-export PERL_MB_OPT
-PERL_MM_OPT="INSTALL_BASE=$HOME/perl5"
-export PERL_MM_OPT
-
-### WORK: MICROSERVICE HOME
-export LENDSMART_HOME=$HOME/code/home
-
-#### ** !!! PRIVATE !!! *** DOCKERHUB
-export DOCKER_USER=lendsmartlabs
-export DOCKER_PASSWORD=
-# export DOCKER_HOST="tcp://127.0.0.1:2375"
-
-#### ** !!! PRIVATE !!!*** DOCKERHUB
-export GPGKEY=
+eval "$(starship init bash)"

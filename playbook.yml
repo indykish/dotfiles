@@ -1,0 +1,125 @@
+---
+- name: Workstation Setup
+  hosts: localhost
+  gather_facts: true
+  become: true
+
+  vars:
+    install_dir: "{{ ansible_env.HOME }}/bin"
+    version_log: "{{ ansible_env.HOME }}/dotfile-run.txt"
+
+  tasks:
+    - name: Ensure required directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ install_dir }}"
+        - "{{ ansible_env.HOME }}/code/py"
+        - "{{ ansible_env.HOME }}/code/node"
+        - "{{ ansible_env.HOME }}/code/rust"
+        - "{{ ansible_env.HOME }}/.config/autostart"
+
+    - name: Install trizen
+      pacman:
+        name: trizen
+        state: present
+
+    - name: Install starship and Nerd Fonts using trizen
+      shell: |
+        trizen -S --noconfirm starship ttf-nerd-fonts-symbol ttf-nerd-fonts-common
+      args:
+        executable: /bin/bash
+
+    - name: Install libreoffice
+      pacman:
+        name: libreoffice-fresh
+        state: present
+
+    - name: Install Flameshot
+      pacman:
+        name: flameshot
+        state: present
+
+    - name: Use mise to install tools and languages
+      shell: |
+        mise install caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go ocaml opam dune 
+        mise use caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go ocaml opam dune
+        mise list > {{ version_log }}
+      args:
+        executable: /bin/bash
+
+    - name: Install VSCode
+      pacman:
+        name: code
+        state: present
+
+    - name: Install Docker tools
+      shell: |
+        trizen -S --noconfirm docker docker-buildx docker-compose
+      args:
+        executable: /bin/bash
+
+    - name: Copy custom .gemrc
+      copy:
+        content: |
+          :backtrace: false
+          :bulk_threshold: 1000
+          :sources:
+          - https://rubygems.org
+          :update_sources: true
+          :verbose: true
+        dest: "{{ ansible_env.HOME }}/.gemrc"
+        mode: "0644"
+
+    - name: Download .gitconfig and .gitconfig_global
+      get_url:
+        url: https://raw.githubusercontent.com/indykish/dotfiles/master/.gitconfig
+        dest: "{{ ansible_env.HOME }}/.gitconfig"
+        mode: "0644"
+
+    - name: Download .gitconfig_global
+      get_url:
+        url: https://raw.githubusercontent.com/indykish/dotfiles/master/.gitconfig_global
+        dest: "{{ ansible_env.HOME }}/.gitconfig_global"
+        mode: "0644"
+
+    - name: Download PlantUML jar
+      get_url:
+        url: "https://github.com/plantuml/plantuml/releases/download/v1.2025.2/plantuml.jar"
+        dest: "{{ install_dir }}/plantuml.jar"
+        mode: "0644"
+
+    - name: Install Eclipse Temurin JDK
+      pacman:
+        name: jdk-temurin
+        state: present
+
+    # - name: Install Plank Dock
+    #   pacman:
+    #     name: plank
+    #     state: present
+
+    # - name: Configure Plank to autostart (optional)
+    #   copy:
+    #     dest: "{{ ansible_env.HOME }}/.config/autostart/plank.desktop"
+    #     content: |
+    #       [Desktop Entry]
+    #       Type=Application
+    #       Exec=plank
+    #       Hidden=false
+    #       NoDisplay=false
+    #       X-GNOME-Autostart-enabled=true
+    #       Name=Plank
+    #       Comment=Start Plank Dock
+    #     mode: '0644'
+
+    # - name: Note: To customize Plank entries for XFCE's file manager, terminal, Firefox, and Ghostty,
+    #         you can manually create .dockitem files in ~/.config/plank/dock1/launchers/
+    #         or launch Plank and pin apps from the right-click menu.
+
+    - name: Install Ghostty Terminal
+      shell: |
+        trizen -S --noconfirm ghostty
+      args:
+        executable: /bin/bash

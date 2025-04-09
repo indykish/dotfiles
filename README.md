@@ -1,344 +1,198 @@
-# Kishore's development setup
+# Kishore's Development Setup
 
-This is an opinionated repo that contains our bash, vim and other (.) files. 
+This is an opinionated repository containing configuration files like `.bashrc`, `.vimrc`, and other dotfiles used for personal development setup.
 
-> This is an opioniated repo for [Kishorekumar Neelamegam](https://www.linkedin.com/in/kishorekumarneelamegam/?originalSubdomain=in).
+> 🧠 Tailored for [Kishorekumar Neelamegam](https://www.linkedin.com/in/kishorekumarneelamegam/?originalSubdomain=in)  
+> 🛠️ We've documented the setup to easily restore the workstation in case of crashes or fresh installs.
 
-> We have recorded our setup just so we dont forget how to bring back the workstation when there is a crash
+---
 
+## 📚 Table of Contents
 
-# OS
+- [Operating Systems](#operating-systems)
+- [Logitech Keyboard Cheat Sheets](#logitech-keyboard-cheat-sheets)
+  - [Pebble Keys 2 K380s](#logitech-pebble-keys-2-k380s)
+  - [Logitech K380](#logitech-k380)
+- [ArchLinux Setup Notes](#archlinux-setup-notes)
+  - [Fixing Git Permission Errors](#fixing-git-permission-errors)
+  - [Essential Tools](#essential-tools)
+- [Vim Setup](#vim-setup)
+  - [Vim Plugins](#vim-plugins)
+  - [Clipboard Support](#clipboard-support)
+  - [Mapping Verification](#mapping-verification)
+- [Using Ansible](#using-ansible)
+- [Product Management](#product-management)
+  - [Writing Good User Stories](#writing-good-user-stories)
+  - [Acceptance Criteria](#acceptance-criteria)
 
-My primary OS is either
+---
 
-[ArchLinux](https://archlinux.org/)
+## 👥 Operating Systems
 
-(or)
+My primary operating systems:
 
-[FreeBSD](https://www.freebsd.org/) 
-Please refer [the section below ](https://github.com/indykish/dotfiles/blob/master/README.md#freebsd-migration) for the status of the migration.
+- [ArchLinux](https://archlinux.org/)
+- [FreeBSD](https://www.freebsd.org/)
 
-(or)
+**Current Setup:** ArchLinux + XFCE
 
-Chromebook eventually - with everything on cloud 😄
+> ⚡ ArchLinux is fast and developer-friendly
 
-At the moment on [ArchLinux](https://archlinux.org/) + Gnome. 
+---
 
-Archlinux is much faster but eventually will move to FreeBSD or OpenBSD for OCaml dev.
+## ⌨️ Logitech Keyboard Cheat Sheets
 
-# Rapoo E9050 cheat sheet
+### Logitech Pebble Keys 2 K380s
 
-This key board is much better than Logitech K380 where these keys are mapped with the Fn + combination, but in Rapoo they are available directly
+Similar to the K380 but needed remapping for:
 
- - PrntScrn
-- Home
-- End
-- Page up
-- Page down
+- `PrntScrn`
+- `Home`
+- `End`
+- `Page Up`
+- `Page Down`
 
-Believe Logitech must learn from Rapoo guys. 
+> 🧹 Logitech, take notes from the Rapoo folks!
 
-![20240211_213549](https://github.com/indykish/dotfiles/assets/1402479/0c127ed6-6cf6-4465-bc68-14070958cbfe)
+![Pebble K380s](https://github.com/indykish/dotfiles/assets/1402479/0c127ed6-6cf6-4465-bc68-14070958cbfe)
 
+---
 
-# Logitech K380 cheat sheet
+### Logitech K380
 
-The K380 cheat sheet is available for referencing the shortcut keys mentioned below.
+Shortcut key references:
 
-- PrntScrn
-- Home
-- End
-- Page up
-- Page down
+- `PrntScrn`
+- `Home`
+- `End`
+- `Page Up`
+- `Page Down`
 
-![image](https://user-images.githubusercontent.com/1402479/161395539-2b1ec230-97d1-4994-a394-af56070d3d2b.png)
+![K380](https://user-images.githubusercontent.com/1402479/161395539-2b1ec230-97d1-4994-a394-af56070d3d2b.png)
 
-# Product Management
+---
 
-## Writing a good story
+## 🐧 ArchLinux Setup Notes
 
-As a (type of user), I want to (perform some action) so that I (can achieve some goal/result/value).”
+Steps and tweaks needed post-install to get the workstation dev-ready.
 
-## [Writing a good acceptance criteria](https://rubygarage.org/blog/clear-acceptance-criteria-and-why-its-important)
+### 🔧 Fixing Git Permission Errors
 
-```
-Scenario #1: User submits feedback form with the valid data
-*Given I’m in a role of logged-in or guest user
-When I open the Feedback page
-Then the system shows me the Submit Feedback form containing “Email”,“Name” and “Comment” fields which are required
-When I fill in the “Email” field with a valid email address
-And I fill in the “Name” field with my name
-And I fill in the “Comment” field with my comment
-And I click the “Submit Feedback” button
-Then the system submits my feedback
-And the system shows the “You’ve successfully submitted your feedback” flash message
-And the system clears the fields of the Submit Feedback form*
-```
+![git-permissions](https://github.com/indykish/dotfiles/assets/1402479/bcef5bc1-f56c-4716-a577-81830f442cf0)
 
+---
 
-# ArchLinux
+### 🧰 Essential Tools
 
-Upon install, what tweaks are needed to bring my workstation up to the state for dev.
+Install using `trizen`:
 
-## Solution for git permission errors.
-![image](https://github.com/indykish/dotfiles/assets/1402479/bcef5bc1-f56c-4716-a577-81830f442cf0)
-
-
-1.  Trizen
-2.  VIM & Vundle
-3.  Node
-4.  Rust
-5.  OCaml
-6.  Flameshot
-7.  Libreoffice
-8.  Brave
-9.  VLC
-10. Docker
-11. Nautilus extensions
-12. 1Password
-
-## 1 Trizen
-
-
-```
-
-pacman trizen
-
-```
-
-## 1a Powerline-go
-
-
-```
-
-trizen powerline-go-bin
-trizen powerline-common
-trizen powerline-fonts
-
-```
-
-## 2 Vim
-
-This is recommended and have moved to this approach.
-
-The install from release source is great, but have experienced slowness (un sure why) on the latest builds
-
-```
-
-trizen vim
-
-```
-
-### VIM plugins
-
-ℹ️ Install Vundle(plugin manager)
-
-https://github.com/VundleVim/Vundle.vim
-
-ℹ️ vim-devicon fonts
-
-```
-
-trizen ttf-nerd-fonts-symbols
-
-```
-
-ℹ️ Search using ripgrep
-
-```
-
-trizen ripgrep
-
-```
-
-ℹ️ Clipboard (wayland)
-
-trizen wl-clipboard
-
-```
-
-vim --version | grep clipboard
-
-```
-
-If you see `+clipboard` or `+xterm_clipboard`, you are good to go. 
-
-If it's `-clipboard` and `-xterm_clipboard`, 
-you will need to install
-
-```
-
-trizen gvim vim
-
-```
-
-To verify a mapping for CTRL-C and CTRL-V
-
-```
-::verbose map <C-V>
-
-```
-![image](https://github.com/kishoreneelamegam/dotfiles/assets/1402479/8630d6c4-1108-482d-a49d-0c489b2088d2)
-
-
-## 3 Node
-
-> Note, as of this writing 20.x was  the latest, but replace the wget `https` **url** with the latest by visiting [Node.js](https://nodejs.org) to grab the latest LTS
-
-```
-cd ~/bin; wget https://nodejs.org/dist/v20.11.0/node-v20.11.0-linux-x64.tar.xz
-
-tar -xvf node*.tar.xz; mv ~/bin/node* ~/bin/node
-
-```
-
-## 4 Rust
-
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-trizen postgresql-libs
-
-```
-
-## 5 OCaml
-
-```
-
-trizen ocaml
-
-cd ~/bin; wget https://github.com/ocaml/opam/releases/download/2.1.5/opam-2.1.5-x86_64-linux
-mv ~/bin/opam* ~/bin/opam
-opam init
-opam install dune
-```
-
-## 6 Flameshot
-
-```
-
-trizen flameshot
-
-```
-
-The app indicator extension is gnome is needed. 
-
-```
-
-trizen gnome-shell-extension-appindicator
-
-```
-
-## 7 Libreoffice
-
-```
-
+```bash
+trizen starship
 trizen libreoffice
-
-```
-
-## 8 Brave
-
-```
-
-trizen brave
-
-```
-## 9 VLC
-
-```
-
-trizen vlc
-
-```
-
-## WIP: 10 Docker
-
-```
-
+trizen flameshot
+trizen mise
 trizen docker
-trizen docker-buildx
-trizen docker-compose
-
 ```
 
-## 11 Nautilus extensions
+---
 
+## 📝 Vim Setup
+
+> ⚙️ Recommended setup, now preferred over source builds (which sometimes feel sluggish).
+
+Install via:
+
+```bash
+trizen vim
 ```
 
-trizen nautilus-open-any-terminal
+---
 
+### 🔌 Vim Plugins
+
+- 📦 Plugin Manager: [Vundle](https://github.com/VundleVim/Vundle.vim)
+- 🎨 Devicons Fonts:
+
+```bash
+trizen ttf-nerd-fonts-symbols
 ```
 
-## 12 [1Password](https://support.1password.com/install-linux/#arch-linux)
+- 🔍 Ripgrep for searching:
 
-```
-curl -sS https://downloads.1password.com/linux/keys/1password.asc | gpg --import
-
-trizen 1password
-
+```bash
+trizen ripgrep
 ```
 
-# 🩹 Experimental Using Ansible 
+---
 
-Compose Ansible playbook to configure the workstation during the OS installation. 
+### 📋 Clipboard Support (Wayland)
 
-The objective is to have the script operate solely locally without running any daemons or agents.
-
-⚓ Perhaps leverage ChatGPT to generate the script.
-
-## 1 Install Ansible
-
+```bash
+trizen wl-clipboard
+vim --version | grep clipboard
 ```
 
-trizen -S ansible
+Look for `+clipboard` or `+xterm_clipboard`. If not available, install:
 
-ansible --version
-
+```bash
+trizen gvim vim
 ```
 
-## 2 Connect GDrive
+---
 
-I have backed up my files in a standard repo. Hence I will apply both the GDrive private + the public files.
+### ⌨️ Mapping Verification
 
-Use the Gnome online account and connect the GDrive account.
+To verify key mappings like Ctrl+V:
 
-
-## 3 Clone [indykish/dotfiles.git](https://github.com/indykish/dotfiles.git)
-
+```bash
+:verbose map <C-V>
 ```
 
-git clone https://github.com/indykish/dotfiles.git
+![vim-ctrl-v](https://github.com/kishoreneelamegam/dotfiles/assets/1402479/8630d6c4-1108-482d-a49d-0c489b2088d2)
 
+---
+
+## 🩹 Using Ansible
+
+Automate workstation setup using Ansible during OS installation.
+
+> 🧼 Runs locally without daemons or agents.
+
+### ▶️ Run Setup Script
+
+```bash
+sh run.sh
 ```
 
-## 4 Execute the [playbook](https://github.com/indykish/dotfiles/blob/master/workstation_setup.yml)
+---
+
+## 📋 Product Management
+
+### ✍️ Writing Good User Stories
 
 ```
-
-cd dotfiles
-
-ansible-playbook -K workstation_setup.yml
-
+As a (type of user), I want to (perform some action) so that I (can achieve some goal/result/value).
 ```
-# FreeBSD Migration
 
-The current status of my FreeBSD migration is as follows:
+---
 
-I haven't had much luck with a full switch yet. I am not inclined to work using an emulation layer.
+### ✅ Acceptance Criteria
 
-I prefer native solutions or workarounds. However, the list below is still a work in progress:
+📖 [More on writing clear criteria](https://rubygarage.org/blog/clear-acceptance-criteria-and-why-its-important)
 
-Workarounds for Teams and Zoom can function as additional workstations, running either Windows or Linux or connecting via mobile.
+```gherkin
+Scenario #1: User submits feedback form with valid data
 
-- [x] Slack (Completed)
-- [ ] Zoom (Incomplete)
-- [ ] Teams (Incomplete)
-- [x] Vim (Completed)
-- [ ] OCaml (Incomplete)
-- [ ] Rust (Incomplete)
-- [ ] Perl (Incomplete)
-- [ ] Typescript (Incomplete)
-- [ ] Dry run ui (Incomplete)
-- [ ] Dry run coreapi/auth (Incomplete)
-- [ ] Dry run python, perl scripts (Incomplete)
+* Given I’m a logged-in or guest user
+  When I open the Feedback page
+  Then the system shows me the Submit Feedback form with “Email”, “Name”, and “Comment” fields (required)
+  When I fill in the “Email” field with a valid email address
+  And I fill in the “Name” field with my name
+  And I fill in the “Comment” field with my comment
+  And I click the “Submit Feedback” button
+  Then the system submits my feedback
+  And the system shows the “You’ve successfully submitted your feedback” message
+  And the form fields are cleared
+```
+
+---
