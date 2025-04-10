@@ -640,8 +640,14 @@ fi
 #}}}
 #}}}
 
-bind -r '\C-s'
-stty -ixon
+if [[ $- == *i* ]]; then
+    # Disable Ctrl+S/Ctrl+Q flow control
+    stty -ixon
+
+    # Unbind Ctrl+S from readline (in case it's mapped)
+    bind -r '\C-s'
+fi
+
 
 ## The home paths
 export MY_BIN_HOME=~/bin

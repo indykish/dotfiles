@@ -9,9 +9,9 @@ echo "[+] Downloading your .bashrc..."
 curl -fsSL https://raw.githubusercontent.com/indykish/dotfiles/master/.bashrc -o "$HOME/.bashrc"
 
 
- Step 1: Install dependencies for mise and ansible
+# Step 1: Install dependencies for mise and ansible
 echo "[+] Installing base packages..."
-sudo pacman -Sy --noconfirm python-pip base-devel curl
+sudo pacman -Sy --noconfirm python-pip firefox noto-fonts noto-fonts-extra git curl
 
 
 # Step 2: Install mise (if not already installed)
