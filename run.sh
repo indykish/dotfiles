@@ -9,9 +9,10 @@ echo "[+] Downloading your .bashrc..."
 curl -fsSL https://raw.githubusercontent.com/indykish/dotfiles/master/.bashrc -o "$HOME/.bashrc"
 
 
-# Step 1: Install dependencies for mise and ansible
+ Step 1: Install dependencies for mise and ansible
 echo "[+] Installing base packages..."
 sudo pacman -Sy --noconfirm python-pip base-devel curl
+
 
 # Step 2: Install mise (if not already installed)
 if [ ! -d "$HOME/.local/share/mise" ]; then
@@ -24,12 +25,12 @@ fi
 echo "[+] Sourcing .bashrc..."
 source "$HOME/.bashrc"
 
-# Step 4: Install Ansible using mise
+# Step 3: Install Ansible using mise
 echo "[+] Installing Ansible via mise..."
 mise install ansible
 mise use ansible
 
-# Step 5: Run the Ansible playbook
+# Step 4: Run the Ansible playbook
 echo "[+] Running Ansible playbook..."
 mise exec ansible -- ansible-playbook playbook.yml
 

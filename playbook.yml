@@ -30,6 +30,17 @@
         trizen -S --noconfirm starship ttf-nerd-fonts-symbol ttf-nerd-fonts-common
       args:
         executable: /bin/bash
+    - name: Initialize starship in bashrc if not already present
+      lineinfile:
+    	path: "{{ ansible_env.HOME }}/.bashrc"
+    	line: 'eval "$(starship init bash)"'
+    	state: present
+    	create: yes
+
+    - name: Source .bashrc after starship setup
+  	shell: source "{{ ansible_env.HOME }}/.bashrc"
+  	args:
+    	    executable: /bin/bash        
 
     - name: Install libreoffice
       pacman:

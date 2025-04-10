@@ -653,5 +653,3 @@ export PATH="$PATH:$MY_BIN_HOME:$MY_BIN_DOTLOCAL_HOME"
 . $HOME/.opam/opam-init/init.sh >/dev/null 2>/dev/null || true
 
 eval "$(~/.local/bin/mise activate bash)"
-
-eval "$(starship init bash)"
