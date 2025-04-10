@@ -87,7 +87,6 @@ Steps and tweaks needed post-install to get the workstation dev-ready.
 Install using `trizen`:
 
 ```bash
-trizen starship
 trizen libreoffice
 trizen flameshot
 trizen mise

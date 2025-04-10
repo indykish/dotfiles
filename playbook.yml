@@ -2,7 +2,7 @@
 - name: Workstation Setup
   hosts: localhost
   gather_facts: true
-  become: true
+  become: false
 
   vars:
     install_dir: "{{ ansible_env.HOME }}/bin"
@@ -20,47 +20,63 @@
         - "{{ ansible_env.HOME }}/code/rust"
         - "{{ ansible_env.HOME }}/.config/autostart"
 
-    - name: Install trizen
+    - name: Ensure git is installed for AUR build
       pacman:
-        name: trizen
+        name: git
         state: present
 
-    - name: Install starship and Nerd Fonts using trizen
+    - name: Clone trizen AUR repository
+      git:
+        repo: https://aur.archlinux.org/trizen.git
+        dest: "{{ ansible_env.HOME }}/aur-builds/trizen"
+        clone: yes
+        update: no
+
+    - name: Build and install trizen from AUR
+      become: false
       shell: |
-        trizen -S --noconfirm starship ttf-nerd-fonts-symbol ttf-nerd-fonts-common
+        cd "{{ ansible_env.HOME }}/aur-builds/trizen"
+        makepkg -si --noconfirm
+      args:
+        creates: /usr/bin/trizen
+
+    - name: Install oh-my-posh and Nerd Fonts using trizen
+      shell: |
+        trizen -Syy
+        curl -s https://ohmyposh.dev/install.sh | bash -s -- -d ~/bin
+        trizen -S --noconfirm ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-common
       args:
         executable: /bin/bash
-    - name: Initialize starship in bashrc if not already present
-      lineinfile:
-    	path: "{{ ansible_env.HOME }}/.bashrc"
-    	line: 'eval "$(starship init bash)"'
-    	state: present
-    	create: yes
 
-    - name: Source .bashrc after starship setup
-  	shell: source "{{ ansible_env.HOME }}/.bashrc"
-  	args:
-    	    executable: /bin/bash        
+    - name: Initialize oh-my-posh with jandedobbeleer them in bashrc if not already present
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        line: 'eval "$(oh-my-posh init bash --config ~/.cache/oh-my-posh/themes/jandedobbeleer.omp.json)"'
+        state: present
+        create: yes
 
     - name: Install libreoffice
-      pacman:
-        name: libreoffice-fresh
-        state: present
-
+      shell: |
+        trizen -S --noconfirm libreoffice-fresh
+      args:
+        executable: /bin/bash  
+      
     - name: Install Flameshot
-      pacman:
-        name: flameshot
-        state: present
+      shell: |
+        trizen -S --noconfirm flameshot
+      args:
+        executable: /bin/bash  
 
     - name: Use mise to install tools and languages
       shell: |
-        mise install caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go ocaml opam dune 
-        mise use caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go ocaml opam dune
-        mise list > {{ version_log }}
+        mise install -v caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go 
+        mise use -g -v caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go
+        mise list -v > {{ version_log }}
       args:
         executable: /bin/bash
 
     - name: Install VSCode
+      become: true
       pacman:
         name: code
         state: present
@@ -83,16 +99,16 @@
         dest: "{{ ansible_env.HOME }}/.gemrc"
         mode: "0644"
 
-    - name: Download .gitconfig and .gitconfig_global
+    - name: Download .gitconfig
       get_url:
         url: https://raw.githubusercontent.com/indykish/dotfiles/master/.gitconfig
         dest: "{{ ansible_env.HOME }}/.gitconfig"
         mode: "0644"
 
-    - name: Download .gitconfig_global
+    - name: Download .gitignore_global
       get_url:
-        url: https://raw.githubusercontent.com/indykish/dotfiles/master/.gitconfig_global
-        dest: "{{ ansible_env.HOME }}/.gitconfig_global"
+        url: https://raw.githubusercontent.com/indykish/dotfiles/master/.gitignore_global
+        dest: "{{ ansible_env.HOME }}/.gitignore_global"
         mode: "0644"
 
     - name: Download PlantUML jar
@@ -102,35 +118,17 @@
         mode: "0644"
 
     - name: Install Eclipse Temurin JDK
-      pacman:
-        name: jdk-temurin
-        state: present
-
-    # - name: Install Plank Dock
-    #   pacman:
-    #     name: plank
-    #     state: present
-
-    # - name: Configure Plank to autostart (optional)
-    #   copy:
-    #     dest: "{{ ansible_env.HOME }}/.config/autostart/plank.desktop"
-    #     content: |
-    #       [Desktop Entry]
-    #       Type=Application
-    #       Exec=plank
-    #       Hidden=false
-    #       NoDisplay=false
-    #       X-GNOME-Autostart-enabled=true
-    #       Name=Plank
-    #       Comment=Start Plank Dock
-    #     mode: '0644'
-
-    # - name: Note: To customize Plank entries for XFCE's file manager, terminal, Firefox, and Ghostty,
-    #         you can manually create .dockitem files in ~/.config/plank/dock1/launchers/
-    #         or launch Plank and pin apps from the right-click menu.
-
-    - name: Install Ghostty Terminal
       shell: |
-        trizen -S --noconfirm ghostty
+        trizen -S --noconfirm jdk-temurin
       args:
         executable: /bin/bash
+
+
+    - name: Install Gnome App Indicator
+      become: true
+      pacman: 
+          name: 
+            - gnome-shell-extensions 
+            - gnome-tweaks 
+            - gnome-shell-extension-appindicator
+          state: present

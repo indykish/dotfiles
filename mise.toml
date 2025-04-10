@@ -1,0 +1,13 @@
+[tools]
+cfssl = "latest"
+rust = "latest"
+node = "latest"
+jq = "latest"
+go = "latest"
+mkcert = "latest"
+ruby = "latest"
+python = "latest"
+shfmt = "latest"
+shellcheck = "latest"
+caddy = "latest"
+cargo = "latest"
