@@ -13,46 +13,30 @@ This is an opinionated repository containing configuration files like `.bashrc`,
 - [Logitech Keyboard Cheat Sheets](#logitech-keyboard-cheat-sheets)
   - [Pebble Keys 2 K380s](#logitech-pebble-keys-2-k380s)
   - [Logitech K380](#logitech-k380)
-- [ArchLinux Setup Notes](#archlinux-setup-notes)
-  - [Fixing Git Permission Errors](#fixing-git-permission-errors)
-  - [Essential Tools](#essential-tools)
+- [Fixing Git Permission Errors](#fixing-git-permission-errors) 
 - [Vim Setup](#vim-setup)
   - [Vim Plugins](#vim-plugins)
   - [Clipboard Support](#clipboard-support)
   - [Mapping Verification](#mapping-verification)
-- [Using Ansible](#using-ansible)
-- [Product Management](#product-management)
-  - [Writing Good User Stories](#writing-good-user-stories)
-  - [Acceptance Criteria](#acceptance-criteria)
+- [Setup your system](#using-ansible)
 
 ---
 
 ## 👥 Operating Systems
 
-My primary operating systems:
+My primary operating systems: ⚡ ArchLinux is fast and developer-friendly
 
-- [ArchLinux](https://archlinux.org/)
-- [FreeBSD](https://www.freebsd.org/)
-
-**Current Setup:** ArchLinux + XFCE
-
-> ⚡ ArchLinux is fast and developer-friendly
+- [ArchLinux](https://archlinux.org/) + Gnome
 
 ---
 
-## ⌨️ Logitech Keyboard Cheat Sheets
+## ⌨️ Keyboard Cheat Sheets
 
 ### Logitech Pebble Keys 2 K380s
 
 Similar to the K380 but needed remapping for:
 
 - `PrntScrn`
-- `Home`
-- `End`
-- `Page Up`
-- `Page Down`
-
-> 🧹 Logitech, take notes from the Rapoo folks!
 
 ![Pebble K380s](https://github.com/indykish/dotfiles/assets/1402479/0c127ed6-6cf6-4465-bc68-14070958cbfe)
 
@@ -72,26 +56,9 @@ Shortcut key references:
 
 ---
 
-## 🐧 ArchLinux Setup Notes
-
-Steps and tweaks needed post-install to get the workstation dev-ready.
-
-### 🔧 Fixing Git Permission Errors
+## 🔧 Fixing Git Permission Errors
 
 ![git-permissions](https://github.com/indykish/dotfiles/assets/1402479/bcef5bc1-f56c-4716-a577-81830f442cf0)
-
----
-
-### 🧰 Essential Tools
-
-Install using `trizen`:
-
-```bash
-trizen libreoffice
-trizen flameshot
-trizen mise
-trizen docker
-```
 
 ---
 
@@ -151,11 +118,9 @@ To verify key mappings like Ctrl+V:
 
 ---
 
-## 🩹 Using Ansible
+## 🩹 Setup your system
 
-Automate workstation setup using Ansible during OS installation.
-
-> 🧼 Runs locally without daemons or agents.
+The run.sh installs ansible and the base packages to jumpstart the system.
 
 ### ▶️ Run Setup Script
 
@@ -163,35 +128,3 @@ Automate workstation setup using Ansible during OS installation.
 sh run.sh
 ```
 
----
-
-## 📋 Product Management
-
-### ✍️ Writing Good User Stories
-
-```
-As a (type of user), I want to (perform some action) so that I (can achieve some goal/result/value).
-```
-
----
-
-### ✅ Acceptance Criteria
-
-📖 [More on writing clear criteria](https://rubygarage.org/blog/clear-acceptance-criteria-and-why-its-important)
-
-```gherkin
-Scenario #1: User submits feedback form with valid data
-
-* Given I’m a logged-in or guest user
-  When I open the Feedback page
-  Then the system shows me the Submit Feedback form with “Email”, “Name”, and “Comment” fields (required)
-  When I fill in the “Email” field with a valid email address
-  And I fill in the “Name” field with my name
-  And I fill in the “Comment” field with my comment
-  And I click the “Submit Feedback” button
-  Then the system submits my feedback
-  And the system shows the “You’ve successfully submitted your feedback” message
-  And the form fields are cleared
-```
-
----

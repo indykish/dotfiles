@@ -5,8 +5,9 @@
   become: false
 
   vars:
+    home_dir: "{{ ansible_env.HOME }}"
     install_dir: "{{ ansible_env.HOME }}/bin"
-    version_log: "{{ ansible_env.HOME }}/dotfile-run.txt"
+    version_log: "{{ ansible_env.HOME }}/bin/dotfile-runs.txt"
 
   tasks:
     - name: Ensure required directories exist
@@ -132,3 +133,24 @@
             - gnome-tweaks 
             - gnome-shell-extension-appindicator
           state: present
+    
+    - name: Downloading Ollama with progress...
+      shell: |
+        curl -L  --progress-bar https://ollama.com/download/ollama-linux-amd64.tgz -o "{{ install_dir }}/ollama-linux-amd64.tgz"
+      args:
+        executable: /bin/bash
+    
+  
+    - name: Extract Ollama binary to ~/bin
+      unarchive:
+        src: "{{ install_dir }}/ollama-linux-amd64.tgz"
+        dest: "{{ home_dir }}"
+        remote_src: yes
+        mode: '0755'
+
+    - name: Ensure Ollama binary is executable
+      file:
+        path: "{{ home_dir }}/bin/ollama"
+        mode: '0755'
+        state: file
+          
