@@ -16,7 +16,7 @@ if [ -f "$HOME/.ssh/id_ed25519" ]; then
     # Set proper permissions for SSH directory and key
     chmod 700 "$HOME/.ssh"
     chmod 600 "$HOME/.ssh/id_ed25519"
-    
+
     # Start SSH agent if not already running
     if [ -z "$SSH_AGENT_PID" ] || ! ps -p $SSH_AGENT_PID > /dev/null; then
         echo "[+] Starting SSH agent..."
@@ -58,6 +58,8 @@ eval "$(mise activate bash)"
 
 # Step 5: Run the Ansible playbook
 echo "[+] Running Ansible playbook..."
-ansible-playbook --verbose playbook.yml
+ansible-playbook --verbose playbook.yml -K
+
+sudo pacman -Rns $(pacman -Qdtq)
 
 echo "[✓] Done."

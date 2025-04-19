@@ -102,7 +102,7 @@
     # Use mise to install tools and languages
     - name: Use mise to install tools and languages
       shell: |
-        mise install -v caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go 
+        mise install -v caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go
         mise use -g -v caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go
         mise list -v > {{ version_log }}
       args:
@@ -128,7 +128,7 @@
         content: |
           #!/bin/bash
           jupyter lab --notebook-dir=~/code/jupyter
-        mode: '0755'
+        mode: "0755"
 
     # Install Visual Studio Code via pacman
     - name: Install VSCode
@@ -209,7 +209,7 @@
       when: vim_clipboard.stdout.find('+clipboard') == -1 and vim_clipboard.stdout.find('+xterm_clipboard') == -1
       args:
         executable: /bin/bash
-      ignore_errors: true  
+      ignore_errors: true
 
     # Ollama download and installation with conditional extract
     - name: Get remote Ollama tarball metadata
@@ -244,12 +244,21 @@
         src: "{{ ollama_file }}"
         dest: "{{ home_dir }}"
         remote_src: yes
-        mode: '0755'
+        mode: "0755"
       when: ollama_download_needed
 
     - name: Ensure Ollama binary is executable
       file:
         path: "{{ home_dir }}/bin/ollama"
-        mode: '0755'
+        mode: "0755"
         state: file
       when: ollama_download_needed
+
+    # Install Zed if not already present
+    - name: Install Zed if not already present
+      shell: |
+        if ! command -v zed &> /dev/null; then
+          curl -f https://zed.dev/install.sh | sh
+        fi
+      args:
+        executable: /bin/bash
