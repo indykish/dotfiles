@@ -169,7 +169,7 @@
               (ollama_remote['headers']['Last-Modified'] | to_datetime('%a, %d %b %Y %H:%M:%S %Z') > (ollama_local.stat.mtime | to_datetime('%s')))
             )
 
-    - name: Extract Ollama binary to ~/bin
+    - name: Extract Ollama binary to ~/
       unarchive:
         src: "{{ ollama_file }}"
         dest: "{{ home_dir }}"
