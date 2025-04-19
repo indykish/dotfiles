@@ -6,11 +6,11 @@ This is an opinionated repository containing configuration files like `.bashrc`,
 
 ## 📚 Table of Contents
 
-- [Operating Systems](#operating-systems)
-- [Install](#install)
-- [Logitech Keyboard Cheat Sheets](#logitech-keyboard-cheat-sheets)
-  - [Pebble Keys 2 K380s](#logitech-pebble-keys-2-k380s)
-  - [Logitech K380](#logitech-k380)
+- [Operating Systems](#-operating-systems)
+- [Install](#-install)
+- Keyboard Cheat Sheets
+  - [Pebble 2](#pebble-2)
+  - [K380](#k380)
 
 ---
 
@@ -36,7 +36,7 @@ sh run.sh
 
 ## ⌨️ Keyboard Cheat Sheets
 
-### Logitech Pebble Keys
+### Pebble 2
 
 Similar to the K380 but needs remapping for `PrntScrn`
 
@@ -44,7 +44,7 @@ Similar to the K380 but needs remapping for `PrntScrn`
 
 ---
 
-### Logitech K380
+### K380
 
 Please refer the screenshot for the below key references:
 
