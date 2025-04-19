@@ -4,10 +4,30 @@ set -e
 
 echo "[+] Bootstrapping your setup..."
 
-# Step 1: Download and source custom .bashrc
+# Step 0: Download and source custom .bashrc
 echo "[+] Downloading your .bashrc..."
 curl -fsSL https://raw.githubusercontent.com/indykish/dotfiles/master/.bashrc -o "$HOME/.bashrc"
 
+# Step 1: SSH key setup automation
+echo "[+] Setting up SSH configuration..."
+# Check if SSH key exists
+if [ -f "$HOME/.ssh/id_ed25519" ]; then
+    echo "[+] Found SSH key, setting proper permissions..."
+    # Set proper permissions for SSH directory and key
+    chmod 700 "$HOME/.ssh"
+    chmod 600 "$HOME/.ssh/id_ed25519"
+    
+    # Start SSH agent if not already running
+    if [ -z "$SSH_AGENT_PID" ] || ! ps -p $SSH_AGENT_PID > /dev/null; then
+        echo "[+] Starting SSH agent..."
+        eval $(ssh-agent -s)
+    else
+        echo "[+] SSH agent already running."
+    fi
+else
+    echo "[!] SSH key not found at $HOME/.ssh/id_ed25519. Exiting."
+    exit 1
+fi
 
 # Step 2: Install dependencies for mise and ansible
 echo "[+] Installing base packages..."

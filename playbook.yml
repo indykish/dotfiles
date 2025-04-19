@@ -20,6 +20,9 @@
       - docker-compose
       - ttf-nerd-fonts-symbols
       - ttf-nerd-fonts-symbols-common
+      - vim
+      - ripgrep
+      - wl-clipboard
 
   tasks:
     # Ensure directory structure exists
@@ -30,9 +33,13 @@
       loop:
         - "{{ install_dir }}"
         - "{{ ansible_env.HOME }}/code/py"
+        - "{{ ansible_env.HOME }}/code/jupyter"
         - "{{ ansible_env.HOME }}/code/node"
         - "{{ ansible_env.HOME }}/code/rust"
         - "{{ ansible_env.HOME }}/.config/autostart"
+        - "{{ ansible_env.HOME }}/.vim/swap"
+        - "{{ ansible_env.HOME }}/.vim/backup"
+        - "{{ ansible_env.HOME }}/.vim/undo"
 
     # Ensure git is present for AUR build process
     - name: Ensure git is installed for AUR build
@@ -56,13 +63,19 @@
       args:
         creates: /usr/bin/trizen
 
-    # Install oh-my-posh and Nerd Fonts
+    # Install oh-my-posh and Nerd Fonts only if not already present
+    - name: Check if oh-my-posh is installed
+      stat:
+        path: "{{ install_dir }}/oh-my-posh"
+      register: oh_my_posh_stat
+
     - name: Install oh-my-posh
       shell: |
         trizen -Syy
         curl -s https://ohmyposh.dev/install.sh | bash -s -- -d ~/bin
       args:
         executable: /bin/bash
+      when: not oh_my_posh_stat.stat.exists
 
     - name: Initialize oh-my-posh with jandedobbeleer theme in bashrc if not already present
       lineinfile:
@@ -86,7 +99,7 @@
       args:
         executable: /bin/bash
 
-    # Install tools and languages via mise
+    # Use mise to install tools and languages
     - name: Use mise to install tools and languages
       shell: |
         mise install -v caddy shellcheck jq shfmt python node ruby rust cargo mkcert cfssl go 
@@ -94,6 +107,28 @@
         mise list -v > {{ version_log }}
       args:
         executable: /bin/bash
+
+    # Install Jupyter Notebook using pip if not already present
+    - name: Check if Jupyter Notebook is installed
+      command: pip3 show notebook
+      register: jupyter_check
+      failed_when: false
+      changed_when: false
+
+    - name: Ensure Jupyter Notebook is installed
+      pip:
+        name: notebook
+        executable: pip3
+      when: jupyter_check.rc != 0
+
+    # Create j.sh script to launch Jupyter Lab in the code/jupyter directory
+    - name: Create j.sh launcher for Jupyter Lab
+      copy:
+        dest: "{{ install_dir }}/j.sh"
+        content: |
+          #!/bin/bash
+          jupyter lab --notebook-dir=~/code/jupyter
+        mode: '0755'
 
     # Install Visual Studio Code via pacman
     - name: Install VSCode
@@ -146,7 +181,37 @@
           - gnome-shell-extension-appindicator
         state: present
 
-    # Ollama download and installation
+    # Vim Setup
+    - name: Clone Vundle plugin manager
+      git:
+        repo: https://github.com/VundleVim/Vundle.vim.git
+        dest: "{{ ansible_env.HOME }}/.vim/bundle/Vundle.vim"
+
+    - name: Download .vimrc
+      get_url:
+        url: https://raw.githubusercontent.com/indykish/dotfiles/refs/heads/master/.vimrc
+        dest: "{{ ansible_env.HOME }}/.vimrc"
+        mode: "0644"
+
+    - name: Install Vim plugins
+      shell: vim +PluginInstall +qall
+      args:
+        executable: /bin/bash
+
+    - name: Check if Vim supports clipboard
+      shell: vim --version | grep clipboard
+      register: vim_clipboard
+      failed_when: false
+      changed_when: false
+
+    - name: Conditionally install gvim if clipboard support is missing
+      shell: trizen -S --noconfirm gvim
+      when: vim_clipboard.stdout.find('+clipboard') == -1 and vim_clipboard.stdout.find('+xterm_clipboard') == -1
+      args:
+        executable: /bin/bash
+      ignore_errors: true  
+
+    # Ollama download and installation with conditional extract
     - name: Get remote Ollama tarball metadata
       uri:
         url: "{{ ollama_url }}"
@@ -159,25 +224,32 @@
         path: "{{ ollama_file }}"
       register: ollama_local
 
+    - name: Determine if Ollama download is needed
+      set_fact:
+        ollama_download_needed: >-
+          {{ ollama_local.stat.exists == false or (
+             ollama_remote['headers']['Last-Modified'] is defined and
+             (ollama_remote['headers']['Last-Modified'] | to_datetime('%a, %d %b %Y %H:%M:%S %Z') > (ollama_local.stat.mtime | to_datetime('%s')))
+          ) }}
+
     - name: Download Ollama tarball if remote is newer or missing locally
       get_url:
         url: "{{ ollama_url }}"
         dest: "{{ ollama_file }}"
         mode: "0644"
-      when: ollama_local.stat.exists == false or (
-              ollama_remote['headers']['Last-Modified'] is defined and
-              (ollama_remote['headers']['Last-Modified'] | to_datetime('%a, %d %b %Y %H:%M:%S %Z') > (ollama_local.stat.mtime | to_datetime('%s')))
-            )
+      when: ollama_download_needed
 
-    - name: Extract Ollama binary to ~/
+    - name: Extract Ollama binary to ~/bin
       unarchive:
         src: "{{ ollama_file }}"
         dest: "{{ home_dir }}"
         remote_src: yes
         mode: '0755'
+      when: ollama_download_needed
 
     - name: Ensure Ollama binary is executable
       file:
         path: "{{ home_dir }}/bin/ollama"
         mode: '0755'
         state: file
+      when: ollama_download_needed
