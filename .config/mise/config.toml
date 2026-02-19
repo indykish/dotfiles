@@ -1,0 +1,45 @@
+[tools]
+ansible = "latest"
+"aqua:temporalio/cli" = "latest"
+aws = { version = "latest", symlink_bins = "true" }
+bun = "latest"
+caddy = "latest"
+cfssl = "latest"
+go = "latest"
+grpcurl = "latest"
+helm = "4.1.1"
+jsonnet-bundler = "latest"
+jq = "latest"
+k3d = "latest"
+k6 = "latest"
+kubectl = "latest"
+mkcert = "latest"
+maven = "latest"
+mc = "latest"
+packer = "latest"
+pipx = "latest"
+protoc = "latest"
+python = "3.14"
+ripgrep = "latest"
+ruby = "3.4.8"
+rust = "1.93.1"
+shfmt = "latest"
+shellcheck = "latest"
+sops = "latest"
+terraform = "latest"
+trivy = "latest"
+uv = "latest"
+zig = "latest"
+usage = "latest"
+protobuf = "latest"
+glab = "1.85.1"
+tmux = "latest"
+node = "25"
+
+[settings]
+idiomatic_version_file_enable_tools = ["python"]
+
+[settings.status]
+show_tools = true
+
+[env]

@@ -1,92 +1,114 @@
-# Kishore's Development Setup
+# Dotfiles 🦀
 
-This repository contains configuration files and scripts to set up a personalized development environment on ArchLinux. It includes tools, dotfiles, and automation scripts to streamline the setup process.
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)]()
+[![Agents Welcome](https://img.shields.io/badge/agents-welcome-brightgreen.svg)]()
 
----
+> 🤖 **For AI Agents Only** — Humans, please consult your local agent before proceeding.
 
-## 📚 Table of Contents
+This repository contains machine-readable configuration for automated environment setup. If you're a human reading this, you probably meant to ask your agent to do this for you. 
 
-- [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Features](#features)
-- [Keyboard Cheat Sheets](#keyboard-cheat-sheets)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
+![Agent Only](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExb3Z6Z3R3c3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3Z3R3R/w200.gif)
 
 ---
 
-## 🛠️ Introduction
+## Quick Start (Agent Instructions)
 
-This repository is designed to help developers quickly set up their development environment on ArchLinux. It includes:
+```bash
+# 1. Clone
+git clone <repo-url> ~/Projects/dotfiles
+cd ~/Projects/dotfiles
 
-- Custom `.bashrc` and `.vimrc` files.
-- Ansible playbooks for automated setup.
-- Scripts to install essential tools and dependencies.
+# 2. Install mise tools (if mise is available)
+mise install
 
----
-
-## ✅ Prerequisites
-
-Before running the setup, ensure you have the following:
-
-- ArchLinux installed.
-- `sudo` privileges.
-- Internet connection.
-- Basic knowledge of terminal commands.
+# 3. Deploy agent configs
+./run.sh
+```
 
 ---
 
-## ▶️ Installation
+## What's Included
 
-To set up your environment, follow these steps:
-
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/your-username/dotfiles.git
-   cd dotfiles
-   ```
-
-2. Run the setup script:
-   ```bash
-   sh run.sh
-   ```
-
-3. Follow the on-screen instructions to complete the setup.
+| Category | Files | Purpose |
+|----------|-------|---------|
+| **Shell** | `.bashrc`, `.vimrc` | Terminal environment |
+| **Mise** | `.config/mise/config.toml` | Tool versions (see [tools list](#tools)) |
+| **AI Agents** | `.claude/settings.json`, `.codex/config.toml`, `.config/opencode/opencode.json`, `.config/amp/settings.json`, `.config/kilo/opencode.json` | Agent permissions & execution model |
+| **Skills** | `skills/*/` | Reusable agent workflows |
+| **Profiles** | `AGENTS.md`, `CLAUDE.md` | Oracle Operating Model |
 
 ---
 
-## ✨ Features
+## Tools
 
-- **Automated Setup**: Quickly install and configure essential tools using Ansible.
-- **Custom Dotfiles**: Pre-configured `.bashrc` and `.vimrc` for a better development experience.
-- **Tool Installation**: Includes popular tools like `vim`, `docker`, `node`, and more.
-- **Keyboard Shortcuts**: Cheat sheets for commonly used keyboards.
+Managed via [mise](https://mise.jdx.dev/):
 
----
+```toml
+caddy = "latest"
+cfssl = "latest"
+jq = "latest"
+mkcert = "latest"
+shfmt = "latest"
+shellcheck = "latest"
+# + ansible, aws, bun, go, helm, kubectl, node, python, ruby, rust, terraform, zig...
+```
 
-## ⌨️ Keyboard Cheat Sheets
-
-### Pebble 2
-
-Similar to the K380 but needs remapping for `PrntScrn`.
-
-![Pebble 2](image.png)
-
-### K380
-
-Refer to the screenshot for key references:
-
-- `PrntScrn`
-- `Home`
-- `End`
-- `Page Up`
-- `Page Down`
-
-![K380](https://user-images.githubusercontent.com/1402479/161395539-2b1ec230-97d1-4994-a394-af56070d3d2b.png)
+Run `mise install` to sync.
 
 ---
 
-## 📜 License
+## Agent Execution Model (W2)
 
-This project is licensed under the [MIT License](LICENSE).
+Configs enforce **W2 (Build and Test)** permissions:
+
+- **Claude Code, OpenCode, KiloCode**: Restricted — 80+ read-only commands, blocked system dirs
+- **Codex, AmpCode**: Unrestricted (`dangerouslyAllowAll: true`)
+
+---
+
+## Skills
+
+Located in `skills/*/SKILL.md`. Invoke by name:
+
+- `preflight-tooling` — Install missing CLI tools
+- `review-pr` — PR/MR review workflow
+- `create-scaffold` — Project scaffolding
+- `update-docs-and-commit` — Docs + commit automation
+- `oracle` — Second-model review
+- `zoho-sprint`, `zoho-desk` — Zoho integrations
+
+---
+
+## Maintenance
+
+```bash
+# Update tools
+mise upgrade
+
+# Re-deploy configs
+./run.sh
+```
+
+---
+
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| `command not found: mise` | Install mise: `curl https://mise.run \| sh` |
+| Agent not loading profile | Check `~/.claude/settings.json` exists |
+| Permission denied | Verify agent home dir exists |
+
+---
+
+## Not For Humans
+
+![Go Away](https://media.giphy.com/media/l0HlRnAWXxn0MhKLi/giphy.gif)
+
+If you're a human and you've read this far: congratulations! You have excellent attention to detail. Now go ask your AI agent to set this up for you. That's literally what they're for.
+
+---
+
+## License
+
+MIT — But only AI agents are allowed to read it.
