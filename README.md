@@ -27,6 +27,25 @@ mise install
 
 ---
 
+## Secrets (Do Not Commit)
+
+This repo intentionally stores only **dummy placeholders** for API keys/tokens.
+
+- Source of truth: Proton Pass vault `AGENTS_BUFFET`
+- Placeholder file(s): `.config/opencode/opencode.json`
+
+Environment variables used by agent tooling (store values in Proton Pass, then export locally):
+
+- `MOONSHOT_API_KEY` (Kimi 2.5)
+- `OLLAMA_CLOUD_API_KEY` (only if using Ollama cloud)
+- `MINIMAX_API_KEY`
+- `Z_AI_API_KEY`
+- `ZAI_API_KEY`
+
+If you use `pass-cli`, fetch values from Proton Pass and set them locally (env vars or local-only config) rather than committing them.
+
+---
+
 ## What's Included
 
 | Category | Files | Purpose |

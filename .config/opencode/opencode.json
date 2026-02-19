@@ -1,155 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "permissions": {
-    "allow": [
-      "ls:*",
-      "ll:*",
-      "pwd:*",
-      "cd:*",
-      "tree:*",
-      "file:*",
-      "stat:*",
-      "gstat:*",
-      "readlink:*",
-      "realpath:*",
-      "dirname:*",
-      "basename:*",
-      "which:*",
-      "command:*",
-      "uname:*",
-      "hostname:*",
-      "whoami:*",
-      "id:*",
-      "cat:*",
-      "nl:*",
-      "head:*",
-      "tail:*",
-      "less:*",
-      "wc:*",
-      "echo:*",
-      "printf:*",
-      "grep:*",
-      "rg:*",
-      "fd:*",
-      "find:*",
-      "gfind:*",
-      "parallel:*",
-      "du:*",
-      "df:*",
-      "ps:*",
-      "pgrep:*",
-      "pkill:*",
-      "top:*",
-      "htop:*",
-      "test:*",
-      "[:*",
-      "source:*",
-      "chmod:*",
-      "xargs:*",
-      "sort:*",
-      "uniq:*",
-      "cut:*",
-      "awk:*",
-      "gawk:*",
-      "sed:*",
-      "gsed:*",
-      "diff:*",
-      "cmp:*",
-      "open:*",
-      "pbcopy:*",
-      "pbpaste:*",
-      "mdls:*",
-      "defaults:*",
-      "launchctl:*",
-      "dtruss:*",
-      "lsof:*",
-      "vm_stat:*",
-      "sysctl:*",
-      "networksetup:*",
-      "scutil:*",
-      "git:*",
-      "jj:*",
-      "npm:*",
-      "pnpm:*",
-      "bun:*",
-      "cargo:*",
-      "go:*",
-      "zig:*",
-      "node:*",
-      "mise:*",
-      "brew:*",
-      "zed:*",
-      "claude:*",
-      "kilo:*",
-      "opencode:*",
-      "amp:*",
-      "codex:*",
-      "rustc:*",
-      "terraform:*",
-      "ansible-playbook:*",
-      "helm:*",
-      "docker:*",
-      "kubectl:*",
-      "ssh:*",
-      "curl:*",
-      "pyenv:*",
-      "uv:*",
-      "python3:*",
-      "python:*",
-      "sips:*",
-      "imageoptim:*",
-      "trash:*",
-      "tmux:*",
-      "gh:*",
-      "glab:*",
-      "pass-cli:*",
-      "axe:*",
-      "oracle:*",
-      "npx:*",
-      "bunx:*",
-      "stagehand:*",
-      "playwright:*",
-      "xcrun:*",
-      "simctl:*"
-    ],
-    "deny": [
-      "*:/usr/*",
-      "*:/bin/*",
-      "*:/sbin/*",
-      "*:/etc/*",
-      "*:/opt/*",
-      "*:/System/*",
-      "*:/Library/*",
-      "*:/private/var/db/*",
-      "*:/private/var/root/*",
-      "*:/var/db/*",
-      "*:/var/root/*",
-      "rm:*"
-    ]
-  },
-  "directories": {
-    "allowed": [
-      "~/",
-      "/tmp/",
-      "/var/tmp/",
-      "./",
-      "../",
-      "/Users/"
-    ],
-    "blocked": [
-      "/usr/",
-      "/bin/",
-      "/sbin/",
-      "/etc/",
-      "/opt/",
-      "/System/",
-      "/Library/",
-      "/private/var/db/",
-      "/private/var/root/",
-      "/var/db/",
-      "/var/root/"
-    ]
-  },
   "tui": {
     "scroll_acceleration": {
       "enabled": true
@@ -165,14 +15,14 @@
     },
     "web-reader": {
       "headers": {
-        "Authorization": "Bearer 285d0578bcf94fa48b33d108309d79af.KeqV3DrcSWHrVQJ8"
+        "Authorization": "Bearer <ENV:ZAI_MCP_AUTH_TOKEN>"
       },
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/web_reader/mcp"
     },
     "web-search-prime": {
       "headers": {
-        "Authorization": "Bearer 285d0578bcf94fa48b33d108309d79af.KeqV3DrcSWHrVQJ8"
+        "Authorization": "Bearer <ENV:ZAI_MCP_AUTH_TOKEN>"
       },
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/web_search_prime/mcp"
@@ -184,14 +34,15 @@
         "@z_ai/mcp-server"
       ],
       "environment": {
-        "Z_AI_API_KEY": "285d0578bcf94fa48b33d108309d79af.KeqV3DrcSWHrVQJ8",
-        "Z_AI_MODE": "ZAI"
+        "Z_AI_API_KEY": "<ENV:Z_AI_API_KEY>",
+        "Z_AI_MODE": "ZAI",
+        "ZAI_API_KEY": "<ENV:ZAI_API_KEY>"
       },
       "type": "local"
     },
     "zread": {
       "headers": {
-        "Authorization": "Bearer 285d0578bcf94fa48b33d108309d79af.KeqV3DrcSWHrVQJ8"
+        "Authorization": "Bearer <ENV:ZAI_MCP_AUTH_TOKEN>"
       },
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/zread/mcp"
@@ -210,7 +61,8 @@
       "name": "Ollama (local)",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "baseURL": "http://localhost:11434/v1"
+        "baseURL": "http://localhost:11434/v1",
+        "apiKey": "<ENV:OLLAMA_CLOUD_API_KEY>"
       }
     },
     "modal": {
@@ -218,7 +70,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "https://api.us-east-1.modal.direct/v1",
-        "apiKey": "modalresearch_epcteMaQ_37yCd8eg9I7cDJARp72uGv_6jew3vcXnU4"
+        "apiKey": "<ENV:MODAL_API_KEY>"
       },
       "models": {
         "zai-org/GLM-5-FP8": {
@@ -230,7 +82,7 @@
       "name": "Moonshot",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "apiKey": "sk-rDTgCcMv4EsSGO2529hRzm23DSICkihdamn1celNb9W2q3D9",
+        "apiKey": "<ENV:MOONSHOT_API_KEY>",
         "baseURL": "https://api.moonshot.ai/v1"
       },
       "models": {

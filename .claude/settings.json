@@ -56,7 +56,7 @@
       "Bash(top:*)",
       "Bash(htop:*)",
       "Bash(test:*)",
-      "Bash(\[:*)",
+      "Bash([:*)",
       "Bash(source:*)",
       "Bash(chmod:*)",
       "Bash(xargs:*)",
