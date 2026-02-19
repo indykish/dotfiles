@@ -47,9 +47,9 @@ mise use -g aqua:temporalio/cli@latest
 bun add -g @steipete/oracle
 
 # Optional (install only if needed)
-# mise use -g zig@latest
-# brew install tailscale
-# brew install --cask zed
+mise use -g zig@latest
+brew install tailscale
+brew install --cask zed
 ```
 
 Then verify each required command with `command -v <tool>`.
