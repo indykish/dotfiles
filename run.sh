@@ -21,6 +21,7 @@ AGENT_MAP=(
 # Format: source_path:destination_path:description
 CONFIG_MAP=(
   "$ROOT_DIR/.claude/settings.json:$HOME/.claude/settings.json:Claude Code settings"
+  "$ROOT_DIR/.claude-e2e/settings.json:$HOME/.claude-e2e/settings.json:Claude E2E settings"
   "$ROOT_DIR/.codex/config.toml:$HOME/.codex/config.toml:Codex config"
   "$ROOT_DIR/.config/opencode/opencode.json:$HOME/.config/opencode/opencode.json:OpenCode config"
   "$ROOT_DIR/.config/amp/settings.json:$HOME/.config/amp/settings.json:Amp settings"
