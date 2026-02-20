@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-02-20
+
+### Changed
+- **Dotfiles sync standardized** — Tree structure aligned with ai-jumpstart as canonical source of truth
+- **Stale files cleaned up** — Removed orphaned `skills/go.md`, `skills/python.md`, `skills/SKILL.md`, root-level `status-line.sh`, `setup-owner.sh`, and duplicate `docs/mac-vm.md` from dotfiles
+- **`mise.toml` consolidated** — Removed stale root-level `mise.toml` from dotfiles; authoritative config lives at `.config/mise/config.toml`
+
 ## [2.6.0] - 2026-02-20
 
 ### Added
@@ -146,7 +153,9 @@ Then start from `skills/preflight-tooling.md`.
   - Enhanced Typical Workflow diagram with code review and CAL usage example
   - Added skill design principles from Principal Engineer review
 
-[Unreleased]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.5.0...HEAD
+[Unreleased]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.7.0...HEAD
+[2.7.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.6.0...v2.7.0
+[2.6.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.5.0...v2.6.0
 [2.5.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.4.0...v2.5.0
 [2.4.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.0.0...v2.4.0
 [2.0.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v1.0.0...v2.0.0
