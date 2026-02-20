@@ -2,7 +2,7 @@
 
 ## Reference Repo
 
-- `/Users/kishore/Projects/typescript/branding`
+- `$HOME/Projects/typescript/branding`
 
 ## Stack Inputs
 

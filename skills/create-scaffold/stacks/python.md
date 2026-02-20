@@ -2,8 +2,8 @@
 
 ## Reference Repos
 
-- `/Users/kishore/Projects/marketplace_api`
-- `/Users/kishore/Projects/secrets_manager`
+- `$HOME/Projects/marketplace_api` — if missing, clone `git@awakeninggit.e2enetworks.net:cloud/marketplace-api.git`
+- `$HOME/Projects/cache_access_layer` — if missing, clone `git@awakeninggit.e2enetworks.net:cloud/cache_access_layer.git`
 
 ## Stack Inputs
 

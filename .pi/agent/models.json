@@ -1,0 +1,29 @@
+{
+  "providers": {
+    "ollama": {
+      "baseUrl": "http://localhost:11434/v1",
+      "api": "openai-completions",
+      "apiKey": "${OLLAMA_CLOUD_API_KEY}",
+      "models": [
+        { "id": "deepseek-v3.2:cloud", "name": "DeepSeek V3.2 (Cloud)" },
+        { "id": "qwen3-coder-next:cloud", "name": "Qwen3 Coder Next (Cloud)" }
+      ]
+    },
+    "modal": {
+      "baseUrl": "https://api.us-east-1.modal.direct/v1",
+      "api": "openai-completions",
+      "apiKey": "${MODAL_API_KEY}",
+      "models": [
+        { "id": "zai-org/GLM-5-FP8", "name": "GLM-5 FP8" }
+      ]
+    },
+    "moonshot": {
+      "baseUrl": "https://api.moonshot.ai/v1",
+      "api": "openai-completions",
+      "apiKey": "${MOONSHOT_API_KEY}",
+      "models": [
+        { "id": "kimi-k2.5", "name": "Kimi K2.5" }
+      ]
+    }
+  }
+}

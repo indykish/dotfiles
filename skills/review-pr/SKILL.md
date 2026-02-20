@@ -1,11 +1,11 @@
 ---
 name: review-pr
-description: Review PR/MR diffs for regressions, risks, and missing tests. Handles frontend, backend, and infrastructure changes with forge-aware CLI workflows.
+description: Review PR/MR diffs for regressions, risks, and missing tests with forge-aware CLI workflows.
 ---
 
 # Review PR
 
-Review a pull request or merge request by analyzing only the changed code. Covers frontend, backend, and infrastructure concerns.
+Review a pull request or merge request by analyzing only the changed code.
 
 ## When to Use
 
@@ -90,57 +90,27 @@ Review only the changed lines and their immediate context. Do not review unchang
 - Functions/methods focused on a single responsibility?
 - No duplicated logic that should be extracted?
 
-### Domain-Specific
-
-**Frontend / UI:**
-- Component structure follows framework conventions? (React hooks rules, Vue composition API)
-- Accessibility (a11y) considerations? (ARIA labels, keyboard navigation, focus management)
-- Responsive design implemented? (mobile breakpoints, touch targets)
-- Error boundaries present for crash isolation?
-- Loading states and skeletons for async data?
-- Bundle size impact? (new dependencies, tree-shaking, lazy loading)
-- CSS organization? (BEM, CSS-in-JS, utility classes)
-- Form validation and error messaging?
-- Image optimization? (formats, lazy loading, responsive images)
-
-**Backend / API:**
-- Database transactions used where needed? (multi-table operations, financial data)
-- API rate limiting considered? (throttling, abuse prevention)
-- Caching strategy appropriate? (TTL, cache invalidation, stale-while-revalidate)
-- Pagination for list endpoints? (offset vs cursor-based for large datasets)
-- Input validation at API boundary? (schema validation, sanitization)
-- Error responses follow consistent format? (status codes, error codes, messages)
-- Async processing for long operations? (queues, background jobs)
-- Logging appropriate level? (structured logs, no PII in logs)
-- Circuit breakers for external calls? (resilience patterns)
-- Database query optimization? (indexes, N+1 prevention, query complexity)
-
 ### Language-Specific
 
 **Python:**
 - Type hints on new functions?
 - Context managers for resources? (`with` for files, connections)
 - f-strings instead of `.format()` or `%`?
-- FastAPI: dependency injection used correctly?
-- Django: ORM queries optimized? (select_related, prefetch_related)
 
 **Go:**
 - Errors checked and wrapped with context?
 - Defer used for cleanup?
 - No goroutine leaks? (context cancellation, WaitGroup)
-- HTTP handlers have proper timeouts?
 
 **Rust:**
 - `unwrap()`/`expect()` justified or replaced with proper error handling?
 - Ownership/borrowing correct? (no unnecessary clones)
 - `unsafe` blocks justified and documented?
-- Async runtime boundaries clear?
 
 **TypeScript:**
 - No `any` without justification?
 - Proper null/undefined handling?
 - Async/await errors caught?
-- Strict mode enabled in tsconfig?
 
 ## Output Format
 

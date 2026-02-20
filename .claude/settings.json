@@ -126,42 +126,6 @@
       "Bash(xcrun:*)",
       "Bash(simctl:*)"
     ],
-    "deny": [
-      "Bash(*:/usr/*)",
-      "Bash(*:/bin/*)",
-      "Bash(*:/sbin/*)",
-      "Bash(*:/etc/*)",
-      "Bash(*:/opt/*)",
-      "Bash(*:/System/*)",
-      "Bash(*:/Library/*)",
-      "Bash(*:/private/var/db/*)",
-      "Bash(*:/private/var/root/*)",
-      "Bash(*:/var/db/*)",
-      "Bash(*:/var/root/*)",
-      "Bash(rm:*)"
-    ]
-  },
-  "directories": {
-    "allowed": [
-      "~/",
-      "/tmp/",
-      "/var/tmp/",
-      "./",
-      "../",
-      "/Users/"
-    ],
-    "blocked": [
-      "/usr/",
-      "/bin/",
-      "/sbin/",
-      "/etc/",
-      "/opt/",
-      "/System/",
-      "/Library/",
-      "/private/var/db/",
-      "/private/var/root/",
-      "/var/db/",
-      "/var/root/"
-    ]
+    "deny": []
   }
 }

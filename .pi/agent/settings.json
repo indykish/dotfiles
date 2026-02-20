@@ -1,0 +1,6 @@
+{
+  "lastChangelogVersion": "0.54.0",
+  "defaultProvider": "modal",
+  "defaultModel": "zai-org/GLM-5-FP8",
+  "defaultThinkingLevel": "off"
+}

@@ -1,6 +1,10 @@
 {
-  "permissions": {
+  "permission": {
+    "ask": ["*"],
     "allow": [
+      "git:*",
+      "npm:*",
+      "grep:*",
       "ls:*",
       "ll:*",
       "pwd:*",
@@ -27,7 +31,6 @@
       "wc:*",
       "echo:*",
       "printf:*",
-      "grep:*",
       "rg:*",
       "fd:*",
       "find:*",
@@ -66,9 +69,7 @@
       "sysctl:*",
       "networksetup:*",
       "scutil:*",
-      "git:*",
       "jj:*",
-      "npm:*",
       "pnpm:*",
       "bun:*",
       "cargo:*",
@@ -110,43 +111,91 @@
       "playwright:*",
       "xcrun:*",
       "simctl:*"
-    ],
-    "deny": [
-      "*:/usr/*",
-      "*:/bin/*",
-      "*:/sbin/*",
-      "*:/etc/*",
-      "*:/opt/*",
-      "*:/System/*",
-      "*:/Library/*",
-      "*:/private/var/db/*",
-      "*:/private/var/root/*",
-      "*:/var/db/*",
-      "*:/var/root/*",
-      "rm:*"
     ]
   },
-  "directories": {
-    "allowed": [
-      "~/",
-      "/tmp/",
-      "/var/tmp/",
-      "./",
-      "../",
-      "/Users/"
-    ],
-    "blocked": [
-      "/usr/",
-      "/bin/",
-      "/sbin/",
-      "/etc/",
-      "/opt/",
-      "/System/",
-      "/Library/",
-      "/private/var/db/",
-      "/private/var/root/",
-      "/var/db/",
-      "/var/root/"
-    ]
+  "tui": {
+    "scroll_acceleration": {
+      "enabled": true
+    }
+  },
+  "mcp": {
+    "playwright": {
+      "command": ["npx", "@playwright/mcp@latest"],
+      "type": "local"
+    },
+    "web-reader": {
+      "headers": {
+        "Authorization": "Bearer {env:ZAI_API_KEY}"
+      },
+      "type": "remote",
+      "url": "https://api.z.ai/api/mcp/web_reader/mcp"
+    },
+    "web-search-prime": {
+      "headers": {
+        "Authorization": "Bearer {env:ZAI_API_KEY}"
+      },
+      "type": "remote",
+      "url": "https://api.z.ai/api/mcp/web_search_prime/mcp"
+    },
+    "zai-vision": {
+      "command": ["npx", "-y", "@z_ai/mcp-server"],
+      "environment": {
+        "Z_AI_API_KEY": "{env:Z_AI_API_KEY}",
+        "Z_AI_MODE": "ZAI",
+        "ZAI_API_KEY": "{env:ZAI_API_KEY}"
+      },
+      "type": "local"
+    },
+    "zread": {
+      "headers": {
+        "Authorization": "Bearer {env:ZAI_API_KEY}"
+      },
+      "type": "remote",
+      "url": "https://api.z.ai/api/mcp/zread/mcp"
+    }
+  },
+  "provider": {
+    "ollama": {
+      "models": {
+        "deepseek-v3.2:cloud": {
+          "name": "deepseek-v3.2:cloud"
+        },
+        "qwen3-coder-next:cloud": {
+          "name": "qwen3-coder-next:cloud"
+        }
+      },
+      "name": "Ollama (local)",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:11434/v1",
+        "apiKey": "{env:OLLAMA_CLOUD_API_KEY}"
+      }
+    },
+    "modal": {
+      "name": "Modal GLM",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://api.us-east-1.modal.direct/v1",
+        "apiKey": "{env:MODAL_API_KEY}"
+      },
+      "models": {
+        "zai-org/GLM-5-FP8": {
+          "name": "GLM-5 FP8"
+        }
+      }
+    },
+    "moonshot": {
+      "name": "Moonshot",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "apiKey": "{env:MOONSHOT_API_KEY}",
+        "baseURL": "https://api.moonshot.ai/v1"
+      },
+      "models": {
+        "kimi-k2.5": {
+          "name": "Kimi K2.5"
+        }
+      }
+    }
   }
 }

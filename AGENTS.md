@@ -12,8 +12,10 @@ No CTO/Engineer split. No mode switching by persona.
 
 ## Owner Profile
 
-- Owner: Kishorekumar Neelamegam (`@indykish`), Discord `indykish9512`, email `nkishore@megam.io`.
-- Hardware: MacBook M2 only.
+> **Setup Required**: Run `./scripts/setup-owner.sh` to personalize this section with your details.
+
+- Owner: {{OWNER_NAME}} (`{{OWNER_HANDLE}}`), Discord `{{DISCORD_HANDLE}}`, email `{{OWNER_EMAIL}}`.
+- Hardware: {{HARDWARE}}.
 - Primary languages: Python, Go, Rust, TypeScript, Zig.
 - Runtime/tool install policy: `mise` first, `brew` fallback.
 - Password tooling: Proton Pass workflow, `pass-cli` preferred when installed.
@@ -32,15 +34,15 @@ Do not add or recommend workflows around:
 Use these references before inventing new patterns:
 
 - This repo.
-- `/Users/kishore/Projects/agent-scripts` (reference patterns only).
+- `$HOME/Projects/agent-scripts` (reference patterns only) — or clone git@github.com:steipete/agent-scripts.git
 - Language/project references:
-  - Python API: `/Users/kishore/Projects/marketplace_api`
-  - Python library: `/Users/kishore/Projects/secrets_manager`
-  - Rust API: `/Users/kishore/Projects/sre/e2e-logging-platform/rust`
-  - Rust library: `/Users/kishore/Projects/manager/cache-kit.rs`
-  - TypeScript: `/Users/kishore/Projects/typescript/branding`
-  - Go: `/Users/kishore/Projects/go/src/github.com/e2eterraformprovider`
-  - Terraform: `/Users/kishore/Projects/sre/three-tier-app-claude`
+  - Python API: `$HOME/Projects/marketplace_api` — or clone git@awakeninggit.e2enetworks.net:cloud/marketplace_api.git
+  - Python library: `$HOME/Projects/cache_access_layer` — or clone git@awakeninggit.e2enetworks.net:cloud/cache_access_layer.git
+  - Rust API: `$HOME/Projects/sre/e2e-logging-platform/rust` — or clone git@awakeninggit.e2enetworks.net:infra/e2e-logging-platform.git
+  - Rust library: `$HOME/Projects/manager/cache-kit.rs` — or clone https://github.com/indykish/cache-kit.rs
+  - TypeScript: `$HOME/Projects/typescript/branding` — or clone git@awakening.e2enetworks.net/cloud/branding.git
+  - Go: `$HOME/Projects/go/src/github.com/e2eterraformprovider` — or clone https://github.com/indykish/terraform-provider-e2e
+  - Terraform: `$HOME/Projects/sre/three-tier-app-claude` — or clone https://github.com/indykish/three-tier-app-claude.git
 
 ## Runtime Routing (Codex/Claude/OpenCode/AmpCode/KiloCode)
 
@@ -65,7 +67,7 @@ Execution pattern:
 - Use `gh`/`glab` CLI for PR/MR/CI operations, not browser-first workflows.
 - If asked to "make a note", update `AGENTS.md` or relevant repo docs.
 - Before updating dotfiles (`.*` files like `.zshrc`, `.gitconfig`, agent configs), create a timestamped backup first and keep edits minimal.
-- Use `trash` for file deletes when available; fallback to `rm` only when needed.
+- Use `trash` for file deletes. `rm` is not auto-allowed — agents will be prompted for approval before `rm` executes.
 - Keep edits small and reviewable; split large files before they become hard to review.
 - Use Conventional Commits when committing is requested.
 - For Oracle CLI assistance, run once per session:
@@ -417,9 +419,8 @@ Optional (feature-dependent):
 ## Notes And Locations
 
 - Blog repo: blank for now.
-- Runbooks target: `/Users/kishore/Projects/manager/runbooks/docs/mac-vm.md`.
 - Local scaffold copy in this repo: `runbooks/docs/mac-vm.md`.
-- Codex limits personal tracker: `/Users/kishore/Documents/indykish/codex limits.md`.
+- Codex limits personal tracker: `$HOME/Documents/indykish/codex limits.md`.
 
 ## Skills Policy
 
