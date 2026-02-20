@@ -146,6 +146,17 @@ main() {
 		shift
 	done
 
+	# 🔍 Check for unset owner placeholders
+	if grep -q '{{OWNER_NAME}}' "$ROOT_DIR/AGENTS.md" 2>/dev/null; then
+		echo -e "\n${YELLOW}⚠️  Your name, email, and handle have not been set up yet.${NC}"
+		read -rp "   Would you like to provide your details now? [Y/n]: " run_setup
+		if [[ "${run_setup:-Y}" =~ ^[Yy]$ ]]; then
+			bash "$ROOT_DIR/scripts/setup-owner.sh"
+		else
+			echo -e "   ${YELLOW}Skipping. Run ./scripts/setup-owner.sh when ready.${NC}"
+		fi
+	fi
+
 	collect_skills
 	deploy_configs
 
