@@ -2,6 +2,8 @@
 
 **Learning resources for AI-native engineering workflows.**
 
+![Version](https://img.shields.io/badge/version-2.7.0-blue)
+
 Jumpstart your journey with AI coding agents through presentations, videos, and guides curated by the E2E Networks engineering team.
 
 ---
