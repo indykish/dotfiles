@@ -55,17 +55,7 @@ mkdir -p ~/.config/e2e/agent-profiles
 chmod 700 ~/.config/e2e/agent-profiles
 ```
 
-**Install the Zoho Sprint CLI script**:
-
-```bash
-cp scripts/zoho-sprint.mjs ~/.config/e2e/agent-profiles/zoho-sprint.mjs
-chmod +x ~/.config/e2e/agent-profiles/zoho-sprint.mjs
-```
-
-**Alternative**: If curl doesn't work, download manually from:
-```
-/Users/kishore/Projects/ai-jumpstart/scripts/zoho-sprint.mjs
-```
+The Zoho Sprint CLI script (`zoho-sprint.mjs`) is already installed to `~/.config/e2e/agent-profiles/` by `run.sh`. No manual copy needed.
 
 ### 4. Ask User to Provide Credentials
 
@@ -212,14 +202,7 @@ node: cannot find module ~/.config/e2e/agent-profiles/zoho-sprint.mjs
 ```
 
 **Solution**:
- Script may not be installed. Run:
-```bash
-cp scripts/zoho-sprint.mjs ~/.config/e2e/agent-profiles/zoho-sprint.mjs
-chmod +x ~/.config/e2e/agent-profiles/zoho-sprint.mjs
-```
-
-Or download manually from:
-/Users/kishore/Projects/ai-jumpstart/scripts/zoho-sprint.mjs
+ Script may not be installed. Re-run `./scripts/run.sh` from the repo root to deploy it.
 
 ### Permission Denied
 

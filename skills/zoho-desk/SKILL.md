@@ -59,17 +59,7 @@ mkdir -p ~/.config/e2e/agent-profiles
 chmod 700 ~/.config/e2e/agent-profiles
 ```
 
-**Install the Zoho Desk CLI script**:
-
-```bash
-cp scripts/zoho-desk.mjs ~/.config/e2e/agent-profiles/zoho-desk.mjs
-chmod +x ~/.config/e2e/agent-profiles/zoho-desk.mjs
-```
-
-**Alternative**: If you are not in repo root, copy from this absolute path:
-```
-/Users/kishore/Projects/ai-jumpstart/scripts/zoho-desk.mjs
-```
+The Zoho Desk CLI script (`zoho-desk.mjs`) is already installed to `~/.config/e2e/agent-profiles/` by `run.sh`. No manual copy needed.
 
 ### 4. Ask User to Provide Credentials
 
@@ -193,14 +183,7 @@ node: cannot find module ~/.config/e2e/agent-profiles/zoho-desk.mjs
 ```
 
 **Solution**:
- Script may not be installed. Run:
-```bash
-cp scripts/zoho-desk.mjs ~/.config/e2e/agent-profiles/zoho-desk.mjs
-chmod +x ~/.config/e2e/agent-profiles/zoho-desk.mjs
-```
-
-Or copy from:
-/Users/kishore/Projects/ai-jumpstart/scripts/zoho-desk.mjs
+ Script may not be installed. Re-run `./scripts/run.sh` from the repo root to deploy it.
 
 ### Permission Denied
 

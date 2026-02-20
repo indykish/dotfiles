@@ -1,5 +1,118 @@
 {
-  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "bash": {
+      "*": "ask",
+      "git:*": "allow",
+      "npm:*": "allow",
+      "grep:*": "allow",
+      "ls:*": "allow",
+      "ll:*": "allow",
+      "pwd:*": "allow",
+      "cd:*": "allow",
+      "tree:*": "allow",
+      "file:*": "allow",
+      "stat:*": "allow",
+      "gstat:*": "allow",
+      "readlink:*": "allow",
+      "realpath:*": "allow",
+      "dirname:*": "allow",
+      "basename:*": "allow",
+      "which:*": "allow",
+      "command:*": "allow",
+      "uname:*": "allow",
+      "hostname:*": "allow",
+      "whoami:*": "allow",
+      "id:*": "allow",
+      "cat:*": "allow",
+      "nl:*": "allow",
+      "head:*": "allow",
+      "tail:*": "allow",
+      "less:*": "allow",
+      "wc:*": "allow",
+      "echo:*": "allow",
+      "printf:*": "allow",
+      "rg:*": "allow",
+      "fd:*": "allow",
+      "find:*": "allow",
+      "gfind:*": "allow",
+      "parallel:*": "allow",
+      "du:*": "allow",
+      "df:*": "allow",
+      "ps:*": "allow",
+      "pgrep:*": "allow",
+      "pkill:*": "allow",
+      "top:*": "allow",
+      "htop:*": "allow",
+      "test:*": "allow",
+      "[:*": "allow",
+      "source:*": "allow",
+      "chmod:*": "allow",
+      "xargs:*": "allow",
+      "sort:*": "allow",
+      "uniq:*": "allow",
+      "cut:*": "allow",
+      "awk:*": "allow",
+      "gawk:*": "allow",
+      "sed:*": "allow",
+      "gsed:*": "allow",
+      "diff:*": "allow",
+      "cmp:*": "allow",
+      "open:*": "allow",
+      "pbcopy:*": "allow",
+      "pbpaste:*": "allow",
+      "mdls:*": "allow",
+      "defaults:*": "allow",
+      "launchctl:*": "allow",
+      "dtruss:*": "allow",
+      "lsof:*": "allow",
+      "vm_stat:*": "allow",
+      "sysctl:*": "allow",
+      "networksetup:*": "allow",
+      "scutil:*": "allow",
+      "jj:*": "allow",
+      "pnpm:*": "allow",
+      "bun:*": "allow",
+      "cargo:*": "allow",
+      "go:*": "allow",
+      "zig:*": "allow",
+      "node:*": "allow",
+      "mise:*": "allow",
+      "brew:*": "allow",
+      "zed:*": "allow",
+      "claude:*": "allow",
+      "kilo:*": "allow",
+      "opencode:*": "allow",
+      "amp:*": "allow",
+      "codex:*": "allow",
+      "rustc:*": "allow",
+      "terraform:*": "allow",
+      "ansible-playbook:*": "allow",
+      "helm:*": "allow",
+      "docker:*": "allow",
+      "kubectl:*": "allow",
+      "ssh:*": "allow",
+      "curl:*": "allow",
+      "pyenv:*": "allow",
+      "uv:*": "allow",
+      "python3:*": "allow",
+      "python:*": "allow",
+      "sips:*": "allow",
+      "imageoptim:*": "allow",
+      "trash:*": "allow",
+      "tmux:*": "allow",
+      "gh:*": "allow",
+      "glab:*": "allow",
+      "pass-cli:*": "allow",
+      "axe:*": "allow",
+      "oracle:*": "allow",
+      "npx:*": "allow",
+      "bunx:*": "allow",
+      "stagehand:*": "allow",
+      "playwright:*": "allow",
+      "xcrun:*": "allow",
+      "simctl:*": "allow"
+    }
+  },
   "tui": {
     "scroll_acceleration": {
       "enabled": true
@@ -7,42 +120,35 @@
   },
   "mcp": {
     "playwright": {
-      "command": [
-        "npx",
-        "@playwright/mcp@latest"
-      ],
+      "command": ["npx", "@playwright/mcp@latest"],
       "type": "local"
     },
     "web-reader": {
       "headers": {
-        "Authorization": "Bearer <ENV:ZAI_MCP_AUTH_TOKEN>"
+        "Authorization": "Bearer {env:ZAI_API_KEY}"
       },
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/web_reader/mcp"
     },
     "web-search-prime": {
       "headers": {
-        "Authorization": "Bearer <ENV:ZAI_MCP_AUTH_TOKEN>"
+        "Authorization": "Bearer {env:ZAI_API_KEY}"
       },
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/web_search_prime/mcp"
     },
     "zai-vision": {
-      "command": [
-        "npx",
-        "-y",
-        "@z_ai/mcp-server"
-      ],
+      "command": ["npx", "-y", "@z_ai/mcp-server"],
       "environment": {
-        "Z_AI_API_KEY": "<ENV:Z_AI_API_KEY>",
         "Z_AI_MODE": "ZAI",
-        "ZAI_API_KEY": "<ENV:ZAI_API_KEY>"
+        "ZAI_API_KEY": "{env:ZAI_API_KEY}",
+        "Z_AI_API_KEY": "{env:ZAI_API_KEY}"
       },
       "type": "local"
     },
     "zread": {
       "headers": {
-        "Authorization": "Bearer <ENV:ZAI_MCP_AUTH_TOKEN>"
+        "Authorization": "Bearer {env:ZAI_API_KEY}"
       },
       "type": "remote",
       "url": "https://api.z.ai/api/mcp/zread/mcp"
@@ -62,7 +168,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "http://localhost:11434/v1",
-        "apiKey": "<ENV:OLLAMA_CLOUD_API_KEY>"
+        "apiKey": "{env:OLLAMA_CLOUD_API_KEY}"
       }
     },
     "modal": {
@@ -70,7 +176,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "https://api.us-east-1.modal.direct/v1",
-        "apiKey": "<ENV:MODAL_API_KEY>"
+        "apiKey": "{env:MODAL_API_KEY}"
       },
       "models": {
         "zai-org/GLM-5-FP8": {
@@ -82,7 +188,7 @@
       "name": "Moonshot",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "apiKey": "<ENV:MOONSHOT_API_KEY>",
+        "apiKey": "{env:MOONSHOT_API_KEY}",
         "baseURL": "https://api.moonshot.ai/v1"
       },
       "models": {

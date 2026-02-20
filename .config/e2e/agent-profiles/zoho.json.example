@@ -1,0 +1,23 @@
+{
+  "current": "sre",
+  "projects": {
+    "sre": {
+      "teamId": "YOUR_TEAM_ID",
+      "projectId": "YOUR_PROJECT_ID",
+      "workspaceName": "your-workspace",
+      "projectNo": "14",
+      "baseUrl": "https://sprintsapi.zoho.com",
+      "defaultItemType": "ITEM_TYPE_ID",
+      "defaultPriority": "PRIORITY_ID"
+    },
+    "discovery": {
+      "teamId": "YOUR_TEAM_ID",
+      "projectId": "YOUR_PROJECT_ID",
+      "workspaceName": "your-workspace",
+      "projectNo": "11",
+      "baseUrl": "https://sprintsapi.zoho.com",
+      "defaultItemType": "ITEM_TYPE_ID",
+      "defaultPriority": "PRIORITY_ID"
+    }
+  }
+}

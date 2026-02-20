@@ -1,0 +1,8 @@
+# CODEOWNERS file for ai-jumpstart repository
+# See: https://docs.gitlab.com/ee/user/project/codeowners/
+
+# Default owner for everything in the repo
+* @kishore.kumar
+
+# Maintainer
+# Kishore Kumar Neelamegam <kishore.kumar@e2enetworks.com>

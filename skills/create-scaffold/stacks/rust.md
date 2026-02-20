@@ -2,8 +2,8 @@
 
 ## Reference Repos
 
-- `/Users/kishore/Projects/sre/e2e-logging-platform/rust`
-- `/Users/kishore/Projects/manager/cache-kit.rs`
+- `$HOME/Projects/sre/e2e-logging-platform/rust` (if missing, clone `awakeninggit.e2enetworks.net/infra/e2e-logging-platform.git`)
+- `$HOME/Projects/manager/cache-kit.rs`
 
 ## Stack Inputs
 
