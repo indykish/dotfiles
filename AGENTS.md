@@ -64,6 +64,7 @@ Execution pattern:
 - Workspace root is `~/Projects`.
 - Use `gh`/`glab` CLI for PR/MR/CI operations, not browser-first workflows.
 - If asked to "make a note", update `AGENTS.md` or relevant repo docs.
+- Before updating dotfiles (`.*` files like `.zshrc`, `.gitconfig`, agent configs), create a timestamped backup first and keep edits minimal.
 - Use `trash` for file deletes when available; fallback to `rm` only when needed.
 - Keep edits small and reviewable; split large files before they become hard to review.
 - Use Conventional Commits when committing is requested.

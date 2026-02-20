@@ -40,9 +40,34 @@ Environment variables used by agent tooling (store values in Proton Pass, then e
 - `OLLAMA_CLOUD_API_KEY` (only if using Ollama cloud)
 - `MINIMAX_API_KEY`
 - `Z_AI_API_KEY`
-- `ZAI_API_KEY`
+- `OPENROUTER_API_KEY`
+- `MODAL_API_KEY`
+- `GITHUB_PERSONAL_ACCESS_TOKEN`
+- `GITLAB_PERSONAL_ACCESS_TOKEN`
+- `OPENAI_API_KEY`
 
-If you use `pass-cli`, fetch values from Proton Pass and set them locally (env vars or local-only config) rather than committing them.
+### Fetching API Keys from Proton Pass
+
+The `.zshrc` caches API keys to `~/.config/clawable/.env_mac` to avoid calling pass-cli on every shell startup.
+
+To refresh the cached keys:
+
+```bash
+mkdir -p ~/.config/clawable
+
+api_keys=""
+for key_name in OLLAMA_CLOUD_API_KEY GITHUB_PERSONAL_ACCESS_TOKEN GITLAB_PERSONAL_ACCESS_TOKEN MODAL_API_KEY MOONSHOT_API_KEY OPENAI_API_KEY OPENROUTER_API_KEY MINIMAX_API_KEY Z_AI_API_KEY; do
+  key_value=$(pass-cli item view --vault-name AGENTS_BUFFET --item-title "$key_name" --field password 2>/dev/null)
+  if [[ -n "${key_value}" ]]; then
+    api_keys+="export ${key_name}='${key_value}'\n"
+  fi
+done
+
+printf "${api_keys}" > ~/.config/clawable/.env_mac
+cat ~/.config/clawable/.env_mac
+```
+
+If you use pass-cli, fetch values from Proton Pass and set them locally (env vars or local-only config) rather than committing them.
 
 ---
 

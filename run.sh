@@ -316,3 +316,7 @@ verify_zoho_files
 
 echo ""
 echo "Done. Skills deployed: ${SKILL_NAMES[*]}"
+echo ""
+echo "Note: If you don't use pass-cli, set API key env vars manually in ~/.zshrc or your shell profile:"
+echo "  OLLAMA_CLOUD_API_KEY GITHUB_PERSONAL_ACCESS_TOKEN GITLAB_PERSONAL_ACCESS_TOKEN"
+echo "  MODAL_API_KEY MOONSHOT_API_KEY OPENAI_API_KEY ZAI_API_KEY Z_AI_API_KEY ZAI_MCP_AUTH_TOKEN"
