@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-02-21
+
+### Added
+- **E2E Networks internal setup** in preflight-tooling skill — `openfortivpn`, `mysql-client`, VPN launch scripts with LaunchAgent plists
+- **VPN env var workflow** — credentials via `~/.env_mac` (no hardcoded passwords); `run.sh` warns to set `VPN_PROD_*` / `VPN_STAGE_*`
+- **Tooling inventory** — E2E internal tools section with `openfortivpn`, `mysql-client`, `font-hack-nerd-font`
+
+### Changed
+- **Oracle skill rewritten** — defaults to `--engine api --model claude-4.5-sonnet` (Claude-first); browser path optional
+- **AGENTS.md** — Oracle tool defaults updated to Claude Sonnet primary, Opus escalation
+- **CLAUDE.md** — Added Oracle skill defaults pointer
+
+### Removed
+- **`AGENTS_OLD.md`** — legacy CTO/Engineer dual-role model (superseded by Oracle Operating Model)
+- **`docs/01-preflight-vpn-localdev.md`** — spec consumed and implemented
+- **`docs/00-oracle-claude-browser-feasibility.md`** — spec consumed and implemented
+
 ## [2.7.0] - 2026-02-20
 
 ### Changed
@@ -153,7 +170,8 @@ Then start from `skills/preflight-tooling.md`.
   - Enhanced Typical Workflow diagram with code review and CAL usage example
   - Added skill design principles from Principal Engineer review
 
-[Unreleased]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.7.0...HEAD
+[Unreleased]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.8.0...HEAD
+[2.8.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.7.0...v2.8.0
 [2.7.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.6.0...v2.7.0
 [2.6.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.5.0...v2.6.0
 [2.5.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.4.0...v2.5.0

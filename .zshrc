@@ -29,6 +29,10 @@ export VISUAL=vim
 # export ARCHFLAGS="-arch $(uname -m)"
 alias claude-e2e="CLAUDE_CONFIG_DIR=~/.claude-e2e claude"
 
+# Keep BSD ls colorized on macOS terminals (Ghostty/Starship only render these colors).
+export CLICOLOR=1
+alias ls='ls -G'
+
 export PATH=$PATH:~/.local/bin
 export MYSQLCLIENT_CFLAGS=$(mysql_config --cflags)
 export MYSQLCLIENT_LDFLAGS=$(mysql_config --libs)

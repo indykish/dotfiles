@@ -75,6 +75,28 @@ deploy_configs() {
 		cp "$ROOT_DIR/$src" "$dst"
 		log "$desc"
 	done
+
+        # Bootstrap ~/.zshrc and ask before replacing an existing user config.
+        if [[ -f "$ROOT_DIR/.zshrc" ]]; then
+                if [[ ! -f "$HOME/.zshrc" ]]; then
+                        cp "$ROOT_DIR/.zshrc" "$HOME/.zshrc"
+                        log "🐚 Zsh shell config (~/.zshrc)"
+                elif [[ -t 0 ]]; then
+                        local install_zshrc backup
+                        echo -e "  ${YELLOW}⚠️  ~/.zshrc already exists. The dotfiles version is opinionated.${NC}"
+                        read -rp "   Install dotfiles .zshrc and replace existing one? [y/N]: " install_zshrc
+                        if [[ "${install_zshrc:-N}" =~ ^[Yy]$ ]]; then
+                                backup="$HOME/.zshrc.bak.$(date +%Y%m%d-%H%M%S)"
+                                cp "$HOME/.zshrc" "$backup"
+                                cp "$ROOT_DIR/.zshrc" "$HOME/.zshrc"
+                                log "🐚 Zsh shell config (~/.zshrc) [backup: $backup]"
+                        else
+                                log "🐚 Skipped ~/.zshrc (kept existing file)"
+                        fi
+                else
+                        log "🐚 Skipped ~/.zshrc (non-interactive shell and file already exists)"
+                fi
+        fi
 }
 
 # 👤 Deploy to agent
