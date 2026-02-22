@@ -53,6 +53,10 @@ elif command -v pass-cli >/dev/null 2>&1; then
     pass-cli item view --vault-name AGENTS_BUFFET --item-title "$1" --field password 2>/dev/null
   }
 
+  _pass_field() {
+    pass-cli item view --vault-name AGENTS_BUFFET --item-title "$1" --field "$2" 2>/dev/null
+  }
+
   mkdir -p "${E2E_AGENT_PROFILES_DIR}"
   : > "${E2E_AGENT_ENV_FILE}"
   chmod 600 "${E2E_AGENT_ENV_FILE}"
@@ -83,6 +87,31 @@ elif command -v pass-cli >/dev/null 2>&1; then
 
   unset _k _v _agent_keys
   unset -f _pass_key
+
+  # Docker registry credentials (username + password fields)
+  _docker_creds() {
+    local vault_item="$1" user_var="$2" pass_var="$3" user pass
+    user=$(_pass_field "$vault_item" username)
+    pass=$(_pass_field "$vault_item" password)
+    [[ -n "$user" && -n "$pass" ]] || return
+    echo "export $user_var=\"$user\"" >> "$E2E_AGENT_ENV_FILE"
+    echo "export $pass_var=\"$pass\"" >> "$E2E_AGENT_ENV_FILE"
+    export "$user_var=$user" "$pass_var=$pass"
+    echo "\033[32m✔\033[0m Pulled $vault_item"
+  }
+
+  _docker_creds DOCKER_REGISTRY_INFRA DOCKER_USER_INFRA DOCKER_PASS_INFRA
+  _docker_creds DOCKER_REGISTRY_MARKETPLACE DOCKER_USER_MARKETPLACE DOCKER_PASS_MARKETPLACE
+  _docker_creds DOCKER_REGISTRY_MYACCOUNT DOCKER_USER_MYACCOUNT DOCKER_PASS_MYACCOUNT
+
+  # Set default DOCKER_USER/DOCKER_PASS from INFRA for backward compatibility
+  if [[ -n "${DOCKER_USER_INFRA:-}" ]]; then
+    echo "export DOCKER_USER=\"$DOCKER_USER_INFRA\"" >> "$E2E_AGENT_ENV_FILE"
+    echo "export DOCKER_PASS=\"$DOCKER_PASS_INFRA\"" >> "$E2E_AGENT_ENV_FILE"
+    export DOCKER_USER="$DOCKER_USER_INFRA" DOCKER_PASS="$DOCKER_PASS_INFRA"
+  fi
+
+  unset -f _pass_field _docker_creds
 fi
 eval "$("${HOME}/.local/bin/mise" activate zsh)"
 
