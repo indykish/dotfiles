@@ -46,9 +46,19 @@ done
 | pass-cli | installed | `~/.local/bin` |
 | tailscale | installed | brew |
 
+### E2E Networks Internal (repos at `awakeninggit.e2enetworks.net`)
+
+| Tool | Status | Source |
+|------|--------|--------|
+| openfortivpn | required (E2E internal) | brew |
+| mysql-client | required (E2E internal) | brew |
+| font-hack-nerd-font | optional | brew cask |
+| iterm2 | optional | brew cask |
+
 ## Notes
 
 - `playwright` is not a global binary; available per-project via `bunx playwright`.
 - `stagehand` is a per-project dependency, not a global CLI.
 - `pass` (GNU pass) removed from baseline; `pass-cli` is the preferred tool.
 - `mabl` and `pnpm` removed from baseline (not required).
+- E2E internal tools gated by sentinel `~/.config/e2e/.localdev_configured`.

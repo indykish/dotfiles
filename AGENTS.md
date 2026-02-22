@@ -91,7 +91,7 @@ Execution pattern:
 - For Oracle CLI assistance, run once per session:
 
 ```bash
-npx -y @steipete/oracle --help
+oracle --help
 ```
 
 ## Docs Discipline
@@ -217,6 +217,60 @@ Exit criteria:
 - No secrets in commits/docs.
 - Prefer CLI and text artifacts. Do not require GUI-only tooling when a CLI path exists.
 
+## Cognitive Discipline
+
+These rules apply to every task, not just second-model reviews. Non-negotiable. Full detail in [`docs/BEHAVIORAL_GUARDRAILS.md`](./docs/BEHAVIORAL_GUARDRAILS.md).
+
+### Non-Trivial Definition
+
+A task is **non-trivial** (triggers full PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT lifecycle) if it:
+
+- Touches more than 1 file
+- Introduces a new abstraction or pattern
+- Modifies a data model or schema
+- Affects an external API or public interface
+- Impacts a security boundary
+- Requires a migration or data backfill
+- Adds an infrastructure dependency
+
+Single-file typos and config value changes are trivial. Everything else: run the lifecycle.
+
+### Confusion Management (Critical)
+
+When encountering inconsistencies, conflicting requirements, or unclear specifications:
+
+1. **STOP** — do not proceed with a guess.
+2. **Name the specific confusion.**
+3. **Present the tradeoff or ask one precise question.**
+4. **Wait for resolution.**
+
+```
+❌ Bad: Silently picking one interpretation and hoping it's right
+✅ Good: "I see X in file A but Y in file B. Which takes precedence?"
+```
+
+Never silently fill in ambiguous requirements. The most common failure mode is making wrong assumptions and running with them unchecked.
+
+### Simplicity Enforcement
+
+Actively resist overcomplication. Before finishing any implementation, ask:
+
+- Can this be done in fewer lines?
+- Are these abstractions earning their complexity?
+- Would a senior dev say "why didn't you just…"?
+
+Prefer the boring, obvious solution. Cleverness is expensive. If 100 lines suffice, 1000 lines is a failure.
+
+### Dead Code Hygiene
+
+After any refactor: identify newly unreachable or redundant code. List it explicitly. Never silently remove without user confirmation.
+
+```
+NEWLY UNREACHABLE AFTER THIS CHANGE:
+- [symbol/file]: [why it's now dead]
+→ Remove these? Confirm before I proceed.
+```
+
 ## Memory Boundaries
 
 Treat model memory as ephemeral and untrusted.
@@ -307,14 +361,15 @@ glab pipeline view
 - Oracle:
 
 ```bash
-npx -y @steipete/oracle --help
+oracle --help
 ```
 
-- Oracle skill defaults for this repo:
-  - Primary: `--engine api --model claude-4.5-sonnet`
-  - Escalation: `--engine api --model claude-4.1-opus`
-  - Browser: optional only (ChatGPT/Gemini), not claude.ai browser automation
-  - API cost guardrail: require explicit user approval before paid runs
+- Oracle review escalation levels:
+  - **Level 1** — Single-agent deterministic (default, Claude Code solo, no review)
+  - **Level 2** — Inline review lens in this session: say *"Oracle review: [question]"* or *"CTO review: [question]"* — agent picks CTO lens (strategic) or Engineer lens (tactical) based on the question; see `skills/oracle/SKILL.md`
+  - **Level 3** — Cross-model CLI review: `npx @indykish/oracle --engine api --model claude-4.6-sonnet` (escalation: `claude-4.6-opus`)
+  - **Level 4** — Parallel execution in worktrees with multi-agent tmux orchestration
+  - API cost guardrail: explicit user approval required before Level 3 CLI runs
 
 ## Editor Notes (Zed)
 
@@ -392,37 +447,7 @@ MCP note:
 
 ## DX Platform Stack (Default)
 
-Use these defaults unless the user or existing repo constraints require otherwise.
-
-1. Website
-   - React 19+ + TypeScript
-   - TailwindCSS + `shadcn/ui` primitives
-   - Brand tokens via CSS variables (e2e-networks palette)
-   - Accessibility: WAI-ARIA + WCAG 2.2 AA + `@axe-core/playwright`
-2. CLI
-   - TypeScript + Bun
-   - `commander` + `zod`
-   - Human-readable stdout plus machine mode (`--json`) when applicable
-3. Desktop App
-   - Tauri 2 + Rust backend + TypeScript frontend
-   - Prefer Tauri over Electron by default
-4. Mobile Android
-   - React Native + Expo + TypeScript (shared codebase)
-5. Mobile iPhone
-   - React Native + Expo + TypeScript (shared codebase)
-
-## Frontend Workflow Invocation
-
-- `Oracle` decides when to invoke `skills/frontend-design/SKILL.md`.
-- Scaffold docs in `docs/scaffolds/` are reference templates; they do not self-execute.
-- Apply frontend-design when building new UI or redesigning UI surfaces.
-- Skip enforcing frontend-design aesthetics in repos that already use Angular or Material UI. In those repos, preserve the existing design system and focus on implementation quality/accessibility.
-
-## Accessibility And `axe`
-
-- Web baseline: run accessibility checks with Playwright + `@axe-core/playwright`.
-- Simulator/mobile automation: use `axe` CLI when installed (for example: `axe list-simulators`, `axe describe-ui ...`, `axe tap ...`).
-- If `axe` CLI is unavailable, continue with platform-native accessibility checks and document the gap.
+See [`docs/STACK.md`](./docs/STACK.md) for full stack defaults (Website, CLI, Desktop, Mobile). Use those defaults unless the user or existing repo constraints require otherwise.
 
 ## API Keys And Credentials (Operational Minimum)
 
@@ -446,11 +471,61 @@ Optional (feature-dependent):
 - Local scaffold copy in this repo: `runbooks/docs/mac-vm.md`.
 - Codex limits personal tracker: `$HOME/Documents/indykish/codex limits.md`.
 
+## Dotfiles Sync Tracking
+
+Files in this repo (`~/Projects/ai-jumpstart`) that must be synced to `~/Projects/dotfiles` when modified:
+
+| Source (ai-jumpstart) | Destination (dotfiles) | Notes |
+|----------------------|----------------------|-------|
+| `AGENTS.md` | `AGENTS.md` | Oracle operating model |
+| `CLAUDE.md` | `CLAUDE.md` | Thin pointer to AGENTS.md |
+| `.zshrc` | `.zshrc` | Shell configuration |
+| `.npmrc` | `.npmrc` | npm configuration |
+| `skills/**/*.md` | `skills/**/*.md` | All skill definitions |
+| `docs/**/*.md` | `docs/**/*.md` | Stack, guardrails, runbooks |
+| `.config/opencode/` | `.config/opencode/` | opencode configuration |
+
+**Excluded from sync:**
+- `README.md` (repo-specific, not shared)
+
+**File sources:**
+- `AGENTS.md`, `CLAUDE.md`, `.npmrc`, `skills/**` → source is `~/Projects/ai-jumpstart/`
+- `.zshrc` → source is `~/` (home directory)
+- `opencode.json` → source is `~/.config/opencode/opencode.json`
+
+**Tree compare (run to see drift before syncing):**
+```bash
+SRC=~/Projects/ai-jumpstart; DST=~/Projects/dotfiles
+for f in AGENTS.md CLAUDE.md .npmrc; do
+  diff "$SRC/$f" "$DST/$f" > /dev/null 2>&1 && echo "ok      $f" || echo "DRIFT   $f"
+done
+diff ~/.zshrc "$DST/.zshrc" > /dev/null 2>&1 && echo "ok      .zshrc" || echo "DRIFT   .zshrc"
+for f in $(find "$SRC/skills" "$SRC/docs" -name "*.md" | sed "s|$SRC/||"); do
+  diff "$SRC/$f" "$DST/$f" > /dev/null 2>&1 && echo "ok      $f" || echo "DRIFT   $f"
+done
+diff ~/.config/opencode/opencode.json "$DST/.config/opencode/opencode.json" > /dev/null 2>&1 && echo "ok      .config/opencode/opencode.json" || echo "DRIFT   .config/opencode/opencode.json"
+```
+
+**Sync command (after confirming drift):**
+```bash
+SRC=~/Projects/ai-jumpstart; DST=~/Projects/dotfiles
+cp "$SRC/AGENTS.md"   "$DST/AGENTS.md"
+cp "$SRC/CLAUDE.md"   "$DST/CLAUDE.md"
+cp "$SRC/.npmrc"      "$DST/.npmrc"
+cp ~/.zshrc           "$DST/.zshrc"
+rsync -av --relative "$SRC/skills/" "$DST/"
+rsync -av --relative "$SRC/docs/" "$DST/"
+cp ~/.config/opencode/opencode.json "$DST/.config/opencode/opencode.json"
+```
+
+**Note:** `README.md` is excluded from sync (repo-specific).
+
 ## Skills Policy
 
 - Keep skills CLI-first and deterministic.
 - Prefer boring, reproducible commands over SaaS wizards.
 - Every skill must declare: inputs, outputs, command sequence, verification, failure handling.
+- **Do not invent process unless a failure forced it.** This document must not expand without cause.
 
 ## Communication Contract
 
