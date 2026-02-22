@@ -49,19 +49,20 @@ if [[ -f "${E2E_AGENT_ENV_FILE}" ]]; then
   set +a
   echo "\033[32m✔\033[0m Found ${E2E_AGENT_ENV_FILE}"
 elif command -v pass-cli >/dev/null 2>&1; then
-  _pass_key() {
-    pass-cli item view --vault-name AGENTS_BUFFET --item-title "$1" --field password 2>/dev/null
-  }
-
   _pass_field() {
     pass-cli item view --vault-name AGENTS_BUFFET --item-title "$1" --field "$2" 2>/dev/null
   }
+  _emit() { echo "export $1=\"$2\"" >> "${E2E_AGENT_ENV_FILE}"; export "$1=$2"; }
 
   mkdir -p "${E2E_AGENT_PROFILES_DIR}"
   : > "${E2E_AGENT_ENV_FILE}"
   chmod 600 "${E2E_AGENT_ENV_FILE}"
 
-  _agent_keys=(
+  _ok()   { echo "\033[32m✔\033[0m $1"; }
+  _warn() { echo "\033[33m⚠\033[0m $1"; }
+
+  # Simple keys: vault title = env var, password field = value
+  _simple_keys=(
     OLLAMA_CLOUD_API_KEY
     GITHUB_PERSONAL_ACCESS_TOKEN
     GITLAB_PERSONAL_ACCESS_TOKEN
@@ -73,45 +74,34 @@ elif command -v pass-cli >/dev/null 2>&1; then
     OPENROUTER_API_KEY
     NPM_TOKEN
   )
-
-  for _k in "${_agent_keys[@]}"; do
-    _v="$(_pass_key "$_k")"
+  for _k in "${_simple_keys[@]}"; do
+    _v="$(_pass_field "$_k" password)"
     if [[ -n "$_v" ]]; then
-      echo "export ${_k}=\"${_v}\"" >> "${E2E_AGENT_ENV_FILE}"
-      export "${_k}=${_v}"
-      echo "\033[32m✔\033[0m Pulled ${_k} → ${E2E_AGENT_ENV_FILE}"
+      _emit "$_k" "$_v"
+      _ok "Pulled ${_k}"
     else
-      echo "\033[33m⚠\033[0m Skipped ${_k} (not found in vault)"
+      _warn "Skipped ${_k} (not found)"
     fi
   done
 
-  unset _k _v _agent_keys
-  unset -f _pass_key
+  # Docker registries: DOCKER_REGISTRY_<NAME> → DOCKER_USER_<NAME> + DOCKER_PASSWORD_<NAME>
+  _docker_registries=(INFRA MARKETPLACE MYACCOUNT)
+  for _name in "${_docker_registries[@]}"; do
+    _u="$(_pass_field "DOCKER_REGISTRY_${_name}" username)"
+    _p="$(_pass_field "DOCKER_REGISTRY_${_name}" password)"
+    if [[ -n "$_u" && -n "$_p" ]]; then
+      _emit "DOCKER_USER_${_name}" "$_u"
+      _emit "DOCKER_PASSWORD_${_name}" "$_p"
+      _ok "Pulled DOCKER_REGISTRY_${_name}"
+    elif [[ -n "$_u" || -n "$_p" ]]; then
+      _warn "Partial credentials for DOCKER_REGISTRY_${_name} (missing $([[ -z "$_u" ]] && echo username || echo password))"
+    else
+      _warn "Skipped DOCKER_REGISTRY_${_name} (not found)"
+    fi
+  done
 
-  # Docker registry credentials (username + password fields)
-  _docker_creds() {
-    local vault_item="$1" user_var="$2" pass_var="$3" user pass
-    user=$(_pass_field "$vault_item" username)
-    pass=$(_pass_field "$vault_item" password)
-    [[ -n "$user" && -n "$pass" ]] || return
-    echo "export $user_var=\"$user\"" >> "$E2E_AGENT_ENV_FILE"
-    echo "export $pass_var=\"$pass\"" >> "$E2E_AGENT_ENV_FILE"
-    export "$user_var=$user" "$pass_var=$pass"
-    echo "\033[32m✔\033[0m Pulled $vault_item"
-  }
-
-  _docker_creds DOCKER_REGISTRY_INFRA DOCKER_USER_INFRA DOCKER_PASS_INFRA
-  _docker_creds DOCKER_REGISTRY_MARKETPLACE DOCKER_USER_MARKETPLACE DOCKER_PASS_MARKETPLACE
-  _docker_creds DOCKER_REGISTRY_MYACCOUNT DOCKER_USER_MYACCOUNT DOCKER_PASS_MYACCOUNT
-
-  # Set default DOCKER_USER/DOCKER_PASS from INFRA for backward compatibility
-  if [[ -n "${DOCKER_USER_INFRA:-}" ]]; then
-    echo "export DOCKER_USER=\"$DOCKER_USER_INFRA\"" >> "$E2E_AGENT_ENV_FILE"
-    echo "export DOCKER_PASS=\"$DOCKER_PASS_INFRA\"" >> "$E2E_AGENT_ENV_FILE"
-    export DOCKER_USER="$DOCKER_USER_INFRA" DOCKER_PASS="$DOCKER_PASS_INFRA"
-  fi
-
-  unset -f _pass_field _docker_creds
+  unset _k _v _u _p _name _simple_keys _docker_registries
+  unset -f _pass_field _emit _ok _warn
 fi
 eval "$("${HOME}/.local/bin/mise" activate zsh)"
 
