@@ -1,0 +1,12 @@
+theme = Monokai Classic
+font-family = MesloLGS NF
+font-size = 14
+# Subtle thickening to match iTerm2-like font weight.
+font-thicken = true
+font-thicken-strength = 35
+font-feature = -calt,-liga,-dlig
+adjust-cell-height = +2%
+cursor-style = block
+copy-on-select = clipboard
+shell-integration = zsh
+keybind = shift+enter=text:\n

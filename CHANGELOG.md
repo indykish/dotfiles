@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-02-22
+
+### Added
+- **Oracle dual-lens review model** — inline CTO (strategic) and Engineer (tactical) review lenses replace CLI-only workflow; CLI becomes secondary path
+- **Behavioral guardrails** — `docs/BEHAVIORAL_GUARDRAILS.md` codifies assumption surfacing, confusion management, simplicity enforcement, scope discipline, and dead code hygiene
+- **DX Platform Stack doc** — `docs/STACK.md` extracts stack defaults (Website, CLI, Desktop, Mobile) from AGENTS.md
+- **Cognitive discipline section** in AGENTS.md — non-trivial task definition, confusion management, simplicity enforcement, dead code hygiene
+- **Dotfiles sync tracking** in AGENTS.md — source/destination table with drift-check and sync commands
+- **CMUX icon patcher** — `Applications/cmux/` with optimized icon.png and `patch_cmux.sh` for macOS dock icon customization
+- **`.npmrc`** — npm auth token via `${NPM_TOKEN}` env var
+- **Review severity levels** — BLOCKER/MAJOR/MINOR/NIT classification in Oracle skill
+- **Oracle escalation levels** — 4-tier model (solo → inline lens → CLI cross-model → parallel worktrees)
+- **Legacy team lens compatibility** — maps CTO/Senior Engineer shorthand to Oracle execution lenses
+- **`.zshrc` credential caching** — pass-cli vault keys cached to `~/.config/clawable/.env_mac` with `chmod 600`
+- **New agent keys** — `MINIMAX_API_KEY`, `OPENROUTER_API_KEY`, `NPM_TOKEN` added to vault pull list
+
+### Changed
+- **Oracle skill rewritten** — primary path is now inline review (zero CLI, zero cost); `@indykish/oracle` CLI is secondary
+- **AGENTS.md** — Oracle tool commands updated to `oracle --help`; escalation levels replace flat defaults; DX stack extracted to `docs/STACK.md`
+- **CLAUDE.md** — updated Oracle skill pointer to reflect inline-first model
+- **Preflight tooling** — Oracle CLI changed from `@steipete/oracle` to `@indykish/oracle` v0.9.2
+- **`.zshrc`** — credential loading refactored from function-based to if/elif with pass-cli → env file caching loop
+
+### Removed
+- **DX Platform Stack inline** from AGENTS.md — moved to `docs/STACK.md`
+- **Frontend workflow / accessibility sections** from AGENTS.md — consolidated into `docs/STACK.md`
+
+## [2.8.0] - 2026-02-21
+
+### Added
+- **E2E Networks internal setup** in preflight-tooling skill — `openfortivpn`, `mysql-client`, VPN launch scripts with LaunchAgent plists
+- **VPN env var workflow** — credentials via `~/.env_mac` (no hardcoded passwords); `run.sh` warns to set `VPN_PROD_*` / `VPN_STAGE_*`
+- **Tooling inventory** — E2E internal tools section with `openfortivpn`, `mysql-client`, `font-hack-nerd-font`
+
+### Changed
+- **Oracle skill rewritten** — defaults to `--engine api --model claude-4.5-sonnet` (Claude-first); browser path optional
+- **AGENTS.md** — Oracle tool defaults updated to Claude Sonnet primary, Opus escalation
+- **CLAUDE.md** — Added Oracle skill defaults pointer
+
+### Removed
+- **`AGENTS_OLD.md`** — legacy CTO/Engineer dual-role model (superseded by Oracle Operating Model)
+- **`docs/01-preflight-vpn-localdev.md`** — spec consumed and implemented
+- **`docs/00-oracle-claude-browser-feasibility.md`** — spec consumed and implemented
+
 ## [2.7.0] - 2026-02-20
 
 ### Changed
@@ -153,7 +197,9 @@ Then start from `skills/preflight-tooling.md`.
   - Enhanced Typical Workflow diagram with code review and CAL usage example
   - Added skill design principles from Principal Engineer review
 
-[Unreleased]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.7.0...HEAD
+[Unreleased]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v3.0.0...HEAD
+[3.0.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.8.0...v3.0.0
+[2.8.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.7.0...v2.8.0
 [2.7.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.6.0...v2.7.0
 [2.6.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.5.0...v2.6.0
 [2.5.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.4.0...v2.5.0

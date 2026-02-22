@@ -1,0 +1,102 @@
+format = "$directory$git_branch$git_status$package$ocaml$zig$rust$bun$nodejs$deno$perl$python$golang$java$kotlin$lua$php$ruby$haskell$elixir$erlang$julia$nim$rlang$swift$terraform$docker_context$cmd_duration$line_break$character"
+add_newline = false
+scan_timeout = 50
+
+[directory]
+style = "bold cyan"
+truncation_length = 4
+truncate_to_repo = false
+
+[git_branch]
+style = "bold magenta"
+
+[git_status]
+style = "bold red"
+
+[package]
+style = "bold yellow"
+
+[ocaml]
+style = "bold yellow"
+
+[zig]
+style = "bold orange"
+
+[rust]
+style = "bold red"
+
+[bun]
+style = "bold yellow"
+
+[nodejs]
+style = "bold green"
+detect_files = ["package.json", ".nvmrc", "pnpm-lock.yaml", "bun.lock", "bun.lockb"]
+
+[deno]
+style = "bold blue"
+
+[perl]
+style = "bold magenta"
+
+[python]
+style = "bold yellow"
+
+[golang]
+style = "bold cyan"
+
+[java]
+style = "bold red"
+
+[kotlin]
+style = "bold magenta"
+
+[lua]
+style = "bold blue"
+
+[php]
+style = "bold magenta"
+
+[ruby]
+style = "bold red"
+
+[haskell]
+style = "bold magenta"
+
+[elixir]
+style = "bold magenta"
+
+[erlang]
+style = "bold red"
+
+[julia]
+style = "bold green"
+
+[nim]
+style = "bold yellow"
+
+[rlang]
+style = "bold blue"
+
+[swift]
+style = "bold red"
+
+[terraform]
+style = "bold cyan"
+
+[docker_context]
+style = "bold blue"
+
+[cmd_duration]
+min_time = 500
+style = "dimmed white"
+
+[character]
+success_symbol = "> "
+error_symbol = "x "
+vicmd_symbol = "< "
+
+[custom.pnpm]
+command = "echo pnpm"
+when = "test -f pnpm-lock.yaml"
+format = "[$output]($style) "
+style = "bold cyan"
