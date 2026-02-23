@@ -4,9 +4,8 @@ Purpose: secure remote access to Mac VM/host for autonomous operations.
 
 ## Owner
 
-> **Setup Required**: Configure your account email in this runbook.
 
-- Account: `{{OWNER_EMAIL}}`
+- Account: `kishore.kumar@e2enetworks.com`
 - Device class: MacBook M2 control plane
 
 ## Preconditions

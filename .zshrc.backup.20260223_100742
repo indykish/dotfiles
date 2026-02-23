@@ -84,27 +84,23 @@ elif command -v pass-cli >/dev/null 2>&1; then
     fi
   done
 
-  # Docker registries: pull credentials and login
+  # Docker registries: DOCKER_REGISTRY_<NAME> → DOCKER_USER_<NAME> + DOCKER_PASSWORD_<NAME>
   _docker_registries=(INFRA MARKETPLACE MYACCOUNT)
   for _name in "${_docker_registries[@]}"; do
-    _url="$(_pass_field "DOCKER_REGISTRY_${_name}" url)"
     _u="$(_pass_field "DOCKER_REGISTRY_${_name}" username)"
     _p="$(_pass_field "DOCKER_REGISTRY_${_name}" password)"
     if [[ -n "$_u" && -n "$_p" ]]; then
       _emit "DOCKER_USER_${_name}" "$_u"
       _emit "DOCKER_PASSWORD_${_name}" "$_p"
       _ok "Pulled DOCKER_REGISTRY_${_name}"
-      if command -v docker >/dev/null 2>&1 && [[ -n "$_url" ]]; then
-        echo "$_p" | docker login "$_url" -u "$_u" --password-stdin >/dev/null 2>&1 && _ok "Docker login: $_url" || _warn "Docker login failed: $_url"
-      fi
     elif [[ -n "$_u" || -n "$_p" ]]; then
-      _warn "Partial credentials for DOCKER_REGISTRY_${_name}"
+      _warn "Partial credentials for DOCKER_REGISTRY_${_name} (missing $([[ -z "$_u" ]] && echo username || echo password))"
     else
-      _warn "Skipped DOCKER_REGISTRY_${_name}"
+      _warn "Skipped DOCKER_REGISTRY_${_name} (not found)"
     fi
   done
 
-  unset _k _v _u _p _url _name _simple_keys _docker_registries
+  unset _k _v _u _p _name _simple_keys _docker_registries
   unset -f _pass_field _emit _ok _warn
 fi
 eval "$("${HOME}/.local/bin/mise" activate zsh)"

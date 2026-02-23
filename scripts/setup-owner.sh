@@ -19,8 +19,8 @@ get_email() {
 	git_email=$(git config --global user.email 2>/dev/null || echo "")
 
 	if [[ -n "$git_email" ]]; then
-		echo -e "${BLUE}📧 Found git email:${NC} $git_email"
-		read -rp "Use this? [Y/n]: " use_git
+		echo -e "${BLUE}📧 Found git email:${NC} $git_email" >&2
+		read -rp "Use this? [Y/n]: " use_git >&2
 		[[ "${use_git:-Y}" =~ ^[Yy]$ ]] && {
 			echo "$git_email"
 			return
@@ -29,7 +29,7 @@ get_email() {
 
 	local email=""
 	while [[ -z "$email" ]]; do
-		read -rp "${YELLOW}📧 Enter your email:${NC} " email
+		read -rp "${YELLOW}📧 Enter your email:${NC} " email >&2
 	done
 	echo "$email"
 }

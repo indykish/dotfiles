@@ -30,10 +30,9 @@ ASSUMPTIONS I'M MAKING:
 
 ## Owner Profile
 
-> **Setup Required**: Run `./scripts/setup-owner.sh` to personalize this section with your details.
 
-- Owner: {{OWNER_NAME}} (`{{OWNER_HANDLE}}`), Discord `{{DISCORD_HANDLE}}`, email `{{OWNER_EMAIL}}`.
-- Hardware: {{HARDWARE}}.
+- Owner: Anonymous (`@username`), Discord `-`, email `kishore.kumar@e2enetworks.com`.
+- Hardware: MacBook.
 - Primary languages: Python, Go, Rust, TypeScript, Zig.
 - Runtime/tool install policy: `mise` first, `brew` fallback.
 - Password tooling: Proton Pass workflow, `pass-cli` preferred when installed.
@@ -86,6 +85,7 @@ Execution pattern:
 - If asked to "make a note", update `AGENTS.md` or relevant repo docs.
 - Before updating dotfiles (`.*` files like `.zshrc`, `.gitconfig`, agent configs), create a timestamped backup first and keep edits minimal.
 - Use `trash` for file deletes. `rm` is not auto-allowed — agents will be prompted for approval before `rm` executes.
+- If builds fail with local Docker disk exhaustion (`ENOSPC` or "no space left on device"), run `~/bin/mac-cleanup.sh`, then verify with `docker system df`, and retry the build.
 - Keep edits small and reviewable; split large files before they become hard to review.
 - Use Conventional Commits when committing is requested.
 - For Oracle CLI assistance, run once per session:

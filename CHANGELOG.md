@@ -7,32 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.0.0] - 2026-02-22
-
-### Added
-- **Oracle dual-lens review model** — inline CTO (strategic) and Engineer (tactical) review lenses replace CLI-only workflow; CLI becomes secondary path
-- **Behavioral guardrails** — `docs/BEHAVIORAL_GUARDRAILS.md` codifies assumption surfacing, confusion management, simplicity enforcement, scope discipline, and dead code hygiene
-- **DX Platform Stack doc** — `docs/STACK.md` extracts stack defaults (Website, CLI, Desktop, Mobile) from AGENTS.md
-- **Cognitive discipline section** in AGENTS.md — non-trivial task definition, confusion management, simplicity enforcement, dead code hygiene
-- **Dotfiles sync tracking** in AGENTS.md — source/destination table with drift-check and sync commands
-- **CMUX icon patcher** — `Applications/cmux/` with optimized icon.png and `patch_cmux.sh` for macOS dock icon customization
-- **`.npmrc`** — npm auth token via `${NPM_TOKEN}` env var
-- **Review severity levels** — BLOCKER/MAJOR/MINOR/NIT classification in Oracle skill
-- **Oracle escalation levels** — 4-tier model (solo → inline lens → CLI cross-model → parallel worktrees)
-- **Legacy team lens compatibility** — maps CTO/Senior Engineer shorthand to Oracle execution lenses
-- **`.zshrc` credential caching** — pass-cli vault keys cached to `~/.config/clawable/.env_mac` with `chmod 600`
-- **New agent keys** — `MINIMAX_API_KEY`, `OPENROUTER_API_KEY`, `NPM_TOKEN` added to vault pull list
+## [4.0.0] - 2026-02-23
 
 ### Changed
-- **Oracle skill rewritten** — primary path is now inline review (zero CLI, zero cost); `@indykish/oracle` CLI is secondary
-- **AGENTS.md** — Oracle tool commands updated to `oracle --help`; escalation levels replace flat defaults; DX stack extracted to `docs/STACK.md`
-- **CLAUDE.md** — updated Oracle skill pointer to reflect inline-first model
-- **Preflight tooling** — Oracle CLI changed from `@steipete/oracle` to `@indykish/oracle` v0.9.2
-- **`.zshrc`** — credential loading refactored from function-based to if/elif with pass-cli → env file caching loop
+- Profile maintenance: cleaned up blank lines in Owner sections (AGENTS.md, mac-vm.md)
 
-### Removed
-- **DX Platform Stack inline** from AGENTS.md — moved to `docs/STACK.md`
-- **Frontend workflow / accessibility sections** from AGENTS.md — consolidated into `docs/STACK.md`
+## [3.0.0] - 2026-02-22
+
+### Changed
+- **Oracle CLI migrated** — all references updated from `@steipete/oracle` to `@indykish/oracle` (v0.9.2) across AGENTS.md, CLAUDE.md, and all skills
+- **Oracle install** — changed from git clone+build to `npm install -g @indykish/oracle` / `npx @indykish/oracle`
+- **Model defaults bumped** — primary `claude-4.6-sonnet`, escalation `claude-4.6-opus` (was 4.5/4.1)
+- **oracle SKILL.md** — restructured: inline CTO/Engineer review as primary path, `@indykish/oracle` CLI moved to secondary; added Review Severity Levels (BLOCKER/MAJOR/MINOR/NIT)
+- **DX Platform Stack** — moved from AGENTS.md into `docs/STACK.md`; AGENTS.md now has a one-line pointer
+
+### Added
+- **Cognitive Discipline section** in AGENTS.md — Non-trivial definition, Confusion Management, Simplicity Enforcement, Dead Code Hygiene (from AGENTS_OLD learnings)
+- **Oracle Escalation Levels** (Level 1–4) in AGENTS.md — single-agent → inline review → CLI → parallel worktrees
+- **"Do Not Drift" clause** in AGENTS.md Skills Policy
+- **`docs/BEHAVIORAL_GUARDRAILS.md`** — cognitive discipline extracted from AGENTS_OLD: assumption surfacing, confusion management, simplicity, scope discipline, dead code hygiene, push-back triggers, failure modes, post-work template
+- **`docs/STACK.md`** — DX platform stack defaults (Website, CLI, Desktop, Mobile, Frontend, Accessibility)
+- **Dotfiles sync tracking** in AGENTS.md — file sources table, tree compare one-liner (now includes `docs/`), sync command block; `README.md` excluded
 
 ## [2.8.0] - 2026-02-21
 
