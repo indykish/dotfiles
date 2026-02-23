@@ -95,7 +95,11 @@ elif command -v pass-cli >/dev/null 2>&1; then
       _emit "DOCKER_PASSWORD_${_name}" "$_p"
       _ok "Pulled DOCKER_REGISTRY_${_name}"
       if command -v docker >/dev/null 2>&1 && [[ -n "$_url" ]]; then
-        echo "$_p" | docker login "$_url" -u "$_u" --password-stdin >/dev/null 2>&1 && _ok "Docker login: $_url" || _warn "Docker login failed: $_url"
+        if ! echo "$_p" | docker login "$_url" -u "$_u" --password-stdin 2>&1 | grep -q "Login Succeeded"; then
+          _warn "Docker login failed: $_url (check credentials and registry availability)"
+        else
+          _ok "Docker login: $_url"
+        fi
       fi
     elif [[ -n "$_u" || -n "$_p" ]]; then
       _warn "Partial credentials for DOCKER_REGISTRY_${_name}"
@@ -128,5 +132,5 @@ upgrade-ai() {
   claude upgrade
   opencode upgrade
   kilo upgrade
-  npm install -g @openai/codex @mariozechner/pi-coding-agent @steipete/oracle
+  npm install -g @openai/codex @mariozechner/pi-coding-agent @indykish/oracle
 }
