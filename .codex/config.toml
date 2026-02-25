@@ -12,7 +12,7 @@ web_search = "cached"
 "gpt-5.2-codex" = "gpt-5.3-codex"
 
 [features]
-collab = true
+multi_agent = true
 apps = true
 ghost_commit = false
 unified_exec = true
