@@ -197,6 +197,22 @@
           "name": "Kimi K2.5"
         }
       }
+    },
+    "mistral": {
+      "name": "Mistral AI",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "apiKey": "{env:MISTRAL_API_KEY}",
+        "baseURL": "https://api.mistral.ai/v1"
+      },
+      "models": {
+        "mistral-large-latest": {
+          "name": "Mistral Large"
+        },
+        "codestral-latest": {
+          "name": "Codestral"
+        }
+      }
     }
   }
 }
