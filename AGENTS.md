@@ -88,6 +88,8 @@ Execution pattern:
 - If builds fail with local Docker disk exhaustion (`ENOSPC` or "no space left on device"), run `~/bin/mac-cleanup.sh`, then verify with `docker system df`, and retry the build.
 - Keep edits small and reviewable; split large files before they become hard to review.
 - Use Conventional Commits when committing is requested.
+- For date-time entries in docs/notes, use format `Feb 02, 2026: 10:30 AM`.
+- Sync is mandatory, not user-prompted: after any change under `~/Projects/ai-jumpstart/*` (except `README.md`), sync mapped files to `~/Projects/dotfiles` in the same turn and explicitly report `sync completed + verified`.
 - For Oracle CLI assistance, run once per session:
 
 ```bash

@@ -68,6 +68,7 @@ elif command -v pass-cli >/dev/null 2>&1; then
     GITLAB_PERSONAL_ACCESS_TOKEN
     MODAL_API_KEY
     MOONSHOT_API_KEY
+    MISTRAL_API_KEY
     OPENAI_API_KEY
     ZAI_API_KEY
     MINIMAX_API_KEY
@@ -122,6 +123,9 @@ test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell
 # opencode
 export PATH="${HOME}/.opencode/bin:/usr/local/bin:${HOME}/bin:$PATH"
 
+# Fix TERM for SSH connections to servers without ghostty terminfo
+alias ssh='TERM=xterm-256color ssh'
+
 # bun completions
 [ -s "${HOME}/.bun/_bun" ] && source "${HOME}/.bun/_bun"
 
@@ -134,3 +138,9 @@ upgrade-ai() {
   kilo upgrade
   npm install -g @openai/codex @mariozechner/pi-coding-agent @indykish/oracle
 }
+
+# freetype/reportlab build flags (macOS)
+export CFLAGS="-I/opt/homebrew/include/freetype2"
+export CPPFLAGS="-I/opt/homebrew/include/freetype2"
+export LDFLAGS="-L/opt/homebrew/lib"
+export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig"
