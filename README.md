@@ -1,6 +1,6 @@
 # dotfiles
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue)
+![Version](https://img.shields.io/badge/version-4.1.0-blue)
 
 ![This is fine](https://i.imgflip.com/2/1otk96.jpg)
 *Me watching my agents edit my dotfiles at 3 AM.*
