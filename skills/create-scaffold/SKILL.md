@@ -51,21 +51,39 @@ Every scaffold must produce:
 mkdir -p make docs/diagrams tests
 ```
 
-Ensure `Makefile` exposes:
+Ensure `Makefile` exposes the standard target taxonomy:
 
-- `make dev`
-- `make quality`
-- `make test`
-- `make build`
-- `make push`
-- `make sonar`
+| Target        | Purpose                                              |
+|---------------|------------------------------------------------------|
+| `make dev`    | Start local dev server or run binary in dev mode     |
+| `make up`     | Start background services (Docker Compose)           |
+| `make down`   | Stop background services                             |
+| `make lint`   | Run all linters and type checks                      |
+| `make test`   | Run all unit tests                                   |
+| `make build`  | Compile / bundle for production                      |
+| `make _clean` | Remove generated artefacts (dist, coverage, .tmp)    |
+| `make push`   | Push image/package to registry                       |
+| `make sonar`  | SonarQube scan (optional)                            |
+
+Web stacks additionally expose:
+
+| Target           | Purpose                                     |
+|------------------|---------------------------------------------|
+| `make qa`        | Run full Playwright e2e suite (headless)    |
+| `make qa-smoke`  | Run Playwright smoke tests only (CI gate)   |
+
+Rules:
+- Never use `make quality` — the standard target is `make lint`.
+- `make up` / `make down` apply when the stack has Docker services. Omit for pure frontend.
+- `make _clean` uses a leading underscore to signal it is destructive (removes build artefacts).
+- Agents run headless. Do not add `make qa-headed` to shared targets; it may exist locally in personal Makefile overrides only.
 
 Then follow the stack-specific workflow in `stacks/<stack>.md`.
 
 ## Verify
 
 ```bash
-make dev
+make lint
 make test
 make build
 ```
