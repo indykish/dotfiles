@@ -207,10 +207,19 @@
       },
       "models": {
         "mistral-large-latest": {
-          "name": "Mistral Large"
+          "name": "Mistral Large 3 Hackathon"
+        },
+        "mistral-large-2512": {
+          "name": "Mistral Large 2512 Hackathon"
         },
         "codestral-latest": {
-          "name": "Codestral"
+          "name": "Codestral Latest Hackathon"
+        },
+        "codestral-2508": {
+          "name": "Codestral 2508 Hackathon"
+        },
+        "codestral-2502": {
+          "name": "Codestral 2502 Hackathon"
         }
       }
     }

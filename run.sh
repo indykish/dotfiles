@@ -20,6 +20,7 @@ CONFIGS=(
 	".pi/agent/settings.json:$HOME/.pi/agent/settings.json:⚙️  Pi settings"
 	".claude/settings.json:$HOME/.claude/settings.json:🎯 Claude"
 	".claude-e2e/settings.json:$HOME/.claude-e2e/settings.json:🧪 Claude E2E"
+	".vibe/config.toml:$HOME/.vibe/config.toml:🎵 Vibe config"
 )
 
 # 👥 Agents (name:home:profile:skills)
@@ -32,6 +33,7 @@ AGENTS=(
 	"kilocode:$HOME/.kilocode:AGENTS.md:skills"
 	"agents:$HOME/.config/agents:AGENTS.md:skills"
 	"pi:$HOME/.pi/agent:AGENTS.md:skills"
+	"vibe:$HOME/.vibe:AGENTS.md:skills"
 )
 
 # 🗑️ Stale skills to remove
@@ -76,27 +78,27 @@ deploy_configs() {
 		log "$desc"
 	done
 
-        # Bootstrap ~/.zshrc and ask before replacing an existing user config.
-        if [[ -f "$ROOT_DIR/.zshrc" ]]; then
-                if [[ ! -f "$HOME/.zshrc" ]]; then
-                        cp "$ROOT_DIR/.zshrc" "$HOME/.zshrc"
-                        log "🐚 Zsh shell config (~/.zshrc)"
-                elif [[ -t 0 ]]; then
-                        local install_zshrc backup
-                        echo -e "  ${YELLOW}⚠️  ~/.zshrc already exists. The dotfiles version is opinionated.${NC}"
-                        read -rp "   Install dotfiles .zshrc and replace existing one? [y/N]: " install_zshrc
-                        if [[ "${install_zshrc:-N}" =~ ^[Yy]$ ]]; then
-                                backup="$HOME/.zshrc.bak.$(date +%Y%m%d-%H%M%S)"
-                                cp "$HOME/.zshrc" "$backup"
-                                cp "$ROOT_DIR/.zshrc" "$HOME/.zshrc"
-                                log "🐚 Zsh shell config (~/.zshrc) [backup: $backup]"
-                        else
-                                log "🐚 Skipped ~/.zshrc (kept existing file)"
-                        fi
-                else
-                        log "🐚 Skipped ~/.zshrc (non-interactive shell and file already exists)"
-                fi
-        fi
+	# Bootstrap ~/.zshrc and ask before replacing an existing user config.
+	if [[ -f "$ROOT_DIR/.zshrc" ]]; then
+		if [[ ! -f "$HOME/.zshrc" ]]; then
+			cp "$ROOT_DIR/.zshrc" "$HOME/.zshrc"
+			log "🐚 Zsh shell config (~/.zshrc)"
+		elif [[ -t 0 ]]; then
+			local install_zshrc backup
+			echo -e "  ${YELLOW}⚠️  ~/.zshrc already exists. The dotfiles version is opinionated.${NC}"
+			read -rp "   Install dotfiles .zshrc and replace existing one? [y/N]: " install_zshrc
+			if [[ "${install_zshrc:-N}" =~ ^[Yy]$ ]]; then
+				backup="$HOME/.zshrc.bak.$(date +%Y%m%d-%H%M%S)"
+				cp "$HOME/.zshrc" "$backup"
+				cp "$ROOT_DIR/.zshrc" "$HOME/.zshrc"
+				log "🐚 Zsh shell config (~/.zshrc) [backup: $backup]"
+			else
+				log "🐚 Skipped ~/.zshrc (kept existing file)"
+			fi
+		else
+			log "🐚 Skipped ~/.zshrc (non-interactive shell and file already exists)"
+		fi
+	fi
 }
 
 # 👤 Deploy to agent
@@ -191,6 +193,7 @@ main() {
 
 	echo -e "\n${GREEN}✅ Done!${NC} Skills: ${#SKILLS[@]}"
 	echo -e "${YELLOW}💡 Reminder:${NC} Set API keys in ~/.zshrc"
+	echo -e "${YELLOW}⚠️  VPN:${NC} Add VPN_PROD_HOST, VPN_PROD_USER, VPN_PROD_CERT (and VPN_STAGE_*) to ~/.env_mac"
 }
 
 main "$@"

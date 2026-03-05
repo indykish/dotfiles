@@ -102,6 +102,125 @@ oracle --help
 - Update docs whenever behavior, APIs, release flow, or operator steps change.
 - Do not ship behavior changes without docs updates in `DOCUMENT` stage.
 
+## Specification Standards
+
+> **CANONICAL TEMPLATE** — This section contains the complete specification format. Do not look for `project_spec.md` or external docs. Copy this template directly when creating new specs.
+
+When creating specifications for prototypes, use the following hierarchy and format:
+
+### Hierarchy
+
+```
+v1.0.0 (Prototype)
+└── Milestones (M1, M2, M3...)
+    └── Workstreams (M1_001, M1_002A...)
+        └── Sections (1.0, 2.0, 3.0...)
+            └── Dimensions (1.1, 1.2, 1.3...)
+```
+
+**Terminology:**
+- **Prototype** — v1.0.0 (major release)
+- **Milestone** — Major phase (M1, M2, M3)
+- **Workstream** — Parallel track within milestone (M1_001, M1_002A)
+- **Section** — Logical grouping (1.0, 2.0, 2.1)
+- **Dimension** — Smallest unit of work (1.1, 2.1.1, 3.2.1)
+
+### File Naming
+
+```
+docs/spec/v1/M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
+
+Example: docs/spec/v1/M3_006A_CLERK_AUTH.md
+         └─┬─┘ └──┬──┘ └┬┘ └──────┬────────┘
+           │      │     │         └─ Descriptive name (UPPERCASE_SNAKE_CASE)
+           │      │     └─ Workstream (001-999, A-Z for sub-streams)
+           │      └─ Milestone (1-9)
+           └─ Milestone prefix
+```
+
+### Spec Template
+
+```markdown
+# M{Milestone}_{Workstream}: {Title}
+
+**Prototype:** v{major}.{minor}.{patch}
+**Milestone:** M{Number}
+**Workstream:** {Number}
+**Date:** {MMM DD, YYYY}
+**Status:** PENDING | IN_PROGRESS | DONE
+**Priority:** P0 | P1 | P2 — {Description}
+**Depends on:** {Dependencies}
+
+---
+
+## 1.0 {Section Title}
+
+**Status:** PENDING
+
+Description of this section.
+
+**Dimensions:**
+- 1.1 PENDING First dimension
+- 1.2 PENDING Second dimension
+- 1.3 PENDING Third dimension
+
+---
+
+## 2.0 {Next Section}
+
+**Status:** PENDING
+
+### 2.1 {Subsection}
+
+Description.
+
+**Dimensions:**
+- 2.1.1 PENDING Dimension item
+- 2.1.2 PENDING Dimension item
+
+---
+
+## 3.0 Acceptance Criteria
+
+**Status:** PENDING
+
+- [ ] 3.1 Criteria item one
+- [ ] 3.2 Criteria item two
+- [ ] 3.3 Criteria item three
+
+---
+
+## 4.0 Out of Scope
+
+- Item not in scope
+- Another out of scope item
+```
+
+### Status Markers
+
+- `PENDING` — Not started, awaiting work
+- `IN_PROGRESS` — Currently being worked on
+- `DONE` or `✅` — Complete, verified, and tested
+
+### Completion Workflow
+
+When a spec is fully implemented:
+
+1. Mark all sections and dimensions as `DONE` or `✅`
+2. Update **Status:** to `DONE`
+3. Move file from `docs/spec/v1/` to `docs/done/v1/`
+4. Create handoff notes if work continues
+
+### Prohibited
+
+- ❌ No time estimates ("5 min", "1 hour", "2 days") — meaningless and often wrong
+- ❌ No effort columns or complexity ratings — use Priority instead
+- ❌ No percentage complete — use binary PENDING/DONE states
+- ❌ No assigned owners — use git history and handoff notes
+- ❌ No implementation dates — use Priority (P0/P1/P2) instead
+
+Use **Priority** (P0/P1/P2) and **Dependencies** for sequencing.
+
 ## Screenshot Workflow
 
 When asked to "use a screenshot":
