@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-03-05
+
+### Changed
+- Synced from ai-jumpstart v5.1.0: standard Make target taxonomy (`lint` replaces `quality`; `qa`/`qa-smoke`; no `qa-headed`), design system defaults (Geist fonts, CSS token palette, dot-grid), Vite 7 + Tailwind v4 website scaffold, Oracle CLI SKILL.md canonical v0.9.0
+
 ## [4.1.1] - 2026-02-25
 
 ### Changed

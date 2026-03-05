@@ -263,6 +263,45 @@ Actively resist overcomplication. Before finishing any implementation, ask:
 
 Prefer the boring, obvious solution. Cleverness is expensive. If 100 lines suffice, 1000 lines is a failure.
 
+### No Insecure Fallbacks
+
+Never add a "fallback" auth path, credential mechanism, or compatibility shim that is less secure than the primary path. If the primary path is GitHub App OAuth, do not also document `GITHUB_PAT` as a fallback. If the primary path is per-workspace encrypted credentials, do not also support a shared env var.
+
+Rules:
+
+- **One auth path.** Design the secure path. Ship only that. No "operator fallback" that bypasses the security model.
+- **No deferred security.** Do not spread a security fix across milestones. If the credential model is broken, fix it now — do not document "M1: insecure, M2: fix it."
+- **No throwaway code.** If code will be replaced next milestone, do not write it. Write the real thing or write nothing.
+- **No backward-compatibility shims for unreleased software.** If the product has no users yet, there is no backward compatibility to maintain. Delete the old path.
+
+```
+❌ Bad: "Primary: GitHub App. Fallback: GITHUB_PAT env var for self-hosted."
+✅ Good: "Auth: GitHub App OAuth. No other path."
+
+❌ Bad: "M1: single PAT. M2: per-workspace credentials."
+✅ Good: "Per-workspace credentials from day one."
+```
+
+### No Process Launches — Native SDK Only
+
+Never shell out to external processes (subprocess, `std.process.Child`, `execve`, `spawn`) for core functionality. If a capability exists as a native library or SDK, use it. Process launches are only acceptable for personal developer tools explicitly approved by the user.
+
+Rules:
+
+- **Git operations:** Use libgit2 (native C library with Zig bindings), not `git` CLI subprocess.
+- **HTTP calls:** Use native HTTP client, not `curl` subprocess.
+- **File operations:** Use native filesystem APIs, not `find`/`grep`/`sed` subprocess.
+- **Build tools:** Zig build system, not shell scripts wrapping other tools.
+- **Exception:** Personal developer tools (e.g., `pass-cli`, `gh`, `glab`, `oracle`) are allowed because the user chose them. Core product code must not depend on subprocess launches.
+
+```
+❌ Bad: std.process.Child.init(.{ .argv = &.{"git", "clone", repo_url} })
+✅ Good: const repo = try git2.Repository.clone(repo_url, path, .{})
+
+❌ Bad: "uses git CLI for bare clone + worktree"
+✅ Good: "uses libgit2 for clone, checkout, and push — native calls, no subprocess"
+```
+
 ### Dead Code Hygiene
 
 After any refactor: identify newly unreachable or redundant code. List it explicitly. Never silently remove without user confirmation.
@@ -352,9 +391,32 @@ glab pipeline view
 
 - If CI is red, iterate until green: inspect logs, fix, push, re-check.
 
+## Standard Make Target Taxonomy
+
+Every repo must expose these targets. Agents use these as the canonical entry points — never raw `bun run`/`cargo`/`go` commands unless a Make target does not exist.
+
+| Target        | Applies to        | Purpose                                             |
+|---------------|-------------------|-----------------------------------------------------|
+| `make dev`    | all               | Start local dev server or run binary in dev mode    |
+| `make up`     | services          | Start background services (Docker Compose)          |
+| `make down`   | services          | Stop background services                            |
+| `make lint`   | all               | Run all linters and type checks (never `quality`)   |
+| `make test`   | all               | Run all unit tests                                  |
+| `make build`  | all               | Compile / bundle for production                     |
+| `make _clean` | all               | Remove generated artefacts (dist, coverage, .tmp)   |
+| `make push`   | services/packages | Push image/package to registry                      |
+| `make qa`     | web               | Playwright e2e full suite (headless)                |
+| `make qa-smoke` | web             | Playwright smoke tests (fast CI gate)               |
+
+Rules:
+- `make quality` is **banned** — use `make lint`.
+- `make qa-headed` is **not a shared target** — agents are headless; headed runs use `bunx playwright test --headed` directly.
+- Multi-component repos split targets: `make lint-<component>` feeds into `make lint` aggregate. Example: `lint-zig` + `lint-website` → `lint`.
+- `make test` runs unit tests only. E2e is always a separate `make qa` / `make qa-smoke`.
+
 ## Build And Verify Defaults
 
-- Before handoff, run the full relevant gate (quality, test, build, docs updates).
+- Before handoff, run the full relevant gate (`make lint`, `make test`, `make build`).
 - Prefer end-to-end verification over partial checks.
 - If blocked, record exact missing precondition and command output.
 
@@ -467,6 +529,50 @@ Optional (feature-dependent):
 - Container registry token(s)
 - Tailscale auth key (only for automated node enrollment)
 
+## Knowledge Base (QMD)
+
+Use `qmd` (Query Markup Documents) to search indexed reference material when implementing features that relate to sandbox agents, infrastructure patterns, or prior research.
+
+**Collection:** `clawable` → `~/notes/clawable/`
+
+**When to use:**
+- Researching sandbox/actor implementations (Daytona, Rivet, Cognee, AgentKeeper)
+- Comparing infrastructure approaches before committing to a design
+- Looking up API patterns, deployment strategies, or architectural decisions
+- Answering "how did X project solve Y problem?"
+
+**Basic queries:**
+```bash
+# Fast keyword search (BM25)
+qmd search "actor model implementation" -c clawable
+
+# Semantic search (conceptual similarity)
+qmd vsearch "sandbox isolation patterns" -c clawable
+
+# Hybrid search with re-ranking (best quality)
+qmd query "how to deploy sandbox agents" -c clawable
+
+# Get specific document
+qmd get "daytona/README.md"
+
+# List available files
+qmd ls clawable
+```
+
+**For agent workflows:**
+```bash
+# JSON output for LLM processing
+qmd query "sandbox architecture" --json -n 10
+
+# Get files above relevance threshold
+qmd query "actor runtime" --files --min-score 0.4
+
+# Export all matches for deep analysis
+qmd search "API design" --all --files --min-score 0.3
+```
+
+**Workflow:** When asked to research or compare implementations, run `qmd query` or `qmd search` first to leverage indexed knowledge before general reasoning.
+
 ## Notes And Locations
 
 - Blog repo: blank for now.
@@ -528,6 +634,59 @@ cp ~/.config/opencode/opencode.json "$DST/.config/opencode/opencode.json"
 - Prefer boring, reproducible commands over SaaS wizards.
 - Every skill must declare: inputs, outputs, command sequence, verification, failure handling.
 - **Do not invent process unless a failure forced it.** This document must not expand without cause.
+
+## Web-to-Markdown Workflow
+
+When downloading web content as markdown for research or documentation:
+
+### Option 1: Cloudflare Markdown for Agents (Preferred)
+
+For sites using Cloudflare with the feature enabled:
+
+```bash
+curl -H "Accept: text/markdown" "https://example.com/page"
+```
+
+**Benefits:**
+- Native markdown from the CDN
+- Includes `x-markdown-tokens` header for token count
+- Clean, structured output
+- Content-Signal headers indicate usage rights
+
+**Requirements:**
+- Site must use Cloudflare
+- Zone owner must enable "Markdown for Agents" in dashboard
+
+### Option 2: html2text Fallback (Universal)
+
+For any HTML page when Cloudflare markdown isn't available:
+
+```bash
+# Install html2text (one-time)
+brew install html2text
+
+# Download and convert
+curl -s "https://example.com/page" > /tmp/page.html
+html2text /tmp/page.html > output.md
+```
+
+**Benefits:**
+- Works on any HTML page
+- Strips navigation and cruft
+- Produces clean text/markdown
+- No dependency on site configuration
+
+**Tradeoffs:**
+- Plain text format (loses some rich formatting)
+- Requires local conversion step
+
+### Decision Matrix
+
+| Approach | Use When | Command |
+|----------|----------|---------|
+| Cloudflare header | Site uses Cloudflare + enabled | `curl -H "Accept: text/markdown" URL` |
+| html2text | Any other site | `curl -s URL \| html2text` |
+| webfetch tool | Quick extraction via agent | `webfetch URL --format markdown` |
 
 ## Communication Contract
 

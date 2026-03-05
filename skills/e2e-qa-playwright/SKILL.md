@@ -22,16 +22,16 @@ bunx playwright install --with-deps
 
 ## Required Targets
 
-- `make qa`
-- `make qa-smoke`
-- `make qa-headed` (optional local debug)
+- `make qa`        — full Playwright e2e suite, headless
+- `make qa-smoke`  — smoke tests only (fast CI gate)
+
+No `make qa-headed`. Agents run headless. Local headed runs use `bunx playwright test --headed` directly — not a shared Make target.
 
 ## Core Commands
 
 ```bash
 bunx playwright test --reporter=line
 bunx playwright test tests/e2e/smoke.spec.ts
-bunx playwright test --headed
 ```
 
 ## CI Rules
@@ -39,6 +39,8 @@ bunx playwright test --headed
 - Run headless by default.
 - Fail pipeline on test failure.
 - Store screenshots/videos/traces as artifacts.
+- Use `chromium` only in CI (no cross-browser matrix unless explicitly required).
+- `BASE_URL` env var selects target: unset → dev server auto-start; set → test against that URL (post-deploy smoke).
 
 ## Output Contract
 
