@@ -7,10 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [5.1.0] - 2026-03-05
+## [6.0.0] - 2026-03-05
+
+### Added
+- **Specification Standards** — synced from ai-jumpstart v6.0.0: complete spec template inline in `AGENTS.md` defining prototype hierarchy (v1 → Milestones → Workstreams → Sections → Dimensions)
+- **Mistral AI provider expansion** — additional model variants in `.config/opencode/opencode.json` (mistral-large-2512, codestral-2508, codestral-2502)
+- **Vibe agent support** — added to `run.sh` deployment configuration
 
 ### Changed
-- Synced from ai-jumpstart v5.1.0: standard Make target taxonomy (`lint` replaces `quality`; `qa`/`qa-smoke`; no `qa-headed`), design system defaults (Geist fonts, CSS token palette, dot-grid), Vite 7 + Tailwind v4 website scaffold, Oracle CLI SKILL.md canonical v0.9.0
+- **AGENTS.md** — synced from ai-jumpstart v6.0.0 with canonical spec template
+- **CHANGELOG.md** — synced from ai-jumpstart v6.0.0
+- **`.zshrc` environment loading** — refactored with modular functions (`load-buffet-env`, `load-clawable-env`), manifest-based key discovery, AGENT_ENV profile support
+- **`run.sh` formatting** — normalized indentation (tabs instead of spaces)
+- **VERSION** — bumped to 6.0.0
+
+### Removed
+- `project_spec.md` — ai-jumpstart-specific, not a template for general use
+
+## [5.1.0] - 2026-03-05
+
+### Added
+- **Standard Make target taxonomy** in `AGENTS.md` — canonical table for `dev`, `up`, `down`, `lint`, `test`, `build`, `_clean`, `qa`, `qa-smoke`; bans `make quality`, forbids `make qa-headed` as a shared target
+- **Design system defaults** in `skills/frontend-design/SKILL.md` — Geist font pair, CSS token palette (`#FF6B35` neon orange, `#39FF85` terminal green, `#0A0A0A` dark base), dot-grid background, hero glow, card hover, agent terminal surface patterns
+- `docs/pilot-spec.md` — pilot program specification
+
+### Changed
+- `skills/create-scaffold/SKILL.md` — replaced `make quality` with `make lint`; added full target taxonomy and web-specific targets table
+- `skills/e2e-qa-playwright/SKILL.md` — removed `make qa-headed`; added `BASE_URL` switching pattern; chromium-only CI rule
+- `skills/frontend-design/SKILL.md` — stack updated to Vite 7 + Tailwind v4 CSS-first (`@import "tailwindcss"`); Make targets section added
+- `docs/scaffolds/website-template.md` — updated stack to Vite 7 + Tailwind v4; Make targets table; verification uses `make lint/test/build/qa-smoke`
+- `skills/oracle/SKILL.md` — confirmed canonical v0.9.0 CLI-centric version
+- `run.sh` — added Vibe config and agent entries
+
+## [5.0.0] - 2026-03-02
+
+### Added
+- **Tombstone v5.0** - Complete rewrite in Zig with new architecture
+  - **Milestone 1**: Foundation - CLI parsing, Makefile, tests, 212KB binary
+  - **Milestone 5**: Setup automation - replaces run.sh with `tombstone setup`
+  - **Milestone 6**: Directory sync - automates ai-jumpstart → dotfiles sync
+  - New spec: `docs/spec/v5/PROJECT_SPEC.md` with 7 milestones to v1.0
+  - Commands: `tombstone setup`, `tombstone sync`, `tombstone status`
+  - Performance: 3-5ms execution, <500KB binary target
+
+### Changed
+- **Project focus shift** - From agent router to development automation tool
+- Milestones reordered: Setup (5) and Sync (6) prioritized over routing (2-4)
+
+## [4.2.0] - 2026-03-02
+
+### Added
+- **Tombstone agent router specification** - comprehensive design doc for intelligent agent routing, setup automation, and directory sync (see `tombstone/SPEC.md`)
 
 ## [4.1.1] - 2026-02-25
 
@@ -210,13 +257,20 @@ Then start from `skills/preflight-tooling.md`.
   - Enhanced Typical Workflow diagram with code review and CAL usage example
   - Added skill design principles from Principal Engineer review
 
-[Unreleased]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v3.0.0...HEAD
-[3.0.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.8.0...v3.0.0
-[2.8.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.7.0...v2.8.0
-[2.7.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.6.0...v2.7.0
-[2.6.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.5.0...v2.6.0
-[2.5.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.4.0...v2.5.0
-[2.4.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v2.0.0...v2.4.0
-[2.0.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/compare/v1.0.0...v2.0.0
-[1.0.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/releases/v1.0.0
-[0.9.0]: https://awakeninggit.e2enetworks.net/engineering/ai-jumpstart/-/releases/v0.9.0
+[Unreleased]: https://github.com/indykish/dotfiles/compare/v6.0.0...HEAD
+[6.0.0]: https://github.com/indykish/dotfiles/compare/v5.1.0...v6.0.0
+[5.1.0]: https://github.com/indykish/dotfiles/compare/v5.0.0...v5.1.0
+[5.0.0]: https://github.com/indykish/dotfiles/compare/v4.2.0...v5.0.0
+[4.2.0]: https://github.com/indykish/dotfiles/compare/v4.1.1...v4.2.0
+[4.1.1]: https://github.com/indykish/dotfiles/compare/v4.1.0...v4.1.1
+[4.1.0]: https://github.com/indykish/dotfiles/compare/v4.0.0...v4.1.0
+[4.0.0]: https://github.com/indykish/dotfiles/compare/v3.0.0...v4.0.0
+[3.0.0]: https://github.com/indykish/dotfiles/compare/v2.8.0...v3.0.0
+[2.8.0]: https://github.com/indykish/dotfiles/compare/v2.7.0...v2.8.0
+[2.7.0]: https://github.com/indykish/dotfiles/compare/v2.6.0...v2.7.0
+[2.6.0]: https://github.com/indykish/dotfiles/compare/v2.5.0...v2.6.0
+[2.5.0]: https://github.com/indykish/dotfiles/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/indykish/dotfiles/compare/v2.0.0...v2.4.0
+[2.0.0]: https://github.com/indykish/dotfiles/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/indykish/dotfiles/releases/tag/v1.0.0
+[0.9.0]: https://github.com/indykish/dotfiles/releases/tag/v0.9.0
