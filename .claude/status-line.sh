@@ -4,6 +4,7 @@
 # 🎨 Emojis
 EMOJI_FOLDER="📁"
 EMOJI_GIT="🌿"
+EMOJI_WORKTREE="🌲"
 EMOJI_MODEL="🤖"
 EMOJI_VENV="💼"
 EMOJI_PYTHON="🐍"
@@ -25,6 +26,15 @@ get_model() {
 # 🌿 Get git branch
 get_branch() {
 	git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'main'
+}
+
+# 🌲 Get worktree name (non-empty only when in a linked worktree)
+get_worktree() {
+	local git_dir
+	git_dir=$(git rev-parse --git-dir 2>/dev/null) || return
+	if [[ "$git_dir" == *"/worktrees/"* ]]; then
+		basename "$git_dir"
+	fi
 }
 
 # 🐍 Get Python version
@@ -90,10 +100,14 @@ main() {
 	local folder=$(get_folder "$input")
 	local model=$(get_model "$input")
 	local branch=$(get_branch)
+	local worktree=$(get_worktree)
 	local lang=$(detect_lang "$folder")
 	local cost=$(get_costs "$input")
 
-	echo "$EMOJI_FOLDER $folder$lang | $EMOJI_GIT $branch | $EMOJI_MODEL $model$cost"
+	local wt_part=""
+	[[ -n "$worktree" ]] && wt_part=" | $EMOJI_WORKTREE $worktree"
+
+	echo "$EMOJI_FOLDER $folder$lang | $EMOJI_GIT $branch$wt_part | $EMOJI_MODEL $model$cost"
 }
 
 main

@@ -6,6 +6,21 @@ This folder is split into `core` workflows and `optional` workflows.
 
 All skills must declare inputs, outputs, command sequence, verification, and failure handling (see `AGENTS.md`).
 
+## Workflow Skills (ship, review, plan, retro, browse)
+
+From `skills/ship/`, `skills/review/`, `skills/plan-ceo-review/`, `skills/plan-eng-review/`, `skills/retro/`, `skills/browse/`.
+
+| Skill | Mode | Invoke |
+|-------|------|--------|
+| `ship` | Release engineer — merge, test, bump, push, PR | `/ship` |
+| `review` | Staff engineer — paranoid pre-merge diff review | `/review` |
+| `plan-ceo-review` | Founder taste — scope challenge, 10-star product | `/plan-ceo-review` |
+| `plan-eng-review` | Eng lead — architecture + code quality lock-in | `/plan-eng-review` |
+| `retro` | Eng manager — weekly metrics, hotspots, trends | `/retro` |
+| `browse` | QA engineer — headless Chromium, screenshots, forms | `/browse` |
+
+Browse requires a one-time build: `cd skills/browse && bun install && bun run build`
+
 ## Core Skills (for immediate install/test)
 
 - `preflight-tooling/`

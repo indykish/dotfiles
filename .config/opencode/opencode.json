@@ -172,54 +172,38 @@
         "apiKey": "{env:OLLAMA_CLOUD_API_KEY}"
       }
     },
-    "modal": {
-      "name": "Modal GLM",
+    "fireworks": {
+      "name": "Fireworks AI",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "baseURL": "https://api.us-east-1.modal.direct/v1",
-        "apiKey": "{env:MODAL_API_KEY}"
+        "baseURL": "https://api.fireworks.ai/inference/v1",
+        "apiKey": "{env:FIREWORKS_API_KEY}"
       },
       "models": {
-        "zai-org/GLM-5-FP8": {
-          "name": "GLM-5 FP8"
-        }
-      }
-    },
-    "moonshot": {
-      "name": "Moonshot",
-      "npm": "@ai-sdk/openai-compatible",
-      "options": {
-        "apiKey": "{env:MOONSHOT_API_KEY}",
-        "baseURL": "https://api.moonshot.ai/v1"
-      },
-      "models": {
-        "kimi-k2.5": {
+        "accounts/fireworks/models/glm-5": {
+          "name": "GLM 5"
+        },
+        "accounts/fireworks/models/kimi-k2.5": {
           "name": "Kimi K2.5"
+        },
+        "accounts/fireworks/models/minimax-m1": {
+          "name": "MiniMax M1"
         }
       }
     },
-    "mistral": {
-      "name": "Mistral AI",
+    "openrouter": {
+      "name": "OpenRouter",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "apiKey": "{env:MISTRAL_API_KEY}",
-        "baseURL": "https://api.mistral.ai/v1"
+        "baseURL": "https://openrouter.ai/api/v1",
+        "apiKey": "{env:OPENROUTER_API_KEY}"
       },
       "models": {
-        "mistral-large-latest": {
-          "name": "Mistral Large 3 Hackathon"
+        "thudm/glm-5": {
+          "name": "GLM 5 (OR)"
         },
-        "mistral-large-2512": {
-          "name": "Mistral Large 2512 Hackathon"
-        },
-        "codestral-latest": {
-          "name": "Codestral Latest Hackathon"
-        },
-        "codestral-2508": {
-          "name": "Codestral 2508 Hackathon"
-        },
-        "codestral-2502": {
-          "name": "Codestral 2502 Hackathon"
+        "moonshotai/kimi-k2.5": {
+          "name": "Kimi K2.5 (OR)"
         }
       }
     }

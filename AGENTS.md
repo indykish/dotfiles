@@ -88,6 +88,7 @@ Execution pattern:
 - If builds fail with local Docker disk exhaustion (`ENOSPC` or "no space left on device"), run `~/bin/mac-cleanup.sh`, then verify with `docker system df`, and retry the build.
 - Keep edits small and reviewable; split large files before they become hard to review.
 - Use Conventional Commits when committing is requested.
+- Before any `git commit` or `git push`, run `gitleaks` and ensure it passes (no leaked secrets).
 - For date-time entries in docs/notes, use format `Feb 02, 2026: 10:30 AM`.
 - Sync is mandatory, not user-prompted: after any change under `~/Projects/ai-jumpstart/*` (except `README.md`), sync mapped files to `~/Projects/dotfiles` in the same turn and explicitly report `sync completed + verified`.
 - For Oracle CLI assistance, run once per session:
@@ -113,7 +114,7 @@ When creating specifications for prototypes, use the following hierarchy and for
 ```
 v1.0.0 (Prototype)
 └── Milestones (M1, M2, M3...)
-    └── Workstreams (M1_001, M1_002A...)
+    └── Workstreams (M1_1, M1_2, M1_3...)
         └── Sections (1.0, 2.0, 3.0...)
             └── Dimensions (1.1, 1.2, 1.3...)
 ```
@@ -121,19 +122,67 @@ v1.0.0 (Prototype)
 **Terminology:**
 - **Prototype** — v1.0.0 (major release)
 - **Milestone** — Major phase (M1, M2, M3)
-- **Workstream** — Parallel track within milestone (M1_001, M1_002A)
+- **Workstream** — Parallel track within milestone (M1_1, M1_2, M1_3; numeric only, single-digit style)
+- **Batch** — Parallel execution group (B1, B2, B3...). Workstreams in the same batch can run concurrently. Batches are sequential — B2 starts after B1 gates clear.
 - **Section** — Logical grouping (1.0, 2.0, 2.1)
 - **Dimension** — Smallest unit of work (1.1, 2.1.1, 3.2.1)
+
+### Capability Semantics (Required)
+
+Use this interpretation for planning and review:
+
+- **Milestone** = a working prototype capability that can be demoed end-to-end with evidence.
+- **Workstream** = one singular working function that contributes to exactly one milestone capability.
+- **Workstream ID format decision** = use numeric single-digit IDs (`1`,`2`,`3`,`4`...) in spec filenames for current scope; do not use alphabetic suffixes like `006A`.
+- **Section** = implementation slice inside a workstream (what will be built).
+- **Dimension** = verification-unit check inside a section (unit/integration/contract testable item).
+
+A milestone is not complete until demo evidence is captured (commands, logs, screenshots, or recorded walkthrough notes).
+
+Examples:
+- Milestone example: "CLI works with zombied" (demo: login -> workspace list -> run status).
+- Milestone example: "PostHog works in website" (demo: CTA click -> event visible in PostHog).
+- Milestone example: "PostHog works in zombied" (demo: run lifecycle emits events).
+- Milestone example: "Free plan billing works" (demo: free-tier entitlement enforcement).
+- Milestone example: "Paid Pro plan works" (demo: upgrade -> paid entitlement enforcement).
+
+Workstream examples:
+- `M4_001` Implement CLI runtime (singular function: local operator runtime works).
+- `M4_002` Publish npm package (singular function: installable distribution works).
+- `M5_005` Enable PostHog in website (singular function: web analytics path works).
+
+Section examples:
+- Configure auth flow.
+- Implement run command lifecycle.
+- Wire event emission helpers.
+
+Dimension examples:
+- Unit test: CLI parser handles required flags.
+- Integration test: run command returns deterministic state transitions.
+- Contract test: emitted analytics payload contains required keys.
+
+### Workstream Count Guardrail
+
+- Hard limit: each milestone may define at most **4 workstreams**.
+- If more than 4 are needed, split into a new milestone.
+- Goal: keep milestones small enough to demo and close quickly.
+
+### Dimension Count Guardrail
+
+- Hard limit: each section may define at most **4 dimensions**.
+- If more than 4 are needed, split into another section or create a new workstream.
+- Goal: keep execution chunks small, reviewable, and demoable.
+
 
 ### File Naming
 
 ```
 docs/spec/v1/M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
 
-Example: docs/spec/v1/M3_006A_CLERK_AUTH.md
+Example: docs/spec/v1/M3_007_CLERK_AUTH.md
          └─┬─┘ └──┬──┘ └┬┘ └──────┬────────┘
            │      │     │         └─ Descriptive name (UPPERCASE_SNAKE_CASE)
-           │      │     └─ Workstream (001-999, A-Z for sub-streams)
+           │      │     └─ Workstream (single digit 1-9 only; no alphabetic suffixes)
            │      └─ Milestone (1-9)
            └─ Milestone prefix
 ```
@@ -145,10 +194,11 @@ Example: docs/spec/v1/M3_006A_CLERK_AUTH.md
 
 **Prototype:** v{major}.{minor}.{patch}
 **Milestone:** M{Number}
-**Workstream:** {Number}
+**Workstream:** {1-9}
 **Date:** {MMM DD, YYYY}
 **Status:** PENDING | IN_PROGRESS | DONE
 **Priority:** P0 | P1 | P2 — {Description}
+**Batch:** B{1-4} — parallel execution group
 **Depends on:** {Dependencies}
 
 ---
@@ -821,3 +871,10 @@ ASSUMPTIONS I'M MAKING:
 ```
 
 If conflicting requirements appear, stop and ask one precise question.
+
+## Code Structure Policies
+
+- `Mar 07, 2026: 11:55 PM` — Code line-limit policy: write deep modules with fewer than 500 lines to keep testing and review simpler.
+- `Mar 07, 2026: 11:55 PM` — Constant policy: if a string is used more than once, extract a constant.
+- `Mar 07, 2026: 11:55 PM` — Constant scope rule: if reuse is across modules, place constants in a shared global constants file.
+- `Mar 07, 2026: 11:55 PM` — Anti-pattern guardrail: do not create unnecessary constants; within a single file, declare constants only when reused more than once.

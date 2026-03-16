@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+USEZOMBIE_ENV="${HOME}/.config/usezombie/.env"
+E2E_ENV="${HOME}/.config/e2e/.env"
+
+ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
+warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
+
+op_get() { op item get "$1" --vault "$2" --fields "$3" --reveal 2>/dev/null || true; }
+
+# Bootstrap
+[[ -z "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]] && [[ -f "${USEZOMBIE_ENV}" ]] && { set -a; source "${USEZOMBIE_ENV}"; set +a; }
+[[ -z "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]] && { echo "OP_SERVICE_ACCOUNT_TOKEN not set"; exit 1; }
+export OP_SERVICE_ACCOUNT_TOKEN
+saved_token="${OP_SERVICE_ACCOUNT_TOKEN}"
+
+echo "sync-op: overwrite ${USEZOMBIE_ENV} and ${E2E_ENV} from 1Password?"
+read -rp "[y/N] " confirm
+[[ "${confirm}" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
+
+# --- usezombie (vault: ZMB_LOCAL_ENV) ---
+V=ZMB_LOCAL_ENV
+mkdir -p "$(dirname "${USEZOMBIE_ENV}")"
+printf 'export OP_SERVICE_ACCOUNT_TOKEN=%q\n' "${saved_token}" > "${USEZOMBIE_ENV}"
+chmod 600 "${USEZOMBIE_ENV}"
+
+for pair in \
+  "github-pat=GITHUB_PERSONAL_ACCESS_TOKEN" \
+  "openrouter-api-key=OPENROUTER_API_KEY" \
+  "fireworks-api-token=FIREWORKS_API_KEY" \
+  "ollama-cloud-api-key=OLLAMA_CLOUD_API_KEY"; do
+  item="${pair%%=*}"; var="${pair#*=}"
+  val="$(op_get "${item}" "${V}" password)"; [[ -z "${val}" ]] && val="$(op_get "${item}" "${V}" credential)"
+  [[ -n "${val}" ]] && { printf 'export %s=%q\n' "${var}" "${val}" >> "${USEZOMBIE_ENV}"; ok "${var}"; } || warn "${var}"
+done
+
+# --- e2e (vault: E2E_WORK) ---
+V=E2E_WORK
+mkdir -p "$(dirname "${E2E_ENV}")"
+: > "${E2E_ENV}"
+chmod 600 "${E2E_ENV}"
+
+# simple keys
+for pair in \
+  "gitlab-pat=GITLAB_PERSONAL_ACCESS_TOKEN"; do
+  item="${pair%%=*}"; var="${pair#*=}"
+  val="$(op_get "${item}" "${V}" password)"; [[ -z "${val}" ]] && val="$(op_get "${item}" "${V}" credential)"
+  [[ -n "${val}" ]] && { printf 'export %s=%q\n' "${var}" "${val}" >> "${E2E_ENV}"; ok "${var}"; } || warn "${var}"
+done
+
+# docker registries (username + password from same item)
+for pair in \
+  "docker-registry-infra=INFRA" \
+  "docker-registry-marketplace=MARKETPLACE" \
+  "docker-registry-myaccount=MYACCOUNT"; do
+  item="${pair%%=*}"; prefix="${pair#*=}"
+  user="$(op_get "${item}" "${V}" username)"
+  pass="$(op_get "${item}" "${V}" password)"
+  if [[ -n "${user}" && -n "${pass}" ]]; then
+    printf 'export DOCKER_USER_%s=%q\n' "${prefix}" "${user}" >> "${E2E_ENV}"
+    printf 'export DOCKER_PASSWORD_%s=%q\n' "${prefix}" "${pass}" >> "${E2E_ENV}"
+    ok "DOCKER_*_${prefix}"
+  else
+    warn "DOCKER_*_${prefix}"
+  fi
+done
+
+ok "Done. Restart shell or: source ~/.zshrc"

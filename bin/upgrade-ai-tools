@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🤖 Upgrading claude..."
+claude upgrade
+
+echo "🤖 Upgrading opencode..."
+opencode upgrade
+
+echo "🤖 Upgrading amp..."
+amp update
+
+echo "📦 Upgrading @openai/codex..."
+npm install -g @openai/codex
+
+echo "📦 Upgrading @tobilu/qmd..."
+bun install -g @tobilu/qmd
+
+echo "✅ All AI coding tools upgraded!"
