@@ -1,54 +1,58 @@
 #!/usr/bin/env bash
-# sync-skills — clone/update gstack, sync all skills to agent dirs
+# sync-skills — sync gstack + dotfiles skills into ~/Projects/dotfiles/gstack
 set -e
 
-DOTFILES_SKILLS="$HOME/Projects/dotfiles/skills"
-GSTACK_DIR="$HOME/Projects/gstack"
-GSTACK_SKILLS="$GSTACK_DIR/skills"
+DOTFILES="$HOME/Projects/dotfiles"
+DOTFILES_SKILLS="$DOTFILES/skills"
+GSTACK="$DOTFILES/gstack"
 REPO="git@github.com:garrytan/gstack.git"
-AGENT_DIRS=(
-  "$HOME/.claude/skills"
-  "$HOME/.codex/skills"
-  "$HOME/.agents/skills"
-  "$HOME/.amp/skills"
-  "$HOME/.opencode/skills"
+
+AGENTS=(
+  "$HOME/.claude"
+  "$HOME/.codex"
+  "$HOME/.agents"
+  "$HOME/.amp"
+  "$HOME/.opencode"
 )
 
-if [ -d "$GSTACK_DIR/.git" ]; then
-  echo "Updating gstack at $GSTACK_DIR"
-  cd "$GSTACK_DIR" && git pull
-else
-  echo "Cloning gstack to $GSTACK_DIR"
-  git clone "$REPO" "$GSTACK_DIR"
-fi
+ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
+warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 
-mkdir -p "$GSTACK_SKILLS"
+# 1. Remove and re-clone gstack into dotfiles/gstack (clean slate)
+rm -rf "$GSTACK"
+git clone "$REPO" "$GSTACK"
+ok "Cloned gstack to $GSTACK"
 
-for skill_dir in "$GSTACK_DIR"/*/; do
-  [ -d "$skill_dir" ] || continue
-  skill_name="$(basename "$skill_dir")"
-  [ -f "$skill_dir/SKILL.md" ] || continue
-  case "$skill_name" in
-    node_modules|bin|dist|test|scripts|lib|supabase|.agents) continue ;;
-  esac
-  mkdir -p "$GSTACK_SKILLS/$skill_name"
-  cp -r "$skill_dir"/* "$GSTACK_SKILLS/$skill_name/"
-  echo "Gstack skill: $skill_dir → $GSTACK_SKILLS"
-done
-
+# 2. Copy dotfiles skills into gstack (e.g., handoff, pickup, write-unit-test)
 for skill_dir in "$DOTFILES_SKILLS"/*/; do
   [ -d "$skill_dir" ] || continue
   skill_name="$(basename "$skill_dir")"
-  mkdir -p "$GSTACK_SKILLS/$skill_name"
-  cp -r "$skill_dir"* "$GSTACK_SKILLS/$skill_name/"
-  echo "Dotfiles skill: $skill_dir → $GSTACK_SKILLS"
+  mkdir -p "$GSTACK/$skill_name"
+  cp -r "$skill_dir"* "$GSTACK/$skill_name/"
+  ok "Dotfiles skill: $skill_dir → $GSTACK/$skill_name"
 done
 
-for agent_dir in "${AGENT_DIRS[@]}"; do
-  mkdir -p "$(dirname "$agent_dir")"
-  rm -rf "$agent_dir"
-  ln -snf "$GSTACK_SKILLS" "$agent_dir"
-  echo "Linked $agent_dir → $GSTACK_SKILLS"
+# 3. Symlink agent configs → dotfiles/gstack and dotfiles/AGENTS.md
+for agent_dir in "${AGENTS[@]}"; do
+  mkdir -p "$agent_dir"
+
+  # skills/ → ~/Projects/dotfiles/gstack
+  rm -rf "$agent_dir/skills"
+  ln -snf "$GSTACK" "$agent_dir/skills"
+  ok "Linked $agent_dir/skills → $GSTACK"
+
+  # For Claude: CLAUDE.md → ~/Projects/dotfiles/AGENTS.md
+  # For others: AGENTS.md → ~/Projects/dotfiles/AGENTS.md
+  agent_name="$(basename "$agent_dir")"
+  if [ "$agent_name" = ".claude" ]; then
+    rm -f "$agent_dir/CLAUDE.md"
+    ln -snf "$DOTFILES/AGENTS.md" "$agent_dir/CLAUDE.md"
+    ok "Linked $agent_dir/CLAUDE.md → $DOTFILES/AGENTS.md"
+  else
+    rm -f "$agent_dir/AGENTS.md"
+    ln -snf "$DOTFILES/AGENTS.md" "$agent_dir/AGENTS.md"
+    ok "Linked $agent_dir/AGENTS.md → $DOTFILES/AGENTS.md"
+  fi
 done
 
-echo "Skills synced."
+ok "Skills synced."

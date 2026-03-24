@@ -206,6 +206,19 @@
           "name": "Kimi K2.5 (OR)"
         }
       }
+    },
+    "moonshot": {
+      "name": "Moonshot",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://api.moonshot.com/v1",
+        "apiKey": "{env:MOONSHOT_API_KEY}"
+      },
+      "models": {
+        "kimi-k2.5": {
+          "name": "Kimi K2.5"
+        }
+      }
     }
   }
 }
