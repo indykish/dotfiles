@@ -17,3 +17,7 @@ echo "📦 Upgrading @tobilu/qmd..."
 bun install -g @tobilu/qmd
 
 echo "✅ All AI coding tools upgraded!"
+
+echo ""
+echo "🔄 Running sync-skills to keep skills updated..."
+~/bin/sync-skills

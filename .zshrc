@@ -62,3 +62,7 @@ eval "$(starship init zsh)"
 if [[ "${TERM_PROGRAM:-}" == "iTerm.app" && -r "${HOME}/.iterm2_shell_integration.zsh" ]]; then
   source "${HOME}/.iterm2_shell_integration.zsh"
 fi
+
+# Added by flyctl installer
+export FLYCTL_INSTALL="/Users/kishore/.fly"
+export PATH="$FLYCTL_INSTALL/bin:$PATH"
