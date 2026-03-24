@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# sync-skills — clone/update gstack, sync all skills to agent dirs
+set -e
+
+DOTFILES_SKILLS="$HOME/Projects/dotfiles/skills"
+GSTACK_DIR="$HOME/Projects/gstack"
+GSTACK_SKILLS="$GSTACK_DIR/skills"
+REPO="git@github.com:garrytan/gstack.git"
+AGENT_DIRS=(
+  "$HOME/.claude/skills"
+  "$HOME/.codex/skills"
+  "$HOME/.agents/skills"
+  "$HOME/.amp/skills"
+  "$HOME/.opencode/skills"
+)
+
+if [ -d "$GSTACK_DIR/.git" ]; then
+  echo "Updating gstack at $GSTACK_DIR"
+  cd "$GSTACK_DIR" && git pull
+else
+  echo "Cloning gstack to $GSTACK_DIR"
+  git clone "$REPO" "$GSTACK_DIR"
+fi
+
+mkdir -p "$GSTACK_SKILLS"
+
+for skill_dir in "$GSTACK_DIR"/*/; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  [ -f "$skill_dir/SKILL.md" ] || continue
+  case "$skill_name" in
+    node_modules|bin|dist|test|scripts|lib|supabase|.agents) continue ;;
+  esac
+  mkdir -p "$GSTACK_SKILLS/$skill_name"
+  cp -r "$skill_dir"/* "$GSTACK_SKILLS/$skill_name/"
+  echo "Gstack skill: $skill_dir → $GSTACK_SKILLS"
+done
+
+for skill_dir in "$DOTFILES_SKILLS"/*/; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  mkdir -p "$GSTACK_SKILLS/$skill_name"
+  cp -r "$skill_dir"* "$GSTACK_SKILLS/$skill_name/"
+  echo "Dotfiles skill: $skill_dir → $GSTACK_SKILLS"
+done
+
+for agent_dir in "${AGENT_DIRS[@]}"; do
+  mkdir -p "$(dirname "$agent_dir")"
+  rm -rf "$agent_dir"
+  ln -snf "$GSTACK_SKILLS" "$agent_dir"
+  echo "Linked $agent_dir → $GSTACK_SKILLS"
+done
+
+echo "Skills synced."
