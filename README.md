@@ -20,7 +20,6 @@ cp .zshrc ~/.zshrc
 ```bash
 # Claude
 cp .claude/settings.json ~/.claude/settings.json
-cp .claude-e2e/settings.json ~/.claude-e2e/settings.json
 
 # Codex
 mkdir -p ~/.codex && cp .codex/config.toml ~/.codex/config.toml
@@ -61,7 +60,6 @@ chmod +x ~/bin/sync-op ~/bin/sync-skills ~/bin/upgrade-ai-tools
 
 ### Skills
 ```bash
-echo "gstack/" >> ~/Projects/dotfiles/.gitignore
 sync-skills
 ```
 
@@ -71,36 +69,6 @@ Secrets sync via `sync-op` from 1Password vaults:
 - `E2E_WORK` → `~/.config/e2e/.env`
 
 Bootstrap: set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.config/usezombie/.env`, then run `sync-op`.
-
-## Update
-```bash
-cd ~/Projects/dotfiles && git pull
-```
-
-Then re-copy changed files. No deploy script — just `cp`.
-
-## Structure
-
-```
-dotfiles/
-├── bin/                      # sync-op, sync-skills, upgrade-ai-tools
-├── gstack/                   # Cloned skills (gitignored)
-├── .claude/                  # Claude settings
-├── .claude-e2e/              # Claude E2E settings
-├── .codex/                   # Codex config
-├── .config/
-│   ├── amp/
-│   ├── mise/
-│   ├── opencode/
-│   └── starship.toml
-├── Library/                  # Ghostty + iTerm2
-├── runbooks/
-├── skills/
-├── AGENTS.md
-├── CLAUDE.md
-├── .zshrc
-└── .zshenv
-```
 
 ## License
 
