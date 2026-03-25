@@ -9,6 +9,8 @@ git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles
 cd ~/Projects/dotfiles
 ```
 
+The instructions below assume you are in the `~/Projects/dotfiles` directory.
+
 ## Install
 
 ### macOS Shell
