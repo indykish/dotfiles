@@ -1,6 +1,6 @@
 # dotfiles
 
-Personal dotfiles and agent configuration powered by [gstack](https://github.com/garrytan/gstack) (Oracle Operating Model in [AGENTS.md](AGENTS.md)).
+Personal opinionated dotfiles and agent configuration powered by [gstack](https://github.com/garrytan/gstack) (Oracle Operating Model in [AGENTS.md](AGENTS.md)).
 
 ## Quick Start
 
