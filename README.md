@@ -5,7 +5,7 @@ Personal dotfiles and agent configuration powered by [gstack](https://github.com
 ## Quick Start
 
 ```bash
-git clone <this-repo> ~/Projects/dotfiles
+git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles
 cd ~/Projects/dotfiles
 ```
 
