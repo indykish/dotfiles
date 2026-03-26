@@ -35,7 +35,7 @@ ASSUMPTIONS I'M MAKING:
 - Hardware: MacBook.
 - Primary languages: Python, Go, Rust, TypeScript, Zig.
 - Runtime/tool install policy: `mise` first, `brew` fallback.
-- Password tooling: Proton Pass workflow, `pass-cli` preferred when installed.
+- Password tooling: 1Password, `op` CLI.
 - Git forges: both GitHub (`gh`) and GitLab (`glab`).
 
 ## Explicit Exclusions
@@ -45,6 +45,40 @@ Do not add or recommend workflows around:
 - Swift/Xcode/Sparkle/macOS app release tooling.
 - `bird`, `sonoscli`, `peekaboo`, `sweetistics`, `xcp`, `xcodegen`, `lldb`, `mcporter`.
 - Obsidian vault workflows.
+
+## Startup Priming Sequence
+
+When starting a new project or when asked to "set up infrastructure", follow this sequence — do not invent steps:
+
+1. Human completes `playbooks/M1_001_BOOTSTRAP.md` Milestone 1 (accounts + root API keys).
+2. Agent runs `./playbooks/gates/check-credentials.sh` (`M2_001_PREFLIGHT.md`) — validates every required vault item is present and non-empty. Runs anywhere `op` CLI is available — no CI dependency. **Do not proceed to step 3 until this passes with zero missing items.**
+3. Agent executes `playbooks/M2_002_PRIMING_INFRA.md` in order (container pipeline → Fly.io → Cloudflare Tunnel → data-plane → workers → CI → first release).
+4. Milestones proceed only after PRIMING_INFRA is verified end-to-end.
+
+**Do not skip steps or reorder.** Each step has a verify command — run it before proceeding to the next.
+
+## Milestone Credential Gate Pattern
+
+Every milestone that requires external credentials must start with a credential check workstream (`M{N}_001`) before any execution workstream (`M{N}_002+`). Rules:
+
+- `M{N}_001` = prerequisite/credential check. Lists all required items. Has a CI harness that fails loud with every missing item, not just the first.
+- `M{N}_002+` = execution workstreams. Must not run until `M{N}_001` passes.
+- **Never silently assume a credential exists.** If an `op://` path is used anywhere in a workflow, it must appear in the credential check list.
+- **Always surface missing items to the human explicitly** — include what it is, which vault, and how to generate the value.
+
+## Agent-First Sequencing
+
+When designing any multi-step operation that involves both a human and an agent:
+
+- **Human steps are bottlenecks — minimize them and front-load them.** The human should hand off one artifact (a provisioned server, a purchased domain, a set of credentials) and then step away. Everything after that handoff must be agent-executable without human interaction.
+- **Every step after the human handoff must be retryable and idempotent.** If a step fails partway through and is run again, it must produce the same result without side effects.
+- **Vault is the handoff contract between steps.** Each step reads what the previous step wrote. Never pass credentials as arguments or environment variables between steps — always write to vault, read from vault.
+
+Applied to playbooks: number steps so human steps come first (and are as few as possible), then agent steps run in sequence to completion. If the playbook completes, no manual activation or follow-up is needed.
+
+Reference implementation: `playbooks/M4_001_WORKER_BOOTSTRAP_DEV.md`.
+
+---
 
 ## Source Of Truth
 
@@ -89,6 +123,9 @@ Execution pattern:
 - Keep edits small and reviewable; split large files before they become hard to review.
 - Use Conventional Commits when committing is requested.
 - Before any `git commit` or `git push`, run `gitleaks` and ensure it passes (no leaked secrets).
+- Before any `git commit` that includes Zig changes, check and run the canonical Zig workflow in `docs/ZIG_RULES.md`.
+- Before creating any new `*.zig` file, read `docs/ZIG_RULES.md` and follow its rules first.
+- When writing or reviewing any Zig code that calls `conn.query()`: verify `.drain()` is present in the same function before `deinit()`. Run `make check-pg-drain` to confirm. Use `conn.exec()` instead whenever no result rows are needed.
 - For date-time entries in docs/notes, use format `Feb 02, 2026: 10:30 AM`.
 - Sync is mandatory, not user-prompted: after any change under `~/Projects/ai-jumpstart/*` (except `README.md`), sync mapped files to `~/Projects/dotfiles` in the same turn and explicitly report `sync completed + verified`.
 - For Oracle CLI assistance, run once per session:
@@ -114,7 +151,7 @@ When creating specifications for prototypes, use the following hierarchy and for
 ```
 v1.0.0 (Prototype)
 └── Milestones (M1, M2, M3...)
-    └── Workstreams (M1_1, M1_2, M1_3...)
+    └── Workstreams (M1_001, M1_002, M1_003...)
         └── Sections (1.0, 2.0, 3.0...)
             └── Dimensions (1.1, 1.2, 1.3...)
 ```
@@ -122,7 +159,7 @@ v1.0.0 (Prototype)
 **Terminology:**
 - **Prototype** — v1.0.0 (major release)
 - **Milestone** — Major phase (M1, M2, M3)
-- **Workstream** — Parallel track within milestone (M1_1, M1_2, M1_3; numeric only, single-digit style)
+- **Workstream** — Parallel track within milestone. ID is 3-digit zero-padded (`001`, `002`, `008`). No alphabetic suffixes.
 - **Batch** — Parallel execution group (B1, B2, B3...). Workstreams in the same batch can run concurrently. Batches are sequential — B2 starts after B1 gates clear.
 - **Section** — Logical grouping (1.0, 2.0, 2.1)
 - **Dimension** — Smallest unit of work (1.1, 2.1.1, 3.2.1)
@@ -133,7 +170,7 @@ Use this interpretation for planning and review:
 
 - **Milestone** = a working prototype capability that can be demoed end-to-end with evidence.
 - **Workstream** = one singular working function that contributes to exactly one milestone capability.
-- **Workstream ID format decision** = use numeric single-digit IDs (`1`,`2`,`3`,`4`...) in spec filenames for current scope; do not use alphabetic suffixes like `006A`.
+- **Workstream ID format** = 3-digit zero-padded numeric (`001`, `002`, `003`...). Do not use single-digit or alphabetic suffixes like `1`, `006A`.
 - **Section** = implementation slice inside a workstream (what will be built).
 - **Dimension** = verification-unit check inside a section (unit/integration/contract testable item).
 
@@ -180,9 +217,9 @@ Dimension examples:
 docs/spec/v1/M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
 
 Example: docs/spec/v1/M3_007_CLERK_AUTH.md
-         └─┬─┘ └──┬──┘ └┬┘ └──────┬────────┘
-           │      │     │         └─ Descriptive name (UPPERCASE_SNAKE_CASE)
-           │      │     └─ Workstream (single digit 1-9 only; no alphabetic suffixes)
+         └─┬─┘ └──┬──┘ └┬─┘ └──────┬────────┘
+           │      │     │           └─ Descriptive name (UPPERCASE_SNAKE_CASE)
+           │      │     └─ Workstream (3-digit zero-padded: 001–009)
            │      └─ Milestone (1-9)
            └─ Milestone prefix
 ```
@@ -194,7 +231,7 @@ Example: docs/spec/v1/M3_007_CLERK_AUTH.md
 
 **Prototype:** v{major}.{minor}.{patch}
 **Milestone:** M{Number}
-**Workstream:** {1-9}
+**Workstream:** {001-009}
 **Date:** {MMM DD, YYYY}
 **Status:** PENDING | IN_PROGRESS | DONE
 **Priority:** P0 | P1 | P2 — {Description}
@@ -531,10 +568,10 @@ gh auth status
 glab auth status
 ```
 
-If `glab` needs a token and `pass-cli` is available:
+If `glab` needs a token:
 
 ```bash
-TOKEN="$(pass-cli item view --vault-name "AGENTS_BUFFET" --item-title "GITLAB_PERSONAL_ACCESS_TOKEN" --field password)"
+TOKEN="$(op item get "gitlab-pat" --vault "E2E_WORK" --field credential)"
 glab auth login --hostname awakeninggit.e2enetworks.net --token "$TOKEN"
 ```
 
