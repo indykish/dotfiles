@@ -1,13 +1,20 @@
+# This is Git's per-user configuration file.
 [user]
-	name = Kishorekumar Neelamegam
-	email = nkishore@megam.io
-[core]
-	excludesfile = /home/kishore.gitignore_global
-[push]
-	default = simple
-[http]
-	postBuffer = 524288000
-[color]
-	ui = true
-[url "git://git.debian.org/d-i/"]
-	insteadOf = git+ssh://git.debian.org/git/d-i/
+	name = Kishore Kumar
+	email = kishore.kumar@e2enetworks.com
+
+[alias]
+    mr = !sh -c 'git fetch $1 merge-requests/$2/head:mr-$1-$2 && git checkout mr-$1-$2' -
+
+# Override author email for usezombie and personal repos
+[includeIf "hasconfig:remote.*.url:git@github.com:usezombie/**"]
+    path = ~/.gitconfig-usezombie
+
+[includeIf "hasconfig:remote.*.url:git@github.com:indykish/**"]
+    path = ~/.gitconfig-usezombie
+
+[includeIf "hasconfig:remote.*.url:https://github.com/usezombie/**"]
+    path = ~/.gitconfig-usezombie
+
+[includeIf "hasconfig:remote.*.url:https://github.com/indykish/**"]
+    path = ~/.gitconfig-usezombie
