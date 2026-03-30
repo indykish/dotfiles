@@ -290,6 +290,17 @@ Description.
 - `IN_PROGRESS` — Currently being worked on
 - `DONE` or `✅` — Complete, verified, and tested
 
+### Pre-Worktree Checklist
+
+**Before** creating a branch or worktree for a spec, do this in the current branch (e.g. `main`):
+
+1. Open the spec file in `docs/spec/v1/`
+2. Set `**Status:** IN_PROGRESS`
+3. Add a `**Branch:** <branch-name>` line to the front matter (after Status)
+4. Commit the updated spec: `git add docs/spec/v1/<file>.md && git commit -m "chore: mark <spec> IN_PROGRESS"`
+
+This signals to other agents and humans what is actively being worked on before the branch diverges.
+
 ### Completion Workflow
 
 When a spec is fully implemented:
