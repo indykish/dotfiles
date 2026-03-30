@@ -878,6 +878,25 @@ html2text /tmp/page.html > output.md
 | html2text | Any other site | `curl -s URL \| html2text` |
 | webfetch tool | Quick extraction via agent | `webfetch URL --format markdown` |
 
+## Human-in-the-Loop Interrupt Pattern
+
+When a UI streams live agent progress via SSE (`GET /v1/runs/{id}:stream`), the user must be able to interrupt the agent mid-run to correct course or unblock it.
+
+**Canonical design:**
+
+1. UI exposes an interrupt input alongside the SSE stream view.
+2. User submits a correction → UI fires `POST /v1/runs/{id}:interrupt` with `{"message": "..."}`.
+3. API writes the message to Redis: `SET run:{id}:interrupt "{msg}" EX 300`.
+4. Worker gate loop polls for the key **between gate iterations** (never mid-gate — interrupting mid-subprocess is unsafe).
+5. When found: worker deletes the key, injects the message as a new executor turn, then resumes the gate loop with the correction applied.
+6. SSE stream emits `event: interrupt_ack` so the UI confirms receipt.
+
+**Why Redis key (not pub/sub):** No new subscriber connection needed — the worker already holds a Redis client. The TTL (300s) means the interrupt survives a brief worker restart window without leaking.
+
+**Why between gate iterations:** Gate commands are subprocesses. Killing mid-run corrupts the worktree. The clean checkpoint is after a gate completes (pass or fail) — worker checks for pending interrupt before starting the next iteration.
+
+**Spec pattern:** Model this as a separate workstream (e.g. `M18_002`) — do not bolt onto the SSE streaming workstream.
+
 ## Communication Contract
 
 For non-trivial work, always surface assumptions before implementation.
