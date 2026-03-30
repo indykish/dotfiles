@@ -188,6 +188,9 @@
         },
         "accounts/fireworks/models/minimax-m1": {
           "name": "MiniMax M1"
+        },
+        "accounts/fireworks/routers/kimi-k2p5-turbo": {
+          "name": "Kimi K2.5 Turbo"
         }
       }
     },
