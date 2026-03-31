@@ -1,9 +1,9 @@
 ---
 name: write-unit-test
 description: >
-  Generates robust, multi-tier test coverage for any code change across 12 stacks:
-  Python, Python SDK, OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Go, Go CLI,
-  Terraform, Shell, Perl/Ruby. Covers happy path, edge cases, error paths,
+  Generates robust, multi-tier test coverage for any code change across 8 stacks:
+  Python, Python SDK, OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Go,
+  Shell. Covers happy path, edge cases, error paths,
   fidelity, concurrency, integration, regression, security, DRY, constants,
   performance, and API contract compliance. Use when writing tests, reviewing
   coverage, or hardening a codebase folder-by-folder.
@@ -27,10 +27,8 @@ Generate production-grade test coverage that catches bugs before they ship.
 | `package.json` + `react` dep | React/TypeScript |
 | `build.zig` / `build.zig.zon` | Zig |
 | `Cargo.toml` | Rust |
-| `go.mod` | Go / Go CLI / Terraform provider |
-| `*.tf` / `*.tfvars` | Terraform HCL |
+| `go.mod` | Go |
 | `*.sh` / `*.bash` | Shell script |
-| `*.pl` / `*.pm` / `Gemfile` / `*.rb` | Perl / Ruby |
 
 4. Follow existing test conventions (naming, file layout, fixture patterns, assertion style).
 5. Run the existing test suite first to establish the green baseline.
@@ -62,14 +60,10 @@ When asked to improve existing coverage (not just cover a changeset):
 | Stack | Coverage tool | Command |
 |-------|--------------|---------|
 | Python | `coverage.py` / `pytest-cov` | `pytest --cov=src --cov-branch` |
-| Rust | `llvm-cov` / `cargo-tarpaulin` | `cargo tarpaulin --out Html` |
-| Zig | `kcov` / built-in | `zig test --coverage` |
+| Rust | `proptest` / `criterion` / `cargo test` | `cargo test` / `cargo test --features all` |
+| Zig | `std.testing.allocator` (leak detect) | `zig build test` / `make test` |
 | React/TS | `c8` / `istanbul` / `vitest` | `vitest --coverage` |
 | Go | built-in | `go test -coverprofile=c.out ./...` |
-| Shell | `bashcov` / `kcov` | `kcov --include-path=./src coverage/ ./test.sh` |
-| Ruby | `simplecov` | auto via `spec_helper.rb` |
-| Perl | `Devel::Cover` | `cover -test` |
-| Terraform | N/A (plan-based) | `terraform plan -detailed-exitcode` |
 
 ---
 
@@ -95,21 +89,16 @@ For each public function, method, struct impl, component, endpoint, CLI command,
 | OpenAPI | Validate response against schema: `openapi_core.validate_response(spec, request, response)` |
 | JS/TS CLI | `const { stdout, exitCode } = await execa('./cli', ['cmd', '--flag']); expect(exitCode).toBe(0)` |
 | React | `render(<Component />); expect(screen.getByRole(...)).toBeInTheDocument()` |
-| Zig | `try std.testing.expectEqual(expected, actual);` no error union |
+| Zig | `try std.testing.expectEqual(expected, actual);` + assert DB state changed (setup fixture → call → query → verify rows); assert state transitions (PENDING → RUNNING); verify error code + hint pair for new UZ-* codes; `std.testing.allocator` for leak detection; test null for all optional params |
 | Rust gRPC | `let resp = client.get_resource(request).await?; assert_eq!(resp.into_inner().id, expected_id);` |
 | Rust HTTP | `let resp = app.oneshot(Request::get("/api/v1/items")).await; assert_eq!(resp.status(), 200);` |
-| Go Terraform | `resource.Test(t, resource.TestCase{Steps: []resource.TestStep{{Config: cfg, Check: ...}}})` |
-| Go CLI | `cmd := rootCmd; cmd.SetArgs([]string{"create", "--name", "test"}); assert.NoError(t, cmd.Execute())` |
-| Terraform | `terraform plan` exits 0; `terraform apply` is idempotent on second run |
 | Shell | `run my_script.sh --flag; [ "$status" -eq 0 ]; [[ "$output" == *"expected"* ]]` (bats) |
-| Perl | `ok(process("input") eq "expected", "happy path");` (Test::More) |
-| Ruby | `expect(subject.call(valid_input)).to eq(expected)` (RSpec) |
 
 ### TIER 2 — EDGE CASES
 
 For each input parameter:
 
-- [ ] Empty / blank / null / None / undefined / `Option::None` / `null` (Zig) / `nil` (Go/Ruby)
+- [ ] Empty / blank / null / None / undefined / `Option::None` / `null` (Zig) / `nil` (Go)
 - [ ] Zero, negative, float overflow, NaN, Infinity, `i64::MAX`, `i64::MIN`, `Number.MAX_SAFE_INTEGER`
 - [ ] Maximum-length and minimum-length strings
 - [ ] Unicode: multibyte (CJK 中文), emoji (👨‍👩‍👧‍👦), RTL (Arabic/Hebrew), combining chars (é vs é), zero-width joiners
@@ -131,12 +120,7 @@ For each input parameter:
 | React | Missing/undefined props; empty `children`; key collisions in lists; controlled vs uncontrolled input switching |
 | Zig | Sentinel-terminated slices; comptime vs runtime paths; `@alignCast` with misaligned data |
 | Rust | `&str` vs `String` ownership; lifetime edge cases; `Vec<T>` capacity 0; `From`/`Into` trait boundary |
-| Go Terraform | Attribute unknown at plan time (`(known after apply)`); resource import with partial state; `ForceNew` trigger |
-| Go CLI | Flag/env/config file precedence conflict; `--output=json` vs `--output=table`; empty stdin with `--` separator |
-| Terraform | `count = 0` vs `count = 1`; `for_each` with empty map; conditional resource with `? :` ternary; module source change |
 | Shell | Unquoted variables with spaces/globs; `set -euo pipefail` behavior; heredoc with variable expansion; empty `$@` |
-| Perl | `undef` vs `""` vs `0`; array vs scalar context; regex with unicode modifiers; tainted input |
-| Ruby | `nil` vs `false` vs `0`; `freeze`/`frozen?` on mutated strings; `Hash` with default proc; symbol vs string keys |
 
 ### TIER 3 — NEGATIVE / ERROR PATHS
 
@@ -159,16 +143,11 @@ For each input parameter:
 | Zig | Assert error set members; test `catch` and `orelse` branches; `OutOfMemory` from allocator |
 | Rust gRPC | `tonic::Status::not_found()`; streaming error mid-response; deadline exceeded; invalid protobuf payload |
 | Rust HTTP | `axum::extract::rejection`; missing `Content-Type`; payload too large (413) |
-| Go Terraform | `diag.HasError()` for invalid config; `ImportStateVerify` fails on drift; provider returns unexpected error |
-| Go CLI | Invalid flag combination returns non-zero; `--config` points to missing file; JSON output on error includes `"error"` key |
-| Terraform | `terraform validate` catches bad HCL; `terraform plan` fails on missing provider; cyclic dependency detected |
 | Shell | Non-zero exit from subcommand propagates; `trap` handler fires on SIGTERM; missing required env var prints usage |
-| Perl | `die` / `croak` caught by `eval`; file handle errors with `or die $!`; `use strict` catches undeclared vars |
-| Ruby | `raise CustomError` caught by `rescue`; `ActiveRecord::RecordNotFound`; `Timeout::Error` from HTTP calls |
 
 ### TIER 4 — REAL RENDERING / OUTPUT FIDELITY
 
-For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output, Terraform plans):
+For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output):
 
 - [ ] Use the REAL renderer (not mocked) — assert artifact is structurally valid
 - [ ] For PDFs: `%PDF` header, non-empty bytes, `application/pdf` content type, text extraction
@@ -190,8 +169,6 @@ For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output,
 | React | Snapshot tests for complex renders; `axe` accessibility audit passes; responsive breakpoints render correctly |
 | Zig | Binary output byte-exact with golden reference; serialized structs round-trip through `@bitCast` |
 | Rust gRPC | Protobuf serialization round-trip; streaming response collects all chunks; `tonic::codec` golden test |
-| Go Terraform | `terraform plan` output contains expected resource changes; state file is valid JSON after apply |
-| Terraform | `terraform show -json` plan output matches expected diff; no unexpected destroy/recreate |
 | Shell | stdout matches golden file via `diff`; stderr is empty on success; output is pipe-safe (no ANSI when `! -t 1`) |
 
 ### TIER 5 — CONCURRENCY & RACE CONDITIONS
@@ -211,13 +188,10 @@ For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output,
 | Python SDK | Concurrent `client.resources.create()` calls; assert no duplicate IDs returned |
 | JS/TS CLI | `Promise.all(Array(10).fill().map(() => execa('./cli', ['create'])))` |
 | React | Rapid `userEvent.click` or state updates; `useEffect` cleanup race; `AbortController` cancellation |
-| Zig | `std.Thread.spawn`; test with `--release-safe` for safety checks under optimization |
+| Zig | `std.Thread.spawn` N concurrent callers; assert final DB state consistent; test duplicate request handling; assert no data corruption under parallel writes; `std.testing.allocator` to catch race-related leaks; `--release-safe` for safety checks |
 | Rust | `tokio::spawn` or `std::thread::scope` with `Arc<Mutex<_>>`; run under MIRI if safe |
 | Go | `sync.WaitGroup` + goroutines; `-race` flag; `t.Parallel()` |
-| Terraform | N/A (single-threaded apply); test state locking with DynamoDB backend |
 | Shell | Background jobs `&` + `wait`; file locking with `flock`; signal delivery during operation |
-| Perl | `threads` module + `threads::shared`; or `fork()` with IPC |
-| Ruby | `Thread.new` with shared state; `Mutex` assertions; connection pool under load |
 
 ### TIER 6 — INTEGRATION VERIFICATION
 
@@ -237,15 +211,10 @@ For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output,
 | OpenAPI | `schemathesis` / `dredd` against running server; assert all endpoints match spec |
 | JS/TS CLI | Execute binary as subprocess; parse stdout; verify file system side effects |
 | React | Full page render with `BrowserRouter`, context providers, MSW for API mocks |
-| Zig | Test across compilation units; test C-ABI boundaries; `@cImport` interop |
+| Zig | Full request lifecycle: HTTP → handler → DB write → response; pg pool under concurrent connections; transaction isolation (no dirty reads); cross-compilation-unit calls; C-ABI boundaries via `@cImport` |
 | Rust gRPC | `tonic` test server + client in same process; tower `ServiceExt::ready().call()` |
 | Rust HTTP | `axum::test::TestServer` with real router, middleware, extractors |
-| Go Terraform | Acceptance tests with `TF_ACC=1`; `resource.Test()` with real or mocked provider backend |
-| Go CLI | `cmd.SetArgs()` + `cmd.Execute()` with captured stdout/stderr; test config file loading |
-| Terraform | `terraform init && terraform plan && terraform apply -auto-approve && terraform destroy` cycle |
 | Shell | Source functions and call them; test with `bats` using `setup`/`teardown`; `tmpdir` isolation |
-| Perl | `Test::WWW::Mechanize` for web apps; DBI with SQLite for DB integration |
-| Ruby | `RSpec` request specs with `rack-test`; `FactoryBot` for data setup; `VCR` for HTTP recording |
 
 ### TIER 7 — REGRESSION SAFETY NETS
 
@@ -265,11 +234,7 @@ For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output,
 | React | Prop-type contract tests; component API shape unchanged; CSS module class names stable |
 | Zig | `@sizeOf(MyStruct)` matches expected; ABI stability for exported functions |
 | Rust | `#[cfg(test)] const _: () = assert!(std::mem::size_of::<MyStruct>() == N);` for ABI stability |
-| Go Terraform | Schema version test: provider schema diff after upgrade; state migration functions tested per version |
-| Terraform | `terraform plan` on existing state shows no changes (drift-free); module version pin in `required_providers` |
 | Shell | Golden file tests: `diff <(./script.sh --help) expected_help.txt` |
-| Perl | `use_ok('My::Module')` for all modules; method resolution via `can()` |
-| Ruby | `respond_to?` checks; `gemspec` dependency version constraints; `bundle exec` resolves cleanly |
 
 ### TIER 8 — SECURITY & ROBUSTNESS
 
@@ -290,11 +255,7 @@ For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output,
 | React | `dangerouslySetInnerHTML` never with unsanitized input; CSP-compatible; no `eval()` |
 | Zig | No `@ptrCast` / `@intFromPtr` without bounds validation; `@memcpy` length checked |
 | Rust | No `unsafe` without safety comment + test; `#[deny(unsafe_code)]` on library crates |
-| Go Terraform | Provider does not log sensitive attributes; `Sensitive: true` on secret schema fields |
-| Terraform | No secrets in `terraform.tfvars` committed; remote state encryption enabled |
 | Shell | All variables quoted (`"$var"` not `$var`); no `eval` with user input; `mktemp` for temp files |
-| Perl | Taint mode (`-T`) for CGI; `use strict; use warnings;`; parameterized DBI queries |
-| Ruby | `ActiveRecord` parameterized queries; `Rails.application.credentials` not hardcoded; `Brakeman` passes |
 
 **OWASP Agent Security — data sent to or propagated through agents:**
 
@@ -335,8 +296,6 @@ When any code path sends data directly to an agent (LLM, tool-calling agent, aut
 | React/TS | `it.each([...])` / `describe.each([...])` |
 | Go | table-driven `[]struct{ name, input, want }` in `t.Run` loop |
 | Shell (bats) | Loop over cases in `@test` with array |
-| Perl | `Test::More` with `foreach` over `@cases` |
-| Ruby | `RSpec` `shared_examples` + `it_behaves_like`; `subject { described_class.new }` |
 
 ### TIER 10 — CONSTANTS & MAGIC VALUES POLICY
 
@@ -359,10 +318,7 @@ When any code path sends data directly to an agent (LLM, tool-calling agent, aut
 | Zig | `pub const` in dedicated namespace or file; `comptime` for compile-time known values |
 | Rust | `const` or `static` in `constants.rs` or crate root; `enum` for variants, never strings |
 | Go | `const` block in `constants.go` per package; `iota` for enumerations |
-| Terraform | `variables.tf` for inputs; `locals {}` for derived values; no inline strings in resources |
 | Shell | `readonly MY_CONST="value"` at top of script; sourced from `lib/constants.sh` |
-| Perl | `use constant` or `Readonly` module; `our @EXPORT_OK` in module |
-| Ruby | `UPPER_CASE` constants in module namespace; `freeze` string constants |
 
 ### TIER 11 — PERFORMANCE & RESOURCE SAFETY
 
@@ -383,11 +339,7 @@ When any code path sends data directly to an agent (LLM, tool-calling agent, aut
 | Rust | No `.clone()` in hot loops; `#[bench]` or criterion benchmarks; `cargo clippy` pedantic |
 | Rust gRPC | Streaming doesn't buffer full response in memory; connection pool size bounded |
 | Go | `-benchmem` for allocation tracking; `pprof` for profiling; query count via `DB.Stats()` |
-| Go Terraform | Provider `Read` doesn't make unnecessary API calls; `PlanResourceChange` is fast |
-| Terraform | `terraform plan` completes under 60s for 100 resources; parallelism setting tested |
 | Shell | No subshell forks in loops (use builtins); `read -r` instead of `cat | while` |
-| Perl | `Benchmark` module for timing; `Devel::NYTProf` for profiling; avoid regex catastrophic backtracking |
-| Ruby | `bullet` gem for N+1 detection; `benchmark-ips` for hot paths; `ObjectSpace.count_objects` delta |
 
 ### TIER 12 — API CONTRACT & SCHEMA COMPLIANCE
 
@@ -412,12 +364,7 @@ When any code path sends data directly to an agent (LLM, tool-calling agent, aut
 | Zig | Exported function signatures match header file; `@typeInfo` compile-time checks on public structs |
 | Rust gRPC | Protobuf schema backward-compatible (`buf breaking`); generated code compiles with `--strict` |
 | Rust HTTP | `utoipa` / `aide` generated OpenAPI matches handwritten spec; request extractor types match schema |
-| Go Terraform | Provider schema matches docs; `schema.Schema` field types match API response types; `ValidateFunc` covers all constraints |
-| Go CLI | `cobra` command tree matches `--help` output; `man` page generation matches actual flags |
-| Terraform | Module `variables.tf` types match usage; `outputs.tf` values are non-sensitive where documented; module version constraints in `required_providers` |
 | Shell | `--help` text matches README usage section; exit codes documented and tested |
-| Perl | POD documentation matches method signatures; `Test::Pod` and `Test::Pod::Coverage` pass |
-| Ruby | `YARD` doc coverage; `rspec-openapi` generates spec from tests; `rubocop` passes |
 
 ---
 
@@ -430,8 +377,6 @@ For each test:
    - Zig: `test "<scenario>"`
    - React/TS: `it("should <scenario>")`
    - Shell/bats: `@test "<scenario>"`
-   - Perl: `subtest "<scenario>"`
-   - Ruby: `it "<scenario>"`
 2. Tier(s) it satisfies
 3. The actual test code
 4. What regression it catches if it fails
@@ -622,91 +567,7 @@ fn protobuf_round_trip() {  // T12
 }
 ```
 
-### 8. Go — Terraform Provider SDK
-```go
-func TestAccResourceItem_basic(t *testing.T) {  // T1 + T6
-    resource.Test(t, resource.TestCase{
-        ProtoV6ProviderFactories: testAccProviders,
-        Steps: []resource.TestStep{
-            {Config: testAccItemConfig("test-item"), Check: resource.ComposeTestCheckFunc(
-                resource.TestCheckResourceAttr("mycloud_item.test", "name", "test-item"),
-                resource.TestCheckResourceAttrSet("mycloud_item.test", "id"),
-            )},
-            {ResourceName: "mycloud_item.test", ImportState: true, ImportStateVerify: true},  // T7
-        },
-    })
-}
-
-func TestAccResourceItem_disappears(t *testing.T) {  // T3
-    resource.Test(t, resource.TestCase{
-        ProtoV6ProviderFactories: testAccProviders,
-        Steps: []resource.TestStep{
-            {Config: testAccItemConfig("ephemeral"), Check: resource.ComposeTestCheckFunc(
-                testAccCheckItemExists("mycloud_item.test"),
-                testAccCheckItemDelete("mycloud_item.test"),  // delete externally
-            ), ExpectNonEmptyPlan: true},
-        },
-    })
-}
-```
-
-### 9. Go CLI (cobra)
-```go
-func TestCreateCmd_Success(t *testing.T) {  // T1
-    buf := new(bytes.Buffer)
-    cmd := NewRootCmd()
-    cmd.SetOut(buf)
-    cmd.SetArgs([]string{"create", "--name", "test-resource"})
-    assert.NoError(t, cmd.Execute())
-    assert.Contains(t, buf.String(), "created successfully")
-}
-
-func TestCreateCmd_JSONOutput(t *testing.T) {  // T4
-    buf := new(bytes.Buffer)
-    cmd := NewRootCmd()
-    cmd.SetOut(buf)
-    cmd.SetArgs([]string{"create", "--name", "test", "--output", "json"})
-    assert.NoError(t, cmd.Execute())
-    var result map[string]interface{}
-    assert.NoError(t, json.Unmarshal(buf.Bytes(), &result))
-    assert.Contains(t, result, "id")
-}
-
-func TestCreateCmd_EnvOverridesFlag(t *testing.T) {  // T2
-    t.Setenv("MYAPP_API_URL", "https://override.example.com")
-    cmd := NewRootCmd()
-    cmd.SetArgs([]string{"create", "--name", "test"})
-    assert.NoError(t, cmd.Execute())
-    // assert the override URL was used
-}
-```
-
-### 10. Terraform HCL (terratest)
-```go
-func TestTerraformBasicExample(t *testing.T) {  // T1 + T6
-    opts := &terraform.Options{TerraformDir: "../examples/basic"}
-    defer terraform.Destroy(t, opts)
-    terraform.InitAndApply(t, opts)
-    output := terraform.Output(t, opts, "instance_id")
-    assert.NotEmpty(t, output)
-}
-
-func TestTerraformIdempotent(t *testing.T) {  // T5 + T7
-    opts := &terraform.Options{TerraformDir: "../examples/basic"}
-    defer terraform.Destroy(t, opts)
-    terraform.InitAndApply(t, opts)
-    exitCode := terraform.PlanExitCode(t, opts)
-    assert.Equal(t, 0, exitCode, "second plan should show no changes")
-}
-
-func TestTerraformValidate(t *testing.T) {  // T12
-    opts := &terraform.Options{TerraformDir: "../modules/network"}
-    terraform.Init(t, opts)
-    terraform.Validate(t, opts)
-}
-```
-
-### 11. Shell (bats)
+### 8. Shell (bats)
 ```bash
 @test "script exits 0 with valid input" {  # T1
   run ./deploy.sh --env staging --version 1.2.3
@@ -737,60 +598,6 @@ func TestTerraformValidate(t *testing.T) {  // T12
 }
 ```
 
-### 12. Perl (Test::More) / Ruby (RSpec)
-```perl
-# Perl — Test::More
-use Test::More tests => 4;
-
-subtest 'happy path' => sub {  # T1
-    my $result = process("valid input");
-    is($result->{status}, 'ok', 'returns ok status');
-    is($result->{code}, 200, 'returns 200');
-};
-
-subtest 'edge cases' => sub {  # T2
-    is(process("")->{status}, 'default', 'empty string');
-    is(process(undef)->{status}, 'default', 'undef input');
-    is(process("café ☕")->{status}, 'ok', 'unicode input');
-};
-
-subtest 'error path' => sub {  # T3
-    eval { process({invalid => 1}) };
-    like($@, qr/InvalidInput/, 'dies on wrong type');
-};
-```
-
-```ruby
-# Ruby — RSpec
-RSpec.describe OrderService do
-  describe '#create' do
-    subject { described_class.new.create(params) }
-
-    context 'with valid params' do  # T1
-      let(:params) { { item: 'widget', qty: 1 } }
-      it { is_expected.to be_success }
-      it { expect(subject.order.id).to be_present }
-    end
-
-    context 'edge cases' do  # T2
-      it 'handles unicode' do
-        expect(described_class.new.create(item: '日本語 ☕', qty: 1)).to be_success
-      end
-      it 'handles nil quantity' do
-        expect { described_class.new.create(item: 'x', qty: nil) }.to raise_error(ArgumentError)
-      end
-    end
-
-    context 'concurrent creates' do  # T5
-      it 'does not produce duplicate IDs' do
-        results = Array.new(10) { Thread.new { described_class.new.create(item: 'x', qty: 1) } }.map(&:value)
-        expect(results.map(&:order).map(&:id).uniq.size).to eq(10)
-      end
-    end
-  end
-end
-```
-
 ---
 
 ## When to Use Each Tier
@@ -807,9 +614,6 @@ end
 | Systems code (Rust/Zig) | T1, T2, T3, T5, T11 (memory + perf) |
 | SDK / client library | T1, T2, T3, T6, T7 (API surface), T12 (contract) |
 | OpenAPI spec change | T2, T7 (breaking change), T12 (all) |
-| CLI tool | T1, T2, T3, T4 (output format), T7 (golden files) |
-| Terraform module | T1, T3, T5 (idempotent), T6 (apply/destroy), T12 (validate) |
 | Shell script | T1, T2, T3, T4 (golden), T7, T8 (quoting) |
-| Perl/Ruby service | T1, T2, T3, T5, T6, T9 |
 | Full release QA | ALL TIERS |
 | Incremental coverage uplift | Start T1+T2+T3 per folder, then expand |
