@@ -172,13 +172,14 @@ Rules summary:
 
 When moving any spec from `pending/` to `active/`, you MUST:
 
-1. Create a dedicated branch named `feat/M{N}-{NNN}-{slug}` (e.g. `feat/M17-002-budget-query-opt`)
-2. Create a git worktree for that branch: `git worktree add ../{repo}-M{N}-{NNN} feat/M{N}-{NNN}-{slug}`
-3. Add `Branch: <branch-name>` to the spec frontmatter
-4. Move the file from `pending/` to `active/` inside that worktree
-5. All EXECUTE work happens in that worktree — never on an unrelated existing branch
+1. Fetch and check out `main` to ensure it is up to date
+2. Create a dedicated branch **from `main`**: `git checkout -b feat/M{N}-{NNN}-{slug}` (e.g. `feat/M17-002-budget-query-opt`)
+3. Create a git worktree for that branch: `git worktree add ../{repo}-M{N}-{NNN} feat/M{N}-{NNN}-{slug}`
+4. Add `Branch: <branch-name>` to the spec frontmatter
+5. Move the file from `pending/` to `active/` inside that worktree
+6. All EXECUTE work happens in that worktree — never on an unrelated existing branch
 
-Never implement spec work on a branch that belongs to a different task.
+Never implement spec work on a branch that belongs to a different task. Never branch from anything other than `main`.
 
 ## Deterministic Lifecycle
 
