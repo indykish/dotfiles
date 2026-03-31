@@ -168,6 +168,18 @@ Rules summary:
 - PR/MR gate: spec must be in `docs/spec/v1/done/` before branch merges. `active/` at merge time = work not done.
 - Prohibited: time estimates, effort ratings, owner assignments, dates.
 
+## Spec Branch and Worktree Rule
+
+When moving any spec from `pending/` to `active/`, you MUST:
+
+1. Create a dedicated branch named `feat/M{N}-{NNN}-{slug}` (e.g. `feat/M17-002-budget-query-opt`)
+2. Create a git worktree for that branch: `git worktree add ../{repo}-M{N}-{NNN} feat/M{N}-{NNN}-{slug}`
+3. Add `Branch: <branch-name>` to the spec frontmatter
+4. Move the file from `pending/` to `active/` inside that worktree
+5. All EXECUTE work happens in that worktree — never on an unrelated existing branch
+
+Never implement spec work on a branch that belongs to a different task.
+
 ## Deterministic Lifecycle
 
 Every non-trivial task must follow this exact state machine:
