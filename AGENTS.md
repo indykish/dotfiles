@@ -42,21 +42,9 @@ ASSUMPTIONS I'M MAKING:
 
 Do not add or recommend workflows around:
 
-- macOS/iOS native app development (Swift, SwiftUI, Xcode, xcodegen, Sparkle, app signing/notarization).
+- Swift/Xcode/Sparkle/macOS app release tooling.
+- `bird`, `sonoscli`, `peekaboo`, `sweetistics`, `xcp`, `xcodegen`, `lldb`, `mcporter`.
 - Obsidian vault workflows.
-
-## Playbook Standards
-
-When a recurring operator process is identified, capture it as a playbook. Format: [`playbooks/TEMPLATE.md`](./playbooks/TEMPLATE.md)
-
-- Section 1.0 is always a Preflight Gate (credentials + env + tools).
-- Number every step. Exact bash commands. Human-only steps marked `[HUMAN]`.
-- Credentials via `op read 'op://{vault}/{item}/{field}'` only — never literal values.
-- Automatable verification → gate script in `playbooks/gates/M{N}_{NNN}/`.
-- Gate scripts report all failures before exiting, not just the first.
-- Idempotent: running twice produces the same result.
-
----
 
 ## Startup Priming Sequence
 
@@ -94,21 +82,22 @@ Reference implementation: `playbooks/M4_001_WORKER_BOOTSTRAP_DEV.md`.
 
 ## Source Of Truth
 
-Use these references before inventing or significantly extending existing patterns:
+Use these references before inventing new patterns:
 
 - This repo.
 - `$HOME/Projects/agent-scripts` (reference patterns only) — or clone git@github.com:steipete/agent-scripts.git
-- Language/project references (read locally before inventing patterns):
-  - Python API: `$HOME/Projects/marketplace_api`
-  - Python library: `$HOME/Projects/cache_access_layer`
-  - Rust API: `$HOME/Projects/sre/e2e-logging-platform/rust`
+- Language/project references:
+  - Python API: `$HOME/Projects/marketplace_api` — or clone git@awakeninggit.e2enetworks.net:cloud/marketplace_api.git
+  - Python library: `$HOME/Projects/cache_access_layer` — or clone git@awakeninggit.e2enetworks.net:cloud/cache_access_layer.git
+  - Rust API: `$HOME/Projects/sre/e2e-logging-platform/rust` — or clone git@awakeninggit.e2enetworks.net:infra/e2e-logging-platform.git
   - Rust library: `$HOME/Projects/manager/cache-kit.rs` — or clone https://github.com/indykish/cache-kit.rs
+  - TypeScript: `$HOME/Projects/typescript/branding` — or clone git@awakening.e2enetworks.net/cloud/branding.git
   - Go: `$HOME/Projects/go/src/github.com/e2eterraformprovider` — or clone https://github.com/indykish/terraform-provider-e2e
   - Terraform: `$HOME/Projects/sre/three-tier-app-claude` — or clone https://github.com/indykish/three-tier-app-claude.git
 
 ## Runtime Routing (Codex/Claude/OpenCode/AmpCode/KiloCode)
 
-**Human operator routing** — not agent self-instruction. Use this when running multiple agents simultaneously:
+Use this deterministic routing when multiple agents are available:
 
 - Claude Code: primary executor for implementation, refactors, scaffolds, and repo-wide edits.
 - Codex GPT-5.3: primary executor when Claude is unavailable or for parallel execution.
@@ -134,52 +123,208 @@ Execution pattern:
 - Keep edits small and reviewable; split large files before they become hard to review.
 - Use Conventional Commits when committing is requested.
 - Before any `git commit` or `git push`, run `gitleaks` and ensure it passes (no leaked secrets).
-- Before creating or editing any `*.zig` file, read and apply `docs/contributing/ZIG_RULES.md` — covers error handling (`catch {}`), drain rules, memory safety, no-hardcoded-roles, and error codes.
-- Error codes: all structured errors must be declared in `src/errors/codes.zig` (`UZ-{CATEGORY}-{NNN}`). When touching `codes.zig` for any reason: (a) every new code needs a `hint()` entry; (b) verify all codes in the same UZ-CATEGORY block have `hint()` entries; (c) never remove a `hint()` without removing its code. A code without a hint is an incomplete implementation — do not commit.
-- Before any `git commit` that includes Zig changes, run `make lint`, `make test`, and `gitleaks detect` (full gate, not just component lint).
+- Before any `git commit` that includes Zig changes, check and run the canonical Zig workflow in `docs/contributing/ZIG_RULES.md`.
+- Before creating any new `*.zig` file, read `docs/contributing/ZIG_RULES.md` and follow its rules first.
 - When writing or reviewing any Zig code that calls `conn.query()`: verify `.drain()` is present in the same function before `deinit()`. Run `make check-pg-drain` to confirm. Use `conn.exec()` instead whenever no result rows are needed.
 - For date-time entries in docs/notes, use format `Feb 02, 2026: 10:30 AM`.
+- Sync is mandatory, not user-prompted: after any change under `~/Projects/ai-jumpstart/*` (except `README.md`), sync mapped files to `~/Projects/dotfiles` in the same turn and explicitly report `sync completed + verified`.
+- For Oracle CLI assistance, run once per session:
+
+```bash
+oracle --help
+```
 
 ## Docs Discipline
 
-- Read relevant docs before touching any file that implements a documented behavior.
-- After EXECUTE, scan `docs/` for any file describing a function, API, or behavior you changed. Update or explicitly flag as stale before DOCUMENT is complete.
+- Read existing docs before coding when behavior is unclear.
 - Update docs whenever behavior, APIs, release flow, or operator steps change.
 - Do not ship behavior changes without docs updates in `DOCUMENT` stage.
 
 ## Specification Standards
 
-Full spec format, template, guardrails, and agent instructions: [`docs/spec/TEMPLATE.md`](./docs/spec/TEMPLATE.md)
+> **CANONICAL TEMPLATE** — This section contains the complete specification format. Do not look for `project_spec.md` or external docs. Copy this template directly when creating new specs.
 
-**When any skill (`/plan-ceo-review`, `/plan-eng-review`, `/office-hours`) or agent produces a spec, it MUST follow `docs/spec/TEMPLATE.md`. Never produce a TODO.md as a spec substitute.**
+When creating specifications for prototypes, use the following hierarchy and format:
 
-Rules summary:
-- Hierarchy: Prototype → Milestone → Workstream → Section → Dimension
-- Workstream ID: 3-digit zero-padded (`001`, `002`). No alphabetic suffixes.
-- Max 4 workstreams per milestone (5th allowed for cross-cutting concerns only).
-- Max 4 dimensions per section. Every dimension must be testable.
-- File lifecycle — same filename, subfolder changes with status:
-  - `docs/spec/v1/pending/` — PENDING (not started)
-  - `docs/spec/v1/active/` — IN_PROGRESS (branch active; move here before branching)
-  - `docs/spec/v1/done/` — DONE (acceptance criteria passed; move here on completion)
-- Status: `PENDING` / `IN_PROGRESS` / `DONE` — binary only, no percentages.
-- Milestone done = demo evidence captured (commands, logs, or screenshots).
-- Agent pickup: any agent may resume a spec found in `docs/spec/v1/active/` from its current state — read existing statuses, continue from first `PENDING` item.
-- PR/MR gate: spec must be in `docs/spec/v1/done/` before branch merges. `active/` at merge time = work not done.
-- Prohibited: time estimates, effort ratings, owner assignments, dates.
+### Hierarchy
 
-## Spec Branch and Worktree Rule
+```
+v1.0.0 (Prototype)
+└── Milestones (M1, M2, M3...)
+    └── Workstreams (M1_001, M1_002, M1_003...)
+        └── Sections (1.0, 2.0, 3.0...)
+            └── Dimensions (1.1, 1.2, 1.3...)
+```
 
-When moving any spec from `pending/` to `active/`, you MUST:
+**Terminology:**
+- **Prototype** — v1.0.0 (major release)
+- **Milestone** — Major phase (M1, M2, M3)
+- **Workstream** — Parallel track within milestone. ID is 3-digit zero-padded (`001`, `002`, `008`). No alphabetic suffixes.
+- **Batch** — Parallel execution group (B1, B2, B3...). Workstreams in the same batch can run concurrently. Batches are sequential — B2 starts after B1 gates clear.
+- **Section** — Logical grouping (1.0, 2.0, 2.1)
+- **Dimension** — Smallest unit of work (1.1, 2.1.1, 3.2.1)
 
-1. Fetch and check out `main` to ensure it is up to date
-2. Create a dedicated branch **from `main`**: `git checkout -b feat/M{N}-{NNN}-{slug}` (e.g. `feat/M17-002-budget-query-opt`)
-3. Create a git worktree for that branch: `git worktree add ../{repo}-M{N}-{NNN} feat/M{N}-{NNN}-{slug}`
-4. Add `Branch: <branch-name>` to the spec frontmatter
-5. Move the file from `pending/` to `active/` inside that worktree
-6. All EXECUTE work happens in that worktree — never on an unrelated existing branch
+### Capability Semantics (Required)
 
-Never implement spec work on a branch that belongs to a different task. Never branch from anything other than `main`.
+Use this interpretation for planning and review:
+
+- **Milestone** = a working prototype capability that can be demoed end-to-end with evidence.
+- **Workstream** = one singular working function that contributes to exactly one milestone capability.
+- **Workstream ID format** = 3-digit zero-padded numeric (`001`, `002`, `003`...). Do not use single-digit or alphabetic suffixes like `1`, `006A`.
+- **Section** = implementation slice inside a workstream (what will be built).
+- **Dimension** = verification-unit check inside a section (unit/integration/contract testable item).
+
+A milestone is not complete until demo evidence is captured (commands, logs, screenshots, or recorded walkthrough notes).
+
+Examples:
+- Milestone example: "CLI works with zombied" (demo: login -> workspace list -> run status).
+- Milestone example: "PostHog works in website" (demo: CTA click -> event visible in PostHog).
+- Milestone example: "PostHog works in zombied" (demo: run lifecycle emits events).
+- Milestone example: "Free plan billing works" (demo: free-tier entitlement enforcement).
+- Milestone example: "Paid Pro plan works" (demo: upgrade -> paid entitlement enforcement).
+
+Workstream examples:
+- `M4_001` Implement CLI runtime (singular function: local operator runtime works).
+- `M4_002` Publish npm package (singular function: installable distribution works).
+- `M5_005` Enable PostHog in website (singular function: web analytics path works).
+
+Section examples:
+- Configure auth flow.
+- Implement run command lifecycle.
+- Wire event emission helpers.
+
+Dimension examples:
+- Unit test: CLI parser handles required flags.
+- Integration test: run command returns deterministic state transitions.
+- Contract test: emitted analytics payload contains required keys.
+
+### Workstream Count Guardrail
+
+- Default limit: each milestone may define at most **4 workstreams**.
+- A **5th workstream** is allowed when it is a cross-cutting concern (e.g., network connectivity) that feeds into multiple existing workstreams and would lose coherence if split to a separate milestone.
+- Beyond 5 is never allowed — split into a new milestone.
+- Goal: keep milestones small enough to demo and close quickly.
+
+### Dimension Count Guardrail
+
+- Hard limit: each section may define at most **4 dimensions**.
+- If more than 4 are needed, split into another section or create a new workstream.
+- Goal: keep execution chunks small, reviewable, and demoable.
+
+
+### File Naming
+
+```
+docs/spec/v1/M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
+
+Example: docs/spec/v1/M3_007_CLERK_AUTH.md
+         └─┬─┘ └──┬──┘ └┬─┘ └──────┬────────┘
+           │      │     │           └─ Descriptive name (UPPERCASE_SNAKE_CASE)
+           │      │     └─ Workstream (3-digit zero-padded: 001–009)
+           │      └─ Milestone (1-9)
+           └─ Milestone prefix
+```
+
+### Spec Template
+
+```markdown
+# M{Milestone}_{Workstream}: {Title}
+
+**Prototype:** v{major}.{minor}.{patch}
+**Milestone:** M{Number}
+**Workstream:** {001-009}
+**Date:** {MMM DD, YYYY}
+**Status:** PENDING | IN_PROGRESS | DONE
+**Priority:** P0 | P1 | P2 — {Description}
+**Batch:** B{1-4} — parallel execution group
+**Depends on:** {Dependencies}
+
+---
+
+## 1.0 {Section Title}
+
+**Status:** PENDING
+
+Description of this section.
+
+**Dimensions:**
+- 1.1 PENDING First dimension
+- 1.2 PENDING Second dimension
+- 1.3 PENDING Third dimension
+
+---
+
+## 2.0 {Next Section}
+
+**Status:** PENDING
+
+### 2.1 {Subsection}
+
+Description.
+
+**Dimensions:**
+- 2.1.1 PENDING Dimension item
+- 2.1.2 PENDING Dimension item
+
+---
+
+## 3.0 Acceptance Criteria
+
+**Status:** PENDING
+
+- [ ] 3.1 Criteria item one
+- [ ] 3.2 Criteria item two
+- [ ] 3.3 Criteria item three
+
+---
+
+## 4.0 Out of Scope
+
+- Item not in scope
+- Another out of scope item
+```
+
+### Status Markers
+
+- `PENDING` — Not started, awaiting work
+- `IN_PROGRESS` — Currently being worked on
+- `DONE` or `✅` — Complete, verified, and tested
+
+### Completion Workflow
+
+When a spec is fully implemented:
+
+1. Mark all sections and dimensions as `DONE` or `✅`
+2. Update **Status:** to `DONE`
+3. Move file from `docs/spec/v1/` to `docs/done/v1/`
+4. Create handoff notes if work continues
+
+### Prohibited
+
+- ❌ No time estimates ("5 min", "1 hour", "2 days") — meaningless and often wrong
+- ❌ No effort columns or complexity ratings — use Priority instead
+- ❌ No percentage complete — use binary PENDING/DONE states
+- ❌ No assigned owners — use git history and handoff notes
+- ❌ No implementation dates — use Priority (P0/P1/P2) instead
+
+Use **Priority** (P0/P1/P2) and **Dependencies** for sequencing.
+
+## Screenshot Workflow
+
+When asked to "use a screenshot":
+
+- Pick the newest PNG from `~/Desktop` or `~/Downloads`.
+- Validate dimensions:
+
+```bash
+sips -g pixelWidth -g pixelHeight <file>
+```
+
+- Optimize before commit:
+
+```bash
+imageoptim <file>
+```
 
 ## Deterministic Lifecycle
 
@@ -217,7 +362,6 @@ Restrictions:
 - Edit only files directly tied to the approved scope.
 - Stay inside active worktree.
 - Write scope is limited to the current repository root unless user explicitly asks for cross-repo changes.
-- If execution expands beyond the originally planned files, stop and re-evaluate the Non-Trivial Definition before continuing.
 
 Exit criteria:
 
@@ -231,7 +375,7 @@ Required outputs:
 - If touched files include `*.zig`: additionally run `make check-pg-drain`.
 - Scan the diff against the greptile anti-pattern catalog (`make lint` does this automatically via `_greptile_patterns_check`; also run manually when needed):
   ```bash
-  git diff origin/main | grep -Ef docs/greptile-learnings/.greptile-patterns && echo "❌ known anti-pattern matched" || true
+  git diff origin/main | grep '^+[^+]' | grep -Ef docs/greptile-learnings/.greptile-patterns && echo "❌ known anti-pattern matched" || true
   ```
 - Capture failures with exact command and error text.
 
@@ -281,7 +425,7 @@ Exit criteria:
 
 - Never use destructive commands without explicit user approval: `reset --hard`, `clean -fd`, `checkout --`, `restore --source`, broad `rm`.
 - Never revert changes you did not create unless explicitly instructed.
-- If unexpected changes appear in files you are reading or editing, stop and ask.
+- If unexpected changes appear in files you are actively editing, stop and ask.
 - No branch mutation outside lifecycle transitions.
 - No cross-worktree edits.
 - No secrets in commits/docs.
@@ -291,7 +435,7 @@ Exit criteria:
 
 ## Cognitive Discipline
 
-These rules apply to every task, not just second-model reviews. Non-negotiable.
+These rules apply to every task, not just second-model reviews. Non-negotiable. Full detail in [`docs/BEHAVIORAL_GUARDRAILS.md`](./docs/BEHAVIORAL_GUARDRAILS.md).
 
 ### Non-Trivial Definition
 
@@ -362,7 +506,7 @@ Rules:
 - **HTTP calls:** Use native HTTP client, not `curl` subprocess.
 - **File operations:** Use native filesystem APIs, not `find`/`grep`/`sed` subprocess.
 - **Build tools:** Zig build system, not shell scripts wrapping other tools.
-- **Exception:** Personal developer tools (e.g., `pass-cli`, `gh`, `glab`, `oracle`) are allowed because the user chose them. Core product code must not depend on subprocess launches.
+- **Exception:** Personal developer tools (e.g., `op`, `gh`, `glab`, `oracle`) are allowed because the user chose them. Core product code must not depend on subprocess launches.
 
 ```
 ❌ Bad: std.process.Child.init(.{ .argv = &.{"git", "clone", repo_url} })
@@ -374,7 +518,7 @@ Rules:
 
 ### Dead Code Hygiene
 
-After any code change that adds, removes, or renames a function, type, or exported symbol: identify newly unreachable or redundant code. List it explicitly. Never silently remove without user confirmation.
+After any refactor: identify newly unreachable or redundant code. List it explicitly. Never silently remove without user confirmation.
 
 ```
 NEWLY UNREACHABLE AFTER THIS CHANGE:
@@ -410,9 +554,25 @@ Persist durable context in files:
 
 - Process decisions: repo docs (`docs/*.md`).
 - Runbooks: `runbooks/docs/*.md`.
-- Limits log: external personal tracker.
+- Limits log: `docs/codex-limits.md` plus external personal tracker.
 
 Never rely on prior chat context when a file can hold canonical state.
+
+## Tooling Preflight
+
+At start of a new environment/session, run:
+
+```bash
+for c in gh glab git tmux mise brew bun bunx node npm python go cargo rustc playwright stagehand axe oracle imageoptim trash; do
+  if command -v "$c" >/dev/null 2>&1; then
+    printf "%-12s %s\n" "$c" "$(command -v "$c")"
+  else
+    printf "%-12s NOT_FOUND\n" "$c"
+  fi
+done
+```
+
+Use output to decide workflow, then refresh `docs/tooling-inventory.md` when baseline changes.
 
 ## Git Forge Policy (`gh` vs `glab`)
 
@@ -420,6 +580,7 @@ Detect the forge from `git remote -v` output **before** running any forge comman
 
 | Remote host contains | Forge tool |
 |---|---|
+| `awakeninggit.e2enetworks.net` | `glab` |
 | `gitlab.com` | `glab` |
 | `github.com` | `gh` |
 
@@ -439,7 +600,7 @@ If `glab` needs a token:
 
 ```bash
 TOKEN="$(op item get "gitlab-pat" --vault "E2E_WORK" --field credential)"
-glab auth login --hostname gitlab.com --token "$TOKEN"
+glab auth login --hostname awakeninggit.e2enetworks.net --token "$TOKEN"
 ```
 
 ## PR And CI Workflow
@@ -478,14 +639,14 @@ Every repo must expose these targets. Agents use these as the canonical entry po
 | `make build`  | all               | Compile / bundle for production                     |
 | `make _clean` | all               | Remove generated artefacts (dist, coverage, .tmp)   |
 | `make push`   | services/packages | Push image/package to registry                      |
-| `make qa`     | web               | Playwright end-to-end full suite (headless)                |
+| `make qa`     | web               | Playwright e2e full suite (headless)                |
 | `make qa-smoke` | web             | Playwright smoke tests (fast CI gate)               |
 
 Rules:
 - `make quality` is **banned** — use `make lint`.
 - `make qa-headed` is **not a shared target** — agents are headless; headed runs use `bunx playwright test --headed` directly.
 - Multi-component repos split targets: `make lint-<component>` feeds into `make lint` aggregate. Example: `lint-zig` + `lint-website` → `lint`.
-- `make test` runs unit tests only. End-to-end tests are always a separate `make qa` / `make qa-smoke`.
+- `make test` runs unit tests only. E2e is always a separate `make qa` / `make qa-smoke`.
 
 ## Build And Verify Defaults
 
@@ -495,20 +656,38 @@ Rules:
 
 ## Tool Commands (Primary)
 
+- Oracle:
+
+```bash
+oracle --help
+```
+
 - Oracle review escalation levels:
-  - **Level 1** — Single-agent deterministic (default, any agent solo, no review)
-  - **Level 2** — Inline review lens: say *"Oracle review: [question]"* or *"CTO review: [question]"* — agent applies CTO (strategic) or Engineer (tactical) lens directly, no external tool needed
-  - **Level 3** — gstack skills: `/review` (code), `/plan-eng-review` (architecture), `/plan-ceo-review` (strategy)
+  - **Level 1** — Single-agent deterministic (default, Claude Code solo, no review)
+  - **Level 2** — Inline review lens in this session: say *"Oracle review: [question]"* or *"CTO review: [question]"* — agent picks CTO lens (strategic) or Engineer lens (tactical) based on the question; see `skills/oracle/SKILL.md`
+  - **Level 3** — Cross-model CLI review: `npx @indykish/oracle --engine api --model claude-4.6-sonnet` (escalation: `claude-4.6-opus`)
   - **Level 4** — Parallel execution in worktrees with multi-agent tmux orchestration
+  - API cost guardrail: explicit user approval required before Level 3 CLI runs
 
-## Multi-Agent Execution Model
+## Editor Notes (Zed)
 
-Use worktrees for isolation and tmux for orchestration.
+If Zed is installed but not on `PATH`, use macOS `open` to target the running instance:
 
-- One worktree per active agent/task stream.
-- One tmux pane per agent role (Oracle/Codex/Claude/tests).
-- No file edits outside current worktree.
-- Merge only after `VERIFY` passes.
+```bash
+open -a Zed /path/to/file
+```
+
+- API runs require explicit user consent every time.
+
+- Playwright via Bun:
+
+```bash
+bun add -d @playwright/test
+bunx playwright install --with-deps
+bunx playwright test --reporter=line
+```
+
+- Session orchestration:
 
 ```bash
 tmux new -s agents
@@ -516,42 +695,57 @@ tmux list-sessions
 tmux attach -t agents
 ```
 
-## Unit Testing
+## Multi-Agent Execution Model
 
-For unit tests, follow the `/write-unit-test` skill workflow.
+Use worktrees for isolation and tmux for orchestration.
 
-Cover all dimensions on the first pass — do not generate a subset:
+Rules:
 
-| Dimension | Must cover |
-|-----------|-----------|
-| Happy path | All valid inputs, all business logic branches, DB state changes, null/non-null |
-| Error paths | Every error variant the function can return |
-| Terminal states | States that cannot transition further (DONE, CANCELLED, BLOCKED) |
-| Boundary values | Empty, zero, max, single-element, off-by-one |
-| Business rules | Entitlement limits, budget caps, role constraints, plan gates |
-| Concurrency | Parallel callers, duplicate requests, race on shared state |
-| Idempotency | Running the same operation twice produces the same result |
-| External deps | Timeout, connection failure, partial-write (when touching DB/queue/service) |
+- One worktree per active agent/task stream.
+- One tmux pane per agent role (Oracle/Codex/Claude/tests).
+- No file edits outside current worktree.
+- Merge only after `VERIFY` passes.
 
-## End-to-End Testing Decision
+Authoritative workflow: `docs/worktree-tmux.md`.
 
-Use Playwright CLI. Playwright MCP may be used for exploration but CLI is the gate.
+## QA Testing Decision
+
+Default browser E2E stack is **Playwright CLI**. Optional agent integration can use **Playwright MCP**, but CLI remains the source of truth.
+
+Rationale:
+
+- Deterministic selector and assertion model.
+- Strong CLI ergonomics for local and CI.
+- Fully scriptable and headless.
+- Open-source, low lock-in.
+
+`mabl` and other SaaS-first tools are optional only. They are not the baseline for this repo.
 
 Standard commands:
 
 ```bash
+# install in JS/TS repos
 bun add -d @playwright/test
 bunx playwright install --with-deps
+
+# local run
 bunx playwright test
+
+# CI/headless
 bunx playwright test --reporter=line
+
+# targeted debug
 bunx playwright test tests/e2e/login.spec.ts --project=chromium
 ```
 
-Playwright MCP (if available in agent host) is exploratory only — CLI commands above are the CI gate.
+MCP note:
+
+- If Playwright MCP is available in the agent host, it may be used for exploratory automation.
+- Canonical pass/fail and CI gates must still run through Playwright CLI commands above.
 
 ## DX Platform Stack (Default)
 
-Default stack: Website (Next.js/Bun), CLI (TypeScript/Bun), Desktop (Tauri), Mobile (React Native). Use these unless the existing repo or user constraints require otherwise.
+See [`docs/STACK.md`](./docs/STACK.md) for full stack defaults (Website, CLI, Desktop, Mobile). Use those defaults unless the user or existing repo constraints require otherwise.
 
 ## API Keys And Credentials (Operational Minimum)
 
@@ -568,6 +762,105 @@ Optional (feature-dependent):
 - `SONAR_TOKEN`
 - Container registry token(s)
 - Tailscale auth key (only for automated node enrollment)
+
+## Knowledge Base (QMD)
+
+Use `qmd` (Query Markup Documents) to search indexed reference material when implementing features that relate to sandbox agents, infrastructure patterns, or prior research.
+
+**Collection:** `clawable` → `~/notes/clawable/`
+
+**When to use:**
+- Researching sandbox/actor implementations (Daytona, Rivet, Cognee, AgentKeeper)
+- Comparing infrastructure approaches before committing to a design
+- Looking up API patterns, deployment strategies, or architectural decisions
+- Answering "how did X project solve Y problem?"
+
+**Basic queries:**
+```bash
+# Fast keyword search (BM25)
+qmd search "actor model implementation" -c clawable
+
+# Semantic search (conceptual similarity)
+qmd vsearch "sandbox isolation patterns" -c clawable
+
+# Hybrid search with re-ranking (best quality)
+qmd query "how to deploy sandbox agents" -c clawable
+
+# Get specific document
+qmd get "daytona/README.md"
+
+# List available files
+qmd ls clawable
+```
+
+**For agent workflows:**
+```bash
+# JSON output for LLM processing
+qmd query "sandbox architecture" --json -n 10
+
+# Get files above relevance threshold
+qmd query "actor runtime" --files --min-score 0.4
+
+# Export all matches for deep analysis
+qmd search "API design" --all --files --min-score 0.3
+```
+
+**Workflow:** When asked to research or compare implementations, run `qmd query` or `qmd search` first to leverage indexed knowledge before general reasoning.
+
+## Notes And Locations
+
+- Blog repo: blank for now.
+- Local scaffold copy in this repo: `runbooks/docs/mac-vm.md`.
+- Codex limits personal tracker: `$HOME/Documents/indykish/codex limits.md`.
+
+## Dotfiles Sync Tracking
+
+Files in this repo (`~/Projects/ai-jumpstart`) that must be synced to `~/Projects/dotfiles` when modified:
+
+| Source (ai-jumpstart) | Destination (dotfiles) | Notes |
+|----------------------|----------------------|-------|
+| `AGENTS.md` | `AGENTS.md` | Oracle operating model |
+| `CLAUDE.md` | `CLAUDE.md` | Thin pointer to AGENTS.md |
+| `.zshrc` | `.zshrc` | Shell configuration |
+| `.npmrc` | `.npmrc` | npm configuration |
+| `skills/**/*.md` | `skills/**/*.md` | All skill definitions |
+| `docs/**/*.md` | `docs/**/*.md` | Stack, guardrails, runbooks |
+| `.config/opencode/` | `.config/opencode/` | opencode configuration |
+
+**Excluded from sync:**
+- `README.md` (repo-specific, not shared)
+
+**File sources:**
+- `AGENTS.md`, `CLAUDE.md`, `.npmrc`, `skills/**` → source is `~/Projects/ai-jumpstart/`
+- `.zshrc` → source is `~/` (home directory)
+- `opencode.json` → source is `~/.config/opencode/opencode.json`
+
+**Tree compare (run to see drift before syncing):**
+```bash
+SRC=~/Projects/ai-jumpstart; DST=~/Projects/dotfiles
+for f in AGENTS.md CLAUDE.md .npmrc; do
+  diff "$SRC/$f" "$DST/$f" > /dev/null 2>&1 && echo "ok      $f" || echo "DRIFT   $f"
+done
+diff ~/.zshrc "$DST/.zshrc" > /dev/null 2>&1 && echo "ok      .zshrc" || echo "DRIFT   .zshrc"
+for f in $(find "$SRC/skills" "$SRC/docs" -name "*.md" | sed "s|$SRC/||"); do
+  diff "$SRC/$f" "$DST/$f" > /dev/null 2>&1 && echo "ok      $f" || echo "DRIFT   $f"
+done
+diff ~/.config/opencode/opencode.json "$DST/.config/opencode/opencode.json" > /dev/null 2>&1 && echo "ok      .config/opencode/opencode.json" || echo "DRIFT   .config/opencode/opencode.json"
+```
+
+**Sync command (after confirming drift):**
+```bash
+SRC=~/Projects/ai-jumpstart; DST=~/Projects/dotfiles
+cp "$SRC/AGENTS.md"   "$DST/AGENTS.md"
+cp "$SRC/CLAUDE.md"   "$DST/CLAUDE.md"
+cp "$SRC/.npmrc"      "$DST/.npmrc"
+cp ~/.zshrc           "$DST/.zshrc"
+rsync -av --relative "$SRC/skills/" "$DST/"
+rsync -av --relative "$SRC/docs/" "$DST/"
+cp ~/.config/opencode/opencode.json "$DST/.config/opencode/opencode.json"
+```
+
+**Note:** `README.md` is excluded from sync (repo-specific).
 
 ## Greptile Learnings Catalog
 
@@ -592,25 +885,82 @@ Agent-first. One file only: `docs/greptile-learnings/.greptile-patterns`. No cat
 
 ## Skills Policy
 
+- Keep skills CLI-first and deterministic.
+- Prefer boring, reproducible commands over SaaS wizards.
 - Every skill must declare: inputs, outputs, command sequence, verification, failure handling.
-- Do not invent process unless a failure forced it. This document must not expand without cause.
+- **Do not invent process unless a failure forced it.** This document must not expand without cause.
+
+## Web-to-Markdown Workflow
+
+When downloading web content as markdown for research or documentation:
+
+### Option 1: Cloudflare Markdown for Agents (Preferred)
+
+For sites using Cloudflare with the feature enabled:
+
+```bash
+curl -H "Accept: text/markdown" "https://example.com/page"
+```
+
+**Benefits:**
+- Native markdown from the CDN
+- Includes `x-markdown-tokens` header for token count
+- Clean, structured output
+- Content-Signal headers indicate usage rights
+
+**Requirements:**
+- Site must use Cloudflare
+- Zone owner must enable "Markdown for Agents" in dashboard
+
+### Option 2: html2text Fallback (Universal)
+
+For any HTML page when Cloudflare markdown isn't available:
+
+```bash
+# Install html2text (one-time)
+brew install html2text
+
+# Download and convert
+curl -s "https://example.com/page" > /tmp/page.html
+html2text /tmp/page.html > output.md
+```
+
+**Benefits:**
+- Works on any HTML page
+- Strips navigation and cruft
+- Produces clean text/markdown
+- No dependency on site configuration
+
+**Tradeoffs:**
+- Plain text format (loses some rich formatting)
+- Requires local conversion step
+
+### Decision Matrix
+
+| Approach | Use When | Command |
+|----------|----------|---------|
+| Cloudflare header | Site uses Cloudflare + enabled | `curl -H "Accept: text/markdown" URL` |
+| html2text | Any other site | `curl -s URL \| html2text` |
+| webfetch tool | Quick extraction via agent | `webfetch URL --format markdown` |
 
 ## Communication Contract
 
-For non-trivial work, surface assumptions before implementation (see template in Legacy Team Lenses). If conflicting requirements appear, stop and ask one precise question.
+For non-trivial work, always surface assumptions before implementation.
+
+Template:
+
+```text
+ASSUMPTIONS I'M MAKING:
+1. ...
+2. ...
+-> Correct me now or I'll proceed with these.
+```
+
+If conflicting requirements appear, stop and ask one precise question.
 
 ## Code Structure Policies
 
-Apply on every edit — new files and existing.
-
-**Line limit (500 lines):**
-- New file: stop at 400 lines and split proactively — don't wait until 500.
-- Existing file edit: check the current line count before adding code. If the file is at or above 500 lines, split it first, then apply the edit.
-- If splitting is out of scope for the current task, flag it explicitly before proceeding: `"⚠ FILE X is N lines — over 500-line limit. Splitting is deferred; do not add further code here without splitting first."`
-- Tests bloating a Zig file over the limit: move tests to a companion `{module}_test.zig` file — do not split the implementation just to accommodate tests. (`start.zig` → `start_test.zig`, `start_budget.zig` → `start_budget_test.zig`)
-
-**Constants:**
-- New file: extract any string or value used more than once into a named constant from the start.
-- Existing file edit: when you encounter or introduce a string/value that now appears more than once, extract it before finishing the edit.
-- Cross-module reuse: place shared constants in a module-level constants file — do not duplicate across files.
-- Do not create a constant for a value used exactly once; inline is correct in that case.
+- `Mar 07, 2026: 11:55 PM` — Code line-limit policy: write deep modules with fewer than 500 lines to keep testing and review simpler.
+- `Mar 07, 2026: 11:55 PM` — Constant policy: if a string is used more than once, extract a constant.
+- `Mar 07, 2026: 11:55 PM` — Constant scope rule: if reuse is across modules, place constants in a shared global constants file.
+- `Mar 07, 2026: 11:55 PM` — Anti-pattern guardrail: do not create unnecessary constants; within a single file, declare constants only when reused more than once.
