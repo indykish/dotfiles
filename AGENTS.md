@@ -590,6 +590,7 @@ Apply on every edit — new files and existing.
 - New file: stop at 400 lines and split proactively — don't wait until 500.
 - Existing file edit: check the current line count before adding code. If the file is at or above 500 lines, split it first, then apply the edit.
 - If splitting is out of scope for the current task, flag it explicitly before proceeding: `"⚠ FILE X is N lines — over 500-line limit. Splitting is deferred; do not add further code here without splitting first."`
+- Tests bloating a Zig file over the limit: move tests to a companion `{module}_test.zig` file — do not split the implementation just to accommodate tests. (`start.zig` → `start_test.zig`, `start_budget.zig` → `start_budget_test.zig`)
 
 **Constants:**
 - New file: extract any string or value used more than once into a named constant from the start.
