@@ -1,0 +1,7 @@
+# Files and directories to ignore during gitleaks scans
+# This file works alongside .gitignore - gitleaks has its own ignore mechanism
+
+# Historical commits that have been cleaned up
+# Feb 19, 2026: Hardcoded API key that was removed in later commit
+df44ade3c13cfb7b127bcc1a84af1542dabaa0a0:.config/opencode/opencode.json:generic-api-key:187
+df44ade3c13cfb7b127bcc1a84af1542dabaa0a0:.config/opencode/opencode.json:generic-api-key:233
