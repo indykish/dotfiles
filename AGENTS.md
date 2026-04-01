@@ -86,9 +86,13 @@ Use these references before inventing new patterns:
 - This repo.
 - `$HOME/Projects/agent-scripts` (reference patterns only) — or clone git@github.com:steipete/agent-scripts.git
 - Language/project references:
-  - Rust library: clone https://github.com/indykish/cache-kit.rs
-  - Go: clone https://github.com/indykish/terraform-provider-e2e
-  - Terraform: clone https://github.com/indykish/three-tier-app-claude.git
+  - Python API: `$HOME/Projects/marketplace_api`
+  - Python library: `$HOME/Projects/cache_access_layer`
+  - Rust API: `$HOME/Projects/sre/e2e-logging-platform/rust`
+  - Rust library: `$HOME/Projects/manager/cache-kit.rs` — or clone https://github.com/indykish/cache-kit.rs
+  - TypeScript: `$HOME/Projects/typescript/branding`
+  - Go: `$HOME/Projects/go/src/github.com/e2eterraformprovider` — or clone https://github.com/indykish/terraform-provider-e2e
+  - Terraform: `$HOME/Projects/sre/three-tier-app-claude` — or clone https://github.com/indykish/three-tier-app-claude.git
 
 ## Runtime Routing (Codex/Claude/OpenCode/AmpCode/KiloCode)
 
