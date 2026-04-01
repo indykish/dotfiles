@@ -27,7 +27,7 @@ cp .claude/settings.json ~/.claude/settings.json
 mkdir -p ~/.codex && cp .codex/config.toml ~/.codex/config.toml
 
 # OpenCode
-mkdir -p ~/.config/opencode && cp .config/opencode/opencode.json ~/.config/opencode/opencode.json
+mkdir -p ~/.config/opencode && cp opencode/opencode.json ~/.config/opencode/opencode.json
 
 # Amp
 mkdir -p ~/.config/amp && cp .config/amp/settings.json ~/.config/amp/settings.json
