@@ -125,7 +125,7 @@ Execution pattern:
 
 ## Specification Standards
 
-> **CANONICAL TEMPLATE** — The full spec template, hierarchy, naming conventions, guardrails, examples, and completion rules live in `docs/spec/TEMPLATE.md` in each project repo. Copy from there when creating new specs. Do not look for `project_spec.md` or external docs.
+> **CANONICAL TEMPLATE** — The master template lives at [`docs/spec/TEMPLATE.md`](./docs/spec/TEMPLATE.md) in this dotfiles repo. Each project repo must have its own copy at the same path. When bootstrapping a new project, copy it from dotfiles. Do not look for `project_spec.md` or external docs.
 
 ### Spec Lifecycle
 
