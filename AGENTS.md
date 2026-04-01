@@ -158,7 +158,7 @@ Steps:
 
 ### Trigger: Starting Work on a Milestone
 
-**When:** User explicitly says to begin implementation (e.g., "start M22", "work on M22_001").
+**When:** User says to begin implementation (e.g., "start M22", "work on M22_001"), OR agent switches to a branch that contains spec changes in `pending/`. The presence of a spec is the trigger — do not wait for the user to say "run the lifecycle".
 
 Steps:
 1. Move spec: `docs/spec/v1/pending/` → `docs/spec/v1/active/`.
@@ -216,6 +216,8 @@ Every non-trivial task must follow this exact state machine:
 `PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT`
 
 **How to decide:** If the work creates a new spec, or continues work on an existing spec in `docs/spec/v1/active/` or `docs/spec/v1/pending/`, use the full lifecycle with CHORE bookends. Otherwise, skip CHORE steps.
+
+**Trigger detection:** Before starting any work on a branch, scan for spec files in the diff (`git log --oneline --name-only`) and in `docs/spec/v1/pending/`. If a spec relates to the current work and is still in `pending/`, CHORE(open) is the mandatory first action — before research, before pushes, before PRs. The user's phrasing does not matter; the presence of a spec is the trigger.
 
 ### CHORE (open)
 
