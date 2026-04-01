@@ -207,11 +207,19 @@ Single-file typos and config value changes are trivial. Everything else: run the
 
 Every non-trivial task must follow this exact state machine:
 
+**With spec (new milestone or continuing an existing spec):**
+
 `CHORE(open) → PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT → CHORE(close)`
+
+**Without spec (bug fix, config change, refactor with no milestone):**
+
+`PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT`
+
+**How to decide:** If the work creates a new spec, or continues work on an existing spec in `docs/spec/v1/active/` or `docs/spec/v1/pending/`, use the full lifecycle with CHORE bookends. Otherwise, skip CHORE steps.
 
 ### CHORE (open)
 
-Runs before PLAN. Sets up the spec and workspace.
+Runs before PLAN. Sets up the spec and workspace. **Required when a spec is involved.**
 
 Required outputs:
 
@@ -327,7 +335,7 @@ Exit criteria:
 
 ### CHORE (close)
 
-Runs after the last COMMIT, before opening a PR.
+Runs after the last COMMIT, before opening a PR. **Required when a spec is involved.**
 
 Required outputs:
 
