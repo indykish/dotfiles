@@ -129,14 +129,14 @@ Execution pattern:
 
 ## Specification Standards
 
-> **CANONICAL TEMPLATE** — The master template lives at [`docs/spec/TEMPLATE.md`](./docs/spec/TEMPLATE.md) in this dotfiles repo. Each project repo must have its own copy at the same path. When bootstrapping a new project, copy it from dotfiles. Do not look for `project_spec.md` or external docs.
+> **CANONICAL TEMPLATE** — The master template lives at [`docs/TEMPLATE.md`](./docs/TEMPLATE.md) in this dotfiles repo. Each project repo must have its own copy at the same path. When bootstrapping a new project, copy it from dotfiles. Do not look for `project_spec.md` or external docs.
 
 ### Spec Lifecycle
 
 Every milestone follows this directory-based lifecycle:
 
 ```
-docs/spec/
+docs/
 ├── TEMPLATE.md          ← canonical milestone template
 └── v1/
     ├── pending/         ← spec created, not yet started
@@ -148,10 +148,10 @@ docs/spec/
 
 **When:** `plan-eng-review`, `plan-ceo-review` skills are used, OR any attempt to create `TODO.md`, OR user requests a new milestone.
 
-**Rule:** Never write `TODO.md`. Always create a spec from `docs/spec/TEMPLATE.md`.
+**Rule:** Never write `TODO.md`. Always create a spec from `docs/TEMPLATE.md`.
 
 Steps:
-1. Copy `docs/spec/TEMPLATE.md` → `docs/spec/v1/pending/M{N}_{WS}_{NAME}.md`.
+1. Copy `docs/TEMPLATE.md` → `docs/v1/pending/M{N}_{WS}_{NAME}.md`.
 2. Fill in ALL header fields, sections, dimensions, and acceptance criteria. The spec must be detailed and elaborate — not a skeleton.
 3. Set `Status: PENDING`.
 4. Commit the pending spec to `main`.
@@ -161,7 +161,7 @@ Steps:
 **When:** User says to begin implementation (e.g., "start M22", "work on M22_001"), OR agent switches to a branch that contains spec changes in `pending/`. The presence of a spec is the trigger — do not wait for the user to say "run the lifecycle".
 
 Steps:
-1. Move spec: `docs/spec/v1/pending/` → `docs/spec/v1/active/`.
+1. Move spec: `docs/v1/pending/` → `docs/v1/active/`.
 2. Update spec header: `Status: IN_PROGRESS`, add `Branch: feat/mNN-name`.
 3. Create worktree + branch.
 4. Commit the spec move + status update on the feature branch.
@@ -177,16 +177,16 @@ Steps:
 
 1. Verify all dimensions and sections are marked `DONE` or `✅`.
 2. Update spec header: `Status: DONE`.
-3. Move spec: `docs/spec/v1/active/` → `docs/spec/v1/done/`.
+3. Move spec: `docs/v1/active/` → `docs/v1/done/`.
 4. Commit the spec move on the feature branch (this appears in the PR diff).
-5. **Gate:** Before opening PR, verify `docs/spec/v1/done/` contains the spec in the branch. If not — do not open the PR.
+5. **Gate:** Before opening PR, verify `docs/v1/done/` contains the spec in the branch. If not — do not open the PR.
 
 ### File Naming
 
 ```
-docs/spec/v1/{pending|active|done}/M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
+docs/v1/{pending|active|done}/M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
 
-Example: docs/spec/v1/pending/M3_007_CLERK_AUTH.md
+Example: docs/v1/pending/M3_007_CLERK_AUTH.md
 ```
 
 ## Non-Trivial Definition
@@ -215,11 +215,11 @@ Every non-trivial task must follow this exact state machine:
 
 `PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT`
 
-**How to decide:** If the work creates a new spec, or continues work on an existing spec in `docs/spec/v1/active/` or `docs/spec/v1/pending/`, use the full lifecycle with CHORE bookends. Otherwise, skip CHORE steps.
+**How to decide:** If the work creates a new spec, or continues work on an existing spec in `docs/v1/active/` or `docs/v1/pending/`, use the full lifecycle with CHORE bookends. Otherwise, skip CHORE steps.
 
-**Trigger detection (CHORE open):** Before starting any work on a branch, scan for spec files in the diff (`git log --oneline --name-only`) and in `docs/spec/v1/pending/`. If a spec relates to the current work and is still in `pending/`, CHORE(open) is the mandatory first action — before research, before pushes, before PRs. The user's phrasing does not matter; the presence of a spec is the trigger.
+**Trigger detection (CHORE open):** Before starting any work on a branch, scan for spec files in the diff (`git log --oneline --name-only`) and in `docs/v1/pending/`. If a spec relates to the current work and is still in `pending/`, CHORE(open) is the mandatory first action — before research, before pushes, before PRs. The user's phrasing does not matter; the presence of a spec is the trigger.
 
-**Trigger detection (CHORE close):** After any COMMIT on a branch with a spec in `docs/spec/v1/active/`, immediately proceed to CHORE(close) — do not stop, do not wait for the user to ask. The completion of COMMIT is the trigger. Check: `ls docs/spec/v1/active/`. If a spec file exists there, CHORE(close) is the mandatory next action before reporting completion.
+**Trigger detection (CHORE close):** After any COMMIT on a branch with a spec in `docs/v1/active/`, immediately proceed to CHORE(close) — do not stop, do not wait for the user to ask. The completion of COMMIT is the trigger. Check: `ls docs/v1/active/`. If a spec file exists there, CHORE(close) is the mandatory next action before reporting completion.
 
 ### CHORE (open)
 
@@ -345,12 +345,12 @@ Required outputs:
 
 - All spec dimensions and sections marked `DONE` or `✅`.
 - Spec header `Status: DONE`.
-- Spec moved from `docs/spec/v1/active/` to `docs/spec/v1/done/`.
+- Spec moved from `docs/v1/active/` to `docs/v1/done/`.
 - Spec move committed on the feature branch.
 
 Gate:
 
-- Verify `docs/spec/v1/done/` contains the spec file in the branch diff.
+- Verify `docs/v1/done/` contains the spec file in the branch diff.
 - If the spec is not in `done/` — do not open the PR.
 
 Exit criteria:
@@ -599,3 +599,23 @@ Execute ALL steps below as a single workflow. Do not stop after fixing code — 
 - `Mar 07, 2026: 11:55 PM` — Constant policy: if a string is used more than once, extract a constant.
 - `Mar 07, 2026: 11:55 PM` — Constant scope rule: if reuse is across modules, place constants in a shared global constants file.
 - `Mar 07, 2026: 11:55 PM` — Anti-pattern guardrail: do not create unnecessary constants; within a single file, declare constants only when reused more than once.
+
+## Skill Routing
+
+When the user's request matches an available skill, ALWAYS invoke it using the Skill
+tool as your FIRST action. Do NOT answer directly, do NOT use other tools first.
+The skill has specialized workflows that produce better results than ad-hoc answers.
+
+Key routing rules:
+- Product ideas, "is this worth building", brainstorming → invoke office-hours
+- Bugs, errors, "why is this broken", 500 errors → invoke investigate
+- Ship, deploy, push, create PR → invoke ship
+- QA, test the site, find bugs → invoke qa
+- Code review, check my diff → invoke review
+- Update docs after shipping → invoke document-release
+- Weekly retro → invoke retro
+- Design system, brand → invoke design-consultation
+- Visual audit, design polish → invoke design-review
+- Architecture review → invoke plan-eng-review
+- Save progress, checkpoint, resume → invoke checkpoint
+- Code quality, health check → invoke health
