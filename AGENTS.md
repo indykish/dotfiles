@@ -115,6 +115,8 @@ Execution pattern:
 
 - Workspace root is `~/Projects`.
 - Use `gh`/`glab` CLI for PR/MR/CI operations, not browser-first workflows.
+- GitHub Actions secret-loading policy is **NON-NEGOTIABLE**: workflows **MUST** use `1password/load-secrets-action@v4` with `export-env: true`. Any deviation is policy-violating unless explicitly approved by the owner in the same PR. Approved deviations **MUST** add inline rationale and **MUST** call `::add-mask::` for every resolved secret before writing to `GITHUB_ENV`.
+- CLI machine-interface policy is **NON-NEGOTIABLE**: agent-facing/automation-facing commands **MUST** provide `--json` output with stable keys and deterministic structure. New CLI surfaces that lack `--json` are considered incomplete and **MUST NOT** be merged.
 - If asked to "make a note", update `AGENTS.md` or relevant repo docs.
 - Before updating dotfiles (`.*` files like `.zshrc`, `.gitconfig`, agent configs), create a timestamped backup first and keep edits minimal.
 - Use `trash` for file deletes. `rm` is not auto-allowed — agents will be prompted for approval before `rm` executes.
