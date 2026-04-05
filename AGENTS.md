@@ -364,6 +364,8 @@ Runs after the last COMMIT, before opening a PR. **Required when a spec is invol
 
 This step also runs when work is **parked midway** — if the agent is stopping before full completion, still run CHORE(close) with partial status (mark completed dimensions as `DONE`, leave in-progress ones as `IN_PROGRESS`, update the spec header accordingly). This ensures the next agent can pick up cleanly.
 
+**HARD GATE: Do NOT `git push` or `gh pr create` until every item below is committed on the feature branch. If the user says "commit and push" or "ship it", COMMIT is one step — then STOP, run this checklist, THEN push.**
+
 Required outputs:
 
 - All spec dimensions and sections marked `DONE` or `✅` (or `IN_PROGRESS` if parked midway).
@@ -371,6 +373,7 @@ Required outputs:
 - Spec moved from `docs/v1/active/` to `docs/v1/done/` (only if fully complete).
 - Spec move committed on the feature branch.
 - **Release doc generated** at `docs/v1/release/{version}.md` for every milestone/workstream completion.
+- **API spec updated**: if any HTTP endpoint was added, modified, or removed, update `public/openapi.json` (or equivalent) with the new route, request/response schemas, and error codes.
 
 #### Release Doc Generation
 
@@ -415,11 +418,22 @@ Gate:
 
 - Verify `docs/v1/done/` contains the spec file in the branch diff (skip if parked midway).
 - Verify `docs/v1/release/{version}.md` exists in the branch diff (skip if parked midway).
+- If any API endpoint was added/changed: verify `public/openapi.json` diff includes the new route.
 - If the spec is not in `done/` and status is `DONE` — do not open the PR.
+
+**Pre-push checklist (run mentally before every `git push` on a spec branch):**
+
+```
+□ Spec in done/ (or active/ if parked)?
+□ Release doc in release/?
+□ openapi.json updated (if API changed)?
+□ All three committed on the feature branch?
+→ Only now: git push + gh pr create
+```
 
 Exit criteria:
 
-- PR opened with spec in `done/` directory and release doc in `release/`.
+- PR opened with spec in `done/` directory, release doc in `release/`, and API spec current.
 
 ## Hard Safety Rules
 
