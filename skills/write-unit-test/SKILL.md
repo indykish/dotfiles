@@ -32,6 +32,25 @@ Generate production-grade test coverage that catches bugs before they ship.
 
 4. Follow existing test conventions (naming, file layout, fixture patterns, assertion style).
 5. Run the existing test suite first to establish the green baseline.
+6. **Spec-claim tracing** — if the work has a spec (milestone doc, PR description, or task list), extract every behavioral claim and write at least one test per claim. Test the *claimed behavior*, not just the code paths you wrote.
+
+## Spec-Claim Tracing
+
+Before writing any tests, extract behavioral claims from the spec/PR description and build a tracing table:
+
+```
+| Spec claim | What to test | Test type | Test exists? |
+|------------|-------------|-----------|-------------|
+| "gate results print in real time" | bytes arrive incrementally, not buffered | integration (e2e) | ? |
+| "heartbeat fires within 30s" | SO_RCVTIMEO triggers before 30s | integration (Redis) | ? |
+| "reconnect replays only missed events" | Last-Event-ID filters correctly | integration (DB) | ? |
+```
+
+Rules:
+- **Every claim needs a test.** If a claim says "X happens in real time", a unit test that feeds pre-buffered data does NOT cover it — you need an integration test that verifies the transport.
+- **Test the behavior, not the implementation.** "parser works" ≠ "bytes arrive incrementally." Parser tests validate parsing. Transport tests validate transport. Don't conflate them.
+- **Test failure modes the spec doesn't mention.** If the spec says "retry on network error", also test: what happens on Redis connection reset? What happens on HTTP 503? What happens if the user hits Ctrl+C during retry?
+- **Flag untestable claims.** If a claim can't be tested with the available infrastructure (e.g., "no busy-loop on connection reset" needs a way to kill Redis mid-test), flag it explicitly in the tracing table as "needs infra" rather than silently skipping it.
 
 ## Incremental Coverage Improvement Mode
 
@@ -131,6 +150,8 @@ For each input parameter:
 - [ ] File not found / permission denied / disk full
 - [ ] Malformed/corrupt input (truncated JSON, invalid PDF, broken HTML, partial UTF-8)
 - [ ] Assert correct error codes, messages; no sensitive data in error responses
+- [ ] **Timeout vs fatal error distinction**: if code handles both timeout (expected) and connection-reset (fatal), verify they take different paths. A function returning null for both causes busy-loops on fatal errors.
+- [ ] **Connection lost mid-operation**: socket closed by peer during read/write — verify graceful degradation, not silent swallowing into a retry/fallback path meant for timeouts
 
 **Stack-specific error paths:**
 
@@ -201,6 +222,8 @@ For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output)
 - [ ] Cross-module integration: A calls B with real B (not mocked)
 - [ ] Database migrations + schema compatible with test data
 - [ ] External service contract tests: request shape matches API docs
+- [ ] **Spec-claim transport tests**: if the spec claims "real-time", "incremental", or "streaming", test that bytes arrive incrementally — not just that the parser handles them. A unit test feeding pre-buffered data does NOT verify transport behavior.
+- [ ] **Failure mode tests**: connection reset mid-stream, service restart, timeout vs fatal error distinction. If the code has a `catch` that returns null/fallback, test that fatal errors are NOT swallowed into the same path as expected errors.
 
 **Stack-specific integration:**
 
