@@ -301,10 +301,7 @@ Required outputs:
 
 - Run lint/tests/build checks relevant to touched files.
 - If touched files include `*.zig`: additionally run `make check-pg-drain`.
-- Scan the diff against the greptile anti-pattern catalog (`make lint` does this automatically via `_greptile_patterns_check`; also run manually when needed):
-  ```bash
-  git diff origin/main | grep '^+[^+]' | grep -Ef docs/greptile-learnings/.greptile-patterns && echo "❌ known anti-pattern matched" || true
-  ```
+- Scan the diff against `docs/greptile-learnings/RULES.md` — verify no rule is violated by the changes.
 - Capture failures with exact command and error text.
 - **500-line gate on every touched file.** For each file you created or modified, run `wc -l <file>`. If any file exceeds 500 lines, you must split it before proceeding to DOCUMENT. This is a hard gate — do not defer, do not ask, do not rationalize. Split the file.
   ```bash
@@ -631,13 +628,12 @@ Two files:
 | File | Purpose | When read |
 |------|---------|-----------|
 | `docs/greptile-learnings/RULES.md` | Natural-language do's and don'ts | EXECUTE start, `/review`, greptile fixes |
-| `docs/greptile-learnings/.greptile-patterns` | Legacy regex lint gate (being phased out) | `make lint` (automated) |
 
-**`RULES.md` is the primary source.** New learnings go there as natural-language rules, not regex patterns.
+New learnings go into `RULES.md` as natural-language rules.
 
 **Full process documentation:** [`docs/greptile-learnings/README.md`](./docs/greptile-learnings/README.md)
 
-**Pre-PR (automatic):** `make lint` runs `_greptile_patterns_check` which scans `git diff origin/main` additions against `.greptile-patterns`. No separate step needed.
+**Pre-PR:** Agents read `RULES.md` during EXECUTE. `make lint` runs standard lint checks.
 
 **Post-PR — triggered by ANY mention of greptile/reptile feedback, review comments, or "fix greptile":**
 
