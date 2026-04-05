@@ -303,6 +303,11 @@ Required outputs:
   git diff origin/main | grep '^+[^+]' | grep -Ef docs/greptile-learnings/.greptile-patterns && echo "❌ known anti-pattern matched" || true
   ```
 - Capture failures with exact command and error text.
+- **500-line gate on every touched file.** For each file you created or modified, run `wc -l <file>`. If any file exceeds 500 lines, you must split it before proceeding to DOCUMENT. This is a hard gate — do not defer, do not ask, do not rationalize. Split the file.
+  ```bash
+  # Run on all files in the diff:
+  git diff --name-only origin/main | xargs wc -l | awk '$1 > 500 { print "❌ " $2 ": " $1 " lines (limit 500)" }'
+  ```
 - After any refactor: list newly dead code explicitly. Never silently remove without user confirmation:
   ```
   NEWLY UNREACHABLE AFTER THIS CHANGE:
