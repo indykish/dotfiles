@@ -13,6 +13,9 @@ amp update
 echo "📦 Upgrading @openai/codex..."
 npm install -g @openai/codex
 
+echo "📦 Upgrading @tobilu/qmd..."
+bun install -g @tobilu/qmd
+
 echo "✅ All AI coding tools upgraded!"
 
 echo ""
