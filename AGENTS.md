@@ -228,17 +228,27 @@ Runs before PLAN. Sets up the spec and workspace. **Required when a spec is invo
 Required outputs:
 
 - If this is a milestone: create or move spec per Spec Lifecycle above.
-- If starting work: spec moved to `active/`, status `IN_PROGRESS`, worktree created.
+- If starting work: spec moved to `active/`, status `IN_PROGRESS`.
+- **Worktree created.** Use `git worktree add ../<repo>-<branch-suffix> <branch>`. Never work directly on the main repo working directory — other branches may have uncommitted state that contaminates the build. All subsequent lifecycle phases (PLAN through CHORE close) run inside the worktree.
+
+Worktree creation sequence:
+```bash
+git checkout main                             # start from main
+git branch feat/mNN-name                      # create branch
+git worktree add ../usezombie-mNN-name feat/mNN-name
+cd ../usezombie-mNN-name                      # all work happens here
+```
 
 Restrictions:
 
 - No code changes yet.
 - Spec must be committed before proceeding.
+- **Worktree must exist before any code or test runs.** If `git worktree list` shows only the main repo, stop and create one.
 
 Exit criteria:
 
 - Spec exists in correct directory (`pending/` if just planning, `active/` if starting work).
-- Worktree and branch ready (if starting work).
+- Worktree created and agent CWD is inside it (verify with `pwd` and `git worktree list`).
 
 ### PLAN
 
@@ -249,6 +259,11 @@ Required outputs:
 - File/task impact list.
 - Verification plan (commands/tests).
 - Read existing docs before coding when behavior is unclear.
+- **Surface area checklist** — for each item, state "yes (reason)" or "no (reason)":
+  - [ ] **OpenAPI spec update** — does this change add/modify/remove API endpoints, request/response shapes, or error codes? If yes, list affected paths.
+  - [ ] **`zombiectl` CLI changes** — does this change require new subcommands, flags, or output format changes in the npm CLI? If yes, note that the project manager must approve CLI surface changes (create a skill ticket if needed).
+  - [ ] **User-facing doc changes** — do docs at `docs.usezombie.com` need updating? If yes, list pages.
+  - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes) and draft the `docs/v1/release/{version}.md` entry during DOCUMENT phase.
 
 Restrictions:
 
@@ -258,6 +273,7 @@ Restrictions:
 Exit criteria:
 
 - Scope, constraints, and success criteria are concrete.
+- Surface area checklist completed with yes/no for each item.
 
 ### EXECUTE
 
