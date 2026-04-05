@@ -341,21 +341,64 @@ Exit criteria:
 
 Runs after the last COMMIT, before opening a PR. **Required when a spec is involved.**
 
+This step also runs when work is **parked midway** — if the agent is stopping before full completion, still run CHORE(close) with partial status (mark completed dimensions as `DONE`, leave in-progress ones as `IN_PROGRESS`, update the spec header accordingly). This ensures the next agent can pick up cleanly.
+
 Required outputs:
 
-- All spec dimensions and sections marked `DONE` or `✅`.
-- Spec header `Status: DONE`.
-- Spec moved from `docs/v1/active/` to `docs/v1/done/`.
+- All spec dimensions and sections marked `DONE` or `✅` (or `IN_PROGRESS` if parked midway).
+- Spec header `Status: DONE` (or `Status: IN_PROGRESS` if parked).
+- Spec moved from `docs/v1/active/` to `docs/v1/done/` (only if fully complete).
 - Spec move committed on the feature branch.
+- **Release doc generated** at `docs/v1/release/{version}.md` for every milestone/workstream completion.
+
+#### Release Doc Generation
+
+On every CHORE(close) where the spec is fully `DONE`, generate a release doc:
+
+1. **Version bump rule:**
+   - Feature milestone → minor bump (e.g., `0.3.1` → `0.4.0`)
+   - Bug fix workstream → patch bump (e.g., `0.4.0` → `0.4.1`)
+   - Breaking change → major bump (e.g., `0.x` → `1.0.0`)
+
+2. **File:** `docs/v1/release/{next_version}.md`
+
+3. **Format:** Changelog-style, suitable for an agent to transform into the public changelog at `docs.usezombie.com/changelog`. Structure:
+
+```markdown
+# v{version}
+
+**Date:** {date}
+**Milestone:** M{N}_{WS}
+**Spec:** {spec_file_name}
+
+## What changed
+
+- {bullet: user-visible change with context}
+
+## Technical details
+
+- {bullet: implementation detail relevant to operators/developers}
+
+## Breaking changes
+
+- {bullet or "None"}
+
+## Migration
+
+- {bullet or "None — tables rebuilt from scratch" / "No migration needed"}
+```
+
+4. Commit the release doc on the feature branch alongside the spec move.
 
 Gate:
 
-- Verify `docs/v1/done/` contains the spec file in the branch diff.
-- If the spec is not in `done/` — do not open the PR.
+- Verify `docs/v1/done/` contains the spec file in the branch diff (skip if parked midway).
+- Verify `docs/v1/release/{version}.md` exists in the branch diff (skip if parked midway).
+- If the spec is not in `done/` and status is `DONE` — do not open the PR.
 
 Exit criteria:
 
-- PR opened with spec in `done/` directory.
+- PR opened with spec in `done/` directory and release doc in `release/`.
 
 ## Hard Safety Rules
 
