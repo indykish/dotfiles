@@ -263,7 +263,7 @@ Required outputs:
   - [ ] **OpenAPI spec update** — does this change add/modify/remove API endpoints, request/response shapes, or error codes? If yes, list affected paths.
   - [ ] **`zombiectl` CLI changes** — does this change require new subcommands, flags, or output format changes in the npm CLI? If yes, note that the project manager must approve CLI surface changes (create a skill ticket if needed).
   - [ ] **User-facing doc changes** — do docs at `docs.usezombie.com` need updating? If yes, list pages.
-  - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes) and draft the `docs/v1/release/{version}.md` entry during DOCUMENT phase.
+  - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes) and draft the `docs/v1/ship/{version}.md` entry during DOCUMENT phase.
 
 Restrictions:
 
@@ -370,7 +370,7 @@ Required outputs:
 - Spec header `Status: DONE` (or `Status: IN_PROGRESS` if parked).
 - Spec moved from `docs/v1/active/` to `docs/v1/done/` (only if fully complete).
 - Spec move committed on the feature branch.
-- **Release doc generated** at `docs/v1/release/{version}.md` for every milestone/workstream completion.
+- **Release doc generated** at `docs/v1/ship/{version}.md` for every milestone/workstream completion.
 
 #### Release Doc Generation
 
@@ -381,7 +381,7 @@ On every CHORE(close) where the spec is fully `DONE`, generate a release doc:
    - Bug fix workstream → patch bump (e.g., `0.4.0` → `0.4.1`)
    - Breaking change → major bump (e.g., `0.x` → `1.0.0`)
 
-2. **File:** `docs/v1/release/{next_version}.md`
+2. **File:** `docs/v1/ship/{next_version}.md`
 
 3. **Format:** Changelog-style, suitable for an agent to transform into the public changelog at `docs.usezombie.com/changelog`. Structure:
 
@@ -414,12 +414,12 @@ On every CHORE(close) where the spec is fully `DONE`, generate a release doc:
 Gate:
 
 - Verify `docs/v1/done/` contains the spec file in the branch diff (skip if parked midway).
-- Verify `docs/v1/release/{version}.md` exists in the branch diff (skip if parked midway).
+- Verify `docs/v1/ship/{version}.md` exists in the branch diff (skip if parked midway).
 - If the spec is not in `done/` and status is `DONE` — do not open the PR.
 
 Exit criteria:
 
-- PR opened with spec in `done/` directory and release doc in `release/`.
+- PR opened with spec in `done/` directory and release doc in `ship/`.
 
 ## Hard Safety Rules
 
