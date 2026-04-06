@@ -280,6 +280,8 @@ Exit criteria:
 
 **Before writing any code**, read `docs/greptile-learnings/RULES.md` and follow every rule. If a rule conflicts with the task, state the conflict and ask — never silently skip.
 
+**Before writing any Zig code**, additionally read `docs/contributing/ZIG_RULES.md`. It contains Zig-specific patterns (drain/dupe lifecycle, cross-compile verification, TLS transport, memory safety) that RULES.md references but does not duplicate.
+
 Required outputs:
 
 - Minimal, scoped file edits.
