@@ -264,6 +264,7 @@ Required outputs:
   - [ ] **`zombiectl` CLI changes** — does this change require new subcommands, flags, or output format changes in the npm CLI? If yes, note that the project manager must approve CLI surface changes (create a skill ticket if needed).
   - [ ] **User-facing doc changes** — do docs at `docs.usezombie.com` need updating? If yes, list pages.
   - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes) and draft the `docs/v1/ship/{version}.md` entry during DOCUMENT phase.
+  - [ ] **Schema changes** — does this change add/modify/remove database tables, columns, or constraints? If yes: (a) each new SQL file must be ≤100 lines and single-concern (one table or one logical group), (b) update `schema/embed.zig` and `src/cmd/common.zig` migration array, (c) verify `docs/contributing/SCHEMA_CONVENTIONS.md` is followed. Full teardown-rebuild is allowed until v0.5.0 — no ALTER migrations needed.
 
 Restrictions:
 
@@ -295,12 +296,24 @@ Exit criteria:
 - Requested behavior implemented.
 - No violations of `docs/greptile-learnings/RULES.md`.
 
+### Spec → Code → Test Contract
+
+Every spec with an Interfaces section and Test Specification section must satisfy these rules during EXECUTE:
+
+- **Every Dimension MUST map to a test case.** If a dimension has no corresponding test, the implementation is incomplete.
+- **Every Interface MUST appear in code** with the exact signature from the spec. If the signature needs to change, update the spec first, then the code.
+- **Every Acceptance Criterion MUST be verifiable via a command.** "Works correctly" is not verifiable. "`make test` passes" is.
+- **Code generation is INVALID without corresponding tests.** Do not commit code without tests that prove it works. Use `/write-unit-test` with spec-claim tracing.
+- **Cross-compile check is mandatory** for Zig changes: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` before commit.
+- **Error contracts from the spec MUST be tested.** Every row in the Error Contracts table needs a negative test that triggers that error path and asserts the specified behavior.
+
 ### VERIFY
 
 Required outputs:
 
 - Run lint/tests/build checks relevant to touched files.
 - If touched files include `*.zig`: additionally run `make check-pg-drain`.
+- If touched files include `*.zig`: run cross-compile check: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux`.
 - Scan the diff against `docs/greptile-learnings/RULES.md` — verify no rule is violated by the changes.
 - Capture failures with exact command and error text.
 - **500-line gate on every touched file.** For each file you created or modified, run `wc -l <file>`. If any file exceeds 500 lines, you must split it before proceeding to DOCUMENT. This is a hard gate — do not defer, do not ask, do not rationalize. Split the file.
@@ -308,6 +321,9 @@ Required outputs:
   # Run on all files in the diff:
   git diff --name-only origin/main | xargs wc -l | awk '$1 > 500 { print "❌ " $2 ": " $1 " lines (limit 500)" }'
   ```
+- **Spec-claim verification.** If the spec has a Test Specification section, verify every row in the Spec-Claim Tracing table has a passing test. If a claim says "real-time" or "incremental", verify the *transport* delivers bytes incrementally — a unit test on a parser does NOT prove transport behavior.
+- **Verification Evidence table.** If the spec has a Verification Evidence section, fill it in with actual command output. This is the proof that the spec claims are met.
+- **`make test-integration` must pass** if the spec has integration test dimensions. Run it, not just `make test`.
 - After any refactor: list newly dead code explicitly. Never silently remove without user confirmation:
   ```
   NEWLY UNREACHABLE AFTER THIS CHANGE:
