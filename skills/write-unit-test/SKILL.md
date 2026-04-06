@@ -13,11 +13,21 @@ description: >
 
 Generate production-grade test coverage that catches bugs before they ship.
 
+**When this skill is invoked:** Tests are NOT an afterthought. This skill runs DURING implementation (alongside code), not after. The agent writes tests that define correct behavior, then writes code that satisfies them. If invoked after code exists, the skill audits the code against the spec — not the other way around.
+
 ## Do This First
 
-1. Identify the changed files or the folder to improve coverage for.
-2. Read every changed file top-to-bottom before writing a single test.
-3. Detect the stack from project files:
+1. **Read the spec FIRST** — before reading code. Look for:
+   - `docs/v1/active/M*.md` or `docs/v1/pending/M*.md` in the repo
+   - The PR description or task list
+   - Any linked milestone doc
+   The spec defines what to test. The code is what gets tested. Do not let the code shape your test expectations.
+
+2. **Read `docs/greptile-learnings/RULES.md`** — every rule is a test case. If a rule says "use JSON parser, not string scanning", write a test that fails if someone uses string scanning.
+
+3. Read every changed file top-to-bottom.
+
+4. Detect the stack from project files:
 
 | File | Stack |
 |------|-------|
@@ -30,13 +40,13 @@ Generate production-grade test coverage that catches bugs before they ship.
 | `go.mod` | Go |
 | `*.sh` / `*.bash` | Shell script |
 
-4. Follow existing test conventions (naming, file layout, fixture patterns, assertion style).
-5. Run the existing test suite first to establish the green baseline.
-6. **Spec-claim tracing** — if the work has a spec (milestone doc, PR description, or task list), extract every behavioral claim and write at least one test per claim. Test the *claimed behavior*, not just the code paths you wrote.
+5. Follow existing test conventions (naming, file layout, fixture patterns, assertion style).
+6. Run the existing test suite first to establish the green baseline.
+7. **For Zig**: verify the stdlib API you're testing against actually exists on cross-compile targets. Use `context7` MCP to fetch current Zig stdlib docs, or grep the stdlib source at `~/.local/share/mise/installs/zig/{version}/lib/std/`. Do NOT assume an API exists because it works on macOS — check Linux targets.
 
 ## Spec-Driven Test Generation
 
-If the spec has a **Test Specification** section (from the TEMPLATE.md), use it directly — the test cases are already defined. Map each row to a test function:
+**Step 1: Read the spec's Test Specification section.** If it exists (from TEMPLATE.md), the test cases are already defined. Map each row to a test function:
 
 ```
 Spec row:
@@ -51,7 +61,41 @@ Spec row:
   test "1.1: stream emits SSE event" { ... }
 ```
 
-**If the spec has no Test Specification section**, fall back to claim tracing (below).
+**Step 2: Read the spec's Error Contracts table.** Every row becomes a negative test:
+
+```
+Error Contract row:
+  error: Timeout
+  behavior: return null
+  caller_sees: readMessage() returns null
+
+→ Generates:
+  test "T3: readMessage returns null on timeout" { ... }
+```
+
+**Step 3: Read the spec's Failure Modes table.** Every row becomes an integration test:
+
+```
+Failure Mode row:
+  failure: Redis connection reset
+  trigger: server closes TCP
+  behavior: propagate error, caller falls back to DB polling
+
+→ Generates:
+  test "integration: readMessage propagates fatal error on connection reset" { ... }
+```
+
+**Step 4: Read the spec's Implementation Constraints table.** Every row becomes a verification test:
+
+```
+Constraint row:
+  constraint: Cross-compiles on x86_64-linux
+  verify: zig build -Dtarget=x86_64-linux
+
+→ Agent must run this command and report the result.
+```
+
+**If the spec has none of these sections**, fall back to claim tracing (below).
 
 ## Spec-Claim Tracing
 
@@ -109,7 +153,18 @@ When asked to improve existing coverage (not just cover a changeset):
 
 ## Test Tiers
 
-For every file touched, satisfy ALL tiers. If a tier does not apply, state why.
+**Mandatory:** For every file touched, satisfy ALL tiers. If a tier does not apply, state why — with the reason, not just "N/A".
+
+**Minimum 5 test cases per tier per file** when the tier applies. This is not a suggestion — it's the minimum for production code. M22_001 had 3 test cases for error paths and missed timeout-vs-fatal, connection-reset, and TLS platform behavior. 5 forces you to think beyond the obvious.
+
+**Coverage source priority (in order):**
+1. **Spec's Test Specification table** — pre-defined test cases, use them exactly
+2. **Spec's Error Contracts / Failure Modes tables** — every row is a test
+3. **`docs/greptile-learnings/RULES.md`** — every rule is a regression test
+4. **Tier checklists below** — fill gaps the spec didn't anticipate
+5. **Agent judgment** — edge cases specific to this implementation
+
+**Do NOT write tests that only validate your implementation.** Write tests that would catch someone else's wrong implementation of the same spec.
 
 ### TIER 1 — HAPPY PATH
 
