@@ -34,6 +34,25 @@ Generate production-grade test coverage that catches bugs before they ship.
 5. Run the existing test suite first to establish the green baseline.
 6. **Spec-claim tracing** — if the work has a spec (milestone doc, PR description, or task list), extract every behavioral claim and write at least one test per claim. Test the *claimed behavior*, not just the code paths you wrote.
 
+## Spec-Driven Test Generation
+
+If the spec has a **Test Specification** section (from the TEMPLATE.md), use it directly — the test cases are already defined. Map each row to a test function:
+
+```
+Spec row:
+  name: stream emits SSE event
+  dimension: 1.1
+  target: stream.zig:handleStreamRun
+  input: redis_message(valid)
+  expected: sse_event(valid)
+  test_type: integration
+
+→ Generates:
+  test "1.1: stream emits SSE event" { ... }
+```
+
+**If the spec has no Test Specification section**, fall back to claim tracing (below).
+
 ## Spec-Claim Tracing
 
 Before writing any tests, extract behavioral claims from the spec/PR description and build a tracing table:
@@ -51,6 +70,8 @@ Rules:
 - **Test the behavior, not the implementation.** "parser works" ≠ "bytes arrive incrementally." Parser tests validate parsing. Transport tests validate transport. Don't conflate them.
 - **Test failure modes the spec doesn't mention.** If the spec says "retry on network error", also test: what happens on Redis connection reset? What happens on HTTP 503? What happens if the user hits Ctrl+C during retry?
 - **Flag untestable claims.** If a claim can't be tested with the available infrastructure (e.g., "no busy-loop on connection reset" needs a way to kill Redis mid-test), flag it explicitly in the tracing table as "needs infra" rather than silently skipping it.
+- **Test error contracts.** If the spec has an Error Contracts table, every row needs a negative test that triggers that exact error condition and asserts the specified behavior.
+- **Test platform constraints.** If the spec lists platform constraints (e.g., "SO_RCVTIMEO doesn't work through TLS"), write a test that documents the behavior on the CI platform, even if it's a skip-with-reason.
 
 ## Incremental Coverage Improvement Mode
 
