@@ -641,36 +641,10 @@ qmd query "sandbox architecture" --json -n 10            # JSON for LLM
 
 ## Greptile Learnings
 
-Two files:
+Read `docs/greptile-learnings/RULES.md` at EXECUTE start and before review/fix cycles.
+Rules are generic principles, not per-incident entries — check if an existing rule covers a finding before adding a new one.
 
-| File | Purpose | When read |
-|------|---------|-----------|
-| `docs/greptile-learnings/RULES.md` | Natural-language do's and don'ts | EXECUTE start, `/review`, greptile fixes |
-
-New learnings go into `RULES.md` as natural-language rules.
-
-**Full process documentation:** [`docs/greptile-learnings/README.md`](./docs/greptile-learnings/README.md)
-
-**Pre-PR:** Agents read `RULES.md` during EXECUTE. `make lint` runs standard lint checks.
-
-**Post-PR — triggered by ANY mention of greptile/reptile feedback, review comments, or "fix greptile":**
-
-Execute ALL steps below as a single workflow. Do not stop after fixing code — the reply, rule, and report steps are mandatory.
-
-1. Fetch greptile review ID and inline comments:
-   ```bash
-   gh api repos/OWNER/REPO/pulls/N/reviews --jq '.[] | select(.user.login | test("greptile")) | .id'
-   gh api repos/OWNER/REPO/pulls/N/reviews/{ID}/comments --jq '.[] | {id, path, body: .body[:150]}'
-   ```
-2. Fix each finding in the worktree (P0/P1 required; P2 at discretion)
-3. Run `make lint && make test` and `make test-integration-db` if DB-backed files were touched
-4. For every P0/P1 finding: add a natural-language rule to `docs/greptile-learnings/RULES.md` following the template (rule, why, do, don't, incident)
-5. **Reply to each greptile thread** with what was fixed and which commit:
-   ```bash
-   gh api repos/OWNER/REPO/pulls/N/comments/{comment_id}/replies -f body="Fixed in <sha>: <what changed>"
-   ```
-6. Commit fix + rule together, push the branch
-7. **Report to user**: table with each finding, severity, fix applied, rule added (or why not), and thread reply ID
+Full greptile workflow (fetch, fix, verify, update rules, reply, report) lives in each repo's `AGENTS_POLICY_APPENDIX.md` and `docs/greptile-learnings/README.md`.
 
 ## Web-to-Markdown Workflow
 
