@@ -263,8 +263,9 @@ Required outputs:
   - [ ] **OpenAPI spec update** — does this change add/modify/remove API endpoints, request/response shapes, or error codes? If yes, list affected paths.
   - [ ] **`zombiectl` CLI changes** — does this change require new subcommands, flags, or output format changes in the npm CLI? If yes, note that the project manager must approve CLI surface changes (create a skill ticket if needed).
   - [ ] **User-facing doc changes** — do docs at `docs.usezombie.com` need updating? If yes, list pages.
-  - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes) and draft the `docs/v1/ship/{version}.md` entry during DOCUMENT phase.
+  - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes) and update `/Users/kishore/Projects/docs/changelog.mdx` with a new `<Update>` block during CHORE(close).
   - [ ] **Schema changes** — does this change add/modify/remove database tables, columns, or constraints? If yes: (a) each new SQL file must be ≤100 lines and single-concern (one table or one logical group), (b) update `schema/embed.zig` and `src/cmd/common.zig` migration array, (c) verify `docs/SCHEMA_CONVENTIONS.md` is followed. Full teardown-rebuild is allowed until v0.5.0 — no ALTER migrations needed.
+  - [ ] **Schema teardown (pre-production only)** — if removing tables before first production deploy: edit `CREATE TABLE` source files directly (no DROP migrations). When all tables in a file are removed, keep the file as a version marker with a comment (`-- MN_WS: removed. Kept as version marker.`). Never delete migration files — later migrations depend on slot numbering. See `docs/greptile-learnings/RULES.md` rule 41.
 
 Restrictions:
 
@@ -323,8 +324,6 @@ Required outputs:
   # Run on all files in the diff:
   git diff --name-only origin/main | xargs wc -l | awk '$1 > 400 { print "❌ " $2 ": " $1 " lines (limit 400)" }'
   ```
-- **Spec-claim verification.** If the spec has a Test Specification section, verify every row in the Spec-Claim Tracing table has a passing test. If a claim says "real-time" or "incremental", verify the *transport* delivers bytes incrementally — a unit test on a parser does NOT prove transport behavior.
-- **Verification Evidence table.** If the spec has a Verification Evidence section, fill it in with actual command output. This is the proof that the spec claims are met.
 - **`make test-integration` must pass** if the spec has integration test dimensions. Run it, not just `make test`.
 - After any refactor: list newly dead code explicitly. Never silently remove without user confirmation:
   ```
@@ -332,6 +331,7 @@ Required outputs:
   - [symbol/file]: [why it's now dead]
   → Remove these? Confirm before I proceed.
   ```
+- **Cross-layer orphan sweep** (Rule 30). For every symbol renamed, deleted, or format-changed in this branch, grep the OLD name across all layers (schema, Zig, JS, tests, docs). Zero hits in non-historical files required before proceeding. See `docs/greptile-learnings/RULES.md` Rule 30 for the sweep command.
 - **Greptile learning capture.** After fixing greptile or review findings, before committing the fix: for each finding, ask "Is this a pattern that could recur in other files?" If yes, add a compact rule (Rule/Why/Tags/Ref) to `docs/greptile-learnings/RULES.md` in the same commit as the fix. The fix and the rule ship together — never defer the rule to a follow-up.
 
 Restrictions:
@@ -389,295 +389,59 @@ Required outputs:
 - Spec header `Status: DONE` (or `Status: IN_PROGRESS` if parked).
 - Spec moved from `docs/v1/active/` to `docs/v1/done/` (only if fully complete).
 - Spec move committed on the feature branch.
-- **Release doc generated** at `docs/v1/ship/{version}.md` for every milestone/workstream completion.
+- **Release doc updated** in `/Users/kishore/Projects/docs/changelog.mdx` for every milestone/workstream completion. Add a new `<Update>` MDX block — do NOT create `docs/v*/ship/` files.
+- **Orphan sweep completed** (Rule 30). For every renamed/deleted/changed symbol in the branch, verify zero non-historical references remain across schema, Zig, JS, tests, and docs. This is a hard gate — do not open the PR with stale references.
 
 #### Release Doc Generation
 
-On every CHORE(close) where the spec is fully `DONE`, generate a release doc:
+On every CHORE(close) where the spec is fully `DONE`, update the public changelog:
 
-1. **Version bump rule:**
-   - Feature milestone → minor bump (e.g., `0.3.1` → `0.4.0`)
-   - Bug fix workstream → patch bump (e.g., `0.4.0` → `0.4.1`)
-   - Breaking change → major bump (e.g., `0.x` → `1.0.0`)
+1. **File:** `/Users/kishore/Projects/docs/changelog.mdx` — this is the single source of truth. Do NOT create `docs/v*/ship/*.md` files.
 
-2. **File:** `docs/v1/ship/{next_version}.md`
+2. **Add a new `<Update>` block** at the top of the changelog (after the `<Tip>` block), using the Mintlify MDX format:
 
-3. **Format:** Changelog-style, suitable for an agent to transform into the public changelog at `docs.usezombie.com/changelog`. Structure:
+```mdx
+<Update label="vX.Y.Z — {date}" tags={["New releases", ...]}>
+  ## {Feature name}
 
-```markdown
-# v{version}
-
-**Date:** {date}
-**Milestone:** M{N}_{WS}
-**Spec:** {spec_file_name}
-
-## What changed
-
-- {bullet: user-visible change with context}
-
-## Technical details
-
-- {bullet: implementation detail relevant to operators/developers}
-
-## Breaking changes
-
-- {bullet or "None"}
-
-## Migration
-
-- {bullet or "None — tables rebuilt from scratch" / "No migration needed"}
+  {User-visible description. Internal refactors (no API change) are omitted.}
+</Update>
 ```
 
-4. Commit the release doc on the feature branch alongside the spec move.
+3. **Version label rule:**
+   - Feature milestone → minor bump (e.g., `0.7.0` → `0.8.0`)
+   - Bug fix workstream → patch bump (e.g., `0.8.0` → `0.8.1`)
+   - Breaking change → major bump
+
+4. Internal refactors (no user-visible change) do not need an Update block — skip or fold into the next feature release.
 
 Gate:
 
-- Verify `docs/v1/done/` contains the spec file in the branch diff (skip if parked midway).
-- Verify `docs/v1/ship/{version}.md` exists in the branch diff (skip if parked midway).
+- Verify `docs/v2/done/` contains the spec file in the branch diff (skip if parked midway).
+- Verify `/Users/kishore/Projects/docs/changelog.mdx` has a new `<Update>` block in the branch diff (skip if internal-only refactor or parked midway).
 - If the spec is not in `done/` and status is `DONE` — do not open the PR.
 
 Exit criteria:
 
-- PR opened with spec in `done/` directory and release doc in `ship/`.
-
-## Hard Safety Rules
-
-- Never use destructive commands without explicit user approval: `reset --hard`, `clean -fd`, `checkout --`, `restore --source`, broad `rm`.
-- Never revert changes you did not create unless explicitly instructed.
-- If unexpected changes appear in files you are actively editing, stop and ask.
-- No branch mutation outside lifecycle transitions.
-- No cross-worktree edits.
-- No secrets in commits/docs.
-- Never resolve or print credential values in conversation, code, docs, playbooks, or evidence files. This includes values seen in CI logs, error messages, or debug output — once seen, do not copy them anywhere. Check effects (health endpoints, connectivity status), not raw secrets. Use `op://` references and vault item names only.
-- When writing verification steps that reference credentials, always use `op read 'op://...'` at runtime. Never paste a literal value, even as an "example" or "old value to test against."
-- Prefer CLI and text artifacts. Do not require GUI-only tooling when a CLI path exists.
-
-## Cognitive Discipline
-
-These rules apply to every task, not just second-model reviews. Non-negotiable.
-
-### Confusion Management (Critical)
-
-When encountering inconsistencies, conflicting requirements, or unclear specifications:
-
-1. **STOP** — do not proceed with a guess.
-2. **Name the specific confusion.**
-3. **Present the tradeoff or ask one precise question.**
-4. **Wait for resolution.**
-
-```
-❌ Bad: Silently picking one interpretation and hoping it's right
-✅ Good: "I see X in file A but Y in file B. Which takes precedence?"
-```
-
-Never silently fill in ambiguous requirements. The most common failure mode is making wrong assumptions and running with them unchecked.
-
-### Simplicity Enforcement
-
-Actively resist overcomplication. Before finishing any implementation, ask:
-
-- Can this be done in fewer lines?
-- Are these abstractions earning their complexity?
-- Would a senior dev say "why didn't you just…"?
-
-Prefer the boring, obvious solution. Cleverness is expensive. If 100 lines suffice, 1000 lines is a failure.
-
-### No Insecure Fallbacks
-
-Never add a "fallback" auth path, credential mechanism, or compatibility shim that is less secure than the primary path.
-
-- **One auth path.** Design the secure path. Ship only that.
-- **No deferred security.** Do not spread a security fix across milestones.
-- **No throwaway code.** If code will be replaced next milestone, do not write it.
-- **No backward-compatibility shims for unreleased software.**
-
-```
-❌ Bad: "Primary: GitHub App. Fallback: GITHUB_PAT env var for self-hosted."
-✅ Good: "Auth: GitHub App OAuth. No other path."
-```
-
-### No Process Launches — Native SDK Only
-
-Never shell out to external processes for core functionality. If a capability exists as a native library or SDK, use it.
-
-- **Git operations:** Use libgit2, not `git` CLI subprocess.
-- **HTTP/File/Build:** Use native APIs and Zig build system, not subprocess.
-- **Exception:** Personal developer tools (`op`, `gh`, `glab`, `oracle`) are allowed.
-
-### Error Surfacing — Design for Autonomous Recovery
-
-Every error must be visible, actionable, and self-diagnosing.
-
-- **No silent hangs.** Always timeout and surface diagnostics when dependencies are unreachable.
-- **Errors must name the dependency and suggest the fix.**
-- **Build and CI errors must be reproducible locally.**
-- **Closed feedback loops over open-ended CI.** Prefer `make` targets that verify locally in seconds.
-- **Fail loud, fail early, fail with context.**
-
-## Memory Boundaries
-
-Persist durable project decisions in repo docs, not conversation memory. Auto-memory (`MEMORY.md`) is for cross-session agent context (user preferences, feedback, project state) — but architectural decisions, process rules, and runbooks belong in repo files.
-
-- Process decisions: repo docs (`docs/*.md`).
-- Runbooks: `runbooks/docs/*.md`.
-
-Never rely on prior chat context when a file can hold canonical state.
-
-## Git Forge Policy (`gh` vs `glab`)
-
-Detect the forge from `git remote -v` output **before** running any forge command.
-
-| Remote host contains | Forge tool |
-|---|---|
-| `gitlab.com` | `glab` |
-| `github.com` | `gh` |
-
-Quick checks:
-
-```bash
-git remote -v
-gh auth status
-glab auth status
-```
-
-## PR And CI Workflow
-
-- For GitHub PR checks, use:
-
-```bash
-gh pr view --json number,title,url
-gh pr diff
-gh run list
-gh run view <run-id>
-```
-
-- For GitLab MR/pipeline checks, use:
-
-```bash
-glab mr view
-glab mr diff
-glab ci status
-glab pipeline view
-```
-
-- If CI is red, iterate until green: inspect logs, fix, push, re-check.
-
-## Standard Make Target Taxonomy
-
-Every repo must expose these targets. Agents use these as the canonical entry points — never raw `bun run`/`cargo`/`go` commands unless a Make target does not exist.
-
-| Target        | Applies to        | Purpose                                             |
-|---------------|-------------------|-----------------------------------------------------|
-| `make dev`    | all               | Start local dev server or run binary in dev mode    |
-| `make up`     | services          | Start background services (Docker Compose)          |
-| `make down`   | services          | Stop background services                            |
-| `make lint`   | all               | Run all linters and type checks (never `quality`)   |
-| `make test`   | all               | Run all unit tests                                  |
-| `make build`  | all               | Compile / bundle for production                     |
-| `make _clean` | all               | Remove generated artefacts (dist, coverage, .tmp)   |
-| `make push`   | services/packages | Push image/package to registry                      |
-| `make qa`     | web               | Playwright e2e full suite (headless)                |
-| `make qa-smoke` | web             | Playwright smoke tests (fast CI gate)               |
-
-Rules:
-- `make quality` is **banned** — use `make lint`.
-- `make qa-headed` is **not a shared target** — agents are headless; headed runs use `bunx playwright test --headed` directly.
-- Multi-component repos split targets: `make lint-<component>` feeds into `make lint` aggregate. Example: `lint-zig` + `lint-website` → `lint`.
-- `make test` runs unit tests only. E2e is always a separate `make qa` / `make qa-smoke`.
-
-## Screenshot Workflow
-
-When asked to "use a screenshot":
-
-- Pick the newest PNG from `~/Desktop` or `~/Downloads`.
-- Validate dimensions: `sips -g pixelWidth -g pixelHeight <file>`
-- Optimize before commit: `imageoptim <file>`
-
-## Multi-Agent Execution Model
-
-Use worktrees for isolation and tmux for orchestration.
-
-Rules:
-
-- One worktree per active agent/task stream.
-- One tmux pane per agent role (Oracle/Codex/Claude/tests).
-- No file edits outside current worktree.
-- Merge only after `VERIFY` passes.
-
-Session orchestration:
-
-```bash
-tmux new -s agents
-tmux list-sessions
-tmux attach -t agents
-```
-
-## QA Testing Decision
-
-Default browser E2E stack is **Playwright CLI**.
-
-```bash
-bun add -d @playwright/test
-bunx playwright install --with-deps
-bunx playwright test --reporter=line                    # CI/headless
-bunx playwright test tests/e2e/login.spec.ts --project=chromium  # targeted
-```
-
-Playwright MCP may be used for exploratory automation, but CLI is the source of truth for pass/fail gates.
-
-## Knowledge Base (QMD)
-
-Use `qmd` to search indexed reference material for sandbox agents, infrastructure patterns, and prior research.
-
-**Collection:** `clawable` → `~/notes/clawable/`
-
-```bash
-qmd search "actor model implementation" -c clawable     # BM25 keyword
-qmd vsearch "sandbox isolation patterns" -c clawable     # semantic
-qmd query "how to deploy sandbox agents" -c clawable     # hybrid + re-rank
-qmd query "sandbox architecture" --json -n 10            # JSON for LLM
-```
-
-**Workflow:** Run `qmd query` or `qmd search` first when researching or comparing implementations.
-
-## Greptile Learnings
-
-Read `docs/greptile-learnings/RULES.md` at EXECUTE start and before review/fix cycles.
-Rules are generic principles, not per-incident entries — check if an existing rule covers a finding before adding a new one.
-
-Full greptile workflow (fetch, fix, verify, update rules, reply, report) lives in each repo's `AGENTS_POLICY_APPENDIX.md` and `docs/greptile-learnings/README.md`.
-
-## Web-to-Markdown Workflow
-
-| Approach | Use When | Command |
-|----------|----------|---------|
-| Cloudflare header | Site uses Cloudflare + enabled | `curl -H "Accept: text/markdown" URL` |
-| html2text | Any other site | `curl -s URL \| html2text` |
-| webfetch tool | Quick extraction via agent | `webfetch URL --format markdown` |
-
-## Code Structure Policies
-
-- `Mar 07, 2026: 11:55 PM` — Code line-limit policy: write deep modules with fewer than 400 lines to keep testing and review simpler.
-- `Mar 07, 2026: 11:55 PM` — Constant policy: if a string is used more than once, extract a constant.
-- `Mar 07, 2026: 11:55 PM` — Constant scope rule: if reuse is across modules, place constants in a shared global constants file.
-- `Mar 07, 2026: 11:55 PM` — Anti-pattern guardrail: do not create unnecessary constants; within a single file, declare constants only when reused more than once.
-
-## Skill Routing
-
-When the user's request matches an available skill, ALWAYS invoke it using the Skill
-tool as your FIRST action. Do NOT answer directly, do NOT use other tools first.
-The skill has specialized workflows that produce better results than ad-hoc answers.
-
-Key routing rules:
-- Product ideas, "is this worth building", brainstorming → invoke office-hours
-- Bugs, errors, "why is this broken", 500 errors → invoke investigate
-- Ship, deploy, push, create PR → invoke ship
-- QA, test the site, find bugs → invoke qa
-- Code review, check my diff → invoke review
-- Update docs after shipping → invoke document-release
-- Weekly retro → invoke retro
-- Design system, brand → invoke design-consultation
-- Visual audit, design polish → invoke design-review
-- Architecture review → invoke plan-eng-review
-- Save progress, checkpoint, resume → invoke checkpoint
-- Code quality, health check → invoke health
+- PR opened with spec in `done/` directory and changelog.mdx updated.
+
+## Safety and Policy Appendix
+
+The detailed policy sections were split into [AGENTS_POLICY_APPENDIX.md](./AGENTS_POLICY_APPENDIX.md) to keep this primary file under the repository line-limit gate.
+
+The appendix contains:
+
+- hard safety rules
+- cognitive discipline rules
+- memory boundaries
+- forge/PR/CI workflow
+- make target taxonomy
+- screenshot and multi-agent workflow
+- QA testing decision
+- QMD usage
+- greptile workflow
+- web-to-markdown workflow
+- code structure policies
+- skill routing
+
+Core requirements still apply. Read and follow both files.
