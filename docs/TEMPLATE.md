@@ -367,14 +367,30 @@ git diff --name-only origin/main | xargs wc -l 2>/dev/null | awk '$1 > 400 && $2
 
 **Status:** PENDING
 
-Mandatory when the spec deletes or replaces files. List every file deleted
-and every symbol renamed/removed. The eval commands above must grep for
-each and confirm zero remaining references.
+Mandatory when the spec deletes or replaces files. Two checks:
 
-| Deleted file or symbol | Grep command | Expected result |
-|-----------------------|--------------|-----------------|
-| {e.g., `error_table.zig`} | `grep -rn "error_table" src/ --include="*.zig"` | 0 matches |
+**1. Orphaned files — must be deleted from disk and git.**
+Every replaced or superseded file must be `git rm`'d. Verify with `test ! -f`.
+
+| File to delete | Verify deleted |
+|---------------|----------------|
+| {e.g., `src/errors/error_table.zig`} | `test ! -f src/errors/error_table.zig` |
+| {e.g., `src/errors/codes.zig`} | `test ! -f src/errors/codes.zig` |
+
+**2. Orphaned references — zero remaining imports or uses.**
+For every deleted file and every removed/renamed public symbol, grep the
+entire `src/` tree. Any non-zero result = stale reference that will compile
+(Zig won't catch it if behind a `comptime` or test-only path) but fail at
+runtime or confuse future maintainers.
+
+| Deleted symbol or import | Grep command | Expected |
+|-------------------------|--------------|----------|
+| {e.g., `error_table`} | `grep -rn "error_table" src/ --include="*.zig"` | 0 matches |
 | {e.g., `UNKNOWN_ENTRY`} | `grep -rn "UNKNOWN_ENTRY" src/ --include="*.zig"` | 0 matches |
+| {e.g., `posthog_events`} | `grep -rn "posthog_events" src/ --include="*.zig"` | 0 matches |
+
+**3. main.zig test discovery — update imports.**
+Remove `_ = @import("deleted_file.zig");` lines. Add imports for new files.
 
 If a spec does not delete files: write "N/A — no files deleted."
 
@@ -389,6 +405,7 @@ Filled in during VERIFY phase. Proves the spec claims are met.
 | Check | Command | Result | Pass? |
 |-------|---------|--------|-------|
 | Unit tests | `make test` | {output} | |
+| Integration tests | `make test-integration` | {output} | |
 | Leak detection | `zig build test \| grep leak` | {output} | |
 | Cross-compile | `zig build -Dtarget=x86_64-linux` | {output} | |
 | Lint | `make lint` | {output} | |
