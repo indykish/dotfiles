@@ -332,6 +332,7 @@ Required outputs:
   - [symbol/file]: [why it's now dead]
   → Remove these? Confirm before I proceed.
   ```
+- **Greptile learning capture.** After fixing greptile or review findings, before committing the fix: for each finding, ask "Is this a pattern that could recur in other files?" If yes, add a compact rule (Rule/Why/Tags/Ref) to `docs/greptile-learnings/RULES.md` in the same commit as the fix. The fix and the rule ship together — never defer the rule to a follow-up.
 
 Restrictions:
 
