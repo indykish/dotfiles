@@ -38,6 +38,24 @@ Prefer the obvious solution. Avoid unnecessary complexity.
 - No throwaway code.
 - No backward-compatibility shims for unreleased software.
 
+### Secrets Never in Entity Tables
+
+- Never store plaintext secrets in core entity tables (e.g. `core.zombies`, `core.workspaces`).
+- Store a vault key_name reference. Resolve via `crypto_store.load()` at runtime.
+- This prevents secrets from appearing in: query results, DB backups, SQL dumps, log aggregators, read replicas.
+
+### No Static Strings in SQL Schema
+
+- Do not use `DEFAULT 'value'` or `CHECK (col IN ('a', 'b'))` with hardcoded strings.
+- Enforce value constraints in application code via named constants.
+- SQL cannot reference Zig/JS constants. Hardcoded strings in schema drift silently from code.
+
+### Constant-Time Secret Comparison
+
+- Always run the XOR loop over `@min(a.len, b.len)` bytes.
+- Fold length mismatch into the result AFTER the loop, not before.
+- Never short-circuit on `a.len == b.len` — it leaks the expected secret's length via timing.
+
 ### No Process Launches — Native SDK Only
 
 - Use native SDKs for core functionality.
@@ -189,7 +207,7 @@ Post-PR greptile fix workflow:
 
 ## Code Structure Policies
 
-- Keep files under 400 lines.
+- Keep .zig/.js files under 350 lines (RULE FLL). Markdown files are exempt.
 - Extract repeated strings to constants.
 - Shared constants go in shared files.
 - Avoid unnecessary constants.
