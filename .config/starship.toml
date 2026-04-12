@@ -1,6 +1,7 @@
 format = "$directory$git_branch$git_status$package$ocaml$zig$rust$bun$nodejs$deno$perl$python$golang$java$kotlin$lua$php$ruby$haskell$elixir$erlang$julia$nim$rlang$swift$terraform$docker_context$cmd_duration$line_break$character"
 add_newline = false
 scan_timeout = 50
+command_timeout = 2000
 
 [directory]
 style = "bold cyan"
@@ -34,6 +35,7 @@ style = "bold yellow"
 
 [zig]
 style = "bold #f7a41d"
+detect_files = [".tool-versions", "build.zig", "build.zig.zon"]
 
 [rust]
 style = "bold red"
@@ -53,6 +55,7 @@ style = "bold magenta"
 
 [python]
 style = "bold yellow"
+detect_files = [".tool-versions", ".python-version", "requirements.txt", "pyproject.toml", "setup.py", "Pipfile", "poetry.lock"]
 
 [golang]
 style = "bold cyan"
