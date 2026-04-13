@@ -189,7 +189,7 @@ docs/
 **Rule:** Never write `TODO.md`. Always create a spec from `docs/TEMPLATE.md`.
 
 Steps:
-1. Copy `docs/TEMPLATE.md` → `docs/v1/pending/M{N}_{WS}_{NAME}.md`.
+1. Copy `docs/TEMPLATE.md` → `docs/v{N}/pending/P{Priority}_{CATEGORIES}_M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md`.
 2. Fill in ALL header fields, sections, dimensions, and acceptance criteria. The spec must be detailed and elaborate — not a skeleton.
 3. Set `Status: PENDING`.
 4. Commit the pending spec to `main`.
@@ -221,9 +221,42 @@ Steps:
 
 ### File Naming
 
+Specs follow the priority-first naming convention:
+
+```
+docs/v{version}/{pending|active|done}/P{Priority}_{CATEGORIES}_M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
+```
+
+**Format breakdown:**
+- `P{Priority}` — P0 (critical/blocking), P1 (customer/operator-facing), P2 (secondary/tooling), P3 (deferrable)
+- `{CATEGORIES}` — One or more surface categories (alphabetical within category group):
+  - `UI` — Web dashboard/pages (Next.js/React)
+  - `API` — HTTP endpoints (Zig/Go handlers)
+  - `CLI` — zombiectl commands (Node.js)
+  - `OBS` — Observability/metrics/telemetry (Grafana, dashboards)
+  - `SKILL` — Skill/policy templates (YAML)
+  - `INFRA` — Infrastructure/Terraform/deployment
+- `M{Milestone}` — Milestone number (e.g., M7, M14)
+- `{Workstream}` — Workstream number with leading zeros (e.g., 001, 002)
+- `{DESCRIPTIVE_NAME}` — Brief kebab-case description
+
+**Examples:**
+```
+docs/v2/pending/P1_API_CLI_M7_001_FIREWALL_METRICS.md
+docs/v2/pending/P1_UI_M12_001_APP_DASHBOARD.md
+docs/v2/pending/P2_CLI_M14_005_MEMORY_EXPORT_IMPORT.md
+docs/v2/pending/P1_API_M18_002_MIDDLEWARE_MIGRATION.md
+```
+
+**Priority sources from spec front matter:**
+- P0 — Critical/blocking (emergency fixes, data loss prevention)
+- P1 — Customer/operator-facing features, core product value
+- P2 — Operator tooling, secondary features, nice-to-haves
+- P3 — Deferrable, experimental, or future work
+
+**Legacy format (pre-renaming):**
 ```
 docs/v1/{pending|active|done}/M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
-
 Example: docs/v1/pending/M3_007_CLERK_AUTH.md
 ```
 
@@ -360,23 +393,57 @@ Every spec with an Interfaces section and Test Specification section must satisf
 Required outputs:
 
 - Run lint/tests/build checks relevant to touched files.
-- If touched files include `*.zig`: additionally run `make check-pg-drain`.
-- If touched files include `*.zig`: run cross-compile check: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux`.
 - Scan the diff against `docs/greptile-learnings/RULES.md` — verify no rule is violated by the changes.
 - Capture failures with exact command and error text.
-- **350-line gate on every touched .zig/.js file (RULE FLL).** For each code file you created or modified, run `wc -l <file>`. If any .zig or .js file exceeds 350 lines, you must split it before proceeding to DOCUMENT. This is a hard gate — do not defer, do not ask, do not rationalize. Split the file. Markdown files (.md) are exempt.
+
+#### Test Command Protocol
+
+Three tiers for correctness, two for performance/leak. Do not skip a tier — each catches what the tier above cannot.
+
+**Correctness tiers — in order:**
+
+| Tier | Command | When |
+|------|---------|------|
+| 1 | `make test` | Every iteration during EXECUTE and at start of VERIFY. Unit only, seconds. |
+| 2 | `make test-integration` | When the diff touches `src/http/**`, `src/db/**`, any `*_integration_test.zig`, schema, or migrations. Before COMMIT on any branch that touched those paths. |
+| 3 | `make down && make up && make test-integration` | Before declaring a branch ship-ready. Also whenever tier 2 is intermittent or order-dependent — the fresh DB proves no state carry-over. Mandatory when schema files change (teardown-rebuild era, pre-v2.0). |
+
+Rules:
+- Tier 3 runs at least once per branch, not per iteration.
+- If tier 2 passes but tier 3 fails, the bug is state pollution — fix isolation, don't declare green until tier 3 passes.
+- `make test` is unit-only by definition (AGENTS_POLICY_APPENDIX.md). It never substitutes for tier 2 or tier 3.
+
+**Performance / leak gates — branch-level:**
+
+| Gate | Command | When |
+|------|---------|------|
+| Leak | `make memleak` | When the diff touches server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, or any code that owns heap resources across threads. Before PR. |
+| Bench (local) | `make bench` | When the diff could affect request path or server startup/shutdown. Before PR. |
+| Bench (dev) | `API_BENCH_URL=https://api.dev.usezombie.com/healthz make bench` | After the branch deploys to dev. Confirms the change holds under real network + real concurrency, not just loopback. |
+
+Bench env overrides (see `make/test-bench.mk`): `API_BENCH_METHOD`, `API_BENCH_DURATION_SEC`, `API_BENCH_CONCURRENCY`, `API_BENCH_TIMEOUT_MS`, `API_BENCH_MAX_ERROR_RATE`, `API_BENCH_MAX_P95_MS`, `API_BENCH_MAX_RSS_GROWTH_MB`.
+
+#### Branch-level hygiene gates (always, before PR)
+
+- `make lint` — full project lint (not per-component). Hard gate.
+- `make check-pg-drain` — whenever `*.zig` files are touched, unconditional.
+- Cross-compile: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` — whenever `*.zig` files are touched.
+- Cross-layer orphan sweep — for every renamed/deleted symbol in the branch, grep across schema/Zig/JS/tests/docs. Zero hits in non-historical files. See `docs/greptile-learnings/RULES.md` RULE ORP.
+- `gitleaks detect` — before any commit that includes Zig changes.
+- **350-line gate on every touched .zig/.js file (RULE FLL).** For each code file you created or modified, run `wc -l <file>`. If any .zig or .js file exceeds 350 lines, you must split it before proceeding to DOCUMENT. Hard gate — do not defer, do not ask, do not rationalize. Split the file. Markdown files (.md) are exempt.
   ```bash
   # Run on all code files in the diff (exempts .md):
   git diff --name-only origin/main | grep -v '\.md$' | xargs wc -l | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
   ```
-- **`make test-integration` must pass** if the spec has integration test dimensions. Run it, not just `make test`.
+
+#### Additional outputs
+
 - After any refactor: list newly dead code explicitly. Never silently remove without user confirmation:
   ```
   NEWLY UNREACHABLE AFTER THIS CHANGE:
   - [symbol/file]: [why it's now dead]
   → Remove these? Confirm before I proceed.
   ```
-- **Cross-layer orphan sweep** (Rule 30). For every symbol renamed, deleted, or format-changed in this branch, grep the OLD name across all layers (schema, Zig, JS, tests, docs). Zero hits in non-historical files required before proceeding. See `docs/greptile-learnings/RULES.md` Rule 30 for the sweep command.
 - **Greptile learning capture.** After fixing greptile or review findings, before committing the fix: for each finding, ask "Is this a pattern that could recur in other files?" If yes, add a compact rule (Rule/Why/Tags/Ref) to `docs/greptile-learnings/RULES.md` in the same commit as the fix. The fix and the rule ship together — never defer the rule to a follow-up.
 
 Restrictions:
@@ -436,7 +503,7 @@ Required outputs:
 - Spec move committed on the feature branch.
 - **Release doc updated** in `/Users/kishore/Projects/docs/changelog.mdx` for every milestone/workstream completion. Add a new `<Update>` MDX block — do NOT create `docs/v*/ship/` files.
 - **Ripley's Log written** in `docs/v2/agent-docs/RIPLEYS_LOG_{MMM}_{DD}_{HH_MM_SS}.md` (example: `RIPLEYS_LOG_APR_12_15_30_45.md`). Use the second-granularity form so back-to-back agent sessions don't collide; if a same-second collision still occurs, append a 4-char hex nonce per the filename rules above. A first-person, dated session log of decisions made, assumptions surfaced, dead ends, trade-offs considered, and follow-ups deferred — the things that don't belong in commit messages or the spec but matter for the next agent picking up the thread. Commit alongside the spec move. Required for every non-trivial CHORE(close), not optional.
-- **Orphan sweep completed** (Rule 30). For every renamed/deleted/changed symbol in the branch, verify zero non-historical references remain across schema, Zig, JS, tests, and docs. This is a hard gate — do not open the PR with stale references.
+- **Orphan sweep completed** (RULE ORP + RULE CHR). For every renamed/deleted/changed symbol in the branch, verify zero non-historical references remain across schema, Zig, JS, tests, and docs. This is a hard gate — do not open the PR with stale references.
 
 #### Release Doc Generation
 
