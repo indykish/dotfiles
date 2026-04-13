@@ -1,20 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "🤖 Upgrading claude..."
-claude upgrade
+# Colors
+ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
+info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
 
-echo "🤖 Upgrading opencode..."
-opencode upgrade
+info "🤖 Upgrading AI coding tools..."
 
-echo "🤖 Upgrading amp..."
-amp update
+# Upgrade each tool if installed
+if command -v claude &>/dev/null; then
+    info "Upgrading claude..."
+    claude upgrade || warn "Claude upgrade failed"
+fi
 
-echo "📦 Upgrading @openai/codex..."
-npm install -g @openai/codex
+if command -v opencode &>/dev/null; then
+    info "Upgrading opencode..."
+    opencode upgrade || warn "Opencode upgrade failed"
+fi
 
-echo "✅ All AI coding tools upgraded!"
+if command -v amp &>/dev/null; then
+    info "Upgrading amp..."
+    amp update || warn "Amp update failed"
+fi
+
+if command -v codex &>/dev/null || npm list -g @openai/codex &>/dev/null; then
+    info "Upgrading @openai/codex..."
+    npm install -g @openai/codex || warn "Codex upgrade failed"
+fi
+
+ok "All AI coding tools upgraded!"
 
 echo ""
-echo "🔄 Running sync-skills to keep skills updated..."
+info "🔄 Running sync-skills to keep skills updated..."
 ~/bin/sync-skills
