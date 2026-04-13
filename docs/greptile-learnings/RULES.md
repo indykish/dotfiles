@@ -60,10 +60,10 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 
 ## RULE FLL — Files ≤ 350 lines (new/touched); functions ≤ 50 lines
 
-**Rule:** Every new or touched .zig/.js file must stay under 350 lines; every new function under 50 lines.
-**Why:** Files over 350L hide coupling and slow review; functions over 50L inline multiple concerns.
+**Rule:** Every new or touched .zig/.js file must stay under 350 lines; every new function under 50 lines. **Exempt:** Markdown (`.md`), files under `vendor/` (third-party code), and test files matching `_test.`, `.test.`, `.spec.`, or paths under `tests/`. The rule applies to `.zig`/`.js`/`.ts` source — not docs.
+**Why:** Files over 350L hide coupling and slow review; functions over 50L inline multiple concerns. Vendored code: splitting upstream files breaks the upgrade path and obscures the diff against upstream. Tests: grow with fixture setup + assertion volume, and forced splits separate the assertion from the setup it depends on.
 **Tags:** zig, js, all
-**Ref:** AGENTS_POLICY_APPENDIX.md Code Structure Policies — tightened from 400L at M15.
+**Ref:** AGENTS_POLICY_APPENDIX.md Code Structure Policies — tightened from 400L at M15. Vendor + test exemptions added when usezombie/usezombie vendored httpz under `vendor/httpz/` to patch a shutdown UAF.
 
 ## RULE XCC — Cross-compile before commit (Zig)
 

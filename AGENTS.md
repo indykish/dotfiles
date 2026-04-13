@@ -430,10 +430,14 @@ Bench env overrides (see `make/test-bench.mk`): `API_BENCH_METHOD`, `API_BENCH_D
 - Cross-compile: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` — whenever `*.zig` files are touched.
 - Cross-layer orphan sweep — for every renamed/deleted symbol in the branch, grep across schema/Zig/JS/tests/docs. Zero hits in non-historical files. See `docs/greptile-learnings/RULES.md` RULE ORP.
 - `gitleaks detect` — before any commit that includes Zig changes.
-- **350-line gate on every touched .zig/.js file (RULE FLL).** For each code file you created or modified, run `wc -l <file>`. If any .zig or .js file exceeds 350 lines, you must split it before proceeding to DOCUMENT. Hard gate — do not defer, do not ask, do not rationalize. Split the file. Markdown files (.md) are exempt.
+- **350-line gate on every touched .zig/.js file (RULE FLL).** For each code file you created or modified, run `wc -l <file>`. If any .zig or .js file exceeds 350 lines, you must split it before proceeding to DOCUMENT. Hard gate — do not defer, do not ask, do not rationalize. Split the file. **Exempt:** Markdown (`.md`), vendored third-party code under `vendor/`, and test files (any path matching `_test.`, `.test.`, `.spec.`, or under `tests/`). Vendored code is not ours to restructure; tests grow with fixtures + assertions and forcing splits hurts readability.
   ```bash
-  # Run on all code files in the diff (exempts .md):
-  git diff --name-only origin/main | grep -v '\.md$' | xargs wc -l | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
+  # Run on all code files in the diff (exempts .md, vendor/, tests).
+  # `make lint` enforces this for src/ — this command is for ad-hoc checks.
+  git diff --name-only origin/main \
+    | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' \
+    | xargs -I{} sh -c 'wc -l "{}"' \
+    | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
   ```
 
 #### Additional outputs
@@ -504,6 +508,10 @@ Required outputs:
 - **Release doc updated** in `/Users/kishore/Projects/docs/changelog.mdx` for every milestone/workstream completion. Add a new `<Update>` MDX block — do NOT create `docs/v*/ship/` files.
 - **Ripley's Log written** in `docs/v2/agent-docs/RIPLEYS_LOG_{MMM}_{DD}_{HH_MM_SS}.md` (example: `RIPLEYS_LOG_APR_12_15_30_45.md`). Use the second-granularity form so back-to-back agent sessions don't collide; if a same-second collision still occurs, append a 4-char hex nonce per the filename rules above. A first-person, dated session log of decisions made, assumptions surfaced, dead ends, trade-offs considered, and follow-ups deferred — the things that don't belong in commit messages or the spec but matter for the next agent picking up the thread. Commit alongside the spec move. Required for every non-trivial CHORE(close), not optional.
 - **Orphan sweep completed** (RULE ORP + RULE CHR). For every renamed/deleted/changed symbol in the branch, verify zero non-historical references remain across schema, Zig, JS, tests, and docs. This is a hard gate — do not open the PR with stale references.
+- **Working tree clean** — `git status` must report `nothing to commit, working tree clean` BEFORE opening or updating the PR. No untracked files, no unstaged changes, no stray scaffolds. Hard gate. If files appear that are out of scope for the current PR, either commit them to a separate logical commit (with its own scope label), gitignore them if they're machine-local, or delete them — never open a PR with a dirty tree. Run:
+  ```bash
+  git status  # must show: "nothing to commit, working tree clean"
+  ```
 
 #### Release Doc Generation
 
