@@ -125,7 +125,11 @@ Execution pattern:
 - Before any `git commit` that includes Zig changes, check and run the canonical Zig workflow in `docs/ZIG_RULES.md`.
 - Before creating any new `*.zig` file, read `docs/ZIG_RULES.md` and follow its rules first.
 - When writing or reviewing any Zig code that calls `conn.query()`: verify `.drain()` is present in the same function before `deinit()`. Run `make check-pg-drain` to confirm. Use `conn.exec()` instead whenever no result rows are needed.
-- For date-time entries in docs/notes, use format `Feb 02, 2026: 10:30 AM`.
+- Date/time formats:
+  - **Inside files** (docs, notes, commit messages, changelog bodies): `Feb 02, 2026: 10:30 AM` — human-readable, used in prose.
+  - **Filenames, minute-granularity** (daily handoffs, release notes, any doc where one-per-minute is enough): `{MMM}_{DD}_{HH_MM}` — e.g. `HANDOFF_APR_13_15_30.md`.
+  - **Filenames, second-granularity** (agent-generated logs where multiple files may land in the same minute — Ripley's Logs, per-run artifacts): `{MMM}_{DD}_{HH_MM_SS}` — e.g. `RIPLEYS_LOG_APR_13_15_30_45.md`.
+  - **Filenames, collision-proof** (parallel agents writing within the same second): append a 4-char hex nonce — `{MMM}_{DD}_{HH_MM_SS}_{NONCE}` — e.g. `RIPLEYS_LOG_APR_13_15_30_45_a1b2.md`. Generate via `openssl rand -hex 2`. Use only when the second-granularity form actually collides; don't pre-apply.
 - Any edit touching `schema/*.sql`, `schema/embed.zig`, or the migration array in `src/cmd/common.zig` — even a one-line fix — invokes the `Schema Table Removal Guard` (section below). No exceptions.
 
 ## Schema Table Removal Guard (pre-v2.0.0)
@@ -431,7 +435,7 @@ Required outputs:
 - Spec moved from `docs/v1/active/` to `docs/v1/done/` (only if fully complete).
 - Spec move committed on the feature branch.
 - **Release doc updated** in `/Users/kishore/Projects/docs/changelog.mdx` for every milestone/workstream completion. Add a new `<Update>` MDX block — do NOT create `docs/v*/ship/` files.
-- **Ripley's Log written** in `docs/v2/agent-docs/RIPLEYS_LOG_{MMM}_{DD}_{HH_MM}.md` (example: `RIPLEYS_LOG_APR_12_15_30.md`). A first-person, dated session log of decisions made, assumptions surfaced, dead ends, trade-offs considered, and follow-ups deferred — the things that don't belong in commit messages or the spec but matter for the next agent picking up the thread. Commit alongside the spec move. Required for every non-trivial CHORE(close), not optional.
+- **Ripley's Log written** in `docs/v2/agent-docs/RIPLEYS_LOG_{MMM}_{DD}_{HH_MM_SS}.md` (example: `RIPLEYS_LOG_APR_12_15_30_45.md`). Use the second-granularity form so back-to-back agent sessions don't collide; if a same-second collision still occurs, append a 4-char hex nonce per the filename rules above. A first-person, dated session log of decisions made, assumptions surfaced, dead ends, trade-offs considered, and follow-ups deferred — the things that don't belong in commit messages or the spec but matter for the next agent picking up the thread. Commit alongside the spec move. Required for every non-trivial CHORE(close), not optional.
 - **Orphan sweep completed** (Rule 30). For every renamed/deleted/changed symbol in the branch, verify zero non-historical references remain across schema, Zig, JS, tests, and docs. This is a hard gate — do not open the PR with stale references.
 
 #### Release Doc Generation
