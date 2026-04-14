@@ -468,6 +468,13 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 **Tags:** zig, oauth, http, security
 **Ref:** M8_001 slack_oauth_client.zig `exchangeCode` — `code` interpolated raw. Fixed in this PR.
 
+## RULE CTE — constantTimeEq only hides value timing, not length timing
+
+**Rule:** A constant-time comparison that iterates `min(a.len, b.len)` prevents early-exit on value mismatch but still leaks the shorter input's length via iteration count. Document this limitation in the function comment; do not claim it "prevents timing leaks on secret value or length." For truly fixed-length secrets (e.g. 32-byte hex nonces) the length leak is unexploitable in practice, but the comment must be accurate.
+**Why:** Greptile flags the misleading doc comment as a security claim that is stronger than the implementation. A future caller with variable-length inputs would inherit a false guarantee.
+**Tags:** zig, security, crypto, constant-time
+**Ref:** M18_002 `webhook_url_secret.zig::constantTimeEq` — comment corrected to note that length is still leaked via loop iteration count.
+
 ## RULE STL — Remove test fixtures that write stale wire-protocol fields
 
 **Rule:** When a wire-protocol field is removed from the server-side parser (JSON-RPC handler, HTTP body decoder), every test that still writes that field via `object.put("field_name", ...)` must be updated in the same change — not kept as "harmless ignored extra data." Silent ignore is misleading for the next reader and hides schema drift in CI.
