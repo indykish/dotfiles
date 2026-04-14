@@ -483,3 +483,12 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 **Don't:** Leave `put("<deleted_field>", ...)` because "the handler ignores it." Don't keep symmetric test fixtures "for consistency with sibling tests" when the sibling was also stale.
 **Tags:** zig, tests, refactoring, wire-protocol, orphan-sweep
 **Ref:** M17_002 — `stage_id`/`role_id`/`skill_id` removed from StartStage; stale `object.put("session_id", ...)` puts in `integration_test.zig`, `handler_edge_test.zig`, `handler_negative_test.zig`, `crash_test.zig` caught by greptile post-merge.
+
+## RULE HXX — Handlers go through Hx, not raw `common.writeJson` / `common.errorResponse`
+
+**Rule:** Every new HTTP handler in `src/http/handlers/*.zig` takes `hx: Hx` as its first parameter and uses `hx.ok(status, body)` and `hx.fail(code, detail)` for responses. Do NOT introduce new call sites of `common.writeJson(res, ...)` or `common.errorResponse(res, code, msg, req_id)` — those are internal implementation details of Hx. Internal-500 helpers (`common.internalDbError`, `common.internalOperationError`, `common.internalDbUnavailable`) stay public because they have fixed codes + messages; call them directly with `hx.res, hx.req_id`.
+**Why:** M18_002 completed the sweep from `handleXxx(ctx, req, res, ...)` to `innerXxx(hx, req, ...)`. Re-introducing raw `common.writeJson`/`common.errorResponse` drags back the old signature and bypasses the JSON envelope / RFC 7807 contract that `Hx` enforces. Greptile will flag reviews that do this.
+**Do:** `hx.ok(.ok, .{ .field = value })` / `hx.fail(ec.ERR_INVALID_REQUEST, "detail")`. See `docs/nostromo/api_handler_guide.md` for the full style guide.
+**Don't:** `common.writeJson(hx.res, .ok, body)` or `common.errorResponse(hx.res, code, msg, hx.req_id)`. If you find yourself writing either, you either need to add a missing method to `Hx` (rare — only `ok` and `fail` earn their place) or the helper should not be public at all.
+**Tags:** zig, http, handlers, hx, api-style
+**Ref:** M18_002 §5.1–5.2 — full sweep of 18 handler files to inner*/hx. Style guide at `docs/nostromo/api_handler_guide.md`.
