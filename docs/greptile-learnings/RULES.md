@@ -467,3 +467,12 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 **Don't:** Interpolate `code` raw while encoding other fields — the inconsistency signals an oversight and will eventually fail.
 **Tags:** zig, oauth, http, security
 **Ref:** M8_001 slack_oauth_client.zig `exchangeCode` — `code` interpolated raw. Fixed in this PR.
+
+## RULE STL — Remove test fixtures that write stale wire-protocol fields
+
+**Rule:** When a wire-protocol field is removed from the server-side parser (JSON-RPC handler, HTTP body decoder), every test that still writes that field via `object.put("field_name", ...)` must be updated in the same change — not kept as "harmless ignored extra data." Silent ignore is misleading for the next reader and hides schema drift in CI.
+**Why:** After a refactor, a test that sends `stage_id` when the handler no longer reads it will pass green even though the test no longer exercises what its name implies. Greptile (and human reviewers) flag these as "stale field silently ignored" — the signal is real: the test is now under-specified or a lie by omission. Same applies to tests writing deleted struct fields via dynamic builders.
+**Do:** After the rename/removal, grep for `"<old_field>"` across test files and delete those `object.put(...)` lines in the same commit. If the test was specifically validating that field's handling, delete the whole test case.
+**Don't:** Leave `put("<deleted_field>", ...)` because "the handler ignores it." Don't keep symmetric test fixtures "for consistency with sibling tests" when the sibling was also stale.
+**Tags:** zig, tests, refactoring, wire-protocol, orphan-sweep
+**Ref:** M17_002 — `stage_id`/`role_id`/`skill_id` removed from StartStage; stale `object.put("session_id", ...)` puts in `integration_test.zig`, `handler_edge_test.zig`, `handler_negative_test.zig`, `crash_test.zig` caught by greptile post-merge.
