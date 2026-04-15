@@ -419,7 +419,7 @@ Rules:
 |------|---------|------|
 | Leak | `make memleak` | When the diff touches server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, or any code that owns heap resources across threads. Before PR. |
 | Bench (local) | `make bench` | When the diff could affect request path or server startup/shutdown. Before PR. |
-| Bench (dev) | `API_BENCH_URL=https://api.dev.usezombie.com/healthz make bench` | After the branch deploys to dev. Confirms the change holds under real network + real concurrency, not just loopback. |
+| Bench (dev) | `API_BENCH_URL=https://api-dev.usezombie.com/healthz make bench` | After the branch deploys to dev. Confirms the change holds under real network + real concurrency, not just loopback. |
 
 Bench env overrides (see `make/test-bench.mk`): `API_BENCH_METHOD`, `API_BENCH_DURATION_SEC`, `API_BENCH_CONCURRENCY`, `API_BENCH_TIMEOUT_MS`, `API_BENCH_MAX_ERROR_RATE`, `API_BENCH_MAX_P95_MS`, `API_BENCH_MAX_RSS_GROWTH_MB`.
 
@@ -506,7 +506,7 @@ Required outputs:
 - Spec moved from `docs/v1/active/` to `docs/v1/done/` (only if fully complete).
 - Spec move committed on the feature branch.
 - **Release doc updated** in `/Users/kishore/Projects/docs/changelog.mdx` for every milestone/workstream completion. Add a new `<Update>` MDX block — do NOT create `docs/v*/ship/` files.
-- **Ripley's Log written** in `docs/v2/agent-docs/RIPLEYS_LOG_{MMM}_{DD}_{HH_MM_SS}.md` (example: `RIPLEYS_LOG_APR_12_15_30_45.md`). Use the second-granularity form so back-to-back agent sessions don't collide; if a same-second collision still occurs, append a 4-char hex nonce per the filename rules above. A first-person, dated session log of decisions made, assumptions surfaced, dead ends, trade-offs considered, and follow-ups deferred — the things that don't belong in commit messages or the spec but matter for the next agent picking up the thread. Commit alongside the spec move. Required for every non-trivial CHORE(close), not optional.
+- **Ripley's Log written** in `docs/nostromo/LOG_{MMM}_{DD}_{HH_MM_SS}.md` (example: `LOG_APR_12_15_30_45.md`). Use the second-granularity form so back-to-back agent sessions don't collide; if a same-second collision still occurs, append a 4-char hex nonce per the filename rules above. A first-person, dated session log of decisions made, assumptions surfaced, dead ends, trade-offs considered, and follow-ups deferred — the things that don't belong in commit messages or the spec but matter for the next agent picking up the thread. Commit alongside the spec move. Required for every non-trivial CHORE(close), not optional.
 - **Orphan sweep completed** (RULE ORP + RULE CHR). For every renamed/deleted/changed symbol in the branch, verify zero non-historical references remain across schema, Zig, JS, tests, and docs. This is a hard gate — do not open the PR with stale references.
 - **Working tree clean** — `git status` must report `nothing to commit, working tree clean` BEFORE opening or updating the PR. No untracked files, no unstaged changes, no stray scaffolds. Hard gate. If files appear that are out of scope for the current PR, either commit them to a separate logical commit (with its own scope label), gitignore them if they're machine-local, or delete them — never open a PR with a dirty tree. Run:
   ```bash
