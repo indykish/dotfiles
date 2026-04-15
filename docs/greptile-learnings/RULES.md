@@ -492,3 +492,82 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 **Don't:** `common.writeJson(hx.res, .ok, body)` or `common.errorResponse(hx.res, code, msg, hx.req_id)`. If you find yourself writing either, you either need to add a missing method to `Hx` (rare — only `ok` and `fail` earn their place) or the helper should not be public at all.
 **Tags:** zig, http, handlers, hx, api-style
 **Ref:** M18_002 §5.1–5.2 — full sweep of 18 handler files to inner*/hx. Style guide at `docs/nostromo/api_handler_guide.md`.
+
+## RULE RAD — New HTTP endpoints must pass the REST API Design Guidelines checklist
+
+**Rule:** Before writing any new HTTP handler or adding/modifying an endpoint, read `docs/REST_API_DESIGN_GUIDELINES.md` and verify each of the following:
+1. **No verbs in URL** (§7) — use HTTP method for the action. Exception: Google Custom Method colon-action (`resource:verb`) is allowed for RPC-style actions; document the exception in the spec.
+2. **Response fields** (§1 + §8) — no `ack` or redundant acknowledgement fields (HTTP 200 is the ack); no `is_` boolean prefix; use `_at` suffix for timestamps; snake_case throughout.
+3. **Error shape** (§10) — 400/401/403/404/500 with `{error, message}` JSON body.
+4. **Resource ID in path, not body** (§3) — if it's in the URL, don't repeat it in the payload.
+5. **Correct HTTP method** (§4) — GET=read, POST=create/action, PUT=replace, PATCH=partial-update, DELETE=remove.
+6. **Versioning** (§6) — all routes under `/v1/` (or the current version prefix).
+
+**Why:** M23_001 steer endpoint shipped with `ack: true` (redundant) and `run_steered` (ambiguous dual-semantics). Caught only in post-build audit against REST_API_DESIGN_GUIDELINES.md. A pre-write checklist would have caught both at design time.
+**Do:** Paste the six-point checklist into the PLAN surface-area section and tick each item before EXECUTE.
+**Don't:** Write the handler and check guidelines afterward — the response shape is the hardest thing to change once tests and OpenAPI are written against it.
+**Tags:** zig, http, api-design, rest, naming
+**Ref:** M23_001 `zombie_steer_http.zig` — `ack` dropped, `run_steered` split into `message_queued` + `execution_active` after post-build audit. `docs/REST_API_DESIGN_GUIDELINES.md`.
+
+## RULE HGD — Every new handler must follow api_handler_guide.md before writing any code
+
+**Rule:** Before writing any new `inner*` handler function, read `docs/nostromo/api_handler_guide.md` in full and verify:
+1. Function named `inner<Resource><Action>` (not `handle*`, not `do*`).
+2. First parameter is `hx: Hx` (value, not pointer) — never build your own arena.
+3. Responses via `hx.ok(status, body)` and `hx.fail(error_code, detail)` only.
+4. DB connection via `hx.ctx.pool.acquire()` with `defer pool.release(conn)`.
+5. All `conn.query()` results wrapped in `PgQuery` with `defer q.deinit()` (RULE FLS).
+6. No `common.writeJson` or `common.errorResponse` at call sites (RULE HXX).
+
+**Why:** The `api_handler_guide.md` encodes the M18_002 migration contract. New handlers that skip it reintroduce the old `handle*(ctx, req, res)` signature or roll their own arena/response building, breaking middleware propagation and RFC 7807 error shape consistency.
+**Do:** Open `docs/nostromo/api_handler_guide.md`, skim the template, then write the handler. Read RULE HXX alongside it.
+**Don't:** Copy-paste a handler from before M18_002 (anything that takes `ctx *Context` as first param, or calls `common.writeJson` directly). Those are the old pattern.
+**Tags:** zig, http, handlers, hx, api-style
+**Ref:** `docs/nostromo/api_handler_guide.md`. RULE HXX (same topic, handler signature). M18_002 full sweep.
+
+## RULE ZWO — Workspace+zombie path routes must verify zombie-to-workspace ownership
+
+**Rule:** Any handler whose URL path contains both `{workspace_id}` and `{zombie_id}` must, after `common.authorizeWorkspace`, also call `common.getZombieWorkspaceId(conn, hx.alloc, zombie_id)` and reject with 404 (not 403) if the zombie does not exist or belongs to a different workspace. Returning 404 avoids leaking zombie existence across workspaces.
+**Why:** `authorizeWorkspace` only validates the principal→workspace edge. Without the zombie→workspace check, a caller authenticated for WS_A can read or mutate a zombie owned by WS_B by sending `/v1/workspaces/{WS_A}/zombies/{ZOMBIE_FROM_WS_B}/...`. `zombie_activity_api.zig:innerListActivity` shipped this bug in M24_001; caught by greptile P1 on PR #217 before merge. Every sibling handler (grants list/revoke, steer, delete) already had the check — activity was the outlier.
+**Do:**
+```zig
+if (!common.authorizeWorkspace(conn, hx.principal, workspace_id)) {
+    hx.fail(ec.ERR_FORBIDDEN, "Workspace access denied");
+    return;
+}
+const zombie_ws_id = common.getZombieWorkspaceId(conn, hx.alloc, zombie_id) orelse {
+    hx.fail(ec.ERR_ZOMBIE_NOT_FOUND, ec.MSG_ZOMBIE_NOT_FOUND);
+    return;
+};
+if (!std.mem.eql(u8, zombie_ws_id, workspace_id)) {
+    hx.fail(ec.ERR_ZOMBIE_NOT_FOUND, ec.MSG_ZOMBIE_NOT_FOUND);
+    return;
+}
+```
+**Don't:** Assume `authorizeWorkspace` is sufficient when both `{workspace_id}` and `{zombie_id}` are in the path. Don't return 403 on mismatch — that leaks which zombie IDs exist across tenants.
+**Test:** Add an IDOR case in `m24_001_cross_workspace_idor_test.zig` (or equivalent) that hits the route with a foreign zombie and asserts 404.
+**Tags:** zig, security, IDOR, multi-tenancy, auth
+**Ref:** PR #217 greptile comment `3089018810` — `zombie_activity_api.zig:innerListActivity` missing check. Complements RULE WAUTH.
+
+## RULE CNX — Handlers must not hold two pool connections concurrently per request
+
+**Rule:** If a handler has already called `hx.ctx.pool.acquire()` for authorization or another check, any helper invoked from that handler must accept the existing `*pg.Conn` rather than acquiring its own connection from the pool. Helpers that need a conn should offer an `…OnConn` variant that takes one as a parameter, and the pool-based entry point should be a thin wrapper that acquires once and delegates.
+**Why:** Holding two connections from a bounded pool for a single request doubles connection pressure under concurrency and can deadlock when the pool is saturated and downstream helpers are waiting for a conn the caller already holds. Greptile P2 flagged `innerListActivity` calling `activity_stream.queryByZombie(pool,…)` (acquires its own conn) while `conn` from `authorizeWorkspace` was still held via `defer`.
+**Do:**
+```zig
+// handler:
+const conn = hx.ctx.pool.acquire() catch { ... };
+defer hx.ctx.pool.release(conn);
+const page = helper.queryByZombieOnConn(conn, alloc, …) catch { ... };
+
+// helper exports both:
+pub fn queryByZombie(pool: *pg.Pool, …) !Page {
+    const conn = try pool.acquire();
+    defer pool.release(conn);
+    return queryByZombieOnConn(conn, …);
+}
+pub fn queryByZombieOnConn(conn: *pg.Conn, …) !Page { … }
+```
+**Don't:** Keep `defer pool.release(conn)` in the handler and then call a helper that takes `*pg.Pool` — the helper acquires a second conn and both stay live until the handler returns. Also: don't pre-release the first conn before the helper call — you lose the authorization context for post-query RLS/session settings.
+**Tags:** zig, database, connection-pool, performance, concurrency
+**Ref:** PR #217 greptile comment `3089018915` — `zombie_activity_api.zig` ↔ `activity_stream.zig:queryByZombie`. Fixed by adding `queryByZombieOnConn`.
