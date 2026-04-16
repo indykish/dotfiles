@@ -571,3 +571,72 @@ pub fn queryByZombieOnConn(conn: *pg.Conn, …) !Page { … }
 **Don't:** Keep `defer pool.release(conn)` in the handler and then call a helper that takes `*pg.Pool` — the helper acquires a second conn and both stay live until the handler returns. Also: don't pre-release the first conn before the helper call — you lose the authorization context for post-query RLS/session settings.
 **Tags:** zig, database, connection-pool, performance, concurrency
 **Ref:** PR #217 greptile comment `3089018915` — `zombie_activity_api.zig` ↔ `activity_stream.zig:queryByZombie`. Fixed by adding `queryByZombieOnConn`.
+
+## RULE BIL — Billing and credential endpoints require operator-minimum role
+
+**Rule:** Every handler that exposes billing data (credit totals, cents figures, invoice fields) or credential material (API keys, vault secrets, OAuth tokens) must gate access with `workspace_guards.enforce(... .minimum_role = .operator)`. Plain `common.authorizeWorkspace` is **not** sufficient — it passes for any workspace member regardless of role, so a `user`-role team member can read data the workspace owner intended to restrict.
+**Why:** `authorizeWorkspace` only verifies that the authenticated principal's `workspace_scope_id` (or tenant) matches the path `workspace_id`. It does not consider role. Billing and credential data are privileged by convention across every existing endpoint (`workspaces_billing_summary.zig`, `workspaces_billing.zig`, `workspace_credentials_http.zig` all enforce operator). A new billing endpoint that follows the `authorizeWorkspace`-only pattern silently exposes cent totals to every team member. Greptile P1/security flagged `zombie_billing_summary.zig` for exactly this.
+**Do:**
+```zig
+const actor = hx.principal.user_id orelse API_ACTOR;
+const access = workspace_guards.enforce(hx.res, hx.req_id, conn, hx.alloc, hx.principal, workspace_id, actor, .{
+    .minimum_role = .operator,
+}) orelse return;
+defer access.deinit(hx.alloc);
+```
+**Don't:** Copy `common.authorizeWorkspace` from a non-billing handler into a new billing handler. Role policy is not uniform across endpoints — billing is strictly more sensitive than "list zombies" or "read activity".
+**Test:** Add an RBAC case that hits the route with a `user`-role JWT for the correct workspace and asserts 403.
+**Tags:** zig, security, rbac, billing, credentials, multi-tenancy
+**Ref:** PR #221 greptile comment `3094814139` — `zombie_billing_summary.zig` missing operator guard. Fixed by switching to `workspace_guards.enforce(.minimum_role = .operator)`.
+
+## RULE QPC — Query-param accepted values must match across related endpoints
+
+**Rule:** When two endpoints expose the same semantic filter (e.g. `period_days` on both workspace-scope and per-zombie-scope billing summary), their accepted value sets must be identical. Diverging (e.g. workspace accepts `7|30|90`, zombie accepts only `7|30` and silently clamps 90 to 30) is a UX footgun: callers that work at one scope see unexpectedly-different data at the other.
+**Why:** OpenAPI-generated SDKs expose one typed enum per parameter. When enums diverge between sister endpoints, downstream code tries values that "work on the other one" and silently gets wrong data — no 400, no log, just a mis-windowed response. The response carries `period_days: 30` as the only signal, which a caller asking for 90-day data will not read.
+**Do:** Extract the accepted set into a shared constant (or at minimum, cross-reference it in both handlers' doc comments) and mirror the OpenAPI `enum:` list. Return 400 `UZ-INVALID-REQUEST` for out-of-set values, OR silently coerce — but pick one and apply identically across sister endpoints.
+**Don't:** Silently clamp on one endpoint and reject on another. Don't let one endpoint's enum be a strict subset of another's — either both or neither.
+**Test:** Unit-test each accepted value + a rejected value on both endpoints. The enum in OpenAPI must match the accepted set in the handler 1:1.
+**Tags:** zig, api-consistency, validation, sdk-ergonomics
+**Ref:** PR #221 greptile comment `3094604729` — `zombie_billing_summary.zig::parsePeriodDays` accepted `{7, 30}` while `workspaces_billing_summary.zig::parsePeriodDays` accepted `{7, 30, 90}`. Fixed by adding `90` to the zombie handler and the OpenAPI enum.
+
+## RULE DID — React `id={...}` attributes must use `React.useId()`, never hardcoded strings
+
+**Rule:** Any React component that emits an `id` attribute (`id="foo"`) or references one via `htmlFor` / `aria-describedby` / `aria-labelledby` must obtain the id from `React.useId()` — never a hardcoded string literal.
+**Why:** Hardcoded ids collide when two instances of the same component mount on one page. Even with Radix components that unmount on close (e.g. Dialog with `open=false`), calling code can mount multiple instances conditionally, and the *open* one's `aria-describedby` breaks because the closed one also claimed the same id. `React.useId()` generates a stable id per component instance, SSR-safe, collision-free.
+**Why this is not academic:** screen readers rely on `aria-describedby` pointing to a unique `id`. When two elements share an id, only the first is announced, and the second's description is silently dropped.
+**Do:**
+```tsx
+const descId = React.useId();
+return (
+  <div role="alertdialog" aria-describedby={description ? descId : undefined}>
+    <DialogDescription id={descId}>{description}</DialogDescription>
+  </div>
+);
+```
+**Don't:** Use any static `id="..."` string literal on a component that may be rendered more than once per page. This includes "hidden" siblings — conditional rendering doesn't stop two to-be-rendered trees from colliding during React reconciliation.
+**Exception:** top-level singleton elements (the root `<html>` id, a global skip-link target) may use static ids. Anything in `components/` almost certainly cannot.
+**Tags:** react, accessibility, a11y, ssr
+**Ref:** PR #221 greptile comment `3094604881` — `ConfirmDialog` used `id="confirm-dialog-desc"`. Fixed with `React.useId()`.
+
+## RULE ASE — Async event handlers must catch rejections, not just use `try/finally`
+
+**Rule:** Any async React event handler (`onClick`, `onConfirm`, `onSubmit`, etc.) that `await`s a caller-provided promise must wrap the `await` in `try { ... } catch (err) { ... } finally { ... }` — **not** `try { ... } finally { ... }`. The catch path must either invoke a caller-provided error callback or silently swallow; a bare `try/finally` lets the rejection propagate out of the async function and become an unhandled promise rejection, which React silently drops in production.
+**Why:** React does not provide an error-boundary equivalent for async event-handler rejections. `finally` correctly resets pending state, but without `catch` the thrown value escapes into the event loop, surfaces as `unhandledrejection` in dev (logs a warning), and vanishes entirely in production. If the component's JSDoc implies it surfaces the error (e.g. "renders below the description if onConfirm rejects"), that promise is broken.
+**Do:**
+```tsx
+const handleConfirm = useCallback(async () => {
+  setPending(true);
+  try {
+    await onConfirm();
+  } catch (err) {
+    if (onError) onError(err);
+    // No onError: swallow intentionally. Prefer an explicit comment.
+  } finally {
+    setPending(false);
+  }
+}, [onConfirm, onError]);
+```
+**Don't:** Rely on `try/finally` alone for async handlers. Don't promise error-surfacing behaviour in JSDoc when the implementation only does `finally`.
+**Expose:** an `onError?: (err: unknown) => void` prop so callers can feed error state into their own UI (which typically then flows back into the component's `errorMessage` prop).
+**Tags:** react, async, error-handling, props-api
+**Ref:** PR #221 greptile comment `3094605030` — `ConfirmDialog::handleConfirm` used `try/finally` without `catch`, contradicting its JSDoc. Fixed with `catch` + `onError` callback.
