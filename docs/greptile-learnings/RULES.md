@@ -640,3 +640,61 @@ const handleConfirm = useCallback(async () => {
 **Expose:** an `onError?: (err: unknown) => void` prop so callers can feed error state into their own UI (which typically then flows back into the component's `errorMessage` prop).
 **Tags:** react, async, error-handling, props-api
 **Ref:** PR #221 greptile comment `3094605030` — `ConfirmDialog::handleConfirm` used `try/finally` without `catch`, contradicting its JSDoc. Fixed with `catch` + `onError` callback.
+
+## RULE ITF — Integration tests use real schema via `test_fixtures_<name>.zig`
+
+**Rule:** An integration test that exercises any production SQL table must seed rows in the real schema through a shared `src/db/test_fixtures_<testname>.zig` module and assert against the real table. Do **not** create a session-local `CREATE TEMP TABLE` that mocks a production table's shape — the mock drifts from reality, hides schema changes, and lets tests pass against signatures the real query would reject.
+**Why:** Every workspace-column migration in M11 broke TEMP-TABLE-based tests silently because the temp shape still matched the old column set. Real-schema fixtures fail loudly when a NOT NULL column is added, which is the correct failure mode. Fixtures also keep auth/scope UUIDs out of production source files so `src/http/**` stays free of test scaffolding.
+**Do:**
+- One fixture module per test scope, named `src/db/test_fixtures_<scope>.zig` with a **semantic** scope name — e.g. `test_fixtures_prompt_events.zig`, `test_fixtures_http_auth.zig`, `test_fixtures_workspace_credit.zig`. Do **not** use milestone-numbered names (`test_fixtures_uc1.zig`, `test_fixtures_m18.zig`, etc.); those rot as milestones churn and the filename stops describing the scope. Aliases inside test files should also be semantic (`credit_fx`, `billing_fx`, `proposal_fx`), never `uc1`/`uc3`.
+- Module exports: `TENANT_ID`/`WORKSPACE_ID` constants, `seed(conn)` / `seedXxx(conn, ...)`, and an idempotent `cleanup(conn)` that deletes in FK-safe order. Reference production seed helpers (`base.seedTenantById`, `base.seedWorkspaceWithTenant`, `base.seedWorkspaceWithCreator`) rather than re-rolling INSERT SQL.
+- Tests: `cleanup(conn)` as both pre-seed reset and `defer` bookend, then `seed(conn)` and run assertions against schema-qualified table names (`core.workspaces`, `core.prompt_lifecycle_events`, …).
+- Tables with append-only triggers: cleanup wraps DELETEs in `SET session_replication_role = 'replica'` / `origin` (superuser-only; test DB runs as superuser via docker-compose).
+**Don't:**
+- `CREATE TEMP TABLE <real_table_name>` that shadows a real table. `rls_probe`-style probe tables with no production counterpart are fine; naming an existing table is not.
+- Inline test-fixture constants (`GUARD_TENANT_ID`, `SCOPE_WS_PRIMARY`, …) or `cleanupXxxFixtures` helpers inside production source files. Move them to the fixture module.
+- Bespoke INSERT SQL inside each test. Use the fixture's seed helper so schema changes ripple through one file, not twenty.
+**Tags:** zig, sql, testing
+**Ref:** M11_003 step 5D — seven `CREATE TEMP TABLE workspaces` sites in `workspace_guards.zig` + `handlers/common.zig` passed tests while the real `core.workspaces` grew `name NOT NULL`, `uq_workspaces_tenant_name`, FK to tenants. Converted in commits `a50f6ee` (initial conversion) and `7c6fe3a` (relocated fixtures to `test_fixtures_http_auth.zig`). Same pattern found in `src/observability/prompt_events.zig` for `core.prompt_lifecycle_events`.
+
+## RULE TNM — Test naming + problem-oriented comments (no milestone refs in code)
+
+**Rule:**
+
+- **Unit tests** live next to the code they cover and are named `<filename>_test.zig` — one-to-one with the `.zig` file under test. Example: `invites.zig` ⇄ `invites_test.zig`. Unit tests touch no DB; no fixture file needed.
+- **Integration tests** live next to the code they cover and are named `<semantic_subject>_integration_test.zig` — the subject is the user flow, endpoint, state-transition, or invariant being exercised (what the test proves), not the milestone that spawned the work. Examples: `approve_credit_integration_test.zig`, `cross_workspace_idor_integration_test.zig`, `clerk_webhook_bootstrap_integration_test.zig`. Fixtures used by the test live at `src/db/test_fixtures_<scope>.zig` per **RULE ITF**.
+- **No milestone, workstream, section, sprint, or UC number in filenames or code comments.** Never write `m24_001_<x>.zig`, `UC1`, `M17 §2.1`, `Step 5C`, `batch B5`, etc. in a filename or a persistent source comment. Speak from the **problem** — *why the code exists, what invariant it guards, what user-visible failure it prevents*. Milestone context rotates out of relevance within one cycle; problem statements remain true.
+- **Allowed milestone references:** commit messages, PR descriptions, spec files under `docs/v*/`, Ripley's Log entries and handoff files under `docs/nostromo/` (handoff files should actively encode `M{N}_{WKSTRM}` in their filename per the handoff convention in AGENTS.md — filename-embedded milestone tags make `ls docs/nostromo/` scannable), and the **Ref:** line of rules in this file. Those are where milestone numbering *belongs* — they are historical anchors. Durable source code and durable comments are not.
+
+**Why (problem-perspective rationale):** A comment that says `// M17_001 §2.1: max_tokens enforced here` teaches the next reader nothing if M17 shipped, reverted, renumbered, or merged into something else. The same comment as `// Enforce per-month token budget so a runaway agent can't bankrupt the workspace in one unattended loop` still teaches three years later. Filename `m24_001_cross_workspace_idor_test.zig` forces every reader to look up what M24 was; `cross_workspace_idor_integration_test.zig` communicates the scope at glance. Milestone labels are *planning* artifacts — they don't survive contact with codebase drift.
+
+**Verified at:**
+
+- **PLAN:** the plan's test-file list must name files per the convention. Any test file referenced as `m<N>_<WS>_*` in the plan is a bug — amend the plan before EXECUTE. Same for fixture files. State the verification output explicitly in the PLAN message.
+- **EXECUTE:** before commit, run
+  ```bash
+  # Filenames: no m<N>_<WS>_ prefix, no _m<N>_ suffix
+  git diff --name-only --diff-filter=A origin/main \
+    | grep -E '(^|/)m[0-9]+_[0-9]+_|_m[0-9]+_' && echo "VIOLATION"
+  # New/changed comments: no M<N>_<WS> / §<n>.<n> / UC<n>
+  git diff origin/main -- 'src/***.zig' \
+    | grep -E '^\+.*\b(M[0-9]+(_[0-9]+)?|UC[0-9]+|§ ?[0-9]+\.[0-9]+|Step [0-9]+[A-Z]?)\b' \
+    && echo "VIOLATION"
+  ```
+  Any non-empty output on these greps blocks the commit. Carve-outs: historical comments that were not touched by the diff aren't flagged (the grep is diff-scoped, not tree-scoped).
+
+**Do:**
+
+- `approve_credit_integration_test.zig` with fixture `test_fixtures_workspace_credit.zig`
+- `// Serialize the provider upsert — two webhooks racing on the same Heroku name would double-insert otherwise.`
+- `invites_test.zig` for unit tests of `invites.zig`.
+
+**Don't:**
+
+- `m24_001_cross_workspace_idor_test.zig` → rename to `cross_workspace_idor_integration_test.zig`
+- `metering_m18_test.zig` → `metering_telemetry_integration_test.zig` (or `_test.zig` if genuinely unit-only)
+- `event_loop_m23_integration_test.zig` → `event_loop_integration_test.zig`
+- `// M17_001 §2.1: ...` in source — describe the invariant instead.
+
+**Tags:** zig, testing, docs, naming, plan, execute
+**Ref:** The test-fixture rename pass (`test_fixtures_uc1.zig` → `test_fixtures_workspace_credit.zig` et al.) in the usezombie repo uncovered that milestone-numbered names survive the milestones themselves and stop describing the code. The `metering_m18_test.zig` rename to `metering_telemetry_test.zig` was the immediate precedent. Rule added to prevent regression as future milestones create new test files.
