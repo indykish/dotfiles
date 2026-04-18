@@ -268,23 +268,13 @@ Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`,
 - Cross-compile `x86_64-linux` + `aarch64-linux` whenever `*.zig` touched.
 - Cross-layer orphan sweep: every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files (RULE ORP).
 - `gitleaks detect` before any commit including Zig.
-- **350-line / 50-function-line / 15-file-per-folder gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`). Folder cap applies to `usezombie/` repos only; docs-only repos (e.g. `~/Projects/docs`) are exempt.
+- **350-line / 50-function-line gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`).
   ```bash
   # file-length gate
   git diff --name-only origin/main \
     | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' \
     | xargs -I{} sh -c 'wc -l "{}"' \
     | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
-  # folder-file-count gate (non-test source only; each directory counted individually)
-  find . -type d \
-    -not -path './.git/*' -not -path './vendor/*' -not -path './node_modules/*' \
-    | while read d; do
-        n=$(find "$d" -maxdepth 1 -type f \
-              \( -name '*.zig' -o -name '*.js' -o -name '*.ts' \) \
-              -not -name '*_test.*' -not -name '*.test.*' -not -name '*.spec.*' \
-              | wc -l | tr -d ' ')
-        [ "$n" -gt 15 ] && echo "❌ $d: $n files (limit 15)"
-      done
   ```
 
 #### Other VERIFY outputs

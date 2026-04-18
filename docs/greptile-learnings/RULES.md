@@ -58,12 +58,19 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 **Tags:** sql, zig
 **Ref:** M1_001 activity_stream cursor was timestamp-only, dropped events at ms boundaries.
 
-## RULE FLL — Files ≤ 350 lines (new/touched); functions ≤ 50 lines; folders ≤ 15 files
+## RULE FLL — Files ≤ 350 lines (new/touched); functions ≤ 50 lines
 
-**Rule:** Every new or touched .zig/.js file must stay under 350 lines; every new function under 50 lines. Every individual directory (and each recursive subdirectory) in this repo must hold **≤ 15 non-test source files**; split into a subdirectory before crossing the cap. **Exempt:** Markdown (`.md`), files under `vendor/` (third-party code), and test files matching `_test.`, `.test.`, `.spec.`, or paths under `tests/`. The rule applies to `.zig`/`.js`/`.ts` source — not docs. Scope: this repo (`usezombie/`); sibling docs-only repos (e.g. `/Users/kishore/Projects/docs`) are exempt from the folder clause.
-**Why:** Files over 350L hide coupling and slow review; functions over 50L inline multiple concerns; directories over 15 non-test source files erode locality — reviewers lose the "what's in this folder?" mental model and the file tree becomes an undifferentiated list. Vendored code: splitting upstream files breaks the upgrade path and obscures the diff against upstream. Tests: grow with fixture setup + assertion volume, and forced splits separate the assertion from the setup it depends on, so tests are excluded from every clause.
+**Rule:** Every new or touched .zig/.js file must stay under 350 lines; every new function under 50 lines. **Exempt:** Markdown (`.md`), files under `vendor/` (third-party code), and test files matching `_test.`, `.test.`, `.spec.`, or paths under `tests/`. The rule applies to `.zig`/`.js`/`.ts` source — not docs.
+**Why:** Files over 350L hide coupling and slow review; functions over 50L inline multiple concerns. Vendored code: splitting upstream files breaks the upgrade path and obscures the diff against upstream. Tests: grow with fixture setup + assertion volume, and forced splits separate the assertion from the setup it depends on, so tests are excluded from every clause.
 **Tags:** zig, js, all
-**Ref:** AGENTS_POLICY_APPENDIX.md Code Structure Policies. Vendor + test exemptions added when usezombie/usezombie vendored httpz under `vendor/httpz/` to patch a shutdown UAF. Folder cap added after `src/http/handlers/` and `src/cmd/` accumulated beyond easy scanning.
+**Ref:** AGENTS_POLICY_APPENDIX.md Code Structure Policies. Vendor + test exemptions added when usezombie/usezombie vendored httpz under `vendor/httpz/` to patch a shutdown UAF. Folder-file-count clause removed Apr 18, 2026 — too prescriptive; cohesion matters more than cardinality, and the cap forced spurious subdirectory splits.
+
+## RULE TST-NAM — Test identifiers are milestone-free
+
+**Rule:** Test *filenames* and test *names* (the string passed to `test "…" {}`) must NOT embed milestone IDs, workstream IDs, section numbers, or dimension numbers — e.g. no `M28_001_foo_test.zig`, no `m24_001_cross_workspace_idor_test.zig`, no `test "M28_001 3.3: Jira valid HMAC → .next"`. Use descriptive behavior names instead (`webhook_verify_test.zig`, `test "Jira valid HMAC → .next"`). Specs, PR titles, commit messages, Ripley's Logs, and changelog entries are the durable place for milestone IDs — not test identifiers.
+**Why:** Milestones are ephemeral (one-shot delivery units); tests are durable (live for the lifetime of the code they cover). A test named `M28_001 3.3` becomes archaeology the day M28_001 moves to `docs/v*/done/` — future readers don't know what §3.3 was, filters like `-Dtest-filter=M28_001` stop matching after renumbering, and grepping for a behavior pulls in stale milestone noise. The test should describe what it verifies, not when it was written.
+**Tags:** zig, testing, naming
+**Ref:** Flagged on M28_001 after existing violations `event_loop_m23_integration_test.zig` and `m24_001_cross_workspace_idor_test.zig` surfaced. User directive while writing `test "M28_001 3.3: Jira valid HMAC → .next"` — renamed in the same branch.
 
 ## RULE XCC — Cross-compile before commit (Zig)
 
