@@ -204,6 +204,13 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 **Tags:** zig, security
 **Ref:** M2_002 constantTimeEq skipped XOR loop entirely on length mismatch.
 
+## RULE NTE — No type erasure when generics suffice
+
+**Rule:** Never use `*anyopaque` for callback contexts or host-supplied pointers when a comptime generic parameter can carry the concrete type. Use `pub fn Middleware(comptime Ctx: type) type` to parameterize on the context type. `*anyopaque` is acceptable only in `chain.Middleware.ptr` (where type erasure is required by the chain runner's homogeneous array) — everywhere else, prefer comptime generics so the compiler catches type mismatches.
+**Why:** `*anyopaque` + `@ptrCast` silently accepts any pointer; a typo in the cast target compiles but corrupts memory at runtime. Comptime generics make the lookup callback type-safe at zero runtime cost.
+**Tags:** zig, safety
+**Ref:** M28_001 `WebhookSig` used `*anyopaque` for lookup context; refactored to `pub fn WebhookSig(comptime LookupCtx: type) type` — the host passes `*pg.Pool` directly with no cast.
+
 ## RULE IMS — Use []const u8 for immutable data, not []u8
 
 **Rule:** Declare struct fields as []const u8 for DB results and parsed input; use []u8 only for data you mutate.
