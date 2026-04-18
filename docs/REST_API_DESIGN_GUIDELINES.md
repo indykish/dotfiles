@@ -268,6 +268,35 @@ GET    /products/123/versions      → List all versions of product 123
 
 ---
 
+## 📌 10a. Editing the OpenAPI spec
+
+**`public/openapi.json` is a build artifact.** Do not edit it directly — edits will be wiped on the next `make openapi` and CI's bundle-in-sync check will fail the PR.
+
+The source of truth lives under `public/openapi/`:
+
+```
+public/openapi/
+├── root.yaml                        # info, servers, tags, security, paths map with $refs
+├── paths/<tag>.yaml                 # one file per tag (≤ ~400 lines each, advisory)
+└── components/
+    ├── schemas.yaml
+    ├── responses.yaml
+    └── security.yaml
+```
+
+**Adding, renaming, or removing an endpoint:**
+
+1. Edit the relevant YAML under `public/openapi/paths/<tag>.yaml`.
+2. Add / rename / remove the corresponding `match()` arm in `src/http/router.zig`.
+3. Update `src/http/route_manifest.zig` (same (method, path) surface the sync gate asserts).
+4. Run `make openapi` (bundles YAML → JSON, runs Redocly + `check_openapi_errors.py`).
+5. Run `make check-openapi-sync` (asserts route_manifest ↔ openapi.json parity).
+6. Commit YAML + bundled JSON + `router.zig` + `route_manifest.zig` together.
+
+A single convenience target runs every lane: `make lint-openapi`.
+
+**Agent-edit recipe:** see `public/openapi/AGENTS.md` for copy-paste-ready rename / append / remove / update-description workflows for autonomous agents.
+
 ## 📌 11. Security Considerations
 
 - Use HTTPS for all endpoints.
