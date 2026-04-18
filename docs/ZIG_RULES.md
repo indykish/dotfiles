@@ -18,7 +18,7 @@ Status: Canonical Zig source of truth for agents and commits
 - Use `var rows: std.ArrayList(T) = .{};` for ArrayList init (Zig 0.15). Pass alloc per-operation: `append(alloc, ...)`, `toOwnedSlice(alloc)`, `deinit(alloc)`.
 - Use `q.*.next()` and `q.*.drain()` when the query result is passed through `anytype` as a pointer (`&q`). Direct local vars use `q.next()`.
 - Reference nested struct types with the full path: `Module.Struct.NestedType`, not `Module.NestedType`.
-- Add `_ = @import("path/to/new_file.zig");` to `main.zig` test discovery block for every new file with tests.
+- Add new test files to test discovery. Either `_ = @import("path/to/new_file.zig");` in `main.zig`'s test block, or — preferred when a façade already exists — in a `test {}` block inside the façade (`test { _ = @import("foo_test.zig"); }`). Zig strips `test {}` blocks in release builds, so this adds zero bytes to the production binary. The façade pattern keeps `main.zig` at a flat one-line-per-module list and lets each module own its own test discovery.
 
 ## Must Not
 
@@ -89,6 +89,17 @@ fix it in the same commit. No spec needed — these are incremental improvements
 - Prefer extending an existing Zig module unless a new file clearly reduces coupling or keeps module size reviewable.
 - Decide ownership before writing helpers: allocator, free/deinit path, and whether data is owned or borrowed.
 - If the file touches `pg`, apply the query lifecycle rules above before writing the first helper.
+
+## HTTP Integration Tests — Use TestHarness
+
+Canonical source: `src/http/test_harness.zig`. Every `*_http_integration_test.zig` under `src/http/` MUST consume it.
+
+- **Do not** define a local `TestServer` / `RunningServer` struct, local `startTestServer()` / `startServer()`, local `sendReq()` / `sendRequest()`, or local `waitForServer()`. These are provided by `TestHarness` with a fluent Request/Response API.
+- **Do** wire middleware via `Config.configureRegistry: fn(*MiddlewareRegistry, *TestHarness) anyerror!void`. The harness is policy-agnostic; each suite supplies only the middleware it exercises.
+- **Integration tests run against the LIVE test DB** — never `CREATE TEMP TABLE` in an integration test. Fixtures go through the real schema so the code under test sees production-shaped rows. The `make test-integration` gate resets schemas via `_reset-test-db`; individual tests clean up their own rows explicitly in the test body (not via `defer`) because deferred cleanup leaks pool connections at `pool.deinit()`.
+- **Test fixtures live in a sibling `*_test_fixtures.zig`** beside the integration file, or in a shared fixture module — not inlined. See `src/http/webhook_test_fixtures.zig` for the pattern.
+- **Skip gracefully when DB is absent** — `TestHarness.start` returns `error.SkipZigTest` when `TEST_DATABASE_URL` is unset; tests just propagate it.
+- New file registration: add `_ = @import("..._test.zig")` to the `test {}` block at the bottom of `src/http/server.zig` (not `src/main.zig`). Integration tests discover from there.
 
 ## No Hardcoded Roles
 
