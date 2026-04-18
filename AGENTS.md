@@ -40,8 +40,8 @@ Swift/Xcode/Sparkle/macOS-app release tooling; `bird`, `sonoscli`, `peekaboo`, `
 |---|---|---|
 | Inside files (prose) | `MMM DD, YYYY: HH:MM AM/PM` | `Feb 02, 2026: 10:30 AM` |
 | Filenames, minute granularity | `{MMM}_{DD}_{HH_MM}` | `RELEASE_APR_13_15_30.md` |
-| Handoffs under `docs/nostromo/` | `HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md` | `HANDOFF_APR_17_08_27_M11_003.md` |
-| Logs (second granularity) | `{MMM}_{DD}_{HH_MM_SS}` (optionally `_M{N}_{WKSTRM}`) | `LOG_APR_13_15_30_45_M11_003.md` |
+| Handoffs under `docs/nostromo/` | `HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md` | `HANDOFF_APR_17_08_27_M{N}_{WKSTRM}.md` |
+| Logs (second granularity) | `{MMM}_{DD}_{HH_MM_SS}` (optionally `_M{N}_{WKSTRM}`) | `LOG_APR_13_15_30_45_M{N}_{WKSTRM}.md` |
 | Collision-proof (parallel agents) | append `_{NONCE}` from `openssl rand -hex 2` | `LOG_APR_13_15_30_45_a1b2.md` |
 
 ### Acronym expansion
@@ -129,8 +129,8 @@ Hierarchy: **Prototype → Milestone → Workstream → Section → Dimension �
 | Use | Do NOT use |
 |---|---|
 | Prototype (v1.0.0) | Release, Version train, Program |
-| Milestone (M7) | Sprint, Phase, Quarter, Release |
-| Workstream (M7_002) | Ticket, Task, Story, Issue, Subtask |
+| Milestone (M{N}) | Sprint, Phase, Quarter, Release |
+| Workstream (M{N}_{WS}) | Ticket, Task, Story, Issue, Subtask |
 | Section (§3) | Phase, Step, Chapter, Stage |
 | Dimension (3.4) | Acceptance criterion, AC, Subtask, Checkbox |
 | Batch (B2) | Wave, Tranche, Iteration, Sprint |
@@ -165,7 +165,7 @@ docs/v{N}/{pending|active|done}/P{Priority}_{CATEGORIES}_M{Milestone}_{Workstrea
 - `Priority`: P0 critical/blocking · P1 customer/operator-facing · P2 secondary/tooling · P3 deferrable.
 - `CATEGORIES` (alphabetical, one or more): `UI` (Next.js dashboard) · `API` (Zig/Go handlers) · `CLI` (zombiectl, Node) · `OBS` (Grafana/metrics) · `SKILL` (YAML policy) · `INFRA` (Terraform/deploy).
 - `Workstream`: zero-padded (`001`, `002`).
-- Examples: `P1_API_CLI_M7_001_FIREWALL_METRICS.md`, `P1_UI_M12_001_APP_DASHBOARD.md`.
+- Example: `P1_API_CLI_M{N}_{WS}_{DESCRIPTIVE_NAME}.md`.
 - Legacy `M{N}_{WKSTRM}_{NAME}.md` exists under `docs/v1/`; new specs use the priority-first form.
 
 ---
@@ -231,7 +231,7 @@ Specs with Interfaces and Test Specification sections must satisfy:
 - Zig changes → cross-compile mandatory: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux`.
 - Every Error Contract row gets a negative test asserting the specified behavior.
 
-#### Spec discipline (M28_001 postmortem)
+#### Spec discipline
 
 - **Golden-path before PLAN approval.** Walk the concrete end-to-end example including every lookup, data source, and secret-storage location. Any `[?]` blocks the spec.
 - **DONE = called in production + tested.** Before marking a Dimension DONE: grep the production entry-point file for a call to the named symbol. No call → not DONE, regardless of unit tests.
@@ -259,7 +259,7 @@ Specs with Interfaces and Test Specification sections must satisfy:
 
 Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY`, `_TIMEOUT_MS`, `_MAX_ERROR_RATE`, `_MAX_P95_MS`, `_MAX_RSS_GROWTH_MB`.
 
-**Memleak evidence rule** (M28_001 postmortem): before CHORE(close) reports green, paste the final `make memleak` result line into Ripley's Log OR cite the CI memleak job URL. Branches touching `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last 3 lines verbatim. No "I ran it, trust me."
+**Memleak evidence rule:** before CHORE(close) reports green, paste the final `make memleak` result line into Ripley's Log OR cite the CI memleak job URL. Branches touching `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last 3 lines verbatim. No "I ran it, trust me."
 
 #### Hygiene gates (always, before PR)
 
@@ -268,12 +268,23 @@ Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`,
 - Cross-compile `x86_64-linux` + `aarch64-linux` whenever `*.zig` touched.
 - Cross-layer orphan sweep: every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files (RULE ORP).
 - `gitleaks detect` before any commit including Zig.
-- **350-line gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`).
+- **350-line / 50-function-line / 15-file-per-folder gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`). Folder cap applies to `usezombie/` repos only; docs-only repos (e.g. `~/Projects/docs`) are exempt.
   ```bash
+  # file-length gate
   git diff --name-only origin/main \
     | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' \
     | xargs -I{} sh -c 'wc -l "{}"' \
     | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
+  # folder-file-count gate (non-test source only; each directory counted individually)
+  find . -type d \
+    -not -path './.git/*' -not -path './vendor/*' -not -path './node_modules/*' \
+    | while read d; do
+        n=$(find "$d" -maxdepth 1 -type f \
+              \( -name '*.zig' -o -name '*.js' -o -name '*.ts' \) \
+              -not -name '*_test.*' -not -name '*.test.*' -not -name '*.spec.*' \
+              | wc -l | tr -d ' ')
+        [ "$n" -gt 15 ] && echo "❌ $d: $n files (limit 15)"
+      done
   ```
 
 #### Other VERIFY outputs
