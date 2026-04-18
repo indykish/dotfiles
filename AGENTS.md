@@ -460,7 +460,6 @@ Bench env overrides (see `make/test-bench.mk`): `API_BENCH_METHOD`, `API_BENCH_D
 CI already runs `make memleak` on every PR touching `src/**` — that is how the M28_001 leak-review gap was surfaced. The gate exists; the failure mode was that the agent claimed it had run and passed without evidence. These rules close that gap:
 
 - **Evidence, not assertion.** Before CHORE(close) reports "all gates green," the agent MUST either (a) run `make memleak` locally and paste the final result line into Ripley's Log, or (b) cite the CI memleak job URL from the PR checks page. Claiming the leak gate passed without one of those two pieces of evidence is a rule violation — same category as skipping gitleaks.
-- **Safety allocator inside `make memleak`.** `make memleak` itself should run under `GeneralPurposeAllocator(.{.safety = true})` (no separate `run-dev` target, no new make entry point). The existing gate is where the leak-detection allocator lives; anyone running the gate locally sees the same leak-reporting behavior CI sees. Tracked as a follow-up inside the `make memleak` recipe if not already configured.
 - **Ripley's Log auditability.** Every non-trivial CHORE(close) that touched `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last three lines of `make memleak` output (or the CI log URL) verbatim in the Log. This makes the gate auditable after the fact — no "I ran it, trust me."
 
 #### Branch-level hygiene gates (always, before PR)
