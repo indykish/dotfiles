@@ -174,6 +174,25 @@ Skipping the guard output is a rule violation even if the edit itself is correct
 
 > **CANONICAL TEMPLATE** — The master template lives at [`docs/TEMPLATE.md`](./docs/TEMPLATE.md) in this dotfiles repo. Each project repo must have its own copy at the same path. When bootstrapping a new project, copy it from dotfiles. Do not look for `project_spec.md` or external docs.
 
+### Terminology — forbidden substitutes
+
+The project uses a single hierarchy: **Prototype → Milestone → Workstream → Section → Dimension → Batch**. Do not substitute these with industry terms that imply different semantics. Industry words (Phase, Sprint, Epic, Story, Ticket) dominate training data and leak into specs unless actively suppressed — this table is the suppression rule. It applies to **durable artifacts** (specs under `docs/v*/`, commit messages, PR descriptions, handoffs, Ripley's Logs, code comments) and to **user-facing prose** (messages back to the user). Conversational analysis where the user has already used an industry term is exempt, but the moment content lands in a file it must use the project vocabulary.
+
+| Use                  | Do NOT use                                        | Why                                                                                                   |
+|----------------------|---------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| Prototype (v1.0.0)   | Release, Version train, Program                   | Prototype is the capability envelope for the whole v-line, not a calendar-driven release             |
+| Milestone (M7)       | Sprint, Phase, Quarter, Release                   | Milestones are capability-defined (demo-able end-to-end); sprints/phases are time-defined            |
+| Workstream (M7_002)  | Ticket, Task, Story, Issue, Subtask               | Workstreams are singular functions that contribute to exactly one milestone — not arbitrarily sized  |
+| Section (§3)         | Phase, Step, Chapter, Stage                       | Sections are implementation slices inside a workstream, numbered §0/§1/§2 — never "Phase 1/2/3"      |
+| Dimension (3.4)      | Acceptance criterion, Subtask, Checkbox, AC       | Dimensions are verification-unit checks mapped 1:1 to tests                                          |
+| Batch (B2)           | Wave, Tranche, Iteration, Sprint                  | Batches group concurrent workstreams; sequential between batches, parallel within                    |
+
+**Hard rules:**
+- Never write "Phase 1 / Phase 2" in a spec. If a workstream has sequential slices, they are Sections (§1, §2, §3). If they are large enough to be separate workstreams, they get their own spec file (M7_003, M7_004) and a Batch designation.
+- Never call a Workstream a "ticket" or "task" — those imply an external tracker owns the definition of done. Workstreams are self-contained: the spec defines the work.
+- Never call a Milestone a "Sprint" — a Milestone ships when its acceptance criteria pass, not when a calendar window closes.
+- When in doubt, re-read the Hierarchy block in `docs/TEMPLATE.md`. Never invent parallel vocabulary.
+
 ### Spec Lifecycle
 
 Every milestone follows this directory-based lifecycle:
