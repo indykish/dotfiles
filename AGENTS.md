@@ -412,6 +412,14 @@ Every spec with an Interfaces section and Test Specification section must satisf
 - **Cross-compile check is mandatory** for Zig changes: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` before commit.
 - **Error contracts from the spec MUST be tested.** Every row in the Error Contracts table needs a negative test that triggers that error path and asserts the specified behavior.
 
+### Spec Discipline — preventing overclaim (M28_001 postmortem)
+
+The three rules below harden the Spec → Code → Test Contract against a failure mode that survived one full CHORE(close): scaffolding was built, symbols existed, unit tests passed, and the spec + changelog described the feature as *delivered* — even though no production code path actually invoked the scaffolding. Apply these unconditionally:
+
+- **Golden-path before PLAN approval.** Write the concrete end-to-end example all the way through, including every lookup, data source, and secret-storage location. Any `[?]` in the golden path (unknown source, undefined storage, unanswered "how do we resolve X?") blocks the spec. An unanswered question in PLAN becomes an overclaim in DOCUMENT.
+- **DONE = called in production + tested.** Before marking a dimension DONE: grep the production entry-point file for a call to the named symbol. No call → not DONE, regardless of whether the symbol compiles or has isolated unit tests. "Symbol exists" and "symbol exercised from the real request path under test" are separate conditions — both are required to mark DONE.
+- **Changelog claim challenge.** Before writing any `<Update>` block in `changelog.mdx`, re-read each claim and ask: *"Would this be true if the test file for this feature vanished?"* If the only evidence for a claim is a unit test of a library function (not a middleware/handler/CLI path), the claim is unearned — revise or delete. The changelog is the implementation's last gate, not a description of the plan.
+
 ### VERIFY
 
 Required outputs:
@@ -446,6 +454,14 @@ Rules:
 | Bench (dev) | `API_BENCH_URL=https://api-dev.usezombie.com/healthz make bench` | After the branch deploys to dev. Confirms the change holds under real network + real concurrency, not just loopback. |
 
 Bench env overrides (see `make/test-bench.mk`): `API_BENCH_METHOD`, `API_BENCH_DURATION_SEC`, `API_BENCH_CONCURRENCY`, `API_BENCH_TIMEOUT_MS`, `API_BENCH_MAX_ERROR_RATE`, `API_BENCH_MAX_P95_MS`, `API_BENCH_MAX_RSS_GROWTH_MB`.
+
+**Memleak gate hygiene (M28_001 postmortem):**
+
+CI already runs `make memleak` on every PR touching `src/**` — that is how the M28_001 leak-review gap was surfaced. The gate exists; the failure mode was that the agent claimed it had run and passed without evidence. These rules close that gap:
+
+- **Evidence, not assertion.** Before CHORE(close) reports "all gates green," the agent MUST either (a) run `make memleak` locally and paste the final result line into Ripley's Log, or (b) cite the CI memleak job URL from the PR checks page. Claiming the leak gate passed without one of those two pieces of evidence is a rule violation — same category as skipping gitleaks.
+- **Safety allocator inside `make memleak`.** `make memleak` itself should run under `GeneralPurposeAllocator(.{.safety = true})` (no separate `run-dev` target, no new make entry point). The existing gate is where the leak-detection allocator lives; anyone running the gate locally sees the same leak-reporting behavior CI sees. Tracked as a follow-up inside the `make memleak` recipe if not already configured.
+- **Ripley's Log auditability.** Every non-trivial CHORE(close) that touched `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last three lines of `make memleak` output (or the CI log URL) verbatim in the Log. This makes the gate auditable after the fact — no "I ran it, trust me."
 
 #### Branch-level hygiene gates (always, before PR)
 
