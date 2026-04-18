@@ -339,7 +339,7 @@ Required outputs:
   - [ ] **OpenAPI spec update** — does this change add/modify/remove API endpoints, request/response shapes, or error codes? If yes, list affected paths.
   - [ ] **`zombiectl` CLI changes** — does this change require new subcommands, flags, or output format changes in the npm CLI? If yes, note that the project manager must approve CLI surface changes (create a skill ticket if needed).
   - [ ] **User-facing doc changes** — do docs at `docs.usezombie.com` need updating? If yes, list pages.
-  - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes) and update `/Users/kishore/Projects/docs/changelog.mdx` with a new `<Update>` block during CHORE(close).
+  - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes; major for breaking post-v1.0) and update `/Users/kishore/Projects/docs/changelog.mdx` with a new `<Update>` block during CHORE(close). Follow the **Release Doc Generation** format in this file: user-centric prose, no milestone IDs or internal filenames in the body, standardized sections (`Upgrading` → `What's new` → `API reference` → `Bug fixes` → `CLI`, omitting any that have no content).
   - [ ] **Schema changes** — does this change add/modify/remove database tables, columns, or constraints? If yes: (a) each new SQL file must be ≤100 lines and single-concern (one table or one logical group), (b) update `schema/embed.zig` and `src/cmd/common.zig` migration array, (c) verify `docs/SCHEMA_CONVENTIONS.md` is followed.
   - [ ] **Schema teardown** — if the change removes or modifies tables, invoke the `Schema Table Removal Guard` section (above, near Oracle Operational Defaults) and print its output in PLAN before any file edit. The guard is action-triggered and also fires at EXECUTE regardless of whether it ran here.
   - [ ] **Spec-vs-rules conflict check** — before executing a spec's prescribed approach, test it against AGENTS.md and `docs/greptile-learnings/RULES.md`. If the spec conflicts with a rule, **amend the spec first**, then execute. Common traps:
@@ -524,22 +524,51 @@ On every CHORE(close) where the spec is fully `DONE`, update the public changelo
 
 1. **File:** `/Users/kishore/Projects/docs/changelog.mdx` — this is the single source of truth. Do NOT create `docs/v*/ship/*.md` files.
 
-2. **Add a new `<Update>` block** at the top of the changelog (after the `<Tip>` block), using the Mintlify MDX format:
+2. **Add a new `<Update>` block** at the top of the changelog (after the `<Tip>` / `<Note>` block), using this standardized Mintlify MDX format:
 
 ```mdx
-<Update label="vX.Y.Z — {date}" tags={["New releases", ...]}>
-  ## {Feature name}
+<Update label="vX.Y.Z — MMM DD, YYYY" tags={["What's new" | "Breaking" | "Bug fixes", "API" | "CLI" | "UI" | "Security" | "Performance" | "Integrations" | "Observability" | "Internal", ...]}>
+  ## {Short user-facing feature title — no milestone IDs, no internal codenames}
 
-  {User-visible description. Internal refactors (no API change) are omitted.}
+  {One paragraph: what changed, from the user's perspective. No workstream numbers, no branch names, no RULE references.}
+
+  ## Upgrading
+
+  {Required only if the release contains breaking changes. Always place this section FIRST when present. Enumerate every breaking change, the exact migration step, and whether CLI + server must upgrade together.}
+
+  ## What's new
+
+  {Bulleted list of new capabilities. Focus on what a user or operator can now do, not on how the code is structured internally.}
+
+  ## API reference
+
+  {New or changed endpoints, request/response shapes, error codes, query parameters. Include concrete examples (JSON bodies, route paths) where it aids a caller. Omit this section if no API surface changed.}
+
+  ## Bug fixes
+
+  {User-visible bugs that this release fixes. Describe observed behavior before and after. Omit this section if there are no user-visible fixes.}
+
+  ## CLI
+
+  {`zombiectl` subcommand additions or shape changes. Omit if no CLI change.}
 </Update>
 ```
+
+**Section rules — hard:**
+
+- **Section order is fixed:** `Upgrading` (if any) → `What's new` → `API reference` → `Bug fixes` → `CLI`. Omit sections that have no content; never leave an empty heading.
+- **No milestone or workstream identifiers** in the user-facing body or title. "M12_001", "workstream 002", branch names, and spec filenames belong in commit messages, PRs, and specs — not the changelog.
+- **No `RULE XXX` references, internal filenames, or ticket IDs** in the body. Write for a caller reading the changelog, not a contributor reading the diff.
+- **User-centric verbs.** "We added", "X now does Y", "Callers should upgrade" — not "implemented the X subsystem" or "refactored Y to use Z."
+- **Breaking changes:** every breaking change goes under `## Upgrading` with an explicit migration step, even if also mentioned under `What's new`. If the CLI and server must upgrade together, say so in one line.
 
 3. **Version label rule:**
    - Feature milestone → minor bump (e.g., `0.7.0` → `0.8.0`)
    - Bug fix workstream → patch bump (e.g., `0.8.0` → `0.8.1`)
-   - Breaking change → major bump
+   - Breaking change pre-v1.0 → minor bump (acceptable under semver's 0.x carve-out); call out the break under `Upgrading`
+   - Breaking change post-v1.0 → major bump
 
-4. Internal refactors (no user-visible change) do not need an Update block — skip or fold into the next feature release.
+4. Internal refactors (no user-visible change) may still warrant a terse `<Update>` with `tags={["Internal", ...]}` — use a one-paragraph summary and skip the section structure. Prefer folding a pure internal cleanup into the next user-visible release when possible.
 
 Gate:
 
