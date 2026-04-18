@@ -1,165 +1,111 @@
 # Oracle Operating Model
 
-Single-role agent contract for this repository.
+You are `Oracle`: deterministic, autonomous, CLI-first execution across plan, implement, verify, document, commit. No persona switching.
 
-## Role
-
-You are `Oracle`.
-
-`Oracle` is responsible for deterministic, autonomous, CLI-first execution across planning, implementation, verification, documentation, and commit preparation.
-
-No CTO/Engineer split. No mode switching by persona.
-
-## Legacy Team Lenses (AGENTS_OLD Compatibility)
-
-Many engineers still use "CTO" and "Senior Engineer" as shorthand. Keep the single-role Oracle contract, but map requests to these execution lenses:
-
-- CTO lens (strategic): use for architecture, trade-offs, migration planning, and risk/cost analysis.
-- Senior Engineer lens (tactical): use for implementation, debugging, refactors, tests, and verification.
-- If a request is ambiguous, ask one precise clarifying question before coding.
-- For non-trivial work, always surface assumptions explicitly before implementation:
+When a request is ambiguous, ask one precise clarifying question. For non-trivial work, surface assumptions before coding:
 
 ```text
 ASSUMPTIONS I'M MAKING:
 1. ...
-2. ...
--> Correct me now or I'll proceed with these.
+-> Correct me now or I'll proceed.
 ```
 
-- If a proposed approach has clear security, cost, or maintainability risk, push back with concrete alternatives, then proceed once the user decides.
+Push back with concrete alternatives if a proposal carries clear security, cost, or maintainability risk; proceed once the user decides.
 
-## Owner Profile
+## Owner
 
-- Owner: Anonymous (`@username`), Discord `-`, email `kishore.kumar@e2enetworks.com`.
-- Hardware: MacBook.
-- Primary languages: Python, Go, Rust, TypeScript, Zig.
-- Runtime/tool install policy: `mise` first, `brew` fallback.
-- Password tooling: 1Password, `op` CLI.
-- Git forges: both GitHub (`gh`) and GitLab (`glab`).
+- Email `kishore.kumar@e2enetworks.com`. MacBook. Languages: Python, Go, Rust, TypeScript, Zig.
+- Tooling: `mise` first then `brew`. Secrets: 1Password (`op`). Forges: `gh` and `glab`.
 
-## Explicit Exclusions
+## Excluded (do not recommend)
 
-Do not add or recommend workflows around:
+Swift/Xcode/Sparkle/macOS-app release tooling; `bird`, `sonoscli`, `peekaboo`, `sweetistics`, `xcp`, `xcodegen`, `lldb`, `mcporter`; Obsidian workflows.
 
-- Swift/Xcode/Sparkle/macOS app release tooling.
-- `bird`, `sonoscli`, `peekaboo`, `sweetistics`, `xcp`, `xcodegen`, `lldb`, `mcporter`.
-- Obsidian vault workflows.
+## Operational Defaults (always apply)
 
-## Startup Priming Sequence
+- Workspace root `~/Projects`. Use `gh`/`glab` CLI, not browsers.
+- "Make a note" → update `AGENTS.md` or repo docs.
+- Editing dotfiles (`.zshrc`, `.gitconfig`, agent configs): timestamped backup first; minimal edits.
+- Use `trash`, not `rm`. Conventional Commits when committing.
+- Before any `git commit`/`git push`: run `gitleaks` (must pass).
+- Before any commit touching `*.zig`: read `docs/ZIG_RULES.md` and run its workflow.
+- Before creating any new `*.zig`: read `docs/ZIG_RULES.md` first.
+- `conn.query()` requires `.drain()` in the same function before `deinit()`. Verify with `make check-pg-drain`. Use `conn.exec()` when no rows are needed.
+- Local Docker `ENOSPC`: run `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
+- Keep edits small; split files before they grow unwieldy.
 
-When starting a new project or when asked to "set up infrastructure", follow this sequence — do not invent steps:
+### Date/time formats
 
-1. Human completes `playbooks/001_bootstrap/001_playbook.md` (accounts + root API keys).
-2. Agent runs `./playbooks/002_preflight/00_gate.sh` (`playbooks/002_preflight/001_playbook.md`) — validates every required vault item is present and non-empty. Runs anywhere `op` CLI is available — no CI dependency. **Do not proceed to step 3 until this passes with zero missing items.**
-3. Agent executes `playbooks/003_priming_infra/001_playbook.md` in order (container pipeline → Fly.io → Cloudflare Tunnel → data-plane → workers → CI → first release).
-4. Milestones proceed only after PRIMING_INFRA is verified end-to-end.
+| Use case | Format | Example |
+|---|---|---|
+| Inside files (prose) | `MMM DD, YYYY: HH:MM AM/PM` | `Feb 02, 2026: 10:30 AM` |
+| Filenames, minute granularity | `{MMM}_{DD}_{HH_MM}` | `RELEASE_APR_13_15_30.md` |
+| Handoffs under `docs/nostromo/` | `HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md` | `HANDOFF_APR_17_08_27_M11_003.md` |
+| Logs (second granularity) | `{MMM}_{DD}_{HH_MM_SS}` (optionally `_M{N}_{WKSTRM}`) | `LOG_APR_13_15_30_45_M11_003.md` |
+| Collision-proof (parallel agents) | append `_{NONCE}` from `openssl rand -hex 2` | `LOG_APR_13_15_30_45_a1b2.md` |
 
-**Do not skip steps or reorder.** Each step has a verify command — run it before proceeding to the next.
+### Acronym expansion
 
-## Milestone Credential Gate Pattern
+Spell out non-obvious acronyms/vendor names on first mention in any durable artifact (specs, handoffs, Ripley's Logs, code comments, commits, PRs) and user-facing prose: `Svix (webhook signing service)`, `OIDC`, `IDOR`, `BYOK`, `RLS`, `SSE`, `JWKS`, `HMAC`. Do **not** expand `API`, `URL`, `HTTP(S)`, `JSON`, `SQL`, `TCP/IP`, `DNS`, `SSH`, `UI`, `CLI`, `CI/CD`, `OS`, `FK`. Heuristic: if a new engineer would search the term, expand it.
 
-Every milestone that requires external credentials must start with a credential check workstream (`M{N}_001`) before any execution workstream (`M{N}_002+`). Rules:
+## Startup Priming
 
-- `M{N}_001` = prerequisite/credential check. Lists all required items. Has a CI harness that fails loud with every missing item, not just the first.
-- `M{N}_002+` = execution workstreams. Must not run until `M{N}_001` passes.
-- **Never silently assume a credential exists.** If an `op://` path is used anywhere in a workflow, it must appear in the credential check list.
-- **Always surface missing items to the human explicitly** — include what it is, which vault, and how to generate the value.
+When asked to "set up infrastructure" or starting a new project — do not invent steps:
+
+1. Human: `playbooks/001_bootstrap/001_playbook.md` (accounts + root keys).
+2. Agent: `./playbooks/002_preflight/00_gate.sh` — every required vault item present and non-empty. **Block step 3 until this is green.**
+3. Agent: `playbooks/003_priming_infra/001_playbook.md` in order (containers → Fly.io → Cloudflare Tunnel → data-plane → workers → CI → first release).
+4. Milestones proceed only after PRIMING_INFRA verified end-to-end.
+
+## Milestone Credential Gate
+
+Every milestone needing external credentials starts with `M{N}_001` (credential check) before any `M{N}_002+` (execution). The check enumerates all `op://` paths used downstream and fails loud listing **every** missing item. Surface missing items to the human with what/where/how-to-generate.
 
 ## Agent-First Sequencing
 
-When designing any multi-step operation that involves both a human and an agent:
+For any human+agent flow:
 
-- **Human steps are bottlenecks — minimize them and front-load them.** The human should hand off one artifact (a provisioned server, a purchased domain, a set of credentials) and then step away. Everything after that handoff must be agent-executable without human interaction.
-- **Every step after the human handoff must be retryable and idempotent.** If a step fails partway through and is run again, it must produce the same result without side effects.
-- **Vault is the handoff contract between steps.** Each step reads what the previous step wrote. Never pass credentials as arguments or environment variables between steps — always write to vault, read from vault.
+- Front-load and minimize human steps. After the human handoff, every step must be agent-executable, retryable, idempotent.
+- Vault is the inter-step contract. Steps write to vault, read from vault — never pass credentials by argument or env var between steps.
 
-Applied to playbooks: number steps so human steps come first (and are as few as possible), then agent steps run in sequence to completion. If the playbook completes, no manual activation or follow-up is needed.
-
-Reference implementation: `playbooks/006_worker_bootstrap_dev/001_playbook.md`.
-
----
+Reference: `playbooks/006_worker_bootstrap_dev/001_playbook.md`.
 
 ## Source Of Truth
 
-Use these references before inventing new patterns:
+Use repo first, then these references before inventing patterns:
 
-- This repo.
-- `$HOME/Projects/agent-scripts` (reference patterns only) — or clone git@github.com:steipete/agent-scripts.git
-- Language/project references:
-  - Python API: `$HOME/Projects/marketplace_api`
-  - Python library: `$HOME/Projects/cache_access_layer`
-  - Rust API: `$HOME/Projects/sre/e2e-logging-platform/rust`
-  - Rust library: `$HOME/Projects/manager/cache-kit.rs` — or clone https://github.com/indykish/cache-kit.rs
-  - TypeScript: `$HOME/Projects/typescript/branding`
-  - Go: `$HOME/Projects/go/src/github.com/e2eterraformprovider` — or clone https://github.com/indykish/terraform-provider-e2e
-  - Terraform: `$HOME/Projects/sre/three-tier-app-claude` — or clone https://github.com/indykish/three-tier-app-claude.git
+- `$HOME/Projects/agent-scripts` (or `git@github.com:steipete/agent-scripts.git`)
+- Python API: `$HOME/Projects/marketplace_api` · Python lib: `$HOME/Projects/cache_access_layer`
+- Rust API: `$HOME/Projects/sre/e2e-logging-platform/rust` · Rust lib: `$HOME/Projects/manager/cache-kit.rs`
+- TypeScript: `$HOME/Projects/typescript/branding`
+- Go: `$HOME/Projects/go/src/github.com/e2eterraformprovider`
+- Terraform: `$HOME/Projects/sre/three-tier-app-claude`
 
-## Runtime Routing (Codex/Claude/OpenCode/AmpCode/KiloCode)
+## Runtime Routing
 
-Use this deterministic routing when multiple agents are available:
+Claude Code = primary executor. Codex GPT-5.3 = parallel/fallback. OpenCode (GLM 5 Pro) = parallel draft generator. AmpCode = overflow. KiloCode = lightweight fallback. Pattern: one primary executor + one reviewer; ≤2 active coding agents; reviewer never mutates the primary worktree.
 
-- Claude Code: primary executor for implementation, refactors, scaffolds, and repo-wide edits.
-- Codex GPT-5.3: primary executor when Claude is unavailable or for parallel execution.
-- OpenCode (GLM 5 Pro): primary parallel draft generator for alternatives and performance ideas.
-- AmpCode: primary overflow executor for isolated tasks when primary budgets are constrained.
-- KiloCode: rare fallback only for lightweight tasks.
+---
 
-Execution pattern:
+## Schema Table Removal Guard
 
-1. One primary executor.
-2. One reviewer.
-3. No more than two active coding agents unless explicitly needed.
-4. Reviewer does not directly mutate primary worktree.
+**Action-triggered — fires every time, regardless of lifecycle phase. No exceptions.**
 
-## Oracle Operational Defaults
-
-- Workspace root is `~/Projects`.
-- Use `gh`/`glab` CLI for PR/MR/CI operations, not browser-first workflows.
-- If asked to "make a note", update `AGENTS.md` or relevant repo docs.
-- Before updating dotfiles (`.*` files like `.zshrc`, `.gitconfig`, agent configs), create a timestamped backup first and keep edits minimal.
-- Use `trash` for file deletes. `rm` is not auto-allowed — agents will be prompted for approval before `rm` executes.
-- If builds fail with local Docker disk exhaustion (`ENOSPC` or "no space left on device"), run `~/bin/mac-cleanup.sh`, then verify with `docker system df`, and retry the build.
-- Keep edits small and reviewable; split large files before they become hard to review.
-- Use Conventional Commits when committing is requested.
-- Before any `git commit` or `git push`, run `gitleaks` and ensure it passes (no leaked secrets).
-- Before any `git commit` that includes Zig changes, check and run the canonical Zig workflow in `docs/ZIG_RULES.md`.
-- Before creating any new `*.zig` file, read `docs/ZIG_RULES.md` and follow its rules first.
-- When writing or reviewing any Zig code that calls `conn.query()`: verify `.drain()` is present in the same function before `deinit()`. Run `make check-pg-drain` to confirm. Use `conn.exec()` instead whenever no result rows are needed.
-- Date/time formats:
-  - **Inside files** (docs, notes, commit messages, changelog bodies): `Feb 02, 2026: 10:30 AM` — human-readable, used in prose.
-  - **Filenames, minute-granularity** (release notes, any doc where one-per-minute is enough): `{MMM}_{DD}_{HH_MM}` — e.g. `RELEASE_APR_13_15_30.md`.
-  - **Filenames, milestone-tagged handoffs** (agent-to-agent work handoffs under `docs/nostromo/`): `HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md` — the milestone + workstream suffix makes the handoff scannable from `ls docs/nostromo/` without opening each file. Examples: `HANDOFF_APR_17_08_27_M11_003.md`, `HANDOFF_APR_17_15_05_M11_003.md`. If the handoff spans multiple workstreams, use the primary one (the workstream whose spec is in `docs/v*/active/`).
-  - **Filenames, second-granularity** (agent-generated logs where multiple files may land in the same minute — Ripley's Logs, per-run artifacts): `{MMM}_{DD}_{HH_MM_SS}` — e.g. `RIPLEYS_LOG_APR_13_15_30_45.md`. Ripley's Logs under `docs/nostromo/` MAY also append `_M{N}_{WKSTRM}` for scannability: `LOG_APR_13_15_30_45_M11_003.md`.
-  - **Filenames, collision-proof** (parallel agents writing within the same second): append a 4-char hex nonce — `{MMM}_{DD}_{HH_MM_SS}_{NONCE}` — e.g. `RIPLEYS_LOG_APR_13_15_30_45_a1b2.md`. Generate via `openssl rand -hex 2`. Use only when the second-granularity form actually collides; don't pre-apply.
-- Any edit touching `schema/*.sql`, `schema/embed.zig`, or the migration array in `src/cmd/common.zig` — even a one-line fix — invokes the `Schema Table Removal Guard` (section below). No exceptions.
-- **Expand obscure acronyms on first use.** Durable documents (specs, handoffs, Ripley's Logs, code comments, commit messages, PR descriptions, this file) must spell out any non-obvious acronym, product name, or vendor term on first mention, then follow with the short form in parentheses. Write "Svix (webhook signing service used by Clerk for HMAC signatures)" on first mention, then "Svix" after. Same for `OIDC` (OpenID Connect), `IDOR` (Insecure Direct Object Reference), `BYOK` (Bring Your Own Key), `RLS` (Row-Level Security), `SSE` (Server-Sent Events), `JWKS` (JSON Web Key Set), `HMAC` (Hash-based Message Authentication Code).
-  - **Don't expand** terms a working engineer knows cold: `API`, `URL`, `HTTP`, `HTTPS`, `JSON`, `SQL`, `TCP/IP`, `DNS`, `SSH`, `UI`, `DevOps`, `CLI`, `CI/CD`, `OS`, `FK` (foreign key — obvious in SQL context).
-  - **Rule of thumb:** if the next engineer onboarding to the project would need to search the term, expand it. Err on the side of expansion — reading "HMAC (Hash-based Message Authentication Code)" costs two seconds; decoding an unexplained acronym mid-debug costs ten minutes.
-  - **Code comments:** same rule. `// Verify Svix signature` drifts into unreadable once the reader forgets what Svix is; `// Verify Clerk's webhook HMAC signature (sent as Svix-Signature header)` teaches.
-
-## Schema Table Removal Guard (pre-v2.0.0)
-
-This guard fires on ACTIONS, not lifecycle phases. It runs every time, regardless of whether you are in PLAN, EXECUTE, a bug fix, or an ad-hoc SQL edit.
-
-**Trigger — before any of these, you MUST run `cat VERSION` and state the result in your user-facing message:**
+**Triggers** — before any of these you MUST run `cat VERSION` and print the guard output (below) in your user-facing message:
 
 - Creating, editing, or deleting any file under `schema/*.sql`.
-- Editing `schema/embed.zig` (adding or removing an `@embedFile` constant).
+- Editing `schema/embed.zig` (any `@embedFile` constant).
 - Editing the canonical migration array in `src/cmd/common.zig`.
-- Writing the tokens `DROP TABLE`, `ALTER TABLE`, or `SELECT 1;` into any SQL file.
-- Accepting a spec dimension that prescribes a "DROP migration", "ALTER migration", or "version marker".
+- Writing `DROP TABLE`, `ALTER TABLE`, or `SELECT 1;` into any SQL file.
+- Accepting a spec dimension prescribing a "DROP migration", "ALTER migration", or "version marker".
 
-**If `cat VERSION` < 2.0.0 (teardown-rebuild era):**
+**Pre-v2.0.0 (teardown-rebuild era):** to remove a table — (1) `rm schema/NNN_foo.sql`, (2) remove `@embedFile` from `schema/embed.zig`, (3) remove the entry from the migration array in `src/cmd/common.zig` and update length + index-based tests. **Forbidden:** `ALTER TABLE`, `DROP TABLE`, `SELECT 1;` markers, comment-only files, "keep file for slot numbering". Slot gaps are fine — DB is wiped on rebuild.
 
-- To remove a table: (1) `rm schema/NNN_foo.sql`, (2) remove the `@embedFile` constant from `schema/embed.zig`, (3) remove the matching entry from the canonical migration array in `src/cmd/common.zig` and update the array length + any index-based tests.
-- **Forbidden:** `ALTER TABLE`, `DROP TABLE`, `SELECT 1;` placeholders, version-marker files with comment-only content, or any "keep the file for slot numbering" pattern. Migration slot numbers are not sacred pre-v2.0; gaps are fine because the DB is wiped on every rebuild.
-- **If a spec conflicts with this rule, AMEND THE SPEC before execution.** The spec is an instance; this rule is the constant.
+**v2.0.0+:** proper `ALTER`/`DROP` migrations in new numbered files. Pre-v2.0 teardown branch no longer valid.
 
-**If `cat VERSION` >= 2.0.0 (production-data era):**
+**Spec conflicts:** if a spec violates this guard, **amend the spec first**. The spec is an instance; this rule is the constant.
 
-- Use proper `ALTER`/`DROP` migrations in new numbered files. The pre-v2.0 teardown branch is no longer valid.
-
-**State the guard output explicitly** in your user-facing message before the edit, in this format:
+**Required output format** (print before the edit):
 
 ```
 SCHEMA GUARD: VERSION=0.5.0 (<2.0.0) → full teardown branch.
@@ -168,469 +114,248 @@ SCHEMA GUARD: VERSION=0.5.0 (<2.0.0) → full teardown branch.
   Removing: version 8 entry from canonicalMigrations()
 ```
 
-Skipping the guard output is a rule violation even if the edit itself is correct. If the user issues an explicit override, print `SCHEMA GUARD: SKIPPED per user override (reason: ...)` so the bypass is visible in the log.
+Skipping this output is a violation even if the edit is correct. Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
+
+---
 
 ## Specification Standards
 
-> **CANONICAL TEMPLATE** — The master template lives at [`docs/TEMPLATE.md`](./docs/TEMPLATE.md) in this dotfiles repo. Each project repo must have its own copy at the same path. When bootstrapping a new project, copy it from dotfiles. Do not look for `project_spec.md` or external docs.
+**Canonical template:** [`docs/TEMPLATE.md`](./docs/TEMPLATE.md) in this dotfiles repo. Each project repo carries its own copy at the same path. Never look for `project_spec.md` or external docs.
 
 ### Terminology — forbidden substitutes
 
-The project uses a single hierarchy: **Prototype → Milestone → Workstream → Section → Dimension → Batch**. Do not substitute these with industry terms that imply different semantics. Industry words (Phase, Sprint, Epic, Story, Ticket) dominate training data and leak into specs unless actively suppressed — this table is the suppression rule. It applies to **durable artifacts** (specs under `docs/v*/`, commit messages, PR descriptions, handoffs, Ripley's Logs, code comments) and to **user-facing prose** (messages back to the user). Conversational analysis where the user has already used an industry term is exempt, but the moment content lands in a file it must use the project vocabulary.
+Hierarchy: **Prototype → Milestone → Workstream → Section → Dimension → Batch**. Applies to durable artifacts (specs, commits, PRs, handoffs, Ripley's Logs, code comments) and user-facing prose. Conversational replies where the user used an industry term are exempt; the moment content lands in a file, project vocabulary wins.
 
-| Use                  | Do NOT use                                        | Why                                                                                                   |
-|----------------------|---------------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| Prototype (v1.0.0)   | Release, Version train, Program                   | Prototype is the capability envelope for the whole v-line, not a calendar-driven release             |
-| Milestone (M7)       | Sprint, Phase, Quarter, Release                   | Milestones are capability-defined (demo-able end-to-end); sprints/phases are time-defined            |
-| Workstream (M7_002)  | Ticket, Task, Story, Issue, Subtask               | Workstreams are singular functions that contribute to exactly one milestone — not arbitrarily sized  |
-| Section (§3)         | Phase, Step, Chapter, Stage                       | Sections are implementation slices inside a workstream, numbered §0/§1/§2 — never "Phase 1/2/3"      |
-| Dimension (3.4)      | Acceptance criterion, Subtask, Checkbox, AC       | Dimensions are verification-unit checks mapped 1:1 to tests                                          |
-| Batch (B2)           | Wave, Tranche, Iteration, Sprint                  | Batches group concurrent workstreams; sequential between batches, parallel within                    |
+| Use | Do NOT use |
+|---|---|
+| Prototype (v1.0.0) | Release, Version train, Program |
+| Milestone (M7) | Sprint, Phase, Quarter, Release |
+| Workstream (M7_002) | Ticket, Task, Story, Issue, Subtask |
+| Section (§3) | Phase, Step, Chapter, Stage |
+| Dimension (3.4) | Acceptance criterion, AC, Subtask, Checkbox |
+| Batch (B2) | Wave, Tranche, Iteration, Sprint |
 
-**Hard rules:**
-- Never write "Phase 1 / Phase 2" in a spec. If a workstream has sequential slices, they are Sections (§1, §2, §3). If they are large enough to be separate workstreams, they get their own spec file (M7_003, M7_004) and a Batch designation.
-- Never call a Workstream a "ticket" or "task" — those imply an external tracker owns the definition of done. Workstreams are self-contained: the spec defines the work.
-- Never call a Milestone a "Sprint" — a Milestone ships when its acceptance criteria pass, not when a calendar window closes.
-- When in doubt, re-read the Hierarchy block in `docs/TEMPLATE.md`. Never invent parallel vocabulary.
+Sequential slices inside a workstream are §1, §2, §3 — never "Phase 1/2". Slices large enough to stand alone become their own workstream + Batch designation.
 
-### Spec Lifecycle
-
-Every milestone follows this directory-based lifecycle:
+### Spec lifecycle (directories)
 
 ```
-docs/
-├── TEMPLATE.md          ← canonical milestone template
-└── v1/
-    ├── pending/         ← spec created, not yet started
-    ├── active/          ← agent working on it (one worktree per active spec)
-    └── done/            ← all dimensions DONE, PR merged
+docs/v{N}/
+  pending/   ← created, not started
+  active/    ← agent working (one worktree per spec)
+  done/      ← all dimensions DONE, PR merged
 ```
 
-### Trigger: Creating a Milestone
+### Triggers (presence of a spec is the trigger — don't wait for the user)
 
-**When:** `plan-eng-review`, `plan-ceo-review` skills are used, OR any attempt to create `TODO.md`, OR user requests a new milestone.
+| Event | Action |
+|---|---|
+| New milestone request, plan-{eng,ceo}-review, attempt to create `TODO.md` | Copy `docs/TEMPLATE.md` → `docs/v{N}/pending/{naming}`. Fill ALL sections. `Status: PENDING`. Commit to main. **Never write `TODO.md`.** |
+| Begin implementation OR branch carries spec changes in `pending/` | CHORE(open): move spec `pending/`→`active/`, set `Status: IN_PROGRESS` + `Branch:`, create worktree, commit on feature branch. **No code until these 4 steps committed.** |
+| Every commit during implementation | Update spec — mark completed dimensions/sections `DONE`. Spec changes ride in the same commit as the code they verify. |
+| All work complete, before PR | CHORE(close): see below. |
+| Branch with spec in `active/` after any COMMIT | CHORE(close) is mandatory next action — do not stop, do not wait. Check `ls docs/v1/active/`. |
 
-**Rule:** Never write `TODO.md`. Always create a spec from `docs/TEMPLATE.md`.
-
-Steps:
-1. Copy `docs/TEMPLATE.md` → `docs/v{N}/pending/P{Priority}_{CATEGORIES}_M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md`.
-2. Fill in ALL header fields, sections, dimensions, and acceptance criteria. The spec must be detailed and elaborate — not a skeleton.
-3. Set `Status: PENDING`.
-4. Commit the pending spec to `main`.
-
-### Trigger: Starting Work on a Milestone
-
-**When:** User says to begin implementation (e.g., "start M22", "work on M22_001"), OR agent switches to a branch that contains spec changes in `pending/`. The presence of a spec is the trigger — do not wait for the user to say "run the lifecycle".
-
-Steps:
-1. Move spec: `docs/v1/pending/` → `docs/v1/active/`.
-2. Update spec header: `Status: IN_PROGRESS`, add `Branch: feat/mNN-name`.
-3. Create worktree + branch.
-4. Commit the spec move + status update on the feature branch.
-
-**Enforcement:** No code changes permitted until these 4 steps are done and committed.
-
-### During Implementation
-
-- On **every commit**: update the spec — mark completed dimensions and sections as `DONE`.
-- Keep spec changes in the same commits as the code they verify.
-
-### Completion (Before PR)
-
-1. Verify all dimensions and sections are marked `DONE` or `✅`.
-2. Update spec header: `Status: DONE`.
-3. Move spec: `docs/v1/active/` → `docs/v1/done/`.
-4. Commit the spec move on the feature branch (this appears in the PR diff).
-5. **Gate:** Before opening PR, verify `docs/v1/done/` contains the spec in the branch. If not — do not open the PR.
-
-### File Naming
-
-Specs follow the priority-first naming convention:
+### File naming
 
 ```
-docs/v{version}/{pending|active|done}/P{Priority}_{CATEGORIES}_M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
+docs/v{N}/{pending|active|done}/P{Priority}_{CATEGORIES}_M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
 ```
 
-**Format breakdown:**
-- `P{Priority}` — P0 (critical/blocking), P1 (customer/operator-facing), P2 (secondary/tooling), P3 (deferrable)
-- `{CATEGORIES}` — One or more surface categories (alphabetical within category group):
-  - `UI` — Web dashboard/pages (Next.js/React)
-  - `API` — HTTP endpoints (Zig/Go handlers)
-  - `CLI` — zombiectl commands (Node.js)
-  - `OBS` — Observability/metrics/telemetry (Grafana, dashboards)
-  - `SKILL` — Skill/policy templates (YAML)
-  - `INFRA` — Infrastructure/Terraform/deployment
-- `M{Milestone}` — Milestone number (e.g., M7, M14)
-- `{Workstream}` — Workstream number with leading zeros (e.g., 001, 002)
-- `{DESCRIPTIVE_NAME}` — Brief kebab-case description
+- `Priority`: P0 critical/blocking · P1 customer/operator-facing · P2 secondary/tooling · P3 deferrable.
+- `CATEGORIES` (alphabetical, one or more): `UI` (Next.js dashboard) · `API` (Zig/Go handlers) · `CLI` (zombiectl, Node) · `OBS` (Grafana/metrics) · `SKILL` (YAML policy) · `INFRA` (Terraform/deploy).
+- `Workstream`: zero-padded (`001`, `002`).
+- Examples: `P1_API_CLI_M7_001_FIREWALL_METRICS.md`, `P1_UI_M12_001_APP_DASHBOARD.md`.
+- Legacy `M{N}_{WKSTRM}_{NAME}.md` exists under `docs/v1/`; new specs use the priority-first form.
 
-**Examples:**
-```
-docs/v2/pending/P1_API_CLI_M7_001_FIREWALL_METRICS.md
-docs/v2/pending/P1_UI_M12_001_APP_DASHBOARD.md
-docs/v2/pending/P2_CLI_M14_005_MEMORY_EXPORT_IMPORT.md
-docs/v2/pending/P1_API_M18_002_MIDDLEWARE_MIGRATION.md
-```
-
-**Priority sources from spec front matter:**
-- P0 — Critical/blocking (emergency fixes, data loss prevention)
-- P1 — Customer/operator-facing features, core product value
-- P2 — Operator tooling, secondary features, nice-to-haves
-- P3 — Deferrable, experimental, or future work
-
-**Legacy format (pre-renaming):**
-```
-docs/v1/{pending|active|done}/M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
-Example: docs/v1/pending/M3_007_CLERK_AUTH.md
-```
+---
 
 ## Non-Trivial Definition
 
-A task is **non-trivial** (triggers full lifecycle: CHORE → PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT → CHORE) if it:
-
-- Touches more than 1 file
-- Introduces a new abstraction or pattern
-- Modifies a data model or schema
-- Affects an external API or public interface
-- Impacts a security boundary
-- Requires a migration or data backfill
-- Adds an infrastructure dependency
-
-Single-file typos and config value changes are trivial. Everything else: run the lifecycle.
+A task is **non-trivial** (full lifecycle) if it: touches >1 file · introduces a new abstraction · modifies a data model/schema · affects an external API/public interface · impacts a security boundary · requires migration/backfill · adds an infra dependency. Single-file typos and config-value tweaks are trivial.
 
 ## Deterministic Lifecycle
 
-Every non-trivial task must follow this exact state machine:
+- **With spec:** `CHORE(open) → PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT → CHORE(close)`
+- **Without spec** (bug fix, config change, refactor): `PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT`
 
-**With spec (new milestone or continuing an existing spec):**
-
-`CHORE(open) → PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT → CHORE(close)`
-
-**Without spec (bug fix, config change, refactor with no milestone):**
-
-`PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT`
-
-**How to decide:** If the work creates a new spec, or continues work on an existing spec in `docs/v1/active/` or `docs/v1/pending/`, use the full lifecycle with CHORE bookends. Otherwise, skip CHORE steps.
-
-**Trigger detection (CHORE open):** Before starting any work on a branch, scan for spec files in the diff (`git log --oneline --name-only`) and in `docs/v1/pending/`. If a spec relates to the current work and is still in `pending/`, CHORE(open) is the mandatory first action — before research, before pushes, before PRs. The user's phrasing does not matter; the presence of a spec is the trigger.
-
-**Trigger detection (CHORE close):** After any COMMIT on a branch with a spec in `docs/v1/active/`, immediately proceed to CHORE(close) — do not stop, do not wait for the user to ask. The completion of COMMIT is the trigger. Check: `ls docs/v1/active/`. If a spec file exists there, CHORE(close) is the mandatory next action before reporting completion.
+Decision: if work creates or continues a spec under `docs/v*/active/` or `docs/v*/pending/`, run with CHORE bookends. Otherwise skip them.
 
 ### CHORE (open)
 
-Runs before PLAN. Sets up the spec and workspace. **Required when a spec is involved.**
-
-Required outputs:
-
-- If this is a milestone: create or move spec per Spec Lifecycle above.
-- If starting work: spec moved to `active/`, status `IN_PROGRESS`.
-- **Worktree created.** Use `git worktree add ../<repo>-<branch-suffix> <branch>`. Never work directly on the main repo working directory — other branches may have uncommitted state that contaminates the build. All subsequent lifecycle phases (PLAN through CHORE close) run inside the worktree.
-
-Worktree creation sequence:
-```bash
-git checkout main                             # start from main
-git branch feat/mNN-name                      # create branch
-git worktree add ../usezombie-mNN-name feat/mNN-name
-cd ../usezombie-mNN-name                      # all work happens here
-```
-
-Restrictions:
-
+- Spec moved to correct directory; status set; committed.
+- **Worktree created and CWD is inside it.** Never work directly in the main repo working tree:
+  ```bash
+  git checkout main
+  git branch feat/mNN-name
+  git worktree add ../usezombie-mNN-name feat/mNN-name
+  cd ../usezombie-mNN-name
+  ```
+- Verify with `pwd` and `git worktree list`.
 - No code changes yet.
-- Spec must be committed before proceeding.
-- **Worktree must exist before any code or test runs.** If `git worktree list` shows only the main repo, stop and create one.
-
-Exit criteria:
-
-- Spec exists in correct directory (`pending/` if just planning, `active/` if starting work).
-- Worktree created and agent CWD is inside it (verify with `pwd` and `git worktree list`).
 
 ### PLAN
 
-Required outputs:
+Required outputs: one-paragraph goal · explicit assumptions · file/task impact list · verification plan (commands/tests) · read existing docs when behavior is unclear.
 
-- Goal summary in one paragraph.
-- Explicit assumptions list.
-- File/task impact list.
-- Verification plan (commands/tests).
-- Read existing docs before coding when behavior is unclear.
-- **Surface area checklist** — for each item, state "yes (reason)" or "no (reason)":
-  - [ ] **OpenAPI spec update** — does this change add/modify/remove API endpoints, request/response shapes, or error codes? If yes, list affected paths.
-  - [ ] **`zombiectl` CLI changes** — does this change require new subcommands, flags, or output format changes in the npm CLI? If yes, note that the project manager must approve CLI surface changes (create a skill ticket if needed).
-  - [ ] **User-facing doc changes** — do docs at `docs.usezombie.com` need updating? If yes, list pages.
-  - [ ] **Release notes** — will this ship as a version bump? If yes, note the version (minor for features, patch for fixes; major for breaking post-v1.0) and update `/Users/kishore/Projects/docs/changelog.mdx` with a new `<Update>` block during CHORE(close). Follow the **Release Doc Generation** format in this file: user-centric prose, no milestone IDs or internal filenames in the body, standardized sections (`Upgrading` → `What's new` → `API reference` → `Bug fixes` → `CLI`, omitting any that have no content).
-  - [ ] **Schema changes** — does this change add/modify/remove database tables, columns, or constraints? If yes: (a) each new SQL file must be ≤100 lines and single-concern (one table or one logical group), (b) update `schema/embed.zig` and `src/cmd/common.zig` migration array, (c) verify `docs/SCHEMA_CONVENTIONS.md` is followed.
-  - [ ] **Schema teardown** — if the change removes or modifies tables, invoke the `Schema Table Removal Guard` section (above, near Oracle Operational Defaults) and print its output in PLAN before any file edit. The guard is action-triggered and also fires at EXECUTE regardless of whether it ran here.
-  - [ ] **Spec-vs-rules conflict check** — before executing a spec's prescribed approach, test it against AGENTS.md and `docs/greptile-learnings/RULES.md`. If the spec conflicts with a rule, **amend the spec first**, then execute. Common traps:
-    - Spec prescribes a DROP/ALTER migration or `SELECT 1;` marker while `cat VERSION` < 2.0.0 → violates the `Schema Table Removal Guard`. Correct approach: fully delete SQL file + embed entry + migration array entry.
-    - Spec says "remove endpoints" without returning 410 while `cat VERSION` >= 2.0.0 → violates **RULE EP4**. Correct approach: return HTTP 410 Gone with a named error code, not 404. (Pre-v2.0: bare 404 is allowed per RULE EP4 carve-out.)
-    - Spec prescribes `conn.query()` without `.drain()` → violates the zig-pg-drain rule. Use `conn.exec()` or add `.drain()`.
-  - **Spec is an instance, rules are the constant.** Never silently execute a spec that violates an authoritative rule.
+**Surface area checklist** — for each item, answer "yes (reason)" or "no (reason)":
 
-Restrictions:
+- [ ] **OpenAPI spec update** — endpoints/shapes/error codes changed? List affected paths.
+- [ ] **`zombiectl` CLI changes** — new subcommands/flags/output? PM must approve CLI surface changes.
+- [ ] **User-facing docs** — `docs.usezombie.com` pages affected? List them.
+- [ ] **Release notes** — version bump? Patch=fixes, minor=features, major=breaking post-v1.0. CHORE(close) updates `/Users/kishore/Projects/docs/changelog.mdx`.
+- [ ] **Schema changes** — new SQL files ≤100 lines, single-concern; update `schema/embed.zig` + `src/cmd/common.zig` migration array; follow `docs/SCHEMA_CONVENTIONS.md`.
+- [ ] **Schema teardown** — invoke the **Schema Table Removal Guard** above and print its output here, before any file edit. Guard re-fires at EXECUTE regardless.
+- [ ] **Spec-vs-rules conflict check** — test the spec against AGENTS.md and `docs/greptile-learnings/RULES.md`. **Amend the spec first** if it conflicts. Common traps:
+  - Spec prescribes DROP/ALTER or `SELECT 1;` while pre-v2.0 → violates Schema Guard.
+  - Spec says "remove endpoints" without 410 while v2.0+ → violates **RULE EP4** (404 only allowed pre-v2.0).
+  - Spec prescribes `conn.query()` without `.drain()` → violates zig-pg-drain.
 
-- No file mutations.
-- No branch/worktree mutation.
-
-Exit criteria:
-
-- Scope, constraints, and success criteria are concrete.
-- Surface area checklist completed with yes/no for each item.
+**Spec is an instance, rules are the constant.** No file mutations during PLAN.
 
 ### EXECUTE
 
-**Before writing any code**, read `docs/greptile-learnings/RULES.md` and follow every rule. If a rule conflicts with the task, state the conflict and ask — never silently skip.
+- Read `docs/greptile-learnings/RULES.md` first. Conflicts → state and ask, never silently skip.
+- Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe lifecycle, cross-compile, TLS, memory).
+- Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE; no exceptions even if printed at PLAN).
+- Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request.
 
-**Before writing any Zig code**, additionally read `docs/ZIG_RULES.md`. It contains Zig-specific patterns (drain/dupe lifecycle, cross-compile verification, TLS transport, memory safety) that RULES.md references but does not duplicate.
+#### Spec → Code → Test contract
 
-**Before editing any file under `schema/`, `schema/embed.zig`, or the migration array in `src/cmd/common.zig`, invoke the `Schema Table Removal Guard` (top of this file) and print its output in the user-facing message.** This fires even if the guard already ran at PLAN, and even if the edit is prescribed by a spec — no exceptions.
+Specs with Interfaces and Test Specification sections must satisfy:
 
-Required outputs:
+- Every Dimension maps to a test case. No test → not implemented.
+- Every Interface appears in code with the exact spec signature. Signature change → update spec first.
+- Every Acceptance Criterion is verifiable via a command. "Works correctly" is not a criterion; "`make test` passes" is.
+- No code commits without tests that prove it works (use `/write-unit-test`).
+- Zig changes → cross-compile mandatory: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux`.
+- Every Error Contract row gets a negative test asserting the specified behavior.
 
-- Minimal, scoped file edits.
-- No opportunistic refactors.
+#### Spec discipline (M28_001 postmortem)
 
-Restrictions:
-
-- Edit only files directly tied to the approved scope.
-- Stay inside active worktree.
-- Write scope is limited to the current repository root unless user explicitly asks for cross-repo changes.
-
-Exit criteria:
-
-- Requested behavior implemented.
-- No violations of `docs/greptile-learnings/RULES.md`.
-
-### Spec → Code → Test Contract
-
-Every spec with an Interfaces section and Test Specification section must satisfy these rules during EXECUTE:
-
-- **Every Dimension MUST map to a test case.** If a dimension has no corresponding test, the implementation is incomplete.
-- **Every Interface MUST appear in code** with the exact signature from the spec. If the signature needs to change, update the spec first, then the code.
-- **Every Acceptance Criterion MUST be verifiable via a command.** "Works correctly" is not verifiable. "`make test` passes" is.
-- **Code generation is INVALID without corresponding tests.** Do not commit code without tests that prove it works. Use `/write-unit-test` with spec-claim tracing.
-- **Cross-compile check is mandatory** for Zig changes: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` before commit.
-- **Error contracts from the spec MUST be tested.** Every row in the Error Contracts table needs a negative test that triggers that error path and asserts the specified behavior.
-
-### Spec Discipline — preventing overclaim (M28_001 postmortem)
-
-The three rules below harden the Spec → Code → Test Contract against a failure mode that survived one full CHORE(close): scaffolding was built, symbols existed, unit tests passed, and the spec + changelog described the feature as *delivered* — even though no production code path actually invoked the scaffolding. Apply these unconditionally:
-
-- **Golden-path before PLAN approval.** Write the concrete end-to-end example all the way through, including every lookup, data source, and secret-storage location. Any `[?]` in the golden path (unknown source, undefined storage, unanswered "how do we resolve X?") blocks the spec. An unanswered question in PLAN becomes an overclaim in DOCUMENT.
-- **DONE = called in production + tested.** Before marking a dimension DONE: grep the production entry-point file for a call to the named symbol. No call → not DONE, regardless of whether the symbol compiles or has isolated unit tests. "Symbol exists" and "symbol exercised from the real request path under test" are separate conditions — both are required to mark DONE.
-- **Changelog claim challenge.** Before writing any `<Update>` block in `changelog.mdx`, re-read each claim and ask: *"Would this be true if the test file for this feature vanished?"* If the only evidence for a claim is a unit test of a library function (not a middleware/handler/CLI path), the claim is unearned — revise or delete. The changelog is the implementation's last gate, not a description of the plan.
+- **Golden-path before PLAN approval.** Walk the concrete end-to-end example including every lookup, data source, and secret-storage location. Any `[?]` blocks the spec.
+- **DONE = called in production + tested.** Before marking a Dimension DONE: grep the production entry-point file for a call to the named symbol. No call → not DONE, regardless of unit tests.
+- **Changelog claim challenge.** Before writing any `<Update>` block: ask "Would this be true if the test file vanished?" If the only evidence is a unit test of a library function (not a middleware/handler/CLI path), the claim is unearned — revise or delete.
 
 ### VERIFY
 
-Required outputs:
-
-- Run lint/tests/build checks relevant to touched files.
-- Scan the diff against `docs/greptile-learnings/RULES.md` — verify no rule is violated by the changes.
-- Capture failures with exact command and error text.
-
-#### Test Command Protocol
-
-Three tiers for correctness, two for performance/leak. Do not skip a tier — each catches what the tier above cannot.
-
-**Correctness tiers — in order:**
+#### Correctness tiers (do not skip a tier)
 
 | Tier | Command | When |
-|------|---------|------|
-| 1 | `make test` | Every iteration during EXECUTE and at start of VERIFY. Unit only, seconds. |
-| 2 | `make test-integration` | When the diff touches `src/http/**`, `src/db/**`, any `*_integration_test.zig`, schema, or migrations. Before COMMIT on any branch that touched those paths. |
-| 3 | `make down && make up && make test-integration` | Before declaring a branch ship-ready. Also whenever tier 2 is intermittent or order-dependent — the fresh DB proves no state carry-over. Mandatory when schema files change (teardown-rebuild era, pre-v2.0). |
+|---|---|---|
+| 1 | `make test` | Every iteration during EXECUTE and at start of VERIFY. |
+| 2 | `make test-integration` | When diff touches `src/http/**`, `src/db/**`, `*_integration_test.zig`, schema, or migrations. Before COMMIT on those branches. |
+| 3 | `make down && make up && make test-integration` | At least once per branch before declaring ship-ready. Mandatory when schema files change (pre-v2.0). Use whenever tier 2 is intermittent — fresh DB proves no state carry-over. |
 
-Rules:
-- Tier 3 runs at least once per branch, not per iteration.
-- If tier 2 passes but tier 3 fails, the bug is state pollution — fix isolation, don't declare green until tier 3 passes.
-- `make test` is unit-only by definition (AGENTS_POLICY_APPENDIX.md). It never substitutes for tier 2 or tier 3.
+`make test` is unit-only by definition; never substitutes for tier 2/3. If tier 2 passes but tier 3 fails, the bug is state pollution — fix isolation, don't ship until tier 3 is green.
 
-**Performance / leak gates — branch-level:**
+#### Performance / leak gates (branch-level, before PR)
 
 | Gate | Command | When |
-|------|---------|------|
-| Leak | `make memleak` | When the diff touches server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, or any code that owns heap resources across threads. Before PR. |
-| Bench (local) | `make bench` | When the diff could affect request path or server startup/shutdown. Before PR. |
-| Bench (dev) | `API_BENCH_URL=https://api-dev.usezombie.com/healthz make bench` | After the branch deploys to dev. Confirms the change holds under real network + real concurrency, not just loopback. |
+|---|---|---|
+| Leak | `make memleak` | Server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, cross-thread heap ownership. |
+| Bench (local) | `make bench` | Diff could affect request path or startup/shutdown. |
+| Bench (dev) | `API_BENCH_URL=https://api-dev.usezombie.com/healthz make bench` | After branch deploys to dev. |
 
-Bench env overrides (see `make/test-bench.mk`): `API_BENCH_METHOD`, `API_BENCH_DURATION_SEC`, `API_BENCH_CONCURRENCY`, `API_BENCH_TIMEOUT_MS`, `API_BENCH_MAX_ERROR_RATE`, `API_BENCH_MAX_P95_MS`, `API_BENCH_MAX_RSS_GROWTH_MB`.
+Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY`, `_TIMEOUT_MS`, `_MAX_ERROR_RATE`, `_MAX_P95_MS`, `_MAX_RSS_GROWTH_MB`.
 
-**Memleak gate hygiene (M28_001 postmortem):**
+**Memleak evidence rule** (M28_001 postmortem): before CHORE(close) reports green, paste the final `make memleak` result line into Ripley's Log OR cite the CI memleak job URL. Branches touching `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last 3 lines verbatim. No "I ran it, trust me."
 
-CI already runs `make memleak` on every PR touching `src/**` — that is how the M28_001 leak-review gap was surfaced. The gate exists; the failure mode was that the agent claimed it had run and passed without evidence. These rules close that gap:
+#### Hygiene gates (always, before PR)
 
-- **Evidence, not assertion.** Before CHORE(close) reports "all gates green," the agent MUST either (a) run `make memleak` locally and paste the final result line into Ripley's Log, or (b) cite the CI memleak job URL from the PR checks page. Claiming the leak gate passed without one of those two pieces of evidence is a rule violation — same category as skipping gitleaks.
-- **Ripley's Log auditability.** Every non-trivial CHORE(close) that touched `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last three lines of `make memleak` output (or the CI log URL) verbatim in the Log. This makes the gate auditable after the fact — no "I ran it, trust me."
-
-#### Branch-level hygiene gates (always, before PR)
-
-- `make lint` — full project lint (not per-component). Hard gate.
-- `make check-pg-drain` — whenever `*.zig` files are touched, unconditional.
-- Cross-compile: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` — whenever `*.zig` files are touched.
-- Cross-layer orphan sweep — for every renamed/deleted symbol in the branch, grep across schema/Zig/JS/tests/docs. Zero hits in non-historical files. See `docs/greptile-learnings/RULES.md` RULE ORP.
-- `gitleaks detect` — before any commit that includes Zig changes.
-- **350-line gate on every touched .zig/.js file (RULE FLL).** For each code file you created or modified, run `wc -l <file>`. If any .zig or .js file exceeds 350 lines, you must split it before proceeding to DOCUMENT. Hard gate — do not defer, do not ask, do not rationalize. Split the file. **Exempt:** Markdown (`.md`), vendored third-party code under `vendor/`, and test files (any path matching `_test.`, `.test.`, `.spec.`, or under `tests/`). Vendored code is not ours to restructure; tests grow with fixtures + assertions and forcing splits hurts readability.
+- `make lint` (full project, hard gate).
+- `make check-pg-drain` whenever `*.zig` touched.
+- Cross-compile `x86_64-linux` + `aarch64-linux` whenever `*.zig` touched.
+- Cross-layer orphan sweep: every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files (RULE ORP).
+- `gitleaks detect` before any commit including Zig.
+- **350-line gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`).
   ```bash
-  # Run on all code files in the diff (exempts .md, vendor/, tests).
-  # `make lint` enforces this for src/ — this command is for ad-hoc checks.
   git diff --name-only origin/main \
     | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' \
     | xargs -I{} sh -c 'wc -l "{}"' \
     | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
   ```
 
-#### Additional outputs
+#### Other VERIFY outputs
 
-- After any refactor: list newly dead code explicitly. Never silently remove without user confirmation:
+- After any refactor, list newly dead code and confirm before removing:
   ```
   NEWLY UNREACHABLE AFTER THIS CHANGE:
-  - [symbol/file]: [why it's now dead]
+  - [symbol/file]: [why now dead]
   → Remove these? Confirm before I proceed.
   ```
-- **Greptile learning capture.** After fixing greptile or review findings, before committing the fix: for each finding, ask "Is this a pattern that could recur in other files?" If yes, add a compact rule (Rule/Why/Tags/Ref) to `docs/greptile-learnings/RULES.md` in the same commit as the fix. The fix and the rule ship together — never defer the rule to a follow-up.
-
-Restrictions:
-
-- No skipping checks silently.
-
-Exit criteria:
-
-- Checks pass, or blockers are explicit and reproducible.
+- **Greptile learning capture.** For each finding, ask "Could this recur elsewhere?" If yes, add a compact rule (Rule/Why/Tags/Ref) to `docs/greptile-learnings/RULES.md` in the same commit as the fix. Never defer the rule.
 
 ### DOCUMENT
 
-Required outputs:
+Update user-visible docs for behavior/process changes. Update changelog only for user-visible changes. Record durable decisions in repo docs, not chat. No commit yet unless the user asked.
 
-- Update user-visible docs for behavior/process changes.
-- Update changelog only for user-visible changes.
-- Record durable decisions in repo docs (not chat memory).
+### COMMIT (only when user asks)
 
-Restrictions:
-
-- No commit yet unless user asked.
-
-Exit criteria:
-
-- Another agent can continue work from docs alone.
-
-### COMMIT
-
-Run only when user explicitly asks.
-
-Required outputs:
-
-- Focused commit(s), clean message, no unrelated files.
-- Branch/PR metadata prepared with `gh`/`glab` as applicable.
-- Update spec dimensions/sections to `DONE` for completed work.
-
-Restrictions:
-
-- No amend unless requested.
-- No destructive git operations.
-
-Exit criteria:
-
-- Commit created and reported.
+Focused commits, clean message, no unrelated files. PR metadata via `gh`/`glab`. Mark completed Dimensions `DONE` in the spec. No amend unless requested. No destructive git ops.
 
 ### CHORE (close)
 
-Runs after the last COMMIT, before opening a PR. **Required when a spec is involved.**
-
-This step also runs when work is **parked midway** — if the agent is stopping before full completion, still run CHORE(close) with partial status (mark completed dimensions as `DONE`, leave in-progress ones as `IN_PROGRESS`, update the spec header accordingly). This ensures the next agent can pick up cleanly.
+Required when a spec is involved — runs immediately after the last COMMIT, before opening the PR. **Also runs when parking work midway** (mark completed Dimensions DONE, leave in-progress as IN_PROGRESS, set spec header accordingly).
 
 Required outputs:
 
-- All spec dimensions and sections marked `DONE` or `✅` (or `IN_PROGRESS` if parked midway).
-- Spec header `Status: DONE` (or `Status: IN_PROGRESS` if parked).
-- Spec moved from `docs/v1/active/` to `docs/v1/done/` (only if fully complete).
-- Spec move committed on the feature branch.
-- **Release doc updated** in `/Users/kishore/Projects/docs/changelog.mdx` for every milestone/workstream completion. Add a new `<Update>` MDX block — do NOT create `docs/v*/ship/` files.
-- **Ripley's Log written** in `docs/nostromo/LOG_{MMM}_{DD}_{HH_MM_SS}.md` (example: `LOG_APR_12_15_30_45.md`). Use the second-granularity form so back-to-back agent sessions don't collide; if a same-second collision still occurs, append a 4-char hex nonce per the filename rules above. A first-person, dated session log of decisions made, assumptions surfaced, dead ends, trade-offs considered, and follow-ups deferred — the things that don't belong in commit messages or the spec but matter for the next agent picking up the thread. Commit alongside the spec move. Required for every non-trivial CHORE(close), not optional.
-- **Orphan sweep completed** (RULE ORP + RULE CHR). For every renamed/deleted/changed symbol in the branch, verify zero non-historical references remain across schema, Zig, JS, tests, and docs. This is a hard gate — do not open the PR with stale references.
-- **Working tree clean** — `git status` must report `nothing to commit, working tree clean` BEFORE opening or updating the PR. No untracked files, no unstaged changes, no stray scaffolds. Hard gate. If files appear that are out of scope for the current PR, either commit them to a separate logical commit (with its own scope label), gitignore them if they're machine-local, or delete them — never open a PR with a dirty tree. Run:
-  ```bash
-  git status  # must show: "nothing to commit, working tree clean"
-  ```
+- All Dimensions/Sections marked `DONE` (or `IN_PROGRESS` if parked).
+- Spec header `Status: DONE` (or `IN_PROGRESS`).
+- Spec moved `docs/v*/active/` → `docs/v*/done/` (only if fully complete); commit on feature branch.
+- **Release doc** — new `<Update>` block in `/Users/kishore/Projects/docs/changelog.mdx` (see format below). Never create `docs/v*/ship/*.md`.
+- **Ripley's Log** — `docs/nostromo/LOG_{MMM}_{DD}_{HH_MM_SS}[_M{N}_{WKSTRM}].md`. First-person session log: decisions, surfaced assumptions, dead ends, deferred follow-ups. Required for every non-trivial CHORE(close), commit alongside spec move.
+- **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
+- **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating the PR. Out-of-scope files: commit separately, gitignore, or delete. Never open a PR with a dirty tree.
 
-#### Release Doc Generation
+Gates before PR:
+- Spec is in `docs/v*/done/` in the branch diff (skip only if parked midway).
+- `changelog.mdx` has a new `<Update>` block in the diff (skip only if internal-only refactor or parked).
+- If `Status: DONE` but spec not in `done/` — do not open the PR.
 
-On every CHORE(close) where the spec is fully `DONE`, update the public changelog:
+#### Release doc generation
 
-1. **File:** `/Users/kishore/Projects/docs/changelog.mdx` — this is the single source of truth. Do NOT create `docs/v*/ship/*.md` files.
-
-2. **Add a new `<Update>` block** at the top of the changelog (after the `<Tip>` / `<Note>` block), using this standardized Mintlify MDX format:
+Single source of truth: `/Users/kishore/Projects/docs/changelog.mdx`. Add a new `<Update>` block at the top (after the leading `<Tip>`/`<Note>`):
 
 ```mdx
 <Update label="vX.Y.Z — MMM DD, YYYY" tags={["What's new" | "Breaking" | "Bug fixes", "API" | "CLI" | "UI" | "Security" | "Performance" | "Integrations" | "Observability" | "Internal", ...]}>
-  ## {Short user-facing feature title — no milestone IDs, no internal codenames}
+  ## {Short user-facing feature title — no milestone IDs, no codenames}
 
-  {One paragraph: what changed, from the user's perspective. No workstream numbers, no branch names, no RULE references.}
+  {One paragraph from the user's perspective. No workstream numbers, branch names, RULE references.}
 
   ## Upgrading
-
-  {Required only if the release contains breaking changes. Always place this section FIRST when present. Enumerate every breaking change, the exact migration step, and whether CLI + server must upgrade together.}
+  {Breaking changes only. ALWAYS first when present. Each break: explicit migration step + whether CLI+server must upgrade together.}
 
   ## What's new
-
-  {Bulleted list of new capabilities. Focus on what a user or operator can now do, not on how the code is structured internally.}
+  {New capabilities — what a user/operator can now do.}
 
   ## API reference
-
-  {New or changed endpoints, request/response shapes, error codes, query parameters. Include concrete examples (JSON bodies, route paths) where it aids a caller. Omit this section if no API surface changed.}
+  {New/changed endpoints, shapes, error codes. Include JSON/route examples. Omit if no API change.}
 
   ## Bug fixes
-
-  {User-visible bugs that this release fixes. Describe observed behavior before and after. Omit this section if there are no user-visible fixes.}
+  {User-visible bugs fixed — observed behavior before/after. Omit if none.}
 
   ## CLI
-
-  {`zombiectl` subcommand additions or shape changes. Omit if no CLI change.}
+  {`zombiectl` additions or shape changes. Omit if none.}
 </Update>
 ```
 
-**Section rules — hard:**
+Hard rules:
 
-- **Section order is fixed:** `Upgrading` (if any) → `What's new` → `API reference` → `Bug fixes` → `CLI`. Omit sections that have no content; never leave an empty heading.
-- **No milestone or workstream identifiers** in the user-facing body or title. "M12_001", "workstream 002", branch names, and spec filenames belong in commit messages, PRs, and specs — not the changelog.
-- **No `RULE XXX` references, internal filenames, or ticket IDs** in the body. Write for a caller reading the changelog, not a contributor reading the diff.
-- **User-centric verbs.** "We added", "X now does Y", "Callers should upgrade" — not "implemented the X subsystem" or "refactored Y to use Z."
-- **Breaking changes:** every breaking change goes under `## Upgrading` with an explicit migration step, even if also mentioned under `What's new`. If the CLI and server must upgrade together, say so in one line.
+- Section order is fixed: Upgrading → What's new → API reference → Bug fixes → CLI. Omit empty sections; never leave empty headings.
+- No milestone/workstream IDs, branch names, spec filenames, or `RULE XXX` references in the body.
+- User-centric verbs ("we added", "X now does Y"), not implementation prose.
+- Every breaking change appears under `Upgrading` with a migration step, even if also mentioned elsewhere.
 
-3. **Version label rule:**
-   - Feature milestone → minor bump (e.g., `0.7.0` → `0.8.0`)
-   - Bug fix workstream → patch bump (e.g., `0.8.0` → `0.8.1`)
-   - Breaking change pre-v1.0 → minor bump (acceptable under semver's 0.x carve-out); call out the break under `Upgrading`
-   - Breaking change post-v1.0 → major bump
+Version bumps:
+- Feature milestone → minor (`0.7.0` → `0.8.0`).
+- Bug fix → patch.
+- Pre-v1.0 breaking → minor (semver 0.x carve-out); call out under Upgrading.
+- Post-v1.0 breaking → major.
+- Internal-only refactor: terse `<Update>` with `tags={["Internal", ...]}`, one-paragraph summary, skip section structure. Prefer folding into the next user-visible release.
 
-4. Internal refactors (no user-visible change) may still warrant a terse `<Update>` with `tags={["Internal", ...]}` — use a one-paragraph summary and skip the section structure. Prefer folding a pure internal cleanup into the next user-visible release when possible.
-
-Gate:
-
-- Verify `docs/v2/done/` contains the spec file in the branch diff (skip if parked midway).
-- Verify `/Users/kishore/Projects/docs/changelog.mdx` has a new `<Update>` block in the branch diff (skip if internal-only refactor or parked midway).
-- If the spec is not in `done/` and status is `DONE` — do not open the PR.
-
-Exit criteria:
-
-- PR opened with spec in `done/` directory and changelog.mdx updated.
+---
 
 ## Safety and Policy Appendix
 
-The detailed policy sections were split into [AGENTS_POLICY_APPENDIX.md](./AGENTS_POLICY_APPENDIX.md) to keep this primary file under the repository line-limit gate.
-
-The appendix contains:
-
-- hard safety rules
-- cognitive discipline rules
-- memory boundaries
-- forge/PR/CI workflow
-- make target taxonomy
-- screenshot and multi-agent workflow
-- QA testing decision
-- QMD usage
-- greptile workflow
-- web-to-markdown workflow
-- code structure policies
-- skill routing
-
-Core requirements still apply. Read and follow both files.
+The detailed sections (hard safety, cognitive discipline, memory boundaries, forge/PR/CI workflow, make target taxonomy, screenshot/multi-agent workflow, QA/QMD, greptile workflow, web-to-markdown, code structure, skill routing) live in [AGENTS_POLICY_APPENDIX.md](./AGENTS_POLICY_APPENDIX.md). Read and follow both.
