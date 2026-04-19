@@ -289,11 +289,8 @@ public/openapi/
 1. Edit the relevant YAML under `public/openapi/paths/<tag>.yaml`.
 2. Add / rename / remove the corresponding `match()` arm in `src/http/router.zig`.
 3. Update `src/http/route_manifest.zig` (same (method, path) surface the sync gate asserts).
-4. Run `make openapi` (bundles YAML → JSON, runs Redocly + `check_openapi_errors.py`).
-5. Run `make check-openapi-sync` (asserts route_manifest ↔ openapi.json parity).
-6. Commit YAML + bundled JSON + `router.zig` + `route_manifest.zig` together.
-
-A single convenience target runs every lane: `make lint-openapi`.
+4. Run `make openapi` — bundles YAML → JSON, runs Redocly lint, runs `check_openapi_errors.py`, asserts router ↔ openapi.json parity. One target, one gate.
+5. Commit YAML + bundled JSON + `router.zig` + `route_manifest.zig` together.
 
 **Agent-edit recipe:** see `public/openapi/AGENTS.md` for copy-paste-ready rename / append / remove / update-description workflows for autonomous agents.
 
