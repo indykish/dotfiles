@@ -712,3 +712,10 @@ const handleConfirm = useCallback(async () => {
 
 **Tags:** zig, testing, docs, naming, plan, execute
 **Ref:** The test-fixture rename pass (`test_fixtures_uc1.zig` → `test_fixtures_workspace_credit.zig` et al.) in the usezombie repo uncovered that milestone-numbered names survive the milestones themselves and stop describing the code. The `metering_m18_test.zig` rename to `metering_telemetry_test.zig` was the immediate precedent. Rule added to prevent regression as future milestones create new test files.
+
+## RULE MKP — Make recipes must not pipe into `tail`, `head`, `grep` without `set -o pipefail`
+
+**Rule:** Inside a Make recipe, do NOT pipe a command whose exit code matters into `tail`, `head`, `grep`, `cat`, or any other filter — Make's default shell (`/bin/sh`) evaluates pipelines with the exit code of the LAST command. A failing test/script piped through `| tail -3` returns 0 because `tail` always succeeds, and the recipe (and the enclosing `make lint` / `make openapi`) falsely succeeds. Either (a) drop the pipe, (b) run the command standalone and let Make's line-level exit-on-error abort on failure, or (c) if a filter is genuinely needed, use `bash -c 'set -o pipefail; cmd | filter'`.
+**Why:** Silent test swallow is a class-C outage — the gate claims green while regressions ship. Observed on M28_003 §2 where `@python3 scripts/test_check_openapi_sync.py 2>&1 | tail -3` in `make openapi` passed a failing-test injection without aborting. Greptile P1 caught it before merge; the root cause (Make + default `sh` POSIX pipefail semantics) is the same bug anywhere a recipe uses `|` to tidy long output.
+**Tags:** make, ci, testing
+**Ref:** usezombie P2_INFRA_M28_003 §2 — `make/quality.mk:161` before fix piped the test runner through `tail -3`; fix in commit 66556e99 dropped the pipe, confirmed with injected `self.fail()` that `make: *** [openapi] Error 1` now fires correctly.
