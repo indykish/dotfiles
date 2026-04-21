@@ -87,6 +87,47 @@ Claude Code = primary executor. Codex GPT-5.3 = parallel/fallback. OpenCode (GLM
 
 ---
 
+## Legacy-Design Consult Guard
+
+**Action-triggered — fires in any lifecycle phase (PLAN, EXECUTE, VERIFY, DOCUMENT, COMMIT, CHORE). No exceptions.**
+
+**Definition — "legacy design":** any code path, env-var, table, route, or API that the surrounding milestone work is deprecating, that predates the current architectural direction, or that exists solely as a smoke-test / bootstrap / pre-migration shim. Signals:
+
+- Code comments like `// legacy`, `// pre-M*`, `// bootstrap`, `// TODO remove`, `// temporary`.
+- Runtime warn logs that announce themselves (`foo.bootstrap_env_var_used`, `legacy path`, `deprecated`).
+- Env vars whose only consumer is a fallback branch (e.g. `ZOMBIED_ADMIN_API_KEY`).
+- Principals / roles / config values that are "only used pre-signup" or "only used in dev."
+- Schema columns / tables that spec work deletes everywhere except one stubborn caller.
+
+**Trigger — you MUST stop and consult the user before any of these:**
+
+- Adding a fix, fallback, or compensating code to make legacy design work with new architecture ("patching around it").
+- Deciding to keep legacy design for "backward compat" when the spec/milestone's scope is explicitly pre-alpha or the user has no external consumers yet.
+- Writing a defensive `orelse` / fail-open branch whose only reason to exist is that legacy design could produce a null/missing value.
+- Authoring tests that exercise the legacy path — stop and ask whether the test (and path) should exist.
+- Choosing between "patch the legacy path" vs "remove it entirely" — this is never your call to make silently.
+
+**Required output (user-facing, before any edit):**
+
+```
+LEGACY CONSULT: <one-line description of the legacy design>
+  Discovered in: <file:line or spec section>
+  Options:
+    (A) Remove it entirely — blast radius: <files/tests/callers>.
+    (B) Patch around it — change: <what to add>, risk: <null/fallback/security>.
+    (C) Keep as-is — justification: <why>.
+  Recommendation: <A|B|C> because <reason>.
+  WAITING FOR USER DECISION.
+```
+
+Block on the user's reply. Do not proceed with any option (including your recommendation) until they pick. If the user has previously approved one class of legacy decisions in this session, you may note that and proceed — but the first instance of any *new* legacy finding still triggers a consult.
+
+**Escape hatch:** if a legacy finding is unambiguously in scope of the active spec's Dead Code Sweep or Out-of-Scope list, skip the consult and follow the spec. The consult exists for *discoveries* that aren't already accounted for.
+
+**Discovery capture:** every triggered consult (regardless of resolution) is logged in the active spec's **Discovery** section, or — if the finding is pushed to a follow-up — filed as a new pending spec in `docs/v{N}/pending/`. Never discard the finding.
+
+---
+
 ## Schema Table Removal Guard
 
 **Action-triggered — fires every time, regardless of lifecycle phase. No exceptions.**
