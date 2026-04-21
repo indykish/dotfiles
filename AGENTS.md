@@ -308,11 +308,13 @@ Required outputs:
 - **Ripley's Log** — `docs/nostromo/LOG_{MMM}_{DD}_{HH_MM_SS}[_M{N}_{WKSTRM}].md`. First-person session log: decisions, surfaced assumptions, dead ends, deferred follow-ups. Required for every non-trivial CHORE(close), commit alongside spec move.
 - **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
 - **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating the PR. Out-of-scope files: commit separately, gitignore, or delete. Never open a PR with a dirty tree.
+- **Version sync** — whenever the branch touches `VERSION`, run `make sync-version` and include the propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`) in the CHORE(close) commit. Verify with `make check-version`. Skipping this leaves `npm publish` emitting the old CLI version and `zig build` reporting the old Zig version on release — both are silent-drift failures the release workflow does not catch. If `VERSION` was not touched, this item is a no-op.
 
 Gates before PR:
 - Spec is in `docs/v*/done/` in the branch diff (skip only if parked midway).
 - `changelog.mdx` has a new `<Update>` block in the diff (skip only if internal-only refactor or parked).
 - If `Status: DONE` but spec not in `done/` — do not open the PR.
+- `make check-version` must pass. If the branch touched `VERSION`, the sync-version edits must be in the diff.
 
 #### Release doc generation
 
