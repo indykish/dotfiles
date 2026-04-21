@@ -217,6 +217,7 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 
 - Read `docs/greptile-learnings/RULES.md` first. Conflicts → state and ask, never silently skip.
 - Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe lifecycle, cross-compile, TLS, memory).
+- HTTP handler or OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first (§1–§10 for REST conventions, §10b–§10d for the `Hx` handler signature contract). Triggered any time the surface-area checklist ticks "OpenAPI spec update" or the diff touches `src/http/handlers/**`.
 - Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE; no exceptions even if printed at PLAN).
 - Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request.
 
