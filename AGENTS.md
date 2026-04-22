@@ -219,6 +219,38 @@ Non-empty output = violations introduced in this turn. Fix before reporting done
 
 ---
 
+## Verification Gate
+
+**Action-triggered — fires before every "tests pass" / "work is done" / "ready for review" / "CHORE(close) ready" message. No exceptions.**
+
+Package-scoped runners (`bun run test` inside one workspace, `vitest` on a single file, `zig build test` without the integration tier) are **not** verification — they silently skip cross-package lint, cross-compile, pg-drain, and the integration tier. The `make` targets are the canonical repo gates.
+
+**Required before reporting done** — commands defined in the [VERIFY](#verify) section under Deterministic Lifecycle:
+
+- `make lint` — always.
+- `make test` — always (tier 1).
+- `make test-integration-db` — when the diff touches HTTP handlers, schema, DB code, or any `_integration_test.zig` file (tier 2).
+- `make down && make up && make test-integration-db` — at least once per branch before declaring ship-ready (tier 3).
+- Add-on gates (`make memleak`, `make bench`, cross-compile, `make check-pg-drain`) per the trigger table in `VERIFY`.
+
+**Required output in the user-facing "done" message:**
+
+```
+Verified:
+  make lint                ✓ clean
+  make test                ✓ <N> passed, <M> skipped
+  make test-integration-db ✓  (or "N/A — no handler/schema changes")
+  cross-compile            ✓  (when *.zig touched; omit otherwise)
+```
+
+If you ran package-scoped tools instead, that is **not** verification — re-run via `make` before declaring done.
+
+**Override syntax** (only when a target is genuinely unrunnable in the current environment — e.g. Docker not installed for integration tests):
+
+`VERIFY GATE: <target> skipped per environment constraint (reason: ...)` — and call out the limitation in the done message, not as "tests pass".
+
+---
+
 ## Specification Standards
 
 **Canonical template:** [`docs/TEMPLATE.md`](./docs/TEMPLATE.md) in this dotfiles repo. Each project repo carries its own copy at the same path. Never look for `project_spec.md` or external docs.
@@ -340,6 +372,8 @@ Specs with Interfaces and Test Specification sections must satisfy:
 - **Changelog claim challenge.** Before writing any `<Update>` block: ask "Would this be true if the test file vanished?" If the only evidence is a unit test of a library function (not a middleware/handler/CLI path), the claim is unearned — revise or delete.
 
 ### VERIFY
+
+*Enforcement*: the [Verification Gate](#verification-gate) requires the required-output block in every "done" message. This section defines *what* to run and *when*; the gate defines *how to prove* it ran.
 
 #### Correctness tiers (do not skip a tier)
 
