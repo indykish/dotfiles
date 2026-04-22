@@ -229,18 +229,18 @@ Package-scoped runners (`bun run test` inside one workspace, `vitest` on a singl
 
 - `make lint` — always.
 - `make test` — always (tier 1).
-- `make test-integration-db` — when the diff touches HTTP handlers, schema, DB code, or any `_integration_test.zig` file (tier 2).
-- `make down && make up && make test-integration-db` — at least once per branch before declaring ship-ready (tier 3).
+- `make test-integration` — when the diff touches HTTP handlers, schema, DB code, Redis code, or any `_integration_test.zig` file (tier 2). Use `make test-integration-db` / `make test-integration-redis` only when you need a focused subset.
+- `make down && make up && make test-integration` — at least once per branch before declaring ship-ready (tier 3).
 - Add-on gates (`make memleak`, `make bench`, cross-compile, `make check-pg-drain`) per the trigger table in `VERIFY`.
 
 **Required output in the user-facing "done" message:**
 
 ```
 Verified:
-  make lint                ✓ clean
-  make test                ✓ <N> passed, <M> skipped
-  make test-integration-db ✓  (or "N/A — no handler/schema changes")
-  cross-compile            ✓  (when *.zig touched; omit otherwise)
+  make lint             ✓ clean
+  make test             ✓ <N> passed, <M> skipped
+  make test-integration ✓  (or "N/A — no handler/schema/redis changes")
+  cross-compile         ✓  (when *.zig touched; omit otherwise)
 ```
 
 If you ran package-scoped tools instead, that is **not** verification — re-run via `make` before declaring done.
