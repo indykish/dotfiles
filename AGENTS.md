@@ -164,29 +164,35 @@ Skipping this output is a violation even if the edit is correct. Override syntax
 
 **Action-triggered — fires on every Write/Edit that adds lines to a source file. Pre-hoc, not post-hoc. No exceptions.**
 
-The repo-local cap values live in `docs/greptile-learnings/RULES.md` (currently RULE FLL: files ≤350 lines; RULE FNC: functions ≤50, methods ≤70). **Read RULES.md at the start of each EXECUTE phase** to pick up the current values and exempt-paths list; they may drift per-repo. This gate is the enforcement mechanism; RULES.md is the source of truth for numbers.
+**Caps:**
 
-**Triggers — before every Write/Edit on:**
+- **File:** ≤ 350 lines.
+- **Function:** ≤ 50 lines.
+- **Method:** ≤ 70 lines.
 
-- Any **source file** recognized by the repo (`.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml` when it's code — the RULES.md exempt list governs what's *excluded*, so assume included by default).
-- Applies equally to production code, tests, and config-as-code — unless RULES.md explicitly exempts the path.
+**Triggers — before every Write/Edit on any source file.** Includes production, tests, and config-as-code: `.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml`/`.toml` when they carry code. If you're unsure whether a file is gated, assume yes.
 
-**Exempt paths** (per RULES.md — check there, don't memorize): typically `vendor/`, `node_modules/`, `third_party/`, `.md`, published API artifacts under `public/` (e.g. `openapi.json`, `openapi/paths/*.yaml`), and anything else the repo's RULES.md lists. When in doubt, assume the file *is* gated and explicitly read RULES.md.
+**Default exemptions (gate does not fire):**
+
+- `vendor/`, `node_modules/`, `third_party/` — splitting upstream code obscures the diff against upstream and breaks upgrades.
+- `.md` — docs are prose; paragraph count is not code coupling.
+- Published API artifacts under `public/` that are machine-read and domain-partitioned — e.g. `public/openapi.json` (a build artifact), `public/openapi/paths/*.yaml` (partitioned by tag; further splitting fragments a single domain). A loose ≤ 400-line advisory applies to path YAMLs, enforced by eye in review, not by this gate.
+- A repo may extend the exemption list in its own `docs/greptile-learnings/RULES.md` or equivalent — check there first when a file straddles the judgement call.
 
 **Pre-edit check (mandatory before every edit that net-adds lines):**
 
 1. `wc -l <file>` — current line count (0 for new files).
 2. Compute the net delta: `+added - removed`.
 3. Projected count: `current + delta`.
-4. If projected > cap (350 today), **STOP**. Do not write the edit. Split first: extract a cohesive block to a sibling file following the repo's existing `<module>_<concern>.<ext>` convention (e.g. `zombie_list.js` beside `zombie.js`, `executor_memory.zig` beside `executor.zig`). Then apply the original edit to the trimmed file.
-5. Function-length sub-gate: for any function/method you're editing or adding, project its post-edit line count. If > function-cap (50) or > method-cap (70), split into named helpers **before** writing.
+4. If projected > 350, **STOP**. Do not write the edit. Split first: extract a cohesive block to a sibling file following the repo's existing `<module>_<concern>.<ext>` convention (e.g. `zombie_list.js` beside `zombie.js`, `executor_memory.zig` beside `executor.zig`). Then apply the original edit to the trimmed file.
+5. Function-length sub-gate: for any function/method you're editing or adding, project its post-edit line count. If > 50 (function) or > 70 (method), split into named helpers **before** writing.
 
 **Required output format** (print before the edit when the file is within 50 lines of the file cap — i.e. currently ≥ 300 — or when any touched function will land within 10 lines of its cap):
 
 ```
 LENGTH GATE: <file> currently N lines; adding Δ → N+Δ.
   File cap: 350. Headroom after: 350-(N+Δ).
-  Function check: <fn_name> post-edit <F> lines (cap <C>).
+  Function check: <fn_name> post-edit <F> lines (cap 50/70).
   Decision: proceed | split first.
 ```
 
@@ -394,7 +400,7 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 
 ### EXECUTE
 
-- Read `docs/greptile-learnings/RULES.md` first, and re-read whenever the active sub-task changes shape (new layer, new language, resuming after a break). RULES.md is the source of truth for cap values (RULE FLL, RULE FNC) enforced by the **File & Function Length Gate** above. Conflicts → state and ask, never silently skip.
+- Read `docs/greptile-learnings/RULES.md` first, and re-read whenever the active sub-task changes shape (new layer, new language, resuming after a break). RULES.md carries repo-specific discipline; file/function length caps live in the **File & Function Length Gate** above. Conflicts → state and ask, never silently skip.
 - Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe lifecycle, cross-compile, TLS, memory).
 - HTTP handler or OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first (§1–§10 for REST conventions, §10b–§10d for the `Hx` handler signature contract). Triggered any time the surface-area checklist ticks "OpenAPI spec update" or the diff touches `src/http/handlers/**`.
 - Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE; no exceptions even if printed at PLAN).

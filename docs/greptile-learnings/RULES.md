@@ -58,13 +58,6 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 **Tags:** sql, zig
 **Ref:** M1_001 activity_stream cursor was timestamp-only, dropped events at ms boundaries.
 
-## RULE FLL — Files ≤ 350 lines (new/touched); functions ≤ 50 lines
-
-**Rule:** Every new or touched .zig/.js file must stay under 350 lines; every new function under 50 lines. **Exempt:** Markdown (`.md`), YAML/JSON **published API artifacts** under `public/` (including `public/openapi.json`, `public/openapi/**/*.yaml`, `public/agent-manifest.json`, `public/llms.txt`, `public/skill.md`, `public/heartbeat`), files under `vendor/` (third-party code), and test files matching `_test.`, `.test.`, `.spec.`, or paths under `tests/`. The rule applies to `.zig`/`.js`/`.ts` source — not docs, not data, not machine-read specs.
-**Why:** Files over 350L hide coupling and slow review; functions over 50L inline multiple concerns. Vendored code: splitting upstream files breaks the upgrade path and obscures the diff against upstream. Tests: grow with fixture setup + assertion volume, and forced splits separate the assertion from the setup it depends on, so tests are excluded from every clause. `public/**` machine-readable artifacts: `openapi.json` is a build artifact produced by `make openapi`, and the underlying `public/openapi/**/*.yaml` files are partitioned by tag for localized edits — splitting them further purely to stay under 350L would fragment a single domain (e.g. `paths/zombies.yaml` across multiple files) and hurt both human review and agent-edit locality without reducing real coupling. A separate advisory target of ≤ 400L applies to individual `public/openapi/paths/*.yaml` files (checked by eye during review, not gated in CI).
-**Tags:** zig, js, all
-**Ref:** AGENTS_POLICY_APPENDIX.md Code Structure Policies. Vendor + test exemptions added when usezombie/usezombie vendored httpz under `vendor/httpz/` to patch a shutdown UAF. `public/**` exemption added Apr 19, 2026 during P2_INFRA_M28_003 — split YAML files under `public/openapi/` (e.g. `paths/zombies.yaml` at 419L after M28_003 §1.4 merged `/stop` into it) are domain-partitioned and must not be further fragmented. Folder-file-count clause removed Apr 18, 2026 — too prescriptive; cohesion matters more than cardinality, and the cap forced spurious subdirectory splits.
-
 ## RULE TST-NAM — Test identifiers are milestone-free
 
 **Rule:** Test *filenames* and test *names* (the string passed to `test "…" {}`) must NOT embed milestone IDs, workstream IDs, section numbers, or dimension numbers — e.g. no `M28_001_foo_test.zig`, no `m24_001_cross_workspace_idor_test.zig`, no `test "M28_001 3.3: Jira valid HMAC → .next"`. Use descriptive behavior names instead (`webhook_verify_test.zig`, `test "Jira valid HMAC → .next"`). Specs, PR titles, commit messages, Ripley's Logs, and changelog entries are the durable place for milestone IDs — not test identifiers.
@@ -147,13 +140,6 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 **Why:** Glob matching itself creates a fork bomb.
 **Tags:** bash, ci
 **Ref:** PR #162 glob matched itself → fork bomb in CI.
-
-## RULE FNC — Functions ≤ 50 lines, methods ≤ 70 lines
-
-**Rule:** Functions ≤ 50 lines; methods ≤ 70 lines; split into named helpers if exceeded.
-**Why:** Functions over 50L inline multiple concerns and are untestable in isolation.
-**Tags:** zig, js, all
-**Ref:** M1_001 handleReceiveWebhook was 120+ lines — 8 steps inlined into one function.
 
 ## RULE UFS — All user-facing strings are constants
 
