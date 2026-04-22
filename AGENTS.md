@@ -348,7 +348,7 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 
 ### EXECUTE
 
-- Read `docs/greptile-learnings/RULES.md` first. Conflicts → state and ask, never silently skip.
+- Read `docs/greptile-learnings/RULES.md` first, **and re-read it at every EXECUTE phase boundary within a session** (new sub-task, switch from backend→UI→CLI, resuming after a break). Stale recall from an earlier EXECUTE is how caps like RULE FLL (≤350 lines) and RULE FNC (functions ≤50, methods ≤70) slip through. Conflicts → state and ask, never silently skip.
 - Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe lifecycle, cross-compile, TLS, memory).
 - HTTP handler or OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first (§1–§10 for REST conventions, §10b–§10d for the `Hx` handler signature contract). Triggered any time the surface-area checklist ticks "OpenAPI spec update" or the diff touches `src/http/handlers/**`.
 - Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE; no exceptions even if printed at PLAN).
