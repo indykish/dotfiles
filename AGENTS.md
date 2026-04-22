@@ -160,6 +160,65 @@ Skipping this output is a violation even if the edit is correct. Override syntax
 
 ---
 
+## Milestone-ID Gate
+
+**Action-triggered — fires on every file edit outside `docs/` and `*.md`. Pre-hoc, not post-hoc. No exceptions.**
+
+Milestone IDs (`M{N}_{NNN}`), section refs (`§X.Y`), and dimension tokens (`T7`, `dim 5.8.15`) belong in specs, Ripley's Logs, and scratchpads. Source code, SQL, tests, comments, JSDoc, shell scripts, and config files stay milestone-free — the codebase outlives any individual milestone and these references rot.
+
+**Triggers — before saving any file matching:**
+
+- `**/*.zig` · `**/*.sql` · `**/*.ts` · `**/*.tsx` · `**/*.js` · `**/*.jsx` · `**/*.py` · `**/*.rs` · `**/*.go` · `**/*.sh`
+- Any config file (`*.toml`, `*.yaml`, `*.json`) outside `docs/`
+- Test files (the `_test.` / `.test.` / `.spec.` naming doesn't exempt — tests are code).
+
+**Exempt paths** (IDs allowed):
+
+- `docs/` — specs, handoffs, Ripley's Logs, changelogs.
+- `**/*.md` outside `node_modules/`, `vendor/` — READMEs, ADRs, scratchpads.
+- `CLAUDE.md`, `AGENTS.md`, `AGENTS_POLICY_APPENDIX.md` — this policy file and siblings.
+
+**Pre-edit check (run before every Write/Edit):**
+
+Grep your about-to-save content for these regexes:
+
+```
+M[0-9]+_[0-9]+          # M27_001, M11_006, M2_001
+§[0-9]+(\.[0-9]+)+      # §3.8, §5.8.4, §0.5.1
+\bT[0-9]+\b             # T7, T11 — test IDs from a spec
+\bdim [0-9]+\.[0-9]+\b  # "dim 5.8.15"
+```
+
+If any match, **strip the reference before saving.** Rewrite the sentence to describe the code's purpose, not its spec lineage. "Per-zombie billing routes deferred until they ship" beats "Per-zombie billing routes deferred to M27_003".
+
+Forbidden phrasings (common drifts):
+
+- `// M19_002: workspace_id comes from URL path`  → `// workspace_id comes from URL path`
+- `//! Powers the dashboard switcher (M27_001)`  → `//! Powers the dashboard switcher`
+- `test "integration: M12_001 T8 billing summary"` → `test "integration: tenant billing summary"`
+- `* spec §5.8.4 dim 5.8.15` → delete or replace with a plain-English summary of what the code does
+
+**Self-audit at end of turn (before declaring work done):**
+
+Run against files you touched this turn:
+
+```bash
+git diff --name-only HEAD | \
+  grep -vE '(^docs/|\.md$)' | \
+  xargs -r grep -nE 'M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bdim [0-9]+\.[0-9]+\b' | \
+  head
+```
+
+Non-empty output = violations introduced in this turn. Fix before reporting done.
+
+**Override syntax** (rare — e.g. referencing the ID of a removal in a deprecation warning that will itself be removed):
+
+`MILESTONE ID ALLOWED per user override (reason: ...)` in the immediately-preceding comment line.
+
+**Pre-existing matches** that predate the current change are not the agent's responsibility to sweep unless the task explicitly includes cleanup. But any *new* reference the agent introduces in this session violates the gate.
+
+---
+
 ## Specification Standards
 
 **Canonical template:** [`docs/TEMPLATE.md`](./docs/TEMPLATE.md) in this dotfiles repo. Each project repo carries its own copy at the same path. Never look for `project_spec.md` or external docs.
