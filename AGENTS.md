@@ -26,6 +26,7 @@ Swift/Xcode/Sparkle/macOS-app release tooling; `bird`, `sonoscli`, `peekaboo`, `
 - Workspace root `~/Projects`. Use `gh`/`glab` CLI, not browsers.
 - "Make a note" → update `AGENTS.md` or repo docs.
 - Editing dotfiles (`.zshrc`, `.gitconfig`, agent configs): timestamped backup first; minimal edits.
+- **Any edit to a symlinked file under `~/.claude/**` (resolves to `~/Projects/dotfiles/**` — notably `AGENTS.md`, `AGENTS_POLICY_APPENDIX.md`, anything under `greptile-learnings/`, and MEMORY files when symlinked) is a dotfiles-repo edit**: in the same action, `cd ~/Projects/dotfiles && git add <files> && git commit && git push origin master`. Never leave dotfiles edits uncommitted or local — they are load-bearing for every future session.
 - Use `trash`, not `rm`. Conventional Commits when committing.
 - Before any `git commit`/`git push`: run `gitleaks` (must pass).
 - Before any commit touching `*.zig`: read `docs/ZIG_RULES.md` and run its workflow.
@@ -286,7 +287,7 @@ Specs with Interfaces and Test Specification sections must satisfy:
 | Tier | Command | When |
 |---|---|---|
 | 1 | `make test` | Every iteration during EXECUTE and at start of VERIFY. |
-| 2 | `make test-integration` | When diff touches `src/http/**`, `src/db/**`, `*_integration_test.zig`, schema, or migrations. Before COMMIT on those branches. |
+| 2 | `make test-integration` | When diff touches `src/http/**`, `src/db/**`, `src/zombie/**`, `src/observability/**`, `*_integration_test.zig`, schema, or migrations — i.e. any production code reached by an `_integration_test.zig` file. Before COMMIT on those branches. |
 | 3 | `make down && make up && make test-integration` | At least once per branch before declaring ship-ready. Mandatory when schema files change (pre-v2.0). Use whenever tier 2 is intermittent — fresh DB proves no state carry-over. |
 
 `make test` is unit-only by definition; never substitutes for tier 2/3. If tier 2 passes but tier 3 fails, the bug is state pollution — fix isolation, don't ship until tier 3 is green.
