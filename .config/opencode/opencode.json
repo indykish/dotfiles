@@ -119,6 +119,12 @@
       "enabled": true
     }
   },
+  "mcp": {
+    "playwright": {
+      "command": ["npx", "@playwright/mcp@latest"],
+      "type": "local"
+    }
+  },
   "provider": {
     "ollama": {
       "name": "Ollama (local)",
