@@ -124,6 +124,13 @@
       "command": ["npx", "@upstash/context7-mcp@latest"],
       "type": "local"
     },
+    "lightpanda": {
+      "command": ["npx", "lightpanda-mcp@latest"],
+      "environment": {
+        "LIGHTPANDA_PATH": "{env:HOME}/bin/lightpanda"
+      },
+      "type": "local"
+    },
     "playwright": {
       "command": ["npx", "@playwright/mcp@latest"],
       "type": "local"
