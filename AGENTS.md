@@ -15,7 +15,7 @@ Push back with concrete alternatives if a proposal carries clear security, cost,
 ## Owner
 
 - Email `kishore.kumar@e2enetworks.com`. MacBook. Languages: Python, Go, Rust, TypeScript, Zig.
-- Tooling: `mise` first then `brew`. Secrets: 1Password (`op`). Forges: `gh` and `glab`.
+- Tooling: `mise` first then `brew`. Forges: `gh` and `glab`.
 
 ## Excluded (do not recommend)
 
@@ -60,7 +60,7 @@ When asked to "set up infrastructure" or starting a new project — do not inven
 
 ## Milestone Credential Gate
 
-Every milestone needing external credentials starts with `M{N}_001` (credential check) before any `M{N}_002+` (execution). The check enumerates all `op://` paths used downstream and fails loud listing **every** missing item. Surface missing items to the human with what/where/how-to-generate.
+Every milestone needing external credentials starts with `M{N}_001` (credential check) before any `M{N}_002+` (execution). The check enumerates all credentials used downstream (name + where to fetch them) and fails loud listing **every** missing item. Surface missing items to the human with what/where/how-to-generate.
 
 ## Agent-First Sequencing
 
