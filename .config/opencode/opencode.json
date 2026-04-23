@@ -119,57 +119,18 @@
       "enabled": true
     }
   },
-  "mcp": {
-    "playwright": {
-      "command": ["npx", "@playwright/mcp@latest"],
-      "type": "local"
-    },
-    "web-reader": {
-      "headers": {
-        "Authorization": "Bearer {env:ZAI_API_KEY}"
-      },
-      "type": "remote",
-      "url": "https://api.z.ai/api/mcp/web_reader/mcp"
-    },
-    "web-search-prime": {
-      "headers": {
-        "Authorization": "Bearer {env:ZAI_API_KEY}"
-      },
-      "type": "remote",
-      "url": "https://api.z.ai/api/mcp/web_search_prime/mcp"
-    },
-    "zai-vision": {
-      "command": ["npx", "-y", "@z_ai/mcp-server"],
-      "environment": {
-        "Z_AI_MODE": "ZAI",
-        "ZAI_API_KEY": "{env:ZAI_API_KEY}",
-        "Z_AI_API_KEY": "{env:ZAI_API_KEY}"
-      },
-      "type": "local"
-    },
-    "zread": {
-      "headers": {
-        "Authorization": "Bearer {env:ZAI_API_KEY}"
-      },
-      "type": "remote",
-      "url": "https://api.z.ai/api/mcp/zread/mcp"
-    }
-  },
   "provider": {
     "ollama": {
-      "models": {
-        "deepseek-v3.2:cloud": {
-          "name": "deepseek-v3.2:cloud"
-        },
-        "qwen3-coder-next:cloud": {
-          "name": "qwen3-coder-next:cloud"
-        }
-      },
       "name": "Ollama (local)",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "http://localhost:11434/v1",
         "apiKey": "{env:OLLAMA_CLOUD_API_KEY}"
+      },
+      "models": {
+        "qwen3.6:35b": {
+          "name": "Qwen 3.6 35B"
+        }
       }
     },
     "fireworks": {
@@ -180,46 +141,14 @@
         "apiKey": "{env:FIREWORKS_API_KEY}"
       },
       "models": {
-        "accounts/fireworks/models/glm-5": {
-          "name": "GLM 5"
-        },
-        "accounts/fireworks/models/kimi-k2.5": {
-          "name": "Kimi K2.5"
-        },
-        "accounts/fireworks/models/minimax-m1": {
-          "name": "MiniMax M1"
+        "accounts/fireworks/models/glm-5p1": {
+          "name": "GLM 5.1"
         },
         "accounts/fireworks/routers/kimi-k2p5-turbo": {
           "name": "Kimi K2.5 Turbo"
-        }
-      }
-    },
-    "openrouter": {
-      "name": "OpenRouter",
-      "npm": "@ai-sdk/openai-compatible",
-      "options": {
-        "baseURL": "https://openrouter.ai/api/v1",
-        "apiKey": "{env:OPENROUTER_API_KEY}"
-      },
-      "models": {
-        "thudm/glm-5": {
-          "name": "GLM 5 (OR)"
         },
-        "moonshotai/kimi-k2.5": {
-          "name": "Kimi K2.5 (OR)"
-        }
-      }
-    },
-    "moonshot": {
-      "name": "Moonshot",
-      "npm": "@ai-sdk/openai-compatible",
-      "options": {
-        "baseURL": "https://api.moonshot.com/v1",
-        "apiKey": "{env:MOONSHOT_API_KEY}"
-      },
-      "models": {
-        "kimi-k2.5": {
-          "name": "Kimi K2.5"
+        "accounts/fireworks/models/kimi-k2p6": {
+          "name": "Kimi K2.6"
         }
       }
     }
