@@ -120,6 +120,10 @@
     }
   },
   "mcp": {
+    "context7": {
+      "command": ["npx", "@upstash/context7-mcp@latest"],
+      "type": "local"
+    },
     "playwright": {
       "command": ["npx", "@playwright/mcp@latest"],
       "type": "local"
