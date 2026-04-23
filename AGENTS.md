@@ -456,7 +456,7 @@ Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`,
 - Cross-compile `x86_64-linux` + `aarch64-linux` whenever `*.zig` touched.
 - Cross-layer orphan sweep: every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files (RULE ORP).
 - `gitleaks detect` before any commit including Zig.
-- **350-line / 50-function-line gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`).
+- **350-line / 50-function-line gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`). **FLL applies only to code files** — markdown specs, release notes, architecture docs, and changelogs are exempt; readability is the constraint, not line count. Never write grep gates that count markdown lines, and never mark FLL as an "Applicable Rule" on markdown-only workstreams.
   ```bash
   # file-length gate
   git diff --name-only origin/main \
