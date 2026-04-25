@@ -35,6 +35,35 @@ Swift/Xcode/Sparkle/macOS-app release tooling; `bird`, `sonoscli`, `peekaboo`, `
 - Local Docker `ENOSPC`: run `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
 - Keep edits small; split files before they grow unwieldy.
 
+## Auto-mode autonomy (commit + push + PR)
+
+Default Claude Code policy gates every commit, push, and `gh pr create` on an explicit user ask. **Auto mode + a forward-looking start instruction is a standing authorization to drive lifecycle steps to completion** without re-asking — scoped as below.
+
+**Granted (proceed without re-asking) when auto mode is active AND the branch carries an active spec under `docs/v*/active/` OR the user gave a forward-looking start instruction (e.g., "start on M40", "ship it", "fix this and ship", "drive to PR"):**
+
+- `git commit` (focused, conventional, gitleaks-clean) on the feature branch.
+- `git push origin <feature-branch>` to the working remote.
+- `gh pr create` once CHORE(close) gates pass.
+- `gh pr review` (review-comment via `/review-pr`) on the agent's own PR.
+
+**Always gated — explicit user ask required even in auto mode:**
+
+- `gh pr merge`, `gh pr close`, `gh pr ready` (other than draft conversions of own WIP).
+- `git push --force` / `--force-with-lease` on any branch.
+- `git rebase` followed by force-push to a published branch.
+- `git commit --amend` on a published commit.
+- `gh release create`, `git push --tags`.
+- `--no-verify` / `--no-gpg-sign` on commits.
+- `/ultrareview` (billed).
+- CI/CD pipeline edits (`.github/workflows/**`, deploy configs).
+- Edits outside the active spec's stated scope (Files-Changed table) — including bundling unrelated cleanup into the spec PR.
+- Destructive git ops: `reset --hard`, `branch -D`, `clean -fd`, `worktree remove --force`, `restore .`, `checkout .`.
+- Cross-repo writes (`~/Projects/dotfiles`, `~/Projects/docs`, etc.) — except the existing dotfiles symlink carve-out which already mandates same-action push.
+
+**Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Verification Gate.
+
+**Investigation framing:** a bare "look at this" / "what's going on with X" / "review this" is investigation, not authorization. Drive forward only on instructions that name the action ("start", "ship", "fix and merge-ready", "drive to PR").
+
 ### Date/time formats
 
 | Use case | Format | Example |
@@ -448,7 +477,7 @@ Specs with Interfaces and Test Specification sections must satisfy:
 
 Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY`, `_TIMEOUT_MS`, `_MAX_ERROR_RATE`, `_MAX_P95_MS`, `_MAX_RSS_GROWTH_MB`.
 
-**Memleak evidence rule:** before CHORE(close) reports green, paste the final `make memleak` result line into Ripley's Log OR cite the CI memleak job URL. Branches touching `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last 3 lines verbatim. No "I ran it, trust me."
+**Memleak evidence rule:** before CHORE(close) reports green, paste the final `make memleak` result line into the PR description's Session Notes block OR cite the CI memleak job URL. Branches touching `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last 3 lines verbatim. No "I ran it, trust me."
 
 #### Hygiene gates (always, before PR)
 
@@ -480,9 +509,9 @@ Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`,
 
 Update user-visible docs for behavior/process changes. Update changelog only for user-visible changes. Record durable decisions in repo docs, not chat. No commit yet unless the user asked.
 
-### COMMIT (only when user asks)
+### COMMIT
 
-Focused commits, clean message, no unrelated files. PR metadata via `gh`/`glab`. Mark completed Dimensions `DONE` in the spec. No amend unless requested. No destructive git ops.
+Focused commits, clean message, no unrelated files. PR metadata via `gh`/`glab`. Mark completed Dimensions `DONE` in the spec. No amend unless requested. No destructive git ops. Outside auto mode, requires explicit user ask; inside auto mode with active-spec or start-instruction authorization, proceeds — see "Auto-mode autonomy" above for the full granted/gated split.
 
 ### CHORE (close)
 
@@ -496,7 +525,7 @@ CHORE(close) is the convergence point for three review skills. Run them in order
 2. **After tests pass, still before CHORE(close):** invoke `/review`. The skill performs an adversarial diff review against the spec, the architecture doc, the REST guide (if HTTP-touching), ZIG_RULES.md (if Zig-touching), and the spec's Failure Modes / Invariants. Address findings or document why they're deferred. Only after `/review` clears does CHORE(close) work begin.
 3. **After CHORE(close) commits land and `gh pr create` opens the PR:** invoke `/review-pr`. The skill review-comments the PR via `gh pr review` against the now-immutable diff. Address comments inline before requesting human review or merging.
 
-The skills are not optional steps — they are required quality gates. Skipping any one is a violation of CHORE(close). If a skill is unavailable in the environment (e.g., MCP server down), document the skip explicitly in the Ripley's Log AND in the PR description: *"`/review` skipped — MCP server unavailable as of <ts>; rerun before merge."*
+The skills are not optional steps — they are required quality gates. Skipping any one is a violation of CHORE(close). If a skill is unavailable in the environment (e.g., MCP server down), document the skip explicitly in the PR description's Session Notes block: *"`/review` skipped — MCP server unavailable as of <ts>; rerun before merge."*
 
 Required outputs:
 
@@ -504,7 +533,7 @@ Required outputs:
 - Spec header `Status: DONE` (or `IN_PROGRESS`).
 - Spec moved `docs/v*/active/` → `docs/v*/done/` (only if fully complete); commit on feature branch.
 - **Release doc** — new `<Update>` block in `/Users/kishore/Projects/docs/changelog.mdx` (see format below). Never create `docs/v*/ship/*.md`.
-- **Ripley's Log** — `docs/nostromo/LOG_{MMM}_{DD}_{HH_MM_SS}[_M{N}_{WKSTRM}].md`. First-person session log: decisions, surfaced assumptions, dead ends, deferred follow-ups. Required for every non-trivial CHORE(close), commit alongside spec move. Must include the `/write-unit-test` and `/review` skill outcomes (passed clean / iteration count / explicit skips).
+- **PR description `## Session notes` block** — append to the PR body before opening: decisions taken, surfaced assumptions, dead ends, deferred follow-ups, and the `/write-unit-test` + `/review` skill outcomes (passed clean / iteration count / explicit skips). Replaces the legacy `docs/nostromo/LOG_*.md` Ripley's Log file — same discipline, lives where reviewers actually read. Existing nostromo logs stay in history; new ones not written. **Cross-session handoffs** (work parked midway for another session/agent to pick up) still use `docs/nostromo/HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md` — different artifact, narrower lifecycle.
 - **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
 - **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating the PR. Out-of-scope files: commit separately, gitignore, or delete. Never open a PR with a dirty tree.
 - **Version sync** — whenever the branch touches `VERSION`, run `make sync-version` and include the propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`) in the CHORE(close) commit. Verify with `make check-version`. Skipping this leaves `npm publish` emitting the old CLI version and `zig build` reporting the old Zig version on release — both are silent-drift failures the release workflow does not catch. If `VERSION` was not touched, this item is a no-op.
