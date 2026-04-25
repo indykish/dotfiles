@@ -487,22 +487,37 @@ Focused commits, clean message, no unrelated files. PR metadata via `gh`/`glab`.
 
 Required when a spec is involved — runs immediately after the last COMMIT, before opening the PR. **Also runs when parking work midway** (mark completed Dimensions DONE, leave in-progress as IN_PROGRESS, set spec header accordingly).
 
+#### Skill-driven review chain (mandatory order)
+
+CHORE(close) is the convergence point for three review skills. Run them in order; each gate must clear before the next is invoked.
+
+1. **After implementation, before CHORE(close):** invoke `/write-unit-test`. The skill audits test coverage of the diff against the spec's Test Specification. Iterate on missing tests until the skill returns clean. Without this, the spec's "every claim maps to a test" invariant is unverified.
+2. **After tests pass, still before CHORE(close):** invoke `/review`. The skill performs an adversarial diff review against the spec, the architecture doc, the REST guide (if HTTP-touching), ZIG_RULES.md (if Zig-touching), and the spec's Failure Modes / Invariants. Address findings or document why they're deferred. Only after `/review` clears does CHORE(close) work begin.
+3. **After CHORE(close) commits land and `gh pr create` opens the PR:** invoke `/review-pr`. The skill review-comments the PR via `gh pr review` against the now-immutable diff. Address comments inline before requesting human review or merging.
+
+The skills are not optional steps — they are required quality gates. Skipping any one is a violation of CHORE(close). If a skill is unavailable in the environment (e.g., MCP server down), document the skip explicitly in the Ripley's Log AND in the PR description: *"`/review` skipped — MCP server unavailable as of <ts>; rerun before merge."*
+
 Required outputs:
 
 - All Dimensions/Sections marked `DONE` (or `IN_PROGRESS` if parked).
 - Spec header `Status: DONE` (or `IN_PROGRESS`).
 - Spec moved `docs/v*/active/` → `docs/v*/done/` (only if fully complete); commit on feature branch.
 - **Release doc** — new `<Update>` block in `/Users/kishore/Projects/docs/changelog.mdx` (see format below). Never create `docs/v*/ship/*.md`.
-- **Ripley's Log** — `docs/nostromo/LOG_{MMM}_{DD}_{HH_MM_SS}[_M{N}_{WKSTRM}].md`. First-person session log: decisions, surfaced assumptions, dead ends, deferred follow-ups. Required for every non-trivial CHORE(close), commit alongside spec move.
+- **Ripley's Log** — `docs/nostromo/LOG_{MMM}_{DD}_{HH_MM_SS}[_M{N}_{WKSTRM}].md`. First-person session log: decisions, surfaced assumptions, dead ends, deferred follow-ups. Required for every non-trivial CHORE(close), commit alongside spec move. Must include the `/write-unit-test` and `/review` skill outcomes (passed clean / iteration count / explicit skips).
 - **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
 - **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating the PR. Out-of-scope files: commit separately, gitignore, or delete. Never open a PR with a dirty tree.
 - **Version sync** — whenever the branch touches `VERSION`, run `make sync-version` and include the propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`) in the CHORE(close) commit. Verify with `make check-version`. Skipping this leaves `npm publish` emitting the old CLI version and `zig build` reporting the old Zig version on release — both are silent-drift failures the release workflow does not catch. If `VERSION` was not touched, this item is a no-op.
 
 Gates before PR:
+- `/write-unit-test` skill returned clean (or skip explicitly documented).
+- `/review` skill returned clean (or all findings dispositioned in the diff).
 - Spec is in `docs/v*/done/` in the branch diff (skip only if parked midway).
 - `changelog.mdx` has a new `<Update>` block in the diff (skip only if internal-only refactor or parked).
 - If `Status: DONE` but spec not in `done/` — do not open the PR.
 - `make check-version` must pass. If the branch touched `VERSION`, the sync-version edits must be in the diff.
+
+Gates after `gh pr create`:
+- `/review-pr` invoked against the open PR. Comments addressed inline (push fixup commits or amend) BEFORE requesting human review or merging.
 
 #### Release doc generation
 

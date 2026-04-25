@@ -315,6 +315,22 @@ If the spec does not delete files: write "N/A — no files deleted."
 
 ---
 
+## Skill-Driven Review Chain (mandatory)
+
+> Three skills gate the lifecycle from implementation-complete to PR-merged. They run in order; each one's output is recorded in the Ripley's Log.
+
+| When | Skill | What it does | Required output |
+|------|-------|--------------|-----------------|
+| After implementation, before CHORE(close) | `/write-unit-test` | Audits test coverage of the diff against this spec's Test Specification. Catches happy-path-only tests, missing negatives, fixture drift. | Skill returns clean. Iteration count + final coverage summary in Ripley's Log. |
+| After tests pass, still before CHORE(close) | `/review` | Adversarial diff review against this spec, `docs/ARCHITECTURE.md`, `docs/REST_API_DESIGN_GUIDELINES.md` (if HTTP-touching), `docs/ZIG_RULES.md` (if Zig-touching), Failure Modes, Invariants. | Skill returns clean OR every finding dispositioned (fixed / deferred with reason / rejected with reason). Recorded in Ripley's Log. |
+| After `gh pr create` opens the PR | `/review-pr` | Review-comments the open PR against the now-immutable diff. Catches anything the local `/review` missed (squashed commits, race conditions visible only post-rebase, OpenAPI codegen drift). | Comments addressed inline (fixup or amend) BEFORE requesting human review or merging. |
+
+These are not optional. Skipping any one violates CHORE(close). If a skill is unavailable (MCP server down, etc.), document the skip explicitly in the Ripley's Log AND in the PR description with a timestamp and a "rerun before merge" note.
+
+The skill chain is the bridge between this spec's intent and the implementation's actual behavior. The spec describes what should be true; the skills verify it is.
+
+---
+
 ## Verification Evidence
 
 > Filled in during VERIFY phase. Proves spec claims are met.
