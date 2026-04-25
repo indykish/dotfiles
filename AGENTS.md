@@ -400,8 +400,9 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 
 ### EXECUTE
 
-- Read `docs/greptile-learnings/RULES.md` first, and re-read whenever the active sub-task changes shape (new layer, new language, resuming after a break). RULES.md carries repo-specific discipline; file/function length caps live in the **File & Function Length Gate** above. Conflicts → state and ask, never silently skip.
-- Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe lifecycle, cross-compile, TLS, memory).
+- **Spec's "Applicable Rules" section is the canonical bridge.** When you EXECUTE a spec written from `docs/TEMPLATE.md`, the spec lists every rule file that applies to its scope under "Applicable Rules". Read each listed file BEFORE writing any code. Re-check during VERIFY that nothing in the diff violates them. Without this section the spec hasn't done its job; if it's missing, treat the standard set below as the floor and surface the omission to the spec author.
+- Read `docs/greptile-learnings/RULES.md` first (universal — applies to every spec), and re-read whenever the active sub-task changes shape (new layer, new language, resuming after a break). RULES.md carries repo-specific discipline; file/function length caps live in the **File & Function Length Gate** above. Conflicts → state and ask, never silently skip.
+- Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe lifecycle, cross-compile, TLS, memory, errdefer chain, ownership encoding, sentinel collision, `pub` audit). Required reading even if the spec's "Applicable Rules" section forgets to list it — the trigger fires on file-extension match.
 - HTTP handler or OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first. Start with the Quick Checklist; §1–§5 for URL/method/body/response/error conventions, §6 for OpenAPI editing, §7 for the 5-place route registration, §8 for the `Hx` handler signature contract, §10 for the pre-PR test gates. Triggered any time the surface-area checklist ticks "OpenAPI spec update" or the diff touches `src/http/handlers/**` / `public/openapi/**`.
 - Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE; no exceptions even if printed at PLAN).
 - Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request.

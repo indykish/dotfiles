@@ -138,6 +138,39 @@ If the spec is greenfield (no existing pattern in the repo), say so explicitly a
 
 ---
 
+## Applicable Rules
+
+> List the rule files (and specific rule IDs where applicable) that apply to this spec's scope. The implementing agent MUST re-read these before EXECUTE and verify no violations during VERIFY. This is the spec's bridge to the project's prescriptive content — without it, the agent has no anchored prompt to consult them at the right moment.
+
+Pick from the project's canonical rule sources. Add specific rule IDs where the spec's scope is narrower than "all of this file":
+
+- **`docs/greptile-learnings/RULES.md`** — cross-language repo discipline (always-applicable; list specific rule IDs if the spec's scope intersects narrowly with one or two)
+- **`docs/ZIG_RULES.md`** — applicable when the diff touches `*.zig`. Call out specific sections: e.g., "pg-drain lifecycle (line 14-19)", "Tagged Unions for Result Types (M4_001)", "Multi-Step Init: errdefer Chain Pattern", "Cross-Compile Verification (M22_001)"
+- **`docs/REST_API_DESIGN_GUIDELINES.md`** — applicable when the diff touches `src/http/handlers/**` or `public/openapi/**`. Call out specific sections: §1 URL design, §7 route registration, §8 handler signature, etc.
+- **`docs/SCHEMA_CONVENTIONS.md`** — applicable when the diff touches `schema/*.sql` or `schema/embed.zig`
+- **`docs/ARCHITECTURE.md` §{N}** — applicable when the spec implements or constrains an architectural layer named in the architecture doc
+
+If the spec's scope is fully greenfield with no project-specific rules: write "Standard set only — `docs/greptile-learnings/RULES.md` (universal); no other rule files apply."
+
+The implementing agent reads each listed file BEFORE writing any code, and re-checks during VERIFY that nothing violates the listed rules.
+
+---
+
+## Anti-Patterns to Avoid (read this BEFORE drafting the spec)
+
+> These are common drifts that conflate goal-contract with implementation pseudocode. If your draft has any of these, fix before committing the spec. Surfaced at the top so spec authors see them before drifting — not at the bottom where it's too late.
+
+1. **Code blocks in section bodies.** Sections describe WHAT, not HOW. If you need to specify a function call exactly, write it as a test ("the test asserts foo() returns bar"). The implementation lives in the codebase, not the spec.
+2. **Listing every variable name.** "Use `var ctx = std.heap.page_allocator;`" — DON'T. Point at an existing handler in the repo and say "mirror the allocator pattern from `src/http/handlers/zombies/steer.zig`." Let the agent figure out the variable name.
+3. **Specifying SQL DDL line-by-line.** Show the table shape and constraints. Don't write the exact `CREATE TABLE` syntax — the agent reads existing migrations and conforms to project style.
+4. **Pinning library versions.** "Use `redis@4.5.1`." — the project's package manifest is the source of truth. Spec says "use the existing Redis client" and points at where it's already imported.
+5. **Telling the agent which step to do first.** "Step 1: define interfaces. Step 2: implement core logic." — this is a stale ordering that drifts. Use Sections (slices that deliver value) and let the agent sequence.
+6. **Writing the test code in the spec.** Test Specification names tests + asserts behavior in prose ("test_replay_dedupe asserts the second POST returns 200 with deduped:true"). The agent writes the actual test using the project's test framework conventions.
+
+If you've slipped into any of these, the fix is usually to move the detail to the implementing-agent prologue (point at a file) or to delete it (the agent figures it out).
+
+---
+
 ## Overview
 
 **Goal (testable):** One sentence that could be a test name. Bad: "Implement streaming." Good: "SSE handler streams Redis pubsub messages as text/event-stream with stable ordering and reconnection support, p95 latency under 200ms."
@@ -351,18 +384,3 @@ The skill chain is the bridge between this spec's intent and the implementation'
 
 - {Item explicitly not in this spec — points at follow-up spec or "future work"}
 - {Item}
-
----
-
-## Anti-Patterns to Avoid (template-level guidance)
-
-These are common drifts that conflate goal-contract with implementation pseudocode. If your draft has any of these, fix before committing the spec.
-
-1. **Code blocks in section bodies.** Sections describe WHAT, not HOW. If you need to specify a function call exactly, write it as a test ("the test asserts foo() returns bar"). The implementation lives in the codebase, not the spec.
-2. **Listing every variable name.** "Use `var ctx = std.heap.page_allocator;` — DON'T. Point at an existing handler in the repo and say "mirror the allocator pattern from `src/http/handlers/zombies/steer.zig`." Let the agent figure out the variable name.
-3. **Specifying SQL DDL line-by-line.** Show the table shape and constraints. Don't write the exact `CREATE TABLE` syntax — the agent reads existing migrations and conforms to project style.
-4. **Pinning library versions.** "Use `redis@4.5.1`." — the project's package manifest is the source of truth. Spec says "use the existing Redis client" and points at where it's already imported.
-5. **Telling the agent which step to do first.** "Step 1: define interfaces. Step 2: implement core logic." — this is a stale ordering that drifts. Use Sections (slices that deliver value) and let the agent sequence.
-6. **Writing the test code in the spec.** Test Specification names tests + asserts behavior in prose ("test_replay_dedupe asserts the second POST returns 200 with deduped:true"). The agent writes the actual test using the project's test framework conventions.
-
-If you've slipped into any of these, the fix is usually to move the detail to the implementing-agent prologue (point at a file) or to delete it (the agent figures it out).
