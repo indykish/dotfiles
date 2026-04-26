@@ -42,8 +42,6 @@ This is distinct from Trigger A: A fires before work; B fires when work hits a w
 
 ## Hard Safety
 
-One section, three audiences. Read the whole thing — most "don't do that" sentiments below have a reason rooted in past pain.
-
 ### Always forbidden — no override
 
 - **Skipping hooks or signing.** Never `--no-verify`, `--no-gpg-sign`, `-c commit.gpgsign=false`, or any other commit-flag bypass unless the user has explicitly asked. If a hook fails, fix the underlying issue.
@@ -70,29 +68,18 @@ If unexpected changes appear in files the agent is actively editing, stop and as
 
 ### Operational defaults — apply automatically
 
-- Workspace root `~/Projects`. Use `gh`/`glab` CLI, not browsers.
+- Workspace root `~/Projects`. Use `gh`/`glab` CLI, not browsers. `trash` not `rm`. Conventional Commits.
 - "Make a note" → update `AGENTS.md` or repo docs.
-- Editing dotfiles (`.zshrc`, `.gitconfig`, agent configs): timestamped backup first; minimal edits.
-- **Any edit to a file that resolves (via symlink) under `~/Projects/dotfiles/` is a dotfiles-repo edit, regardless of where the symlink lives** (under `~/.claude/`, inside a project repo's `docs/`, anywhere). Notable cases: `~/.claude/CLAUDE.md` → `dotfiles/AGENTS.md`, anything under `greptile-learnings/`, MEMORY files when symlinked, and project-level files like `usezombie/docs/ZIG_RULES.md` or other shared rules. Detect with `readlink <path>` BEFORE editing. In the same action: `cd ~/Projects/dotfiles && git add <files> && git commit && git push origin master`. Never leave dotfiles edits uncommitted or local — they are load-bearing for every future session, and a forgotten dotfiles edit shows up as "diff doesn't match" the next time the symlinked file is read.
-- Use `trash`, not `rm`. Conventional Commits when committing.
-- Before any `git commit`/`git push`: run `gitleaks` (must pass).
-- Before any commit touching `*.zig`: read `docs/ZIG_RULES.md` and run its workflow (defined in that file).
-- Before creating any new `*.zig`: read `docs/ZIG_RULES.md` first.
+- **Symlinked dotfiles edits.** Any file resolving (via `readlink`) under `~/Projects/dotfiles/` is a dotfiles edit — including `~/.claude/CLAUDE.md` → `dotfiles/AGENTS.md`, `greptile-learnings/`, symlinked MEMORY files, and project-level shared rules (e.g. `usezombie/docs/ZIG_RULES.md`). Detect with `readlink` BEFORE editing. Same action: `cd ~/Projects/dotfiles && git add <files> && git commit && git push origin master`. Never leave dotfiles edits uncommitted.
+- Editing other dotfiles (`.zshrc`, `.gitconfig`, agent configs not under dotfiles repo): timestamped backup first; minimal edits.
+- Before any `git commit`/`git push`: `gitleaks` must pass.
+- Touching `*.zig` (commit or new file): read `docs/ZIG_RULES.md` and follow its workflow.
 - `conn.query()` requires `.drain()` in the same function before `deinit()`. Verify with `make check-pg-drain`. Use `conn.exec()` when no rows are needed.
-- Local Docker `ENOSPC`: run `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
-- Keep edits small; split files before they grow unwieldy.
-- Prefer CLI and text artifacts over GUI flows or screenshot-based capture.
+- Local Docker `ENOSPC`: `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
 
 ### Forge detection
 
-Pick `gh` vs `glab` from the remote host:
-
-| Remote host contains | Forge tool |
-|---|---|
-| `github.com` | `gh` |
-| `gitlab.com` | `glab` |
-
-Quick checks: `git remote -v`, `gh auth status`, `glab auth status`.
+`github.com` remote → `gh`. `gitlab.com` → `glab`. Check with `git remote -v`.
 
 ---
 
@@ -129,44 +116,30 @@ Spell out non-obvious acronyms/vendor names on first mention in any durable arti
 
 ---
 
-## Startup Priming
+## Bootstrap & milestone gates
 
-When asked to "set up infrastructure" or starting a new project — do not invent steps:
-
+**Startup priming** — for "set up infrastructure" / new project:
 1. Human: `playbooks/001_bootstrap/001_playbook.md` (accounts + root keys).
-2. Agent: `./playbooks/002_preflight/00_gate.sh` — every required vault item present and non-empty. **Block step 3 until this is green.**
-3. Agent: `playbooks/003_priming_infra/001_playbook.md` in order (containers → Fly.io → Cloudflare Tunnel → data-plane → workers → CI → first release).
-4. Milestones proceed only after PRIMING_INFRA verified end-to-end.
+2. Agent: `./playbooks/002_preflight/00_gate.sh` — must be green before step 3.
+3. Agent: `playbooks/003_priming_infra/001_playbook.md` (containers → Fly.io → Cloudflare Tunnel → data-plane → workers → CI → first release).
+4. Milestones only after PRIMING_INFRA verified end-to-end.
 
-## Milestone Credential Gate
+**Credential gate** — milestones needing external creds start with `M{N}_001` (enumerate every downstream credential: name + fetch location). Fail loud listing every missing item before any `M{N}_002+`.
 
-Every milestone needing external credentials starts with `M{N}_001` (credential check) before any `M{N}_002+` (execution). The check enumerates all credentials used downstream (name + where to fetch them) and fails loud listing **every** missing item. Surface missing items to the human with what/where/how-to-generate.
+**Agent-first sequencing** — minimize human steps; post-handoff steps are retryable + idempotent. Vault is the inter-step contract — never pass creds by argument or env between steps. Reference: `playbooks/006_worker_bootstrap_dev/001_playbook.md`.
 
-## Agent-First Sequencing
+## Source of truth (cross-repo patterns)
 
-For any human+agent flow:
+Check before inventing patterns. All under `$HOME/Projects/`:
+- `agent-scripts` (general)
+- `marketplace_api` (Python API), `cache_access_layer` (Python lib)
+- `sre/e2e-logging-platform/rust` (Rust API), `manager/cache-kit.rs` (Rust lib)
+- `typescript/branding` (TS), `go/src/github.com/e2eterraformprovider` (Go)
+- `sre/three-tier-app-claude` (Terraform)
 
-- Front-load and minimize human steps. After the human handoff, every step must be agent-executable, retryable, idempotent.
-- Vault is the inter-step contract. Steps write to vault, read from vault — never pass credentials by argument or env var between steps.
+## Worktrees
 
-Reference: `playbooks/006_worker_bootstrap_dev/001_playbook.md`.
-
-## Source Of Truth
-
-Use repo first, then these references before inventing patterns:
-
-- `$HOME/Projects/agent-scripts` (or `git@github.com:steipete/agent-scripts.git`)
-- Python API: `$HOME/Projects/marketplace_api` · Python lib: `$HOME/Projects/cache_access_layer`
-- Rust API: `$HOME/Projects/sre/e2e-logging-platform/rust` · Rust lib: `$HOME/Projects/manager/cache-kit.rs`
-- TypeScript: `$HOME/Projects/typescript/branding`
-- Go: `$HOME/Projects/go/src/github.com/e2eterraformprovider`
-- Terraform: `$HOME/Projects/sre/three-tier-app-claude`
-
-## Runtime Routing & Worktrees
-
-Claude Code = primary executor. Codex GPT-5.3 = parallel/fallback. OpenCode (GLM 5 Pro) = parallel draft generator. AmpCode = overflow. KiloCode = lightweight fallback. Pattern: one primary executor + one reviewer; ≤2 active coding agents; reviewer never mutates the primary worktree.
-
-**One worktree per active stream.** Each milestone (or independent fix) gets its own `git worktree`. The agent stays inside that worktree — no edits outside it, no reads from sibling worktrees. Merge only after VERIFY passes.
+One worktree per active stream — each milestone (or independent fix) gets its own. Stay inside the active worktree; no edits outside, no reads from siblings. Merge only after VERIFY passes.
 
 ```bash
 git checkout main
@@ -188,7 +161,7 @@ After PR merge: `git worktree remove ../usezombie-mNN-name`.
 
 ## Action-Triggered Guards
 
-These fire regardless of lifecycle phase. None can be silently skipped — every guard has a printable output that goes in the agent's user-facing message before the gated edit.
+Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a printable required-output block that must appear in the user-facing message before the gated edit. Pre-existing violations are not the agent's responsibility unless the task includes cleanup.
 
 ### Legacy-Design Consult Guard
 
@@ -677,131 +650,23 @@ Version bumps (apply to `VERSION`, not to the changelog label):
 
 ---
 
-## Engineering Discipline
+## Coding gotchas
 
-Coding rules that aren't tied to a single guard. These complement the gates above; the gates fire before edits, these guide what the edit *should* look like.
+- **Constant-time secret compare** — XOR over `@min(a.len, b.len)`; fold length mismatch into the result *after* the loop. Never short-circuit on `a.len == b.len` (leaks expected length via timing).
+- **Typed enums over SQL `CHECK`** — drift silently from code; SQL can't reference Zig/JS constants. Use enums with `toSlice`/`fromSlice`.
 
-### Simplicity
+(File/function length caps: see File & Function Length Gate. Zig test hygiene: `docs/ZIG_RULES.md`.)
 
-- Can this be done in fewer lines?
-- Are these abstractions earning their complexity?
-- Would a senior dev say "why didn't you just..."?
+## Skill routing (policy weight)
 
-Prefer the obvious solution. Avoid unnecessary complexity.
+- Bug / "why is this broken" → `/investigate`. Never debug inline.
+- "Ship it" / "push" / "create a PR" → `/ship`. Never raw `git push` / `gh pr create` outside the auto-mode carve-out.
+- "Save my work" / "where was I" → `/context-save` + `/context-restore`.
 
-### No Insecure Fallbacks
+## Tools & workflows
 
-- One auth path.
-- No deferred security.
-- No throwaway code.
-- No backward-compatibility shims for unreleased software.
-
-### Constant-Time Secret Comparison
-
-- Always run the XOR loop over `@min(a.len, b.len)` bytes.
-- Fold length mismatch into the result AFTER the loop, not before.
-- Never short-circuit on `a.len == b.len` — it leaks the expected secret's length via timing.
-
-### Error Surfacing — design for autonomous recovery
-
-- No silent hangs.
-- Errors must name the dependency and suggest the fix.
-- Build and CI errors must be reproducible locally.
-- Prefer closed local feedback loops.
-
-### Code Structure
-
-- Extract repeated strings to constants.
-- Shared constants go in shared files.
-- Avoid unnecessary constants — wrapping a single literal in a `const` adds noise without value.
-- Use typed enums with serialization methods (`toSlice` / `fromSlice`) instead of DB CHECK constraints for status/type values.
-- Single source of truth for templates/configs — if two copies exist, one will drift.
-
-(File and function length caps live in the **File & Function Length Gate**. Test discovery hygiene for new Zig test files lives in `docs/ZIG_RULES.md`.)
-
----
-
-## Tools & Workflows
-
-### Make Target Taxonomy
-
-Convention, not mandate. Most projects expose these; if a project doesn't, post a one-line warning and proceed with whatever the project actually has:
-
-- `make dev`
-- `make up`
-- `make down`
-- `make lint`
-- `make test`
-- `make build`
-- `make _clean`
-- `make push`
-- `make qa`
-- `make qa-smoke`
-
-Rules:
-
-- `make quality` is banned (umbrella targets hide which gate failed).
-- `make test` is unit only.
-- E2E should be `make qa` / `make qa-smoke`.
-
-If a target referenced above is missing in the project, surface it as a warning ("`make memleak` not present — skipping leak gate") rather than silently skipping.
-
-### Forge & PR/CI commands
-
-GitHub:
-
-```bash
-gh pr view --json number,title,url
-gh pr diff
-gh run list
-gh run view <run-id>
-```
-
-GitLab:
-
-```bash
-glab mr view
-glab mr diff
-glab ci status
-glab pipeline view
-```
-
-If CI is red, inspect logs, fix, push, and re-check.
-
-### Skill Routing
-
-Skills self-trigger via the TRIGGER blocks in the available-skills system message; when the user's words match a skill's trigger, invoke the skill rather than handling the work inline. Three triggers carry explicit policy weight (defaults would be wrong without this routing):
-
-- **Bug / error / "why is this broken"** → `/investigate`. Never debug inline.
-- **"Ship it" / "push" / "create a PR"** → `/ship`. Never `git push` or `gh pr create` directly outside the auto-mode autonomy carve-out.
-- **"Save my work" / "where was I"** → `/context-save` and `/context-restore`. (Renamed from `/checkpoint`, which Claude Code now uses for native turn rewind.)
-
-### Screenshot Workflow
-
-When the user supplies a screenshot:
-
-- Pick newest PNG from `~/Desktop` or `~/Downloads`.
-- Validate dimensions: `sips -g pixelWidth -g pixelHeight <file>`.
-- Optimize before commit: `imageoptim <file>`.
-
-### QA Testing Decision
-
-Default browser E2E is Playwright CLI:
-
-```bash
-bun add -d @playwright/test
-bunx playwright install --with-deps
-bunx playwright test --reporter=line
-bunx playwright test tests/e2e/login.spec.ts --project=chromium
-```
-
-### Web-to-Markdown
-
-Two paths, in priority order:
-
-| Approach | Use When | Command |
-|---|---|---|
-| Cloudflare header | Site supports it | `curl -H "Accept: text/markdown" URL` |
-| html2text | Fallback | `curl -s URL \| html2text` |
-
-For everything else, use the WebFetch tool from Claude Code (request `format: markdown` if available).
+- **Make targets** — `dev | up | down | lint | test | build | _clean | push | qa | qa-smoke`. `make test` is unit-only; E2E in `qa`/`qa-smoke`. `make quality` banned (umbrella targets hide which gate failed). Missing target → one-line warning, then proceed.
+- **Forge commands** — GitHub: `gh pr view|diff`, `gh run list|view <id>`. GitLab: `glab mr view|diff`, `glab ci status`, `glab pipeline view`. Red CI → inspect logs, fix, push, re-check.
+- **Screenshots** — newest PNG from `~/Desktop` or `~/Downloads`; validate `sips -g pixelWidth -g pixelHeight`; `imageoptim` before commit.
+- **Browser E2E** — Playwright CLI: `bun add -d @playwright/test && bunx playwright install --with-deps && bunx playwright test --reporter=line`.
+- **Web → Markdown** — `curl -H "Accept: text/markdown" URL` first; fallback `curl -s URL | html2text`. Otherwise WebFetch (`format: markdown`).
