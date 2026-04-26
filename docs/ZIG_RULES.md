@@ -101,14 +101,6 @@ Canonical source: `src/http/test_harness.zig`. Every `*_http_integration_test.zi
 - **Skip gracefully when DB is absent** — `TestHarness.start` returns `error.SkipZigTest` when `TEST_DATABASE_URL` is unset; tests just propagate it.
 - New file registration: add `_ = @import("..._test.zig")` to the `test {}` block at the bottom of `src/http/server.zig` (not `src/main.zig`). Integration tests discover from there.
 
-## No Hardcoded Roles
-
-- Never use `ROLE_ECHO`, `ROLE_SCOUT`, or `ROLE_WARDEN` string constants in production code. These constants were removed in M20_001.
-- Never string-compare against `"echo"`, `"scout"`, or `"warden"` to identify roles or skills in dispatch logic. Roles and skills are loaded from the active pipeline profile at runtime.
-- The active profile's `skill_ids` are the source of truth for what skills are valid. Use `topology.defaultProfile()` to load the default skill set for entitlement and policy checks.
-- The `SkillKind` enum has a single variant `.custom` — all skills are equal from the registry's perspective. The execution backend is determined by which runner was registered for a skill_id.
-- Lint gate: `make lint-zig` runs `_hardcoded_role_check` to enforce this rule on every commit.
-
 ## Commands
 
 - `make lint`
@@ -323,3 +315,11 @@ const std = @import("std");      // imports at file END
 ```
 
 Multi-type modules (e.g. a protocol with `MessageType` + `Envelope` + `Decoded`) keep the conventional struct-inside-file layout — file-as-struct only fits when there is exactly one primary type.
+
+## Bun-Inspired Conventions (apply on new code, do not retrofit blindly)
+
+These are recommended patterns surfaced from the Bun Zig codebase audit. They improve readability and eliminate boilerplate but do not need to be retrofitted into existing modules in a single sweep — apply when touching the file for other reasons.
+
+- **`inline fn` for ≤3-line getters and trivial conversions.** Field extractors, enum-to-string converters, comptime-evaluable switches — these benefit from inlining and the compiler does the right thing. Reserve uninlined `fn` for multi-line algorithms or anything with a loop body. (Bun example: `sys/Error.zig:62-68`.)
+- **`@This()` in nested or self-referential contexts.** Inside a struct definition, prefer `pub fn save(self: *@This())` over `pub fn save(self: *MyStruct)` — easier to refactor (struct rename doesn't cascade) and clearer in nested types.
+- **Free functions before structs that use them.** Within a file, top-level constants → free helper functions → primary struct(s) that consume them → tests. Reading top-down then matches data flow. Section comments (`// === Section ===`) demarcate when a file has more than one logical region.

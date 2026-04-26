@@ -26,7 +26,7 @@ Swift/Xcode/Sparkle/macOS-app release tooling; `bird`, `sonoscli`, `peekaboo`, `
 - Workspace root `~/Projects`. Use `gh`/`glab` CLI, not browsers.
 - "Make a note" → update `AGENTS.md` or repo docs.
 - Editing dotfiles (`.zshrc`, `.gitconfig`, agent configs): timestamped backup first; minimal edits.
-- **Any edit to a symlinked file under `~/.claude/**` (resolves to `~/Projects/dotfiles/**` — notably `AGENTS.md`, `AGENTS_POLICY_APPENDIX.md`, anything under `greptile-learnings/`, and MEMORY files when symlinked) is a dotfiles-repo edit**: in the same action, `cd ~/Projects/dotfiles && git add <files> && git commit && git push origin master`. Never leave dotfiles edits uncommitted or local — they are load-bearing for every future session.
+- **Any edit to a file that resolves (via symlink) under `~/Projects/dotfiles/` is a dotfiles-repo edit, regardless of where the symlink lives** (under `~/.claude/`, inside a project repo's `docs/`, anywhere). Notable cases: `~/.claude/CLAUDE.md` → `dotfiles/AGENTS.md`, `~/.claude/AGENTS_POLICY_APPENDIX.md`, anything under `greptile-learnings/`, MEMORY files when symlinked, and project-level files like `usezombie/docs/ZIG_RULES.md` or other shared rules. Detect with `readlink <path>` BEFORE editing. In the same action: `cd ~/Projects/dotfiles && git add <files> && git commit && git push origin master`. Never leave dotfiles edits uncommitted or local — they are load-bearing for every future session, and a forgotten dotfiles edit shows up as "diff doesn't match" the next time the symlinked file is read.
 - Use `trash`, not `rm`. Conventional Commits when committing.
 - Before any `git commit`/`git push`: run `gitleaks` (must pass).
 - Before any commit touching `*.zig`: read `docs/ZIG_RULES.md` and run its workflow.
@@ -63,6 +63,23 @@ Default Claude Code policy gates every commit, push, and `gh pr create` on an ex
 **Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Verification Gate.
 
 **Investigation framing:** a bare "look at this" / "what's going on with X" / "review this" is investigation, not authorization. Drive forward only on instructions that name the action ("start", "ship", "fix and merge-ready", "drive to PR").
+
+## ZIG_RULES.md verification workflow
+
+For every commit that touches `*.zig`, the agent runs the workflow below — no human approvals required mid-loop. ZIG_RULES.md is the human-discipline complement to `make lint`; rules already enforced by lint are not duplicated there. The agent owns the rules that lint cannot mechanically catch.
+
+1. **Before write (trigger: about to edit / create `*.zig`):** scan `docs/ZIG_RULES.md` section headers (`grep -n "^## " docs/ZIG_RULES.md`). Re-read any section whose topic the diff touches: concurrency for atomics / threads, allocator-ownership for new structs, doc-comments for new `pub` types, comptime assertions for new invariants, single-type-module pattern for new file structure, etc.
+
+2. **During write:** for each surfaced uncertainty (atomic ordering choice, allocator pattern, naming, structural choice), state the rule and the choice in chat — don't decide silently.
+
+3. **Before commit (post-`make lint`):** run a self-audit grep against the staged diff for the rules `make lint` does not enforce. Don't ask for approval; do the audit and either comply or state explicitly why an exception applies.
+    - Weak atomic orderings (`\.\(acquire\|release\|monotonic\|unordered\)\b`) — every match needs a `// safe because: ...` comment within 3 lines.
+    - New `pub` symbols — confirm at least one external import via `grep -rn "<symbol>"`. Remove `pub` if unreferenced.
+    - New structs that own heap memory — confirm `alloc:` field OR doc-comment naming the caller-owned-allocator pattern.
+    - Mutex `\.lock\(\)` calls — confirm immediately followed by `defer .*\.unlock\(\)`.
+    - New `pub` types/functions — confirm `///` doc-comment present.
+
+4. **After ZIG_RULES.md edits land:** every active branch with uncommitted Zig work must rerun steps 1–3 against the updated rules. Do not assume yesterday's audit covers today's rules. The agent is responsible for re-checking; the user is not the gate.
 
 ### Date/time formats
 
