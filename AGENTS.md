@@ -165,8 +165,6 @@ Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a prin
 
 ### Legacy-Design Consult Guard
 
-**Fires in any lifecycle phase (PLAN, EXECUTE, VERIFY, DOCUMENT, COMMIT, CHORE). No exceptions.**
-
 **Definition — "legacy design":** any code path, env-var, table, route, or API that the surrounding milestone work is deprecating, that predates the current architectural direction, or that exists solely as a smoke-test / bootstrap / pre-migration shim. Signals:
 
 - Code comments like `// legacy`, `// pre-M*`, `// bootstrap`, `// TODO remove`, `// temporary`.
@@ -196,17 +194,15 @@ LEGACY CONSULT: <one-line description of the legacy design>
   WAITING FOR USER DECISION.
 ```
 
-Block on the user's reply. Do not proceed with any option (including your recommendation) until they pick. If the user has previously approved one class of legacy decisions in this session, you may note that and proceed — but the first instance of any *new* legacy finding still triggers a consult.
+Block on the user's reply. If the user previously approved one class of legacy decisions this session, note that and proceed — but every *new* class of finding still triggers a consult.
 
-**Escape hatch:** if a legacy finding is unambiguously in scope of the active spec's Dead Code Sweep or Out-of-Scope list, skip the consult and follow the spec. The consult exists for *discoveries* that aren't already accounted for.
+**Escape hatch:** legacy findings unambiguously in-scope of the active spec's Dead Code Sweep or Out-of-Scope list skip the consult and follow the spec.
 
-**Discovery capture:** every triggered consult (regardless of resolution) is logged in the active spec's **Discovery** section, or — if the finding is pushed to a follow-up — filed as a new pending spec in `docs/v{N}/pending/`. Never discard the finding.
+**Discovery capture:** every triggered consult is logged in the active spec's **Discovery** section, or filed as a new pending spec in `docs/v{N}/pending/` if pushed to follow-up. Never discard the finding.
 
 ### Schema Table Removal Guard
 
-**Fires every time, regardless of lifecycle phase. No exceptions.**
-
-**Triggers** — before any of these you MUST run `cat VERSION` and print the guard output (below) in your user-facing message:
+**Triggers** — before any of these, run `cat VERSION` and print the guard output:
 
 - Creating, editing, or deleting any file under `schema/*.sql`.
 - Editing `schema/embed.zig` (any `@embedFile` constant).
@@ -216,11 +212,11 @@ Block on the user's reply. Do not proceed with any option (including your recomm
 
 **Pre-v2.0.0 (teardown-rebuild era):** to remove a table — (1) `rm schema/NNN_foo.sql`, (2) remove `@embedFile` from `schema/embed.zig`, (3) remove the entry from the migration array in `src/cmd/common.zig` and update length + index-based tests. **Forbidden:** `ALTER TABLE`, `DROP TABLE`, `SELECT 1;` markers, comment-only files, "keep file for slot numbering". Slot gaps are fine — DB is wiped on rebuild.
 
-**v2.0.0+:** proper `ALTER`/`DROP` migrations in new numbered files. Pre-v2.0 teardown branch no longer valid.
+**v2.0.0+:** proper `ALTER`/`DROP` migrations in new numbered files.
 
-**Spec conflicts:** if a spec violates this guard, **amend the spec first**. The spec is an instance; this rule is the constant.
+**Spec conflicts:** spec violates the guard → **amend the spec first**.
 
-**Required output format** (print before the edit):
+**Required output format:**
 
 ```
 SCHEMA GUARD: VERSION=0.5.0 (<2.0.0) → full teardown branch.
@@ -229,36 +225,30 @@ SCHEMA GUARD: VERSION=0.5.0 (<2.0.0) → full teardown branch.
   Removing: version 8 entry from canonicalMigrations()
 ```
 
-Skipping this output is a violation even if the edit is correct. Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
+Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
 
 ### File & Function Length Gate
 
-**Fires on every Write/Edit that adds lines to a source file. Pre-hoc, not post-hoc. No exceptions.**
+**Caps:** file ≤ 350 lines · function ≤ 50 lines · method ≤ 70 lines.
 
-**Caps:**
+**Triggers** — every Write/Edit that net-adds lines to a source file: `.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml`/`.toml` (when carrying code). When unsure, assume gated.
 
-- **File:** ≤ 350 lines.
-- **Function:** ≤ 50 lines.
-- **Method:** ≤ 70 lines.
+**Exemptions:**
 
-**Triggers — before every Write/Edit on any source file.** Includes production, tests, and config-as-code: `.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml`/`.toml` when they carry code. If you're unsure whether a file is gated, assume yes.
+- `vendor/`, `node_modules/`, `third_party/` (upstream code).
+- `.md` files.
+- Published API artifacts under `public/` (e.g. `public/openapi.json`, `public/openapi/paths/*.yaml`). Loose ≤ 400-line advisory on path YAMLs, by-eye in review.
+- Repo-specific extensions in `docs/greptile-learnings/RULES.md`.
 
-**Default exemptions (gate does not fire):**
+**Pre-edit check (mandatory):**
 
-- `vendor/`, `node_modules/`, `third_party/` — splitting upstream code obscures the diff against upstream and breaks upgrades.
-- `.md` — docs are prose; paragraph count is not code coupling.
-- Published API artifacts under `public/` that are machine-read and domain-partitioned — e.g. `public/openapi.json` (a build artifact), `public/openapi/paths/*.yaml` (partitioned by tag; further splitting fragments a single domain). A loose ≤ 400-line advisory applies to path YAMLs, enforced by eye in review, not by this gate.
-- A repo may extend the exemption list in its own `docs/greptile-learnings/RULES.md` or equivalent — check there first when a file straddles the judgement call.
+1. `wc -l <file>` — current count (0 for new files).
+2. Net delta: `+added - removed`.
+3. Projected: `current + delta`.
+4. If projected > 350, **STOP**. Split first: extract a cohesive block to a sibling file using the repo's `<module>_<concern>.<ext>` convention (`zombie_list.js` beside `zombie.js`). Then apply the original edit.
+5. Function sub-gate: project post-edit line count for any touched function. If > 50 (function) or > 70 (method), split into named helpers **before** writing.
 
-**Pre-edit check (mandatory before every edit that net-adds lines):**
-
-1. `wc -l <file>` — current line count (0 for new files).
-2. Compute the net delta: `+added - removed`.
-3. Projected count: `current + delta`.
-4. If projected > 350, **STOP**. Do not write the edit. Split first: extract a cohesive block to a sibling file following the repo's existing `<module>_<concern>.<ext>` convention (e.g. `zombie_list.js` beside `zombie.js`, `executor_memory.zig` beside `executor.zig`). Then apply the original edit to the trimmed file.
-5. Function-length sub-gate: for any function/method you're editing or adding, project its post-edit line count. If > 50 (function) or > 70 (method), split into named helpers **before** writing.
-
-**Required output format** (print before the edit when the file is within 50 lines of the file cap — i.e. currently ≥ 300 — or when any touched function will land within 10 lines of its cap):
+**Required output format** (print when file is ≥ 300 lines or any touched function lands within 10 lines of its cap):
 
 ```
 LENGTH GATE: <file> currently N lines; adding Δ → N+Δ.
@@ -267,25 +257,16 @@ LENGTH GATE: <file> currently N lines; adding Δ → N+Δ.
   Decision: proceed | split first.
 ```
 
-Include the line even when you're safely under — once triggered, the output is the audit trail that proves the math was done.
+**Splitting conventions:**
 
-**What to do when you're about to exceed:**
+- File: name after the concern extracted, not parent + number. `zombie_list.js` not `zombie2.js`.
+- Function: helper names describe the step, not the parent. `normalizeCursor()` not `helperA()`.
 
-- **File cap hit**: extract. Name the new file after the concern being extracted, not after the old file + a number. `zombie_list.js` not `zombie2.js`.
-- **Function cap hit**: extract named helpers whose names describe the step, not the parent. `normalizeCursor()` not `helperA()`.
-- Do not "save room" by stripping comments or compressing whitespace — those are cosmetic and will come back on the next edit.
-
-**Override syntax** (rare — e.g. a test file where the setup + assertions must stay colocated to be readable, or a generated file the repo explicitly exempts but the gate caught):
-
-`LENGTH GATE: SKIPPED per user override (reason: ...)` — in the chat message immediately preceding the edit.
-
-**Pre-existing violations** in a file you didn't write are not the agent's responsibility unless the task includes cleanup. But any *new* edit that pushes a file over, or keeps it over by adding to an already-over file, triggers this gate — you must split as part of the current edit, not defer.
+**Override syntax:** `LENGTH GATE: SKIPPED per user override (reason: ...)` in the chat message immediately preceding the edit.
 
 ### Milestone-ID Gate
 
-**Fires on every file edit outside `docs/` and `*.md`. Pre-hoc, not post-hoc. No exceptions.**
-
-Milestone IDs (`M{N}_{NNN}`), section refs (`§X.Y`), and dimension tokens (`T7`, `dim 5.8.15`) belong in specs, PR descriptions, and scratchpads. Source code, SQL, tests, comments, JSDoc, shell scripts, and config files stay milestone-free — the codebase outlives any individual milestone and these references rot.
+Milestone IDs (`M{N}_{NNN}`), section refs (`§X.Y`), and dimension tokens (`T7`, `dim 5.8.15`) belong in specs, PR descriptions, and scratchpads — never in source code, since the codebase outlives any individual milestone and these references rot.
 
 **Triggers — before saving any file matching:**
 
@@ -310,18 +291,9 @@ M[0-9]+_[0-9]+          # M27_001, M11_006, M2_001
 \bdim [0-9]+\.[0-9]+\b  # "dim 5.8.15"
 ```
 
-If any match, **strip the reference before saving.** Rewrite the sentence to describe the code's purpose, not its spec lineage. "Per-zombie billing routes deferred until they ship" beats "Per-zombie billing routes deferred to M27_003".
+If any match, **strip the reference before saving.** Rewrite to describe the code's purpose, not its spec lineage.
 
-Forbidden phrasings (common drifts):
-
-- `// M19_002: workspace_id comes from URL path`  → `// workspace_id comes from URL path`
-- `//! Powers the dashboard switcher (M27_001)`  → `//! Powers the dashboard switcher`
-- `test "integration: M12_001 T8 billing summary"` → `test "integration: tenant billing summary"`
-- `* spec §5.8.4 dim 5.8.15` → delete or replace with a plain-English summary of what the code does
-
-**Self-audit at end of turn (before declaring work done):**
-
-Run against files you touched this turn:
+**Self-audit at end of turn (before declaring done):**
 
 ```bash
 git diff --name-only HEAD | \
@@ -330,21 +302,17 @@ git diff --name-only HEAD | \
   head
 ```
 
-Non-empty output = violations introduced in this turn. Fix before reporting done.
+Non-empty output = violations introduced this turn. Fix before reporting done.
 
-**Override syntax** (rare — e.g. referencing the ID of a removal in a deprecation warning that will itself be removed):
-
-`MILESTONE ID ALLOWED per user override (reason: ...)` in the immediately-preceding comment line.
-
-**Pre-existing matches** that predate the current change are not the agent's responsibility to sweep unless the task explicitly includes cleanup. But any *new* reference the agent introduces in this session violates the gate.
+**Override syntax:** `MILESTONE ID ALLOWED per user override (reason: ...)` in the immediately-preceding comment line.
 
 ### Verification Gate
 
-**Fires before every "tests pass" / "work is done" / "ready for review" / "CHORE(close) ready" message. No exceptions.**
+Fires before every "tests pass" / "work is done" / "ready for review" / "CHORE(close) ready" message.
 
-Package-scoped runners (`bun run test` inside one workspace, `vitest` on a single file, `zig build test` without the integration tier) are **not** verification — they silently skip cross-package lint, cross-compile, pg-drain, and the integration tier. The `make` targets are the canonical repo gates.
+Package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` without integration tier) are **not** verification — they skip cross-package lint, cross-compile, pg-drain, and integration. `make` targets are the canonical gates.
 
-**Required before reporting done** — commands defined in the [VERIFY](#verify) section under Deterministic Lifecycle:
+**Required before reporting done** (commands in the [VERIFY](#verify) section):
 
 - `make lint` — always.
 - `make test` — always (tier 1).
@@ -362,11 +330,7 @@ Verified:
   cross-compile         ✓  (when *.zig touched; omit otherwise)
 ```
 
-If you ran package-scoped tools instead, that is **not** verification — re-run via `make` before declaring done.
-
-**Override syntax** (only when a target is genuinely unrunnable in the current environment — e.g. Docker not installed for integration tests):
-
-`VERIFY GATE: <target> skipped per environment constraint (reason: ...)` — and call out the limitation in the done message, not as "tests pass".
+**Override syntax** (only when a target is genuinely unrunnable — e.g. Docker missing for integration tests): `VERIFY GATE: <target> skipped per environment constraint (reason: ...)`. Call out the limitation in the done message — not as "tests pass".
 
 ---
 
@@ -467,11 +431,11 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 
 ### EXECUTE
 
-- **Spec's "Applicable Rules" section is the canonical bridge.** When you EXECUTE a spec written from `docs/TEMPLATE.md`, the spec lists every rule file that applies to its scope under "Applicable Rules". Read each listed file BEFORE writing any code. Re-check during VERIFY that nothing in the diff violates them. Without this section the spec hasn't done its job; if it's missing, treat the standard set below as the floor and surface the omission to the spec author.
-- Read `docs/greptile-learnings/RULES.md` first (universal — applies to every spec), and re-read whenever the active sub-task changes shape (new layer, new language, resuming after a break). RULES.md carries repo-specific discipline; file/function length caps live in the **File & Function Length Gate** above. Conflicts → state and ask, never silently skip.
-- Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe lifecycle, cross-compile, TLS, memory, errdefer chain, ownership encoding, sentinel collision, `pub` audit). Required reading even if the spec's "Applicable Rules" section forgets to list it — the trigger fires on file-extension match. The verification workflow lives in ZIG_RULES.md itself.
-- HTTP handler or OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first. Start with the Quick Checklist; §1–§5 for URL/method/body/response/error conventions, §6 for OpenAPI editing, §7 for the 5-place route registration, §8 for the `Hx` handler signature contract, §10 for the pre-PR test gates. Triggered any time the surface-area checklist ticks "OpenAPI spec update" or the diff touches `src/http/handlers/**` / `public/openapi/**`.
-- Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE; no exceptions even if printed at PLAN).
+- **Spec's "Applicable Rules" section is canonical.** Read each listed rule file BEFORE writing code; re-check at VERIFY. Missing section → treat the standard set below as floor; surface omission to spec author.
+- Read `docs/greptile-learnings/RULES.md` first (universal). Re-read when sub-task changes shape (new layer/language, resuming after break). Conflicts → state and ask, never silently skip.
+- Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe, cross-compile, TLS, memory, errdefer, ownership, sentinel, `pub` audit). Required by file-extension trigger even if spec omits it.
+- HTTP handler / OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first: Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI editing), §7 (5-place route registration), §8 (`Hx` handler contract), §10 (pre-PR gates). Triggered by `src/http/handlers/**` or `public/openapi/**`.
+- Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE).
 - Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request.
 
 #### Spec → Code → Test contract
@@ -493,7 +457,7 @@ Specs with Interfaces and Test Specification sections must satisfy:
 
 ### VERIFY
 
-*Enforcement*: the [Verification Gate](#verification-gate) requires the required-output block in every "done" message. This section defines *what* to run and *when*; the gate defines *how to prove* it ran.
+The [Verification Gate](#verification-gate) defines the required-output block; this section defines what to run and when.
 
 #### Correctness tiers (do not skip a tier)
 
@@ -557,27 +521,21 @@ Required when a spec is involved — runs immediately after the last COMMIT, bef
 
 #### Skill-driven review chain (mandatory order)
 
-CHORE(close) is the convergence point for three review skills + greptile. Run them in order; each gate must clear before the next is invoked.
+Run in order; each gate clears before the next:
 
-1. **After implementation, before CHORE(close):** invoke `/write-unit-test`. The skill audits test coverage of the diff against the spec's Test Specification. Iterate on missing tests until the skill returns clean. Without this, the spec's "every claim maps to a test" invariant is unverified.
-2. **After tests pass, still before CHORE(close):** invoke `/review`. The skill performs an adversarial diff review against the spec, the architecture doc, the REST guide (if HTTP-touching), ZIG_RULES.md (if Zig-touching), and the spec's Failure Modes / Invariants. Address findings or document why they're deferred. Only after `/review` clears does CHORE(close) work begin.
-3. **After CHORE(close) commits land and `gh pr create` opens the PR:** invoke `/review-pr`. The skill review-comments the PR via `gh pr review` against the now-immutable diff. Address comments inline before requesting human review or merging.
-4. **After the PR is pushed, greptile auto-reviews on the published diff** (separate from `/review-pr` — greptile is a third-party PR review service, not a local skill). Workflow:
-   - **Schedule a re-poll +180s after every push.** This is mandatory and applies to *every* `git push` (including `--force-with-lease`) to a branch with an open PR — not just the initial PR-open push. Greptile posts asynchronously, often AFTER GitHub Actions complete; `gh pr checks --watch` blocks on Actions and does NOT observe greptile state. They are two independent signals — poll both. Do not wait for the user to ask "what did greptile say." Apr 26 2026 lost-rule incident (PR #251): agent pushed twice, both times watched CI go green and declared done; user had to explicitly say "fix greptile feedback" each time. This rule fills the cadence gap.
-   - **Scheduling primitive (agent-specific):**
-     - **Claude Code** — call `ScheduleWakeup(delaySeconds=180, reason="poll greptile reviews on PR #N", prompt="continue: re-poll greptile reviews on PR #N (head <SHA>); if findings exist fix and push; if clean and CI green, merge")`.
-     - **Codex CLI** — schedule via the `/schedule` slash command or fall back to a foreground `sleep 180 && <re-poll commands>` block before reporting done.
-     - **OpenCode / Amp / others** — use the runtime's native scheduling primitive if exposed; otherwise inline a `sleep 180` and re-poll, then report. The cadence is what matters; the mechanism is implementation detail.
-   - **180s default with one re-schedule fallback.** 180s ≈ greptile's typical analysis window for a small diff. Stays inside the 5-min cache window. If greptile hasn't posted yet at the wakeup, re-schedule once at +180s. After two empty polls in a row (no greptile reviewer in `gh api repos/.../pulls/<n>/reviews`), stop polling and proceed to merge per CHORE(close).
-   - Fetch greptile review IDs and comments via `gh api repos/<owner>/<repo>/pulls/<n>/reviews` and `/reviews/<id>/comments`. Filter for the greptile reviewer.
-   - Loop through ALL review IDs, not just the first.
-   - For each P0/P1 finding: check if an existing rule in `docs/greptile-learnings/RULES.md` covers it. If yes — append the incident reference. If no — add a new generic principle (Rule / Why / Tags / Ref).
-   - Fix findings. Run verification (`make lint`, `make test`, and DB integration when applicable).
-   - Reply to each greptile thread with the fix commit SHA via `gh api repos/<owner>/<repo>/pulls/<n>/comments -X POST -F in_reply_to=<comment_id>`.
-   - Commit, push, **and re-schedule a +180s poll on the new push** (the post-fix push is itself a trigger; greptile re-analyses).
+1. **Before CHORE(close):** `/write-unit-test`. Audits test coverage of the diff against spec's Test Specification. Iterate until clean.
+2. **After tests pass, before CHORE(close):** `/review`. Adversarial diff review against spec, architecture doc, REST guide (if HTTP), ZIG_RULES.md (if Zig), and spec's Failure Modes / Invariants. Address findings or document deferrals.
+3. **After CHORE(close) commits + `gh pr create`:** `/review-pr`. Comments the PR via `gh pr review`. Address inline before requesting human review or merging.
+4. **After every push (including post-PR-open and post-fix), greptile auto-reviews asynchronously.** `gh pr checks --watch` blocks on Actions and does NOT observe greptile — poll both independently. Workflow:
+   - **Schedule a re-poll +180s after every push** (initial open AND every subsequent push). 180s ≈ greptile's analysis window; stays inside the 5-min cache window.
+   - **Scheduling primitive:** Claude Code → `ScheduleWakeup(delaySeconds=180, reason="poll greptile on PR #N", prompt="re-poll greptile on PR #N (head <SHA>); fix findings if any, push, else merge")`. Codex CLI → `/schedule` or foreground `sleep 180`. Other runtimes → native scheduling or inline `sleep 180`.
+   - **Fallback:** if no greptile reviewer at wakeup, re-schedule once. After 2 empty polls, proceed to merge.
+   - Fetch via `gh api repos/<owner>/<repo>/pulls/<n>/reviews` + `/reviews/<id>/comments`. Filter for greptile reviewer. **Loop ALL review IDs, not just the first.**
+   - For each P0/P1: check `docs/greptile-learnings/RULES.md` — if covered, append incident ref; if not, add new principle (Rule/Why/Tags/Ref).
+   - Fix findings; re-run verification; reply to each thread with fix SHA via `gh api .../comments -X POST -F in_reply_to=<id>`; commit, push, **re-schedule +180s** on the new push.
    - Report findings/fixes/rules/reply IDs.
 
-The skills are not optional steps — they are required quality gates. Skipping any one is a violation of CHORE(close). If a skill is unavailable in the environment (e.g., MCP server down), document the skip explicitly in the PR description's Session Notes block: *"`/review` skipped — MCP server unavailable as of <ts>; rerun before merge."*
+Skills are required gates, not optional. Skipping = CHORE(close) violation. Unavailable skill (MCP server down) → document in PR Session Notes: *"`/review` skipped — MCP unavailable <ts>; rerun before merge."*
 
 Required outputs:
 
@@ -588,7 +546,7 @@ Required outputs:
 - **PR description `## Session notes` block** — append to the PR body before opening: decisions taken, surfaced assumptions, dead ends, deferred follow-ups, and the `/write-unit-test` + `/review` skill outcomes (passed clean / iteration count / explicit skips). **Cross-session handoffs** (work parked midway for another session/agent to pick up) still use `docs/nostromo/HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md` — different artifact, narrower lifecycle.
 - **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
 - **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating the PR. Out-of-scope files: commit separately, gitignore, or delete. Never open a PR with a dirty tree.
-- **Version sync** — whenever the branch touches `VERSION`, run `make sync-version` and include the propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`) in the CHORE(close) commit. Verify with `make check-version`. Skipping this leaves `npm publish` emitting the old CLI version and `zig build` reporting the old Zig version on release — both are silent-drift failures the release workflow does not catch. If `VERSION` was not touched, this item is a no-op.
+- **Version sync** — branch touched `VERSION` → run `make sync-version`, include propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`) in the CHORE(close) commit. Verify with `make check-version`. Skipping causes silent drift in `npm publish` and `zig build` outputs. No-op if VERSION untouched.
 
 Gates before PR:
 - `/write-unit-test` skill returned clean (or skip explicitly documented).
@@ -606,7 +564,7 @@ Gates after `gh pr create`:
 
 Single source of truth: `/Users/kishore/Projects/docs/changelog.mdx`. Add a new `<Update>` block at the top (after the leading `<Tip>`/`<Note>`).
 
-**Labels are date-only — never a semver prefix.** The `VERSION` file (+ `build.zig.zon` / `zombiectl/package.json` / `zombiectl/src/cli.js`, kept in sync by `make sync-version`) is the single source of truth for the release binary's version. Stamping semver into changelog entries forces the two to stay in lockstep across parallel branches and creates collisions when two workstreams land near-simultaneously. Keep them decoupled: docs changelog is chronological, VERSION is semver, each evolves on its own schedule.
+**Labels are date-only — never a semver prefix.** `VERSION` (+ `build.zig.zon` / `zombiectl/package.json` / `zombiectl/src/cli.js` via `make sync-version`) is the single source of truth for binary version. Decouple them: changelog chronological, VERSION semver — avoids parallel-branch collisions.
 
 ```mdx
 <Update label="MMM DD, YYYY" tags={["What's new" | "Breaking" | "Bug fixes", "API" | "CLI" | "UI" | "Security" | "Performance" | "Integrations" | "Observability" | "Internal", ...]}>
