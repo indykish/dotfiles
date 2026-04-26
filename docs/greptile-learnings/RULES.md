@@ -705,3 +705,18 @@ const handleConfirm = useCallback(async () => {
 **Why:** Silent test swallow is a class-C outage — the gate claims green while regressions ship. Observed on M28_003 §2 where `@python3 scripts/test_check_openapi_sync.py 2>&1 | tail -3` in `make openapi` passed a failing-test injection without aborting. Greptile P1 caught it before merge; the root cause (Make + default `sh` POSIX pipefail semantics) is the same bug anywhere a recipe uses `|` to tidy long output.
 **Tags:** make, ci, testing
 **Ref:** usezombie P2_INFRA_M28_003 §2 — `make/quality.mk:161` before fix piped the test runner through `tail -3`; fix in commit 66556e99 dropped the pipe, confirmed with injected `self.fail()` that `make: *** [openapi] Error 1` now fires correctly.
+
+## RULE RES — Reserved route names enforce reservation symmetrically (read AND write)
+
+**Rule:** When a path component (e.g. `/credentials/llm`) is reserved for one handler family but the *parent* collection (`/credentials`) shares storage with another, the reservation MUST be enforced on every write that lands in the shared store, not just on the route matcher. If the matcher excludes `name == "llm"` for the generic DELETE but the POST validator does not reject `{name: "llm"}`, a write under that name lands in the shared backing store under a key the generic delete cannot reach AND the specialized delete does not own — an orphaned, un-deleteable row.
+
+**Why:** `vault.secrets` stores both BYOK rows (`key_name = "llm"`) and zombie credentials (`key_name = "zombie:<name>"`). M45's generic credential POST composed `key_name = "zombie:" ++ body.name` without rejecting `body.name == "llm"`, while `matchWorkspaceCredential` already excluded the `/credentials/llm` *path* (because BYOK owns it). Net result: an operator could POST `{name:"llm",...}` → row at `zombie:llm`; subsequent DELETE `/credentials/llm` routes to the BYOK handler (looks up key `"llm"`, finds nothing, 204) and `matchWorkspaceCredential` returns null on read so the generic DELETE never fires either. Row is un-deleteable through any HTTP route.
+
+**How to apply:**
+
+- For every route matcher that excludes a specific name/suffix, add a write-side validator that rejects the same name with a clear 4xx ("name X is reserved for route Y").
+- Anchor the reservation list to a single shared constant — drift between the matcher's exclude-list and the validator's reject-list reintroduces the asymmetry.
+- Cover with an integration test that POSTs the reserved name and asserts (a) 4xx response, (b) no row landed in the backing store. The "no row landed" assertion is what distinguishes a real fix from one that only changes the API shape.
+
+**Tags:** zig, http, routing, security, credentials
+**Ref:** PR #252 (M45). Greptile P1 finding `3143083466` on `feat/m45-vault-structured`. Fix in commit (this commit) — `validateCredentialName` now rejects `name == "llm"`; integration test asserts both the 400 response and the absence of a `zombie:llm` row.
