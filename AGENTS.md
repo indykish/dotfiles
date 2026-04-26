@@ -764,23 +764,11 @@ If CI is red, inspect logs, fix, push, and re-check.
 
 ### Skill Routing
 
-Use dedicated skills when the request matches:
+Skills self-trigger via the TRIGGER blocks in the available-skills system message; when the user's words match a skill's trigger, invoke the skill rather than handling the work inline. Three triggers carry explicit policy weight (defaults would be wrong without this routing):
 
-- ideas/brainstorming → `office-hours`
-- bugs/errors → `investigate`
-- ship/deploy/PR → `ship`
-- QA/testing → `qa`
-- code review → `review`
-- post-ship docs → `document-release`
-- retro → `retro`
-- design system → `design-consultation`
-- visual polish → `design-review`
-- architecture review → `plan-eng-review`
-- save progress / "save my work" → `context-save`
-- resume / "where was I" / "pick up where I left off" → `context-restore`
-- health check → `health`
-
-(`/checkpoint` was renamed to `/context-save` and `/context-restore` because Claude Code now treats `/checkpoint` as a native rewind alias.)
+- **Bug / error / "why is this broken"** → `/investigate`. Never debug inline.
+- **"Ship it" / "push" / "create a PR"** → `/ship`. Never `git push` or `gh pr create` directly outside the auto-mode autonomy carve-out.
+- **"Save my work" / "where was I"** → `/context-save` and `/context-restore`. (Renamed from `/checkpoint`, which Claude Code now uses for native turn rewind.)
 
 ### Screenshot Workflow
 
