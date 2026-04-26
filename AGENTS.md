@@ -161,7 +161,7 @@ After PR merge: `git worktree remove ../usezombie-mNN-name`.
 
 ## Action-Triggered Guards
 
-Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a printable required-output block that must appear in the user-facing message before the gated edit. Pre-existing violations are not the agent's responsibility unless the task includes cleanup.
+Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a printable required-output block that must appear in the user-facing message before the gated edit. Pre-existing violations are not the agent's responsibility unless the task includes cleanup — but any new edit that introduces, extends, or perpetuates a violation does trigger the gate.
 
 ### Legacy-Design Consult Guard
 
@@ -436,7 +436,7 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 - Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe, cross-compile, TLS, memory, errdefer, ownership, sentinel, `pub` audit). Required by file-extension trigger even if spec omits it.
 - HTTP handler / OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first: Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI editing), §7 (5-place route registration), §8 (`Hx` handler contract), §10 (pre-PR gates). Triggered by `src/http/handlers/**` or `public/openapi/**`.
 - Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE).
-- Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request.
+- Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request (exception: symlinked-dotfiles carve-out — see Operational Defaults).
 
 #### Spec → Code → Test contract
 
