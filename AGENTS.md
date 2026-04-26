@@ -590,12 +590,18 @@ CHORE(close) is the convergence point for three review skills + greptile. Run th
 2. **After tests pass, still before CHORE(close):** invoke `/review`. The skill performs an adversarial diff review against the spec, the architecture doc, the REST guide (if HTTP-touching), ZIG_RULES.md (if Zig-touching), and the spec's Failure Modes / Invariants. Address findings or document why they're deferred. Only after `/review` clears does CHORE(close) work begin.
 3. **After CHORE(close) commits land and `gh pr create` opens the PR:** invoke `/review-pr`. The skill review-comments the PR via `gh pr review` against the now-immutable diff. Address comments inline before requesting human review or merging.
 4. **After the PR is pushed, greptile auto-reviews on the published diff** (separate from `/review-pr` — greptile is a third-party PR review service, not a local skill). Workflow:
-   - Fetch greptile review IDs and comments.
+   - **Schedule a re-poll +180s after every push.** This is mandatory and applies to *every* `git push` (including `--force-with-lease`) to a branch with an open PR — not just the initial PR-open push. Greptile posts asynchronously, often AFTER GitHub Actions complete; `gh pr checks --watch` blocks on Actions and does NOT observe greptile state. They are two independent signals — poll both. Do not wait for the user to ask "what did greptile say." Apr 26 2026 lost-rule incident (PR #251): agent pushed twice, both times watched CI go green and declared done; user had to explicitly say "fix greptile feedback" each time. This rule fills the cadence gap.
+   - **Scheduling primitive (agent-specific):**
+     - **Claude Code** — call `ScheduleWakeup(delaySeconds=180, reason="poll greptile reviews on PR #N", prompt="continue: re-poll greptile reviews on PR #N (head <SHA>); if findings exist fix and push; if clean and CI green, merge")`.
+     - **Codex CLI** — schedule via the `/schedule` slash command or fall back to a foreground `sleep 180 && <re-poll commands>` block before reporting done.
+     - **OpenCode / Amp / others** — use the runtime's native scheduling primitive if exposed; otherwise inline a `sleep 180` and re-poll, then report. The cadence is what matters; the mechanism is implementation detail.
+   - **180s default with one re-schedule fallback.** 180s ≈ greptile's typical analysis window for a small diff. Stays inside the 5-min cache window. If greptile hasn't posted yet at the wakeup, re-schedule once at +180s. After two empty polls in a row (no greptile reviewer in `gh api repos/.../pulls/<n>/reviews`), stop polling and proceed to merge per CHORE(close).
+   - Fetch greptile review IDs and comments via `gh api repos/<owner>/<repo>/pulls/<n>/reviews` and `/reviews/<id>/comments`. Filter for the greptile reviewer.
    - Loop through ALL review IDs, not just the first.
    - For each P0/P1 finding: check if an existing rule in `docs/greptile-learnings/RULES.md` covers it. If yes — append the incident reference. If no — add a new generic principle (Rule / Why / Tags / Ref).
    - Fix findings. Run verification (`make lint`, `make test`, and DB integration when applicable).
-   - Reply to each greptile thread with the fix commit SHA.
-   - Commit and push.
+   - Reply to each greptile thread with the fix commit SHA via `gh api repos/<owner>/<repo>/pulls/<n>/comments -X POST -F in_reply_to=<comment_id>`.
+   - Commit, push, **and re-schedule a +180s poll on the new push** (the post-fix push is itself a trigger; greptile re-analyses).
    - Report findings/fixes/rules/reply IDs.
 
 The skills are not optional steps — they are required quality gates. Skipping any one is a violation of CHORE(close). If a skill is unavailable in the environment (e.g., MCP server down), document the skip explicitly in the PR description's Session Notes block: *"`/review` skipped — MCP server unavailable as of <ts>; rerun before merge."*
