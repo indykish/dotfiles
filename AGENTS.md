@@ -90,7 +90,7 @@ Default Claude Code policy gates every commit, push, and `gh pr create` on an ex
 **Granted (proceed without re-asking) when auto mode is active AND the branch carries an active spec under `docs/v*/active/` OR the user gave a forward-looking start instruction (e.g., "start on M40", "ship it", "fix this and ship", "drive to PR"):**
 
 - `git commit` (focused, conventional, gitleaks-clean) on the feature branch.
-- `git push origin <feature-branch>` to the working remote.
+- `git push origin <feature-branch>` to the working remote (non-force only).
 - `gh pr create` once CHORE(close) gates pass.
 - `gh pr review` (review-comment via `/review-pr`) on the agent's own PR.
 
@@ -219,7 +219,7 @@ Block on the user's reply. If the user previously approved one class of legacy d
 **Required output format:**
 
 ```
-SCHEMA GUARD: VERSION=0.5.0 (<2.0.0) → full teardown branch.
+SCHEMA GUARD: VERSION=<value from `cat VERSION`> (<2.0.0) → full teardown branch.
   Deleting: schema/008_harness_control_plane.sql
   Removing: schema.harness_control_plane_sql from embed.zig
   Removing: version 8 entry from canonicalMigrations()
@@ -248,7 +248,7 @@ Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
 4. If projected > 350, **STOP**. Split first: extract a cohesive block to a sibling file using the repo's `<module>_<concern>.<ext>` convention (`zombie_list.js` beside `zombie.js`). Then apply the original edit.
 5. Function sub-gate: project post-edit line count for any touched function. If > 50 (function) or > 70 (method), split into named helpers **before** writing.
 
-**Required output format** (print when file is ≥ 300 lines or any touched function lands within 10 lines of its cap):
+**Required output format** (math runs every edit; print block only when projected ≥ 300 lines, or touched function within 10 of its cap):
 
 ```
 LENGTH GATE: <file> currently N lines; adding Δ → N+Δ.
@@ -298,7 +298,7 @@ If any match, **strip the reference before saving.** Rewrite to describe the cod
 ```bash
 git diff --name-only HEAD | \
   grep -vE '(^docs/|\.md$)' | \
-  xargs -r grep -nE 'M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bdim [0-9]+\.[0-9]+\b' | \
+  xargs -r grep -nE 'M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b' | \
   head
 ```
 
@@ -308,7 +308,7 @@ Non-empty output = violations introduced this turn. Fix before reporting done.
 
 ### Verification Gate
 
-Fires before every "tests pass" / "work is done" / "ready for review" / "CHORE(close) ready" message.
+Fires before any user-facing message asserting the work is verified — "tests pass", "ready to merge", "shipping", "ready for review", "CHORE(close) ready", or any equivalent.
 
 Package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` without integration tier) are **not** verification — they skip cross-package lint, cross-compile, pg-drain, and integration. `make` targets are the canonical gates.
 
