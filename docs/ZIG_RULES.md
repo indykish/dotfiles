@@ -267,3 +267,59 @@ Rules:
 - Helpers take `*PgQuery`, never `anytype` — `q.next()` always works, no `q.*.next()`.
 - On early exit (parse failure, missing row), just `return` — the `defer` handles drain + deinit.
 - `check-pg-drain` lint still runs but now targets only `PgQuery.from()` call sites.
+
+## Build Verification: `make`, Not `zig build`
+
+- Verification commands are defined in `make` targets and CI runs `make`. Use `make test` (tier 1) and `make test-integration` (tier 2) for verification — **not** `zig build test` standalone. `zig build test` runs only the Zig unit set and silently skips the website / app / zombiectl unit tests + cross-language gates that the verification gate is defined against. Use `zig build` directly only for compilation, never for "did my change pass tests".
+- `make memleak` is required when the diff touches server lifecycle, allocator wiring, or cross-thread heap ownership. The macOS `leaks` tool prints a "not debuggable" line under System Integrity Protection — that is expected; the authoritative signal is the allocator-leak phase across `std.testing.allocator`-wrapped tests.
+
+## Doc-Comments and Inline Comments
+
+- Use `//!` for module-level documentation at the top of a file. Reserve `///` for `pub` type, function, and field doc-comments. Reserve `//` for inline rationale.
+- Comments above fields explain *why* the field exists, not what its type is. Group related fields with `// === Section ===` separators.
+- Skip comments when a well-named identifier already explains intent. Add a comment only when removing it would confuse a future reader (hidden invariant, surprising workaround, non-obvious lifetime contract).
+
+## Concurrency
+
+- Protect critical sections with `mutex.lock(); defer mutex.unlock();` in a bare block. Never wrap in `try` or error handling — `.lock()` blocks until acquired, it does not error. Use `.tryLock()` only on non-blocking fast paths.
+- Atomic loads and stores default to `.acq_rel`. Weaker orderings (`.acquire`, `.release`, `.monotonic`, `.unordered`) require an inline `// safe because: <reason>` comment so a reviewer can audit at a glance. The acquire-release pair on a single coordination flag is a fine pattern — but the comment is mandatory.
+- When two threads coordinate via a flag, document which side does the `.release` store and which does the `.acquire` load. The comment is the synchronization contract.
+
+## Allocator Ownership in Structs
+
+Extends "Type Design Rules". Two patterns, both legitimate; pick deliberately and document the choice on the type:
+
+- **Stored allocator (default)** — any struct that owns heap memory (`ArrayList`, `HashMap`, duped strings) stores `alloc: std.mem.Allocator` as a field. `deinit(self: *Self) void` then frees without a separate parameter. Default to this pattern.
+- **Caller-owned allocator** — short-lived value types may take the allocator at `deinit(self: *Self, alloc: std.mem.Allocator)` instead of storing it. Use this for transient decode results, parser outputs, or anything passed by value through a `defer ... deinit(alloc)` pair. When used, document it on the type's doc-comment: `/// Caller passes the same allocator to deinit that <fn> received.`
+
+## Identifier Conventions
+
+- snake_case throughout: file names, fields, functions, locals, constants. usezombie has no JS-interop boundary — there is no carve-out for camelCase fields. (Bun mixes the two for JS-mapped fields; we do not.)
+
+## Comptime-Gated Assertions
+
+- For runtime invariants that should be free in release builds, use `std.debug.assert(condition)` — debug-on, release-off automatically. Use this for capacity bounds, monotonic counter checks, and "this can't happen unless we have a bug" assertions.
+- For comptime-evaluable invariants on type shape (struct sizes, array lengths matching enum variant counts), use `comptime { std.debug.assert(@sizeOf(T) == N); }` adjacent to the type definition — see "Progressive Cleanup" above.
+
+## Single-Type-Module Pattern (GUIDE)
+
+When a file's primary purpose is a single struct, prefer the file-as-struct layout — it eliminates a level of nesting:
+
+```zig
+//! Module-level doc comment.
+
+const HashedString = @This();   // file IS the type
+
+ptr: [*]const u8,               // fields next
+len: u32,
+hash: u32,
+
+pub const empty = HashedString{ ... };
+
+pub fn init(buf: []const u8) HashedString { ... }
+pub fn eql(self: HashedString, other: anytype) bool { ... }
+
+const std = @import("std");      // imports at file END
+```
+
+Multi-type modules (e.g. a protocol with `MessageType` + `Envelope` + `Decoded`) keep the conventional struct-inside-file layout — file-as-struct only fits when there is exactly one primary type.
