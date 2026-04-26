@@ -375,14 +375,15 @@ docs/v{N}/
 ### File naming
 
 ```
-docs/v{N}/{pending|active|done}/P{Priority}_{CATEGORIES}_M{Milestone}_{Workstream}_{DESCRIPTIVE_NAME}.md
+docs/v{N}/{pending|active|done}/M{Milestone}_{Workstream}_P{Priority}_{CATEGORIES}_{DESCRIPTIVE_NAME}.md
 ```
 
+- `Milestone`: `M{N}` — sortable by milestone first so `ls` groups by initiative.
+- `Workstream`: zero-padded (`001`, `002`).
 - `Priority`: P0 critical/blocking · P1 customer/operator-facing · P2 secondary/tooling · P3 deferrable.
 - `CATEGORIES` (alphabetical, one or more): `UI` (Next.js dashboard) · `API` (Zig/Go handlers) · `CLI` (zombiectl, Node) · `OBS` (Grafana/metrics) · `SKILL` (YAML policy) · `INFRA` (Terraform/deploy).
-- `Workstream`: zero-padded (`001`, `002`).
-- Example: `P1_API_CLI_M{N}_{WS}_{DESCRIPTIVE_NAME}.md`.
-- Legacy `M{N}_{WKSTRM}_{NAME}.md` exists under `docs/v1/`; new specs use the priority-first form.
+- Example: `M52_001_P2_API_BUN_VENDOR_UTILITIES.md`.
+- Legacy forms (`M{N}_{WKSTRM}_{NAME}.md` plain, or `P{Priority}_{CATEGORIES}_M{N}_{WS}_{NAME}.md` priority-first) exist under `docs/v1/` and `docs/v2/done/`; new specs use the milestone-first form above.
 
 ---
 
