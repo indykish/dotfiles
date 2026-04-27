@@ -720,3 +720,23 @@ const handleConfirm = useCallback(async () => {
 
 **Tags:** zig, http, routing, security, credentials
 **Ref:** PR #252 (M45). Greptile P1 finding `3143083466` on `feat/m45-vault-structured`. Fix in commit (this commit) — `validateCredentialName` now rejects `name == "llm"`; integration test asserts both the 400 response and the absence of a `zombie:llm` row.
+
+## RULE CLI-HINT — Renaming or removing a CLI command means sweeping every error message that names the old syntax
+
+**Rule:** When the CLI surface changes (a subcommand renamed, a flag removed, a positional-arg form deprecated), grep every user-visible error message, log line, doc comment, and changelog body for the old syntax — not just the command implementation. Stale syntax in error hints points users at commands that no longer exist; they hit the hint at exactly the moment they're already confused, doubling the failure cost.
+
+**Why:** Error messages are the most expensive place for stale CLI references. A user only reads them when something is already wrong; a hint that says "Run X for help" — where X was deleted last week — turns one failure into two. Compiler can't catch it: error-message strings are opaque text, not symbols. Tests can't catch it without a dedicated string sweep — most tests assert on error *codes*, not message *bodies*.
+
+**Sweep checklist when changing CLI surface:**
+- `src/errors/error_entries.zig` — every `e(code, status, summary, "…hint…")` body.
+- `src/errors/error_registry.zig` — every `MSG_*` constant.
+- Any `log.warn`/`log.err` format string that names a command (those are operator-facing, but operators copy them into runbooks).
+- Doc comments at file headers that describe "the user runs X" — they rot the same way.
+- The changelog `Update` block being shipped with the rename (the entry is otherwise great place to repeat the new syntax for users to grep).
+
+**Don't:**
+- Rely on `make lint` or the type checker — error message bodies are strings, not symbols.
+- Rely on `grep -r "<old-command>" src/` finding everything — hints often paraphrase ("the install template…" instead of `install <template>`). Search for the pattern, then read the sentence around each hit.
+
+**Tags:** cli, error-messages, ux, refactor
+**Ref:** PR #258 (M44_001). Greptile P1 finding `3145406909` on `feat/m44-install-contract`: UZ-ZMB-008 hint still said `Run 'zombiectl install <template>'` after the legacy positional form was removed in §1 of the same PR. Sweep also caught a stale `// zombiectl up sends both files raw` comment in `config.zig` header. Fix in commit (this commit).
