@@ -38,6 +38,8 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
 - Use `q.*.next()` and `q.*.drain()` when the query result is passed through `anytype` as a pointer (`&q`). Direct local vars use `q.next()`.
 - Reference nested struct types with the full path: `Module.Struct.NestedType`, not `Module.NestedType`.
 - Add new test files to test discovery. Either `_ = @import("path/to/new_file.zig");` in `main.zig`'s test block, or — preferred when a façade already exists — in a `test {}` block inside the façade (`test { _ = @import("foo_test.zig"); }`). Zig strips `test {}` blocks in release builds, so this adds zero bytes to the production binary. The façade pattern keeps `main.zig` at a flat one-line-per-module list and lets each module own its own test discovery.
+- **New `*.zig` file with exactly one primary type → use file-as-struct layout** (`const Foo = @This();` with fields immediately after, methods next, imports at file end). Multi-type modules (tagged unions + helpers, protocols with multiple shapes) keep conventional `pub const Foo = struct { ... };` layout. See "Single-Type-Module Pattern" below for the canonical shape.
+- **Surface a Pub Surface & Struct-Shape Gate block** (defined in `AGENTS.md`) before saving a new `*.zig` file or any edit that adds a new `pub` symbol. The gate forces choosing the layout and justifying every new `pub` against an external consumer.
 
 ## Must Not
 
@@ -312,9 +314,11 @@ Extends "Type Design Rules". Two patterns, both legitimate; pick deliberately an
 - For runtime invariants that should be free in release builds, use `std.debug.assert(condition)` — debug-on, release-off automatically. Use this for capacity bounds, monotonic counter checks, and "this can't happen unless we have a bug" assertions.
 - For comptime-evaluable invariants on type shape (struct sizes, array lengths matching enum variant counts), use `comptime { std.debug.assert(@sizeOf(T) == N); }` adjacent to the type definition — see "Progressive Cleanup" above.
 
-## Single-Type-Module Pattern (GUIDE)
+## Single-Type-Module Pattern
 
-When a file's primary purpose is a single struct, prefer the file-as-struct layout — it eliminates a level of nesting:
+**Binding** — when a `*.zig` file's primary purpose is exactly one struct, use the file-as-struct layout. The Pub Surface & Struct-Shape Gate (in `AGENTS.md`) requires you to declare layout choice before saving. This was a "(GUIDE)" pre-tightening; it is now a Must.
+
+The file-as-struct layout eliminates a level of nesting:
 
 ```zig
 //! Module-level doc comment.

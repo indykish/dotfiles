@@ -94,7 +94,7 @@ Default Claude Code policy gates every commit, push, and `gh pr create` on an ex
 - `gh pr create` once CHORE(close) gates pass.
 - `gh pr review` (review-comment via `/review-pr`) on the agent's own PR.
 
-**Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Verification Gate.
+**Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Pub Surface & Struct-Shape Gate, Verification Gate.
 
 **Investigation framing:** a bare "look at this" / "what's going on with X" / "review this" is investigation, not authorization. Drive forward only on instructions that name the action ("start", "ship", "fix and merge-ready", "drive to PR").
 
@@ -305,6 +305,42 @@ git diff --name-only HEAD | \
 Non-empty output = violations introduced this turn. Fix before reporting done.
 
 **Override syntax:** `MILESTONE ID ALLOWED per user override (reason: ...)` in the immediately-preceding comment line.
+
+### Pub Surface & Struct-Shape Gate
+
+`docs/ZIG_RULES.md` mandates two Zig-file rules that drift silently if not surfaced:
+1. **`pub` only when an external file imports the symbol** — default private; strip stale `pub`s when touching a file.
+2. **File-as-struct shape for single-primary-type modules** — `const Foo = @This();` with fields immediately after, methods next, imports at file end. Multi-type modules (tagged unions + helpers, protocol with multiple shapes) keep conventional layout.
+
+**Triggers** — before saving any of:
+
+- A new `*.zig` file.
+- An `Edit`/`Write` to a `*.zig` file that adds at least one new `pub` symbol.
+
+**Pre-edit check (mandatory):**
+
+1. Count primary types in the file (struct/union/enum that the file is "about").
+2. Choose layout: file-as-struct (count = 1) or conventional (count = 0 or > 1).
+3. List every new `pub` symbol the edit introduces.
+4. For each, identify the external consumer (`grep -rn "<symbol>" src/ tests/ --include="*.zig"`) — file path + line, or `NONE`.
+5. Strip `pub` from any with `NONE`.
+6. Progressive cleanup on touch: `grep -n "^pub " <file>` and audit existing `pub`s in the same diff.
+
+**Required output format** (print before the edit when the file is new OR when at least one new `pub` is being added):
+
+```
+PUB GATE: <file>
+  Primary type count: <0|1|>1>
+  Layout: <file-as-struct | conventional> (<one-line justification>)
+  New `pub` symbols this edit:
+    <symbol>: external consumer = <file:line> | NONE → strip
+    <symbol>: external consumer = <file:line> | NONE → strip
+  Existing `pub`s audited: <count> kept · <count> stripped
+```
+
+If no new `pub` symbols and the file is not new, the gate is a no-op — skip the printable block.
+
+**Override syntax:** `PUB GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
 ### Verification Gate
 
