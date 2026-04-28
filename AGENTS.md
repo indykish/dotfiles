@@ -98,8 +98,6 @@ Default Claude Code policy gates every commit, push, and `gh pr create` on an ex
 
 **Investigation framing:** a bare "look at this" / "what's going on with X" / "review this" is investigation, not authorization. Drive forward only on instructions that name the action ("start", "ship", "fix and merge-ready", "drive to PR").
 
-The "always-gated" actions in the Hard Safety section apply *also* under auto mode — auto mode does not unlock force-push, merges, or cross-repo writes.
-
 ---
 
 ## Date/time formats
@@ -112,7 +110,7 @@ The "always-gated" actions in the Hard Safety section apply *also* under auto mo
 
 ## Acronym expansion
 
-Spell out non-obvious acronyms/vendor names on first mention in any durable artifact (specs, handoffs, PR descriptions, code comments, commits, PRs) and user-facing prose: `Svix (webhook signing service)`, `OIDC`, `IDOR`, `BYOK`, `RLS`, `SSE`, `JWKS`, `HMAC`. Do **not** expand `API`, `URL`, `HTTP(S)`, `JSON`, `SQL`, `TCP/IP`, `DNS`, `SSH`, `UI`, `CLI`, `CI/CD`, `OS`, `FK`. Heuristic: if a new engineer would search the term, expand it.
+Spell out non-obvious acronyms / vendor names on first mention in durable artifacts and user-facing prose. Heuristic: if a new engineer would have to search the term, expand it; if it's an undergrad-CS staple (`API`, `URL`, `HTTP`, `JSON`, `SQL`, `DNS`, etc.), don't.
 
 ---
 
@@ -651,49 +649,9 @@ Gates after `gh pr create`:
 
 #### Release doc generation
 
-Single source of truth: `/Users/kishore/Projects/docs/changelog.mdx`. Add a new `<Update>` block at the top (after the leading `<Tip>`/`<Note>`).
+Source of truth: `~/Projects/docs/changelog.mdx`. New `<Update>` block at the top (after `<Tip>`/`<Note>`). Labels are date-only (`MMM DD, YYYY`) — never a semver prefix; `VERSION` is decoupled from the changelog and propagated via `make sync-version`.
 
-**Labels are date-only — never a semver prefix.** `VERSION` (+ `build.zig.zon` / `zombiectl/package.json` / `zombiectl/src/cli.js` via `make sync-version`) is the single source of truth for binary version. Decouple them: changelog chronological, VERSION semver — avoids parallel-branch collisions.
-
-```mdx
-<Update label="MMM DD, YYYY" tags={["What's new" | "Breaking" | "Bug fixes", "API" | "CLI" | "UI" | "Security" | "Performance" | "Integrations" | "Observability" | "Internal", ...]}>
-  ## {Short user-facing feature title — no milestone IDs, no codenames}
-
-  {One paragraph from the user's perspective. No workstream numbers, branch names, RULE references.}
-
-  ## Upgrading
-  {Breaking changes only. ALWAYS first when present. Each break: explicit migration step + whether CLI+server must upgrade together.}
-
-  ## What's new
-  {New capabilities — what a user/operator can now do.}
-
-  ## API reference
-  {New/changed endpoints, shapes, error codes. Include JSON/route examples. Omit if no API change.}
-
-  ## Bug fixes
-  {User-visible bugs fixed — observed behavior before/after. Omit if none.}
-
-  ## CLI
-  {`zombiectl` additions or shape changes. Omit if none.}
-</Update>
-```
-
-Hard rules:
-
-- Label is `MMM DD, YYYY` exactly — no `vX.Y.Z —` prefix, no release name. If two releases land on the same date, ship as one merged `<Update>` block or add a disambiguator inside the title (`## Morning release — …`, `## Follow-up — …`); the label stays the date.
-- Section order is fixed: Upgrading → What's new → API reference → Bug fixes → CLI. Omit empty sections; never leave empty headings.
-- No milestone/workstream IDs, branch names, spec filenames, or `RULE XXX` references in the body.
-- User-centric verbs ("we added", "X now does Y"), not implementation prose.
-- Every breaking change appears under `Upgrading` with a migration step, even if also mentioned elsewhere.
-- Body copy may reference a past entry by date (`"…that shipped on Apr 22, 2026"`); do not reference past releases by semver (`"shipped in v0.27.0"`) — that drags the two timelines back together.
-
-Version bumps (apply to `VERSION`, not to the changelog label):
-- Feature milestone → minor (`0.7.0` → `0.8.0`).
-- Bug fix → patch.
-- Pre-v1.0 breaking → minor (semver 0.x carve-out); call out under Upgrading.
-- Post-v1.0 breaking → major.
-- Internal-only refactor: terse `<Update>` with `tags={["Internal", ...]}`, one-paragraph summary, skip section structure. Prefer folding into the next user-visible release.
-- Parallel branches bumping `VERSION` do not coordinate through the changelog — whichever lands second rebases `VERSION` and re-runs `make sync-version`.
+Block template + hard rules + version-bump matrix live in `~/Projects/dotfiles/skills/release-template.md`. Read that file at CHORE(close); copy the template, fill it in, drop the block into `changelog.mdx`. Do not paraphrase the template from memory — re-source it each release.
 
 ---
 

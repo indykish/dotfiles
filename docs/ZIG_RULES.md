@@ -316,7 +316,7 @@ Extends "Type Design Rules". Two patterns, both legitimate; pick deliberately an
 
 ## Single-Type-Module Pattern
 
-**Binding** — when a `*.zig` file's primary purpose is exactly one struct, use the file-as-struct layout. The Pub Surface & Struct-Shape Gate (in `AGENTS.md`) requires you to declare layout choice before saving. This was a "(GUIDE)" pre-tightening; it is now a Must.
+**Binding for new files; advisory on existing.** When a *new* `*.zig` file's primary purpose is exactly one struct, use the file-as-struct layout — the Pub Surface & Struct-Shape Gate (in `AGENTS.md`) requires the layout choice to be declared before saving. For existing conventional modules, retrofit only when you're touching the file substantially AND it is genuinely single-primary-type; never retrofit a 2-line change into a layout overhaul.
 
 The file-as-struct layout eliminates a level of nesting:
 
