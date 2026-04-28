@@ -53,7 +53,7 @@ If unexpected changes appear in files the agent is actively editing, stop and as
 
 - Workspace root `~/Projects`. Use `gh`/`glab` CLI, not browsers. `trash` not `rm`. Conventional Commits.
 - "Make a note" → update `AGENTS.md` or repo docs.
-- **Symlinked dotfiles edits.** Any file resolving (via `readlink`) under `~/Projects/dotfiles/` is a dotfiles edit — including `~/.claude/CLAUDE.md` → `dotfiles/AGENTS.md`, `greptile-learnings/`, symlinked MEMORY files, and project-level shared rules (e.g. `usezombie/docs/ZIG_RULES.md`). Detect with `readlink` BEFORE editing. Same action: `cd ~/Projects/dotfiles && git add <files> && git commit && git push origin master`. Never leave dotfiles edits uncommitted.
+- **Symlinked dotfiles edits.** Any file resolving (via `readlink`) under `~/Projects/dotfiles/` is a dotfiles edit (`~/.claude/CLAUDE.md`, `greptile-learnings/`, project-level shared rules, etc.). Detect with `readlink` BEFORE editing. Same action: `cd ~/Projects/dotfiles && git add <files> && git commit && git push origin master`. Never leave dotfiles edits uncommitted.
 - Editing other dotfiles (`.zshrc`, `.gitconfig`, agent configs not under dotfiles repo): timestamped backup first; minimal edits.
 - Before any `git commit`/`git push`: `gitleaks` must pass.
 - Touching `*.zig` (commit or new file): read `docs/ZIG_RULES.md` and follow its workflow.
@@ -86,11 +86,7 @@ Default policy gates commit/push/`gh pr create` on explicit user ask. **Auto mod
 
 ## Date/time formats
 
-| Use case | Format | Example |
-|---|---|---|
-| Inside files (prose) | `MMM DD, YYYY: HH:MM AM/PM` | `Feb 02, 2026: 10:30 AM` |
-| Filenames, minute granularity | `{MMM}_{DD}_{HH_MM}` | `RELEASE_APR_13_15_30.md` |
-| Handoffs under `docs/nostromo/` | `HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md` | `HANDOFF_APR_17_08_27_M{N}_{WKSTRM}.md` |
+Prose (inside files): `MMM DD, YYYY: HH:MM AM/PM` (e.g. `Feb 02, 2026: 10:30 AM`). Filenames (minute granularity): `{MMM}_{DD}_{HH_MM}` (e.g. `RELEASE_APR_13_15_30.md`).
 
 ## Acronym expansion
 
@@ -245,7 +241,7 @@ If any match, **strip the reference before saving.** Rewrite to describe the cod
 
 ### Architecture Consult & Update Gate
 
-A repository's `docs/ARCHITECHTURE.md` (or `docs/ARCHITECTURE.md`) is the canonical source for stream names, consumer groups, channel names, table cardinality, ownership, and end-to-end flows. Reinventing terms or asserting flow shapes from training data — instead of grounding in the doc — is the failure mode. Specs are *instances*; the architecture doc is the *constant*. When a spec and the architecture doc disagree, the architecture doc wins until the spec author and the architecture maintainer reconcile.
+`docs/ARCHITECHTURE.md` (or `ARCHITECTURE.md`) is canonical for stream/channel/queue names, table cardinality, ownership, and end-to-end flows. Specs are *instances*; this doc is the *constant* — when they disagree, the doc wins until reconciled. Don't reinvent terms from training data; ground in the doc.
 
 **Triggers — before any of these, grep or read the relevant section of `docs/ARCHITECHTURE.md` first:**
 
@@ -278,63 +274,21 @@ Never (c) a follow-up commit AFTER the code lands. The next file write of any ki
 
 `docs/ZIG_RULES.md` mandates two Zig-file rules that drift silently if not surfaced:
 1. **`pub` only when an external file imports the symbol** — default private; strip stale `pub`s when touching a file.
-2. **File-as-struct shape — required ONLY when both:**
-   - Exactly one **public** type lives in the file, AND
-   - Every public function takes `self` (i.e. is a method of that type).
-
-   Layout: `const Foo = @This();` at the top, fields immediately after, methods next (constructors → queries → mutators), imports at the file end.
-
-   **Conventional layout — required when ANY of these are true:**
-   - More than one public type.
-   - Any public free function (a `pub fn` that does not take `self`/`*@This()`/`*const @This()`).
-   - File is a tagged-union dispatch table, a parser/DSL, a constants module, or otherwise a "module that operates on values" rather than a "type that exposes behavior."
-
-   **Tie-break:** if the file's primary intent is *operations over a passive value* (queries, parsers, builders, listing functions over a row type) → conventional. If the primary intent is *behavior bound to state* → file-as-struct.
+2. **File-as-struct shape — required ONLY when** exactly one public type lives in the file AND every public function takes `self`. Layout: `const Foo = @This();` at top, fields, methods (constructors → queries → mutators), imports at end. **Conventional layout otherwise** — multi-type modules, modules with `pub` free functions, tagged-union dispatch tables, parsers/DSLs, constants modules, or any "operations over a passive value" file. Tie-break for ambiguous cases: behavior-bound-to-state → file-as-struct; operations-over-value → conventional.
 
 **Coverage scan — applies to every `Edit`/`Write` of a `*.zig` file:**
 
-1. **Out-of-scope (silent — no gate, no warning):** files matching `*_test.zig`, `*_test_*.zig`, anything under `tests/`, `vendor/`, `third_party/`, `node_modules/`, or `.zig-cache/`.
-2. **In-scope (decide per edit):** every other `*.zig` under `src/`.
-
-For an in-scope file:
-- **Gate fires** (print the full PUB GATE block before the edit): the file is new, OR the diff adds at least one new `pub` symbol (including new variants on a pub error/enum/union), OR the file already qualifies for file-as-struct under rule 2 above (any touch re-asserts the shape decision).
-- **Gate skipped** (print a one-line warning before the edit): in-scope file with no new `pub` surface and not single-primary-type. Format: `PUB GATE: skipped — <one-line reason>` (e.g. `no new pub symbols; multi-type module`).
-
-The skip-warning is mandatory whenever in-scope but quiet — it protects against silently editing a file that should have surfaced the gate. Never produce a `pub` change on an in-scope file without either the full gate block OR the skip warning preceding the edit.
-
-**Triggers — gate fires (full block required):**
-
-- A new `*.zig` file.
-- An `Edit`/`Write` that adds at least one new `pub` symbol — including new variants on an existing `pub` error/enum/union, since those expand the pub surface just as much as a new top-level declaration.
-- ANY `Edit`/`Write` to an existing `*.zig` file that already qualifies for file-as-struct under rule 2 above — regardless of touch size. The gate forces you to declare either "already file-as-struct" or "rearchitect in this diff."
+- **Out-of-scope (silent):** `*_test.zig`, `*_test_*.zig`, `tests/`, `vendor/`, `third_party/`, `node_modules/`, `.zig-cache/`.
+- **In-scope:** every other `*.zig` under `src/`. **Gate fires** (full PUB GATE block before the edit) when the file is new OR the diff adds ≥1 new `pub` symbol (including variants on a pub error/enum/union) OR the file already qualifies for file-as-struct (any touch re-asserts shape). Otherwise **gate skipped** with `PUB GATE: skipped — <one-line reason>` (e.g. `no new pub symbols; multi-type module`). Skip-warning is mandatory: never produce a `pub` change on an in-scope file without either the full gate block OR the skip warning preceding the edit.
 
 **Pre-edit check (mandatory — run for EVERY Edit/Write to a `*.zig` file, not just ones you "think" add pubs):**
 
-1. Will the new content contain any of the following patterns? Grep your about-to-save content:
+1. Grep about-to-save content for new pub surface — patterns that fire the gate: `^pub` (new top-level pub), `^\s+pub fn` (new pub method on existing struct), new variant lines on a pub error union (`ErrorUnion{… NewVariant,`) or pub enum (`= enum { … NewVariant,`). Any match in *new* bytes (not the existing file) → gate fires.
+2. Count primary types in the file (struct/union/enum the file is "about"); choose layout: file-as-struct (count = 1, all pub fns take `self`) or conventional (otherwise).
+3. List every new `pub` symbol the edit introduces (top-level + variant additions); for each, grep external consumer (`grep -rn "<symbol>" src/ tests/ --include="*.zig"`) — file:line, or `NONE`. Strip `pub` from any with `NONE`.
+4. Progressive cleanup on touch: `grep -n "^pub " <file>` and audit existing `pub`s in the same diff.
 
-   ```
-   ^pub                  # new top-level pub declaration
-   ^\s+pub fn            # new pub method on an existing struct
-   ConnectionError\{[^}]*[A-Z][a-zA-Z]+,  # new variant on a pub error union
-   = enum\s*\{[^}]*[A-Z][a-zA-Z]+,        # new variant on a pub enum
-   ```
-
-   If ANY pattern matches your new bytes (not the existing file content), the gate fires for this edit.
-
-2. Count primary types in the file (struct/union/enum that the file is "about").
-3. Choose layout: file-as-struct (count = 1) or conventional (count = 0 or > 1).
-4. List every new `pub` symbol — top-level declarations AND variant additions on existing pub types — that the edit introduces.
-5. For each, identify the external consumer (`grep -rn "<symbol>" src/ tests/ --include="*.zig"`) — file path + line, or `NONE`.
-6. Strip `pub` from any with `NONE`.
-7. Progressive cleanup on touch: `grep -n "^pub " <file>` and audit existing `pub`s in the same diff.
-
-**Self-audit at end of turn** (before declaring done):
-
-```bash
-git diff -U0 HEAD -- '*.zig' | grep -E '^\+pub |^\+\s+pub fn |^\+\s+[A-Z][a-zA-Z]+,$' | head
-```
-
-Non-empty output = new pub surface introduced this turn. For each line, verify a PUB GATE block was printed in the user-facing message before the corresponding Edit/Write. Missing gate blocks are caught here, not at code review.
+**Self-audit at end of turn (before declaring done):** run `git diff -U0 HEAD -- '*.zig' | grep -E '^\+pub |^\+\s+pub fn |^\+\s+[A-Z][a-zA-Z]+,$' | head`. Non-empty = new pub surface this turn; verify a PUB GATE block was printed before each corresponding Edit/Write. Missing gate blocks are caught here, not at code review.
 
 **Required output format** (print when file is new OR ≥1 new `pub` added):
 ```
@@ -363,15 +317,7 @@ The dashboard's design-system package (`ui/packages/design-system/src/index.ts` 
      Raw HTML kept: <list with one-word reason each — e.g. "ul: no DS primitive">
    ```
 
-4. Self-audit at end of turn:
-
-   ```bash
-   git diff -U0 HEAD -- 'ui/packages/app/**/*.tsx' \
-     | grep -E '^\+.*<(section|button|input|dialog|article|nav|header|form)\b' \
-     | head
-   ```
-
-   Non-empty output is a violation unless every match has a printed "Raw HTML kept" justification in the corresponding gate block.
+4. Self-audit at end of turn: `git diff -U0 HEAD -- 'ui/packages/app/**/*.tsx' | grep -E '^\+.*<(section|button|input|dialog|article|nav|header|form)\b' | head`. Non-empty is a violation unless every match has a printed "Raw HTML kept" justification in the corresponding gate block.
 
 **Override syntax:** `UI GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
@@ -547,23 +493,11 @@ Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`,
 - Cross-compile `x86_64-linux` + `aarch64-linux` whenever `*.zig` touched.
 - Cross-layer orphan sweep: every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files (RULE ORP).
 - `gitleaks detect` before any commit including Zig.
-- **350-line / 50-function-line gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`). **FLL applies only to code files** — markdown specs, release notes, architecture docs, and changelogs are exempt; readability is the constraint, not line count. Never write grep gates that count markdown lines, and never mark FLL as an "Applicable Rule" on markdown-only workstreams.
-  ```bash
-  # file-length gate
-  git diff --name-only origin/main \
-    | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' \
-    | xargs -I{} sh -c 'wc -l "{}"' \
-    | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
-  ```
+- **350-line / 50-function-line gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`). Verify: `git diff --name-only origin/main | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' | xargs -I{} sh -c 'wc -l "{}"' | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'`.
 
 #### Other VERIFY outputs
 
-- After any refactor, list newly dead code and confirm before removing:
-  ```
-  NEWLY UNREACHABLE AFTER THIS CHANGE:
-  - [symbol/file]: [why now dead]
-  → Remove these? Confirm before I proceed.
-  ```
+- After any refactor, list newly dead code and confirm before removing — format: `NEWLY UNREACHABLE: <symbol/file> — <why now dead>. Remove? Confirm before I proceed.`
 - **Greptile learning capture.** For each finding, ask "Could this recur elsewhere?" If yes, add a compact rule (Rule/Why/Tags/Ref) to `docs/greptile-learnings/RULES.md` in the same commit as the fix. Never defer the rule.
 
 ### DOCUMENT
@@ -585,12 +519,7 @@ Run in order; each gate clears before the next:
 1. **Before CHORE(close):** `/write-unit-test`. Audits test coverage of the diff against spec's Test Specification. Iterate until clean.
 2. **After tests pass, before CHORE(close):** `/review`. Adversarial diff review against spec, architecture doc, REST guide (if HTTP), ZIG_RULES.md (if Zig), and spec's Failure Modes / Invariants. Address findings or document deferrals.
 3. **After CHORE(close) commits + `gh pr create`:** `/review-pr`. Comments the PR via `gh pr review`. Address inline before requesting human review or merging.
-4. **After every push, greptile auto-reviews asynchronously.** `gh pr checks --watch` does NOT observe greptile — poll independently:
-   - Schedule a re-poll +180s after every push (initial open + each subsequent). Claude Code → `ScheduleWakeup(delaySeconds=180, prompt="re-poll greptile on PR #N (head <SHA>)")`. Other runtimes → native scheduling or inline `sleep 180`.
-   - Fetch via `gh api repos/<owner>/<repo>/pulls/<n>/reviews` + `/reviews/<id>/comments`; filter for greptile; **loop ALL review IDs, not just the first**.
-   - For each P0/P1: check `docs/greptile-learnings/RULES.md` — append incident ref if covered, else add new principle (Rule/Why/Tags/Ref).
-   - Fix; re-run verification; reply to each thread with fix SHA via `gh api .../comments -X POST -F in_reply_to=<id>`; commit, push, re-schedule +180s.
-   - Fallback: 2 empty polls → proceed to merge. Report findings/fixes/rules.
+4. **After every push, greptile auto-reviews asynchronously** (`gh pr checks --watch` does NOT observe it — poll independently): schedule re-poll +180s after every push (Claude Code: `ScheduleWakeup(180, "re-poll greptile on PR #N <SHA>")`; else `sleep 180`); fetch via `gh api repos/<owner>/<repo>/pulls/<n>/reviews` + `/reviews/<id>/comments`, filter greptile, **loop ALL review IDs**; for each P0/P1 check `docs/greptile-learnings/RULES.md` (append incident ref or add new principle); fix → re-verify → reply with fix SHA via `gh api .../comments -X POST -F in_reply_to=<id>` → commit, push, re-schedule. Fallback: 2 empty polls → merge. Report findings/fixes/rules.
 
 Skills are required gates, not optional. Skipping = CHORE(close) violation. Unavailable skill (MCP server down) → document in PR Session Notes: *"`/review` skipped — MCP unavailable <ts>; rerun before merge."*
 
@@ -600,22 +529,18 @@ Required outputs:
 - Spec header `Status: DONE` (or `IN_PROGRESS`).
 - Spec moved `docs/v*/active/` → `docs/v*/done/` (only if fully complete); commit on feature branch.
 - **Release doc** — new `<Update>` block in `~/Projects/docs/changelog.mdx` (format below). Never create `docs/v*/ship/*.md`.
-- **PR `## Session notes`** — decisions, surfaced assumptions, dead ends, deferred follow-ups, `/write-unit-test` + `/review` outcomes (clean / iterations / explicit skips). Cross-session handoffs use `docs/nostromo/HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md`.
+- **PR `## Session notes`** — decisions, surfaced assumptions, dead ends, deferred follow-ups, `/write-unit-test` + `/review` outcomes (clean / iterations / explicit skips).
 - **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
 - **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating PR. Out-of-scope files: commit separately, gitignore, or delete.
 - **Version sync** — if `VERSION` touched: `make sync-version`, commit propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`); verify `make check-version`. No-op otherwise.
 
-Gates before PR:
-- `/write-unit-test` skill returned clean (or skip explicitly documented).
-- `/review` skill returned clean (or all findings dispositioned in the diff).
+Gates before PR (in addition to the skill chain above):
 - Spec is in `docs/v*/done/` in the branch diff (skip only if parked midway).
 - `changelog.mdx` has a new `<Update>` block in the diff (skip only if internal-only refactor or parked).
 - If `Status: DONE` but spec not in `done/` — do not open the PR.
 - `make check-version` must pass. If the branch touched `VERSION`, the sync-version edits must be in the diff.
 
-Gates after `gh pr create`:
-- `/review-pr` invoked against the open PR. Comments addressed inline (push fixup commits or amend) BEFORE requesting human review or merging.
-- Greptile workflow (step 4 above) — addressed before merge.
+After `gh pr create`: `/review-pr` + greptile workflow (skill chain step 4) addressed before merge.
 
 #### Release doc generation
 
