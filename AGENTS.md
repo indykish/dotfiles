@@ -325,13 +325,20 @@ ARCH GATE: <topic>
   Proposal / claim: <what is being asserted or about to change>
   Verdict: consistent | extends | conflicts
   If extends/conflicts: WAITING FOR USER DECISION before edit.
-  Post-agreement: ARCHITECHTURE.md update lands in the SAME commit
-                  as the implementation that depends on it.
+  Post-agreement landing rule (NO LATER than implementation):
+    EITHER (a) immediate doc-only commit on the active branch
+           (preferred — captures decisions the moment they crystallise,
+           avoids "I'll add it when I commit" drift), OR
+    (b) same commit as the implementation that depends on it.
+    NEVER (c) a follow-up commit AFTER the code lands. That is the
+    failure mode this gate exists to prevent.
 ```
 
 If the file does not exist (greenfield repo or pre-architecture project), state `Grounded in: NO ARCHITECHTURE.md present — proposing initial decision; will land doc + code in same commit on user agreement` and proceed with extra care.
 
-**EXECUTE-time corollary** (binding even outside this gate's printable block): an architecture decision agreed mid-task — naming, cardinality, ownership, new stream / channel / column — has its `docs/ARCHITECHTURE.md` edit ride in the SAME commit as the code that depends on it. Never split the doc edit into a follow-up. The PR that introduces a new stream without updating the architecture doc fails this gate retroactively at CHORE(close).
+**Brainstorming-time corollary** (binding the moment a decision is reached, not when code starts): if a brainstorming exchange — even one that did not yet write code — settles an architecture-affecting decision (a stream rename, a new channel, a flow change, a cardinality assertion, an ownership reassignment), the next `Edit`/`Write` tool call on the active branch is the `docs/ARCHITECHTURE.md` update that captures it. Not the next code change; the next file write of any kind. This forces doc-first hygiene and prevents the "we agreed on X 40 minutes ago, but it never made it into the doc because we got busy implementing" drift mode.
+
+**EXECUTE-time corollary** (binding even outside this gate's printable block): an architecture decision agreed mid-task — naming, cardinality, ownership, new stream / channel / column — has its `docs/ARCHITECHTURE.md` edit either already landed (per the brainstorming-time corollary above) OR riding in the SAME commit as the code that depends on it. Never split the doc edit into a follow-up commit AFTER the implementing code. The PR that introduces a new stream without a corresponding doc edit anywhere on the branch fails this gate retroactively at CHORE(close).
 
 **CHORE(close) corollary**: every M-spec branch that touched flow-defining code must produce a non-empty `git diff origin/main..HEAD -- docs/ARCHITECHTURE.md`. If empty, either the branch genuinely changed nothing architectural (rare; document why in the PR Session Notes) or the doc edit is missing.
 
