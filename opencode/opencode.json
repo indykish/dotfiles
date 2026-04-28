@@ -183,9 +183,6 @@
         "accounts/fireworks/models/glm-5": {
           "name": "GLM 5"
         },
-        "accounts/fireworks/models/kimi-k2.5": {
-          "name": "Kimi K2.5"
-        },
         "accounts/fireworks/models/deepseek-v4-pro": {
           "name": "DeepSeek V4 Pro"
         }
