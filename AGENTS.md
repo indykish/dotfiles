@@ -241,7 +241,7 @@ If any match, **strip the reference before saving.** Rewrite to describe the cod
 
 ### Architecture Consult & Update Gate
 
-`docs/ARCHITECHTURE.md` (or `ARCHITECTURE.md`) is canonical for stream/channel/queue names, table cardinality, ownership, and end-to-end flows. Specs are *instances*; this doc is the *constant* — when they disagree, the doc wins until reconciled. Don't reinvent terms from training data; ground in the doc.
+`docs/ARCHITECHTURE.md` (or `ARCHITECTURE.md`) is canonical for stream/channel/queue names, table cardinality, ownership, and end-to-end flows. **The failure mode is reinventing terms or asserting flow shapes from training data instead of grounding in the doc.** Specs are *instances*; this doc is the *constant* — when they disagree, the doc wins until reconciled.
 
 **Triggers — before any of these, grep or read the relevant section of `docs/ARCHITECHTURE.md` first:**
 
@@ -283,7 +283,11 @@ Never (c) a follow-up commit AFTER the code lands. The next file write of any ki
 
 **Pre-edit check (mandatory — run for EVERY Edit/Write to a `*.zig` file, not just ones you "think" add pubs):**
 
-1. Grep about-to-save content for new pub surface — patterns that fire the gate: `^pub` (new top-level pub), `^\s+pub fn` (new pub method on existing struct), new variant lines on a pub error union (`ErrorUnion{… NewVariant,`) or pub enum (`= enum { … NewVariant,`). Any match in *new* bytes (not the existing file) → gate fires.
+1. Grep about-to-save content for new pub surface — any match in *new* bytes (not the existing file) → gate fires:
+   - `^pub` — new top-level pub declaration
+   - `^\s+pub fn` — new pub method on an existing struct
+   - new variant on a pub error union: `ErrorUnion{… NewVariant,`
+   - new variant on a pub enum: `= enum { … NewVariant,`
 2. Count primary types in the file (struct/union/enum the file is "about"); choose layout: file-as-struct (count = 1, all pub fns take `self`) or conventional (otherwise).
 3. List every new `pub` symbol the edit introduces (top-level + variant additions); for each, grep external consumer (`grep -rn "<symbol>" src/ tests/ --include="*.zig"`) — file:line, or `NONE`. Strip `pub` from any with `NONE`.
 4. Progressive cleanup on touch: `grep -n "^pub " <file>` and audit existing `pub`s in the same diff.
