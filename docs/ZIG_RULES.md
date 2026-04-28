@@ -105,6 +105,10 @@ Three byte-accumulation tools are available; picking the wrong one creates reall
 
 **Required output (before the edit):** `BUFFER GATE: <ArrayList|StringBuilder|StringJoiner> for <field/var name> — <one-line reason matching the table>.`
 
+**Self-audit at end of turn (before declaring done):** run `git diff -U0 HEAD -- '*.zig' | grep -E '^\+.*(std\.ArrayList\(u8\)|StringBuilder\.init|StringJoiner\.init)\b' | head`. Non-empty = new buffer accumulation introduced this turn; verify a `BUFFER GATE:` line was printed before each corresponding Edit/Write. Missing gate lines are a violation, caught here.
+
+False positives: `std.ArrayList(u8)` used as a non-buffer list of bytes (rare). The fix is still to print a `BUFFER GATE: ArrayList for <var> — list of bytes, not append-loop accumulator` so the choice is visible.
+
 **Override syntax:** `BUFFER GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
 ## Progressive Cleanup (apply on file touch)
