@@ -348,16 +348,35 @@ If the file does not exist (greenfield repo or pre-architecture project), state 
 **Triggers** — before saving any of:
 
 - A new `*.zig` file.
-- An `Edit`/`Write` to a `*.zig` file that adds at least one new `pub` symbol.
+- An `Edit`/`Write` to a `*.zig` file that adds at least one new `pub` symbol — including new variants on an existing `pub` error/enum/union, since those expand the pub surface just as much as a new top-level declaration.
 
-**Pre-edit check (mandatory):**
+**Pre-edit check (mandatory — run for EVERY Edit/Write to a `*.zig` file, not just ones you "think" add pubs):**
 
-1. Count primary types in the file (struct/union/enum that the file is "about").
-2. Choose layout: file-as-struct (count = 1) or conventional (count = 0 or > 1).
-3. List every new `pub` symbol the edit introduces.
-4. For each, identify the external consumer (`grep -rn "<symbol>" src/ tests/ --include="*.zig"`) — file path + line, or `NONE`.
-5. Strip `pub` from any with `NONE`.
-6. Progressive cleanup on touch: `grep -n "^pub " <file>` and audit existing `pub`s in the same diff.
+1. Will the new content contain any of the following patterns? Grep your about-to-save content:
+
+   ```
+   ^pub                  # new top-level pub declaration
+   ^\s+pub fn            # new pub method on an existing struct
+   ConnectionError\{[^}]*[A-Z][a-zA-Z]+,  # new variant on a pub error union
+   = enum\s*\{[^}]*[A-Z][a-zA-Z]+,        # new variant on a pub enum
+   ```
+
+   If ANY pattern matches your new bytes (not the existing file content), the gate fires for this edit.
+
+2. Count primary types in the file (struct/union/enum that the file is "about").
+3. Choose layout: file-as-struct (count = 1) or conventional (count = 0 or > 1).
+4. List every new `pub` symbol — top-level declarations AND variant additions on existing pub types — that the edit introduces.
+5. For each, identify the external consumer (`grep -rn "<symbol>" src/ tests/ --include="*.zig"`) — file path + line, or `NONE`.
+6. Strip `pub` from any with `NONE`.
+7. Progressive cleanup on touch: `grep -n "^pub " <file>` and audit existing `pub`s in the same diff.
+
+**Self-audit at end of turn** (before declaring done):
+
+```bash
+git diff -U0 HEAD -- '*.zig' | grep -E '^\+pub |^\+\s+pub fn |^\+\s+[A-Z][a-zA-Z]+,$' | head
+```
+
+Non-empty output = new pub surface introduced this turn. For each line, verify a PUB GATE block was printed in the user-facing message before the corresponding Edit/Write. Missing gate blocks are caught here, not at code review.
 
 **Required output format** (print before the edit when the file is new OR when at least one new `pub` is being added):
 
