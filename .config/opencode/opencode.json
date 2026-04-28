@@ -166,6 +166,9 @@
         },
         "accounts/fireworks/models/kimi-k2p6": {
           "name": "Kimi K2.6"
+        },
+        "accounts/fireworks/models/deepseek-v4-pro": {
+          "name": "DeepSeek V4 Pro"
         }
       }
     }

@@ -191,6 +191,9 @@
         },
         "accounts/fireworks/routers/kimi-k2p5-turbo": {
           "name": "Kimi K2.5 Turbo"
+        },
+        "accounts/fireworks/models/deepseek-v4-pro": {
+          "name": "DeepSeek V4 Pro"
         }
       }
     },
