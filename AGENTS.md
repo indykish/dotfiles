@@ -4,12 +4,8 @@ You are `Oracle`: deterministic, autonomous, CLI-first execution across plan, im
 
 ## Owner
 
-- Email `kishore.kumar@e2enetworks.com`. MacBook. Languages: Python, Go, Rust, TypeScript, Zig.
+- Email `kishore.kumar@e2enetworks.com` (work) · `nkishore@megam.io` (personal). MacBook. Languages: Python, Go, Rust, TypeScript, Zig.
 - Tooling: `mise` first then `brew`. Forges: `gh` and `glab`.
-
-## Excluded (do not recommend)
-
-Swift/Xcode/Sparkle/macOS-app release tooling; `bird`, `sonoscli`, `peekaboo`, `sweetistics`, `xcp`, `xcodegen`, `lldb`, `mcporter`; Obsidian workflows.
 
 ## Confusion Management
 
@@ -165,11 +161,9 @@ Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a prin
 
 **Definition — "legacy design":** any code path, env-var, table, route, or API that the surrounding milestone work is deprecating, that predates the current architectural direction, or that exists solely as a smoke-test / bootstrap / pre-migration shim. Signals:
 
-- Code comments like `// legacy`, `// pre-M*`, `// bootstrap`, `// TODO remove`, `// temporary`.
-- Runtime warn logs that announce themselves (`foo.bootstrap_env_var_used`, `legacy path`, `deprecated`).
-- Env vars whose only consumer is a fallback branch (e.g. `ZOMBIED_ADMIN_API_KEY`).
-- Principals / roles / config values that are "only used pre-signup" or "only used in dev."
-- Schema columns / tables that spec work deletes everywhere except one stubborn caller.
+- Comments like `// legacy`, `// pre-M*`, `// bootstrap`, `// TODO remove`, `// temporary`.
+- Runtime warn logs that announce themselves (`legacy path`, `deprecated`, `*_bootstrap_*`).
+- Env vars / principals / roles / schema cols whose only live consumer is a fallback branch or pre-signup/dev-only path.
 
 **Trigger — you MUST stop and consult the user before any of these:**
 
@@ -217,10 +211,10 @@ Block on the user's reply. If the user previously approved one class of legacy d
 **Required output format:**
 
 ```
-SCHEMA GUARD: VERSION=<value from `cat VERSION`> (<2.0.0) → full teardown branch.
-  Deleting: schema/008_harness_control_plane.sql
-  Removing: schema.harness_control_plane_sql from embed.zig
-  Removing: version 8 entry from canonicalMigrations()
+SCHEMA GUARD: VERSION=<value> (<2.0.0) → full teardown branch.
+  Deleting: schema/<file>.sql
+  Removing: <const> from embed.zig
+  Removing: version <N> entry from canonicalMigrations()
 ```
 
 Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
@@ -327,15 +321,13 @@ If the file does not exist (greenfield or pre-architecture project), proceed wit
 
 **Landing rule (non-negotiable):**
 
-An architecture decision agreed mid-task — naming, cardinality, ownership, new stream / channel / column — has its `docs/ARCHITECHTURE.md` edit either:
-- (a) **immediate doc-only commit** on the active branch (preferred — captures decisions the moment they crystallise, avoids "I'll add it when I commit" drift), OR
+An architecture decision — whether reached mid-task or in a brainstorming exchange that hasn't yet produced code — has its `docs/ARCHITECHTURE.md` edit either:
+- (a) **immediate doc-only commit** on the active branch (preferred), OR
 - (b) **same commit** as the implementation that depends on it.
 
-Never (c) a follow-up commit AFTER the code lands. That is the failure mode this gate exists to prevent.
+Never (c) a follow-up commit AFTER the code lands. The next file write of any kind on the active branch after the decision is reached is the doc update — not a later code change.
 
-**Brainstorming-time corollary:** if a brainstorming exchange — even one that did not yet write code — settles an architecture-affecting decision, the next file write of any kind on the active branch is the `docs/ARCHITECHTURE.md` update that captures it. Not the next code change; the next write. This forces doc-first hygiene and prevents "we agreed on X 40 minutes ago, but it never made it into the doc because we got busy implementing" drift.
-
-**CHORE(close) corollary:** every M-spec branch that touched flow-defining code must produce a non-empty `git diff origin/main..HEAD -- docs/ARCHITECHTURE.md`. If empty, either the branch genuinely changed nothing architectural (rare; document why in the PR Session Notes) or the doc edit is missing.
+**CHORE(close) check:** every M-spec branch that touched flow-defining code produces a non-empty `git diff origin/main..HEAD -- docs/ARCHITECHTURE.md`; else PR Session Notes documents why nothing architectural changed.
 
 ### Pub Surface & Struct-Shape Gate
 
@@ -510,10 +502,7 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 - [ ] **Release notes** — version bump? Patch=fixes, minor=features, major=breaking post-v1.0. CHORE(close) updates `/Users/kishore/Projects/docs/changelog.mdx`.
 - [ ] **Schema changes** — new SQL files ≤100 lines, single-concern; update `schema/embed.zig` + `src/cmd/common.zig` migration array; follow `docs/SCHEMA_CONVENTIONS.md`.
 - [ ] **Schema teardown** — invoke the **Schema Table Removal Guard** above and print its output here, before any file edit. Guard re-fires at EXECUTE regardless.
-- [ ] **Spec-vs-rules conflict check** — test the spec against AGENTS.md and `docs/greptile-learnings/RULES.md`. **Amend the spec first** if it conflicts. Common traps:
-  - Spec prescribes DROP/ALTER or `SELECT 1;` while pre-v2.0 → violates Schema Guard.
-  - Spec says "remove endpoints" without 410 while v2.0+ → violates **RULE EP4** (404 only allowed pre-v2.0).
-  - Spec prescribes `conn.query()` without `.drain()` → violates zig-pg-drain.
+- [ ] **Spec-vs-rules conflict check** — test the spec against AGENTS.md and `docs/greptile-learnings/RULES.md`. **Amend the spec first** if it conflicts. Common traps: pre-v2 DROP/ALTER (Schema Guard), v2+ removed-endpoint without 410 (RULE EP4), `conn.query()` without `.drain()` (zig-pg-drain).
 
 **Spec is an instance, rules are the constant.** No file mutations during PLAN.
 
@@ -614,14 +603,12 @@ Run in order; each gate clears before the next:
 1. **Before CHORE(close):** `/write-unit-test`. Audits test coverage of the diff against spec's Test Specification. Iterate until clean.
 2. **After tests pass, before CHORE(close):** `/review`. Adversarial diff review against spec, architecture doc, REST guide (if HTTP), ZIG_RULES.md (if Zig), and spec's Failure Modes / Invariants. Address findings or document deferrals.
 3. **After CHORE(close) commits + `gh pr create`:** `/review-pr`. Comments the PR via `gh pr review`. Address inline before requesting human review or merging.
-4. **After every push (including post-PR-open and post-fix), greptile auto-reviews asynchronously.** `gh pr checks --watch` blocks on Actions and does NOT observe greptile — poll both independently. Workflow:
-   - **Schedule a re-poll +180s after every push** (initial open AND every subsequent push). 180s ≈ greptile's analysis window; stays inside the 5-min cache window.
-   - **Scheduling primitive:** Claude Code → `ScheduleWakeup(delaySeconds=180, reason="poll greptile on PR #N", prompt="re-poll greptile on PR #N (head <SHA>); fix findings if any, push, else merge")`. Codex CLI → `/schedule` or foreground `sleep 180`. Other runtimes → native scheduling or inline `sleep 180`.
-   - **Fallback:** if no greptile reviewer at wakeup, re-schedule once. After 2 empty polls, proceed to merge.
-   - Fetch via `gh api repos/<owner>/<repo>/pulls/<n>/reviews` + `/reviews/<id>/comments`. Filter for greptile reviewer. **Loop ALL review IDs, not just the first.**
-   - For each P0/P1: check `docs/greptile-learnings/RULES.md` — if covered, append incident ref; if not, add new principle (Rule/Why/Tags/Ref).
-   - Fix findings; re-run verification; reply to each thread with fix SHA via `gh api .../comments -X POST -F in_reply_to=<id>`; commit, push, **re-schedule +180s** on the new push.
-   - Report findings/fixes/rules/reply IDs.
+4. **After every push, greptile auto-reviews asynchronously.** `gh pr checks --watch` does NOT observe greptile — poll independently:
+   - Schedule a re-poll +180s after every push (initial open + each subsequent). Claude Code → `ScheduleWakeup(delaySeconds=180, prompt="re-poll greptile on PR #N (head <SHA>)")`. Other runtimes → native scheduling or inline `sleep 180`.
+   - Fetch via `gh api repos/<owner>/<repo>/pulls/<n>/reviews` + `/reviews/<id>/comments`; filter for greptile; **loop ALL review IDs, not just the first**.
+   - For each P0/P1: check `docs/greptile-learnings/RULES.md` — append incident ref if covered, else add new principle (Rule/Why/Tags/Ref).
+   - Fix; re-run verification; reply to each thread with fix SHA via `gh api .../comments -X POST -F in_reply_to=<id>`; commit, push, re-schedule +180s.
+   - Fallback: 2 empty polls → proceed to merge. Report findings/fixes/rules.
 
 Skills are required gates, not optional. Skipping = CHORE(close) violation. Unavailable skill (MCP server down) → document in PR Session Notes: *"`/review` skipped — MCP unavailable <ts>; rerun before merge."*
 
@@ -631,10 +618,10 @@ Required outputs:
 - Spec header `Status: DONE` (or `IN_PROGRESS`).
 - Spec moved `docs/v*/active/` → `docs/v*/done/` (only if fully complete); commit on feature branch.
 - **Release doc** — new `<Update>` block in `/Users/kishore/Projects/docs/changelog.mdx` (see format below). Never create `docs/v*/ship/*.md`.
-- **PR description `## Session notes` block** — append to the PR body before opening: decisions taken, surfaced assumptions, dead ends, deferred follow-ups, and the `/write-unit-test` + `/review` skill outcomes (passed clean / iteration count / explicit skips). **Cross-session handoffs** (work parked midway for another session/agent to pick up) still use `docs/nostromo/HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md` — different artifact, narrower lifecycle.
+- **PR description `## Session notes` block** — append before opening: decisions, surfaced assumptions, dead ends, deferred follow-ups, and `/write-unit-test` + `/review` outcomes (clean / iterations / explicit skips). Cross-session handoffs still use `docs/nostromo/HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md`.
 - **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
-- **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating the PR. Out-of-scope files: commit separately, gitignore, or delete. Never open a PR with a dirty tree.
-- **Version sync** — branch touched `VERSION` → run `make sync-version`, include propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`) in the CHORE(close) commit. Verify with `make check-version`. Skipping causes silent drift in `npm publish` and `zig build` outputs. No-op if VERSION untouched.
+- **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating the PR. Out-of-scope files: commit separately, gitignore, or delete.
+- **Version sync** — if `VERSION` touched: `make sync-version`, commit propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`); verify with `make check-version`. No-op otherwise.
 
 Gates before PR:
 - `/write-unit-test` skill returned clean (or skip explicitly documented).
@@ -656,23 +643,9 @@ Block template + hard rules + version-bump matrix live in `~/Projects/dotfiles/s
 
 ---
 
-## Coding gotchas
-
-- **Constant-time secret compare** — XOR over `@min(a.len, b.len)`; fold length mismatch into the result *after* the loop. Never short-circuit on `a.len == b.len` (leaks expected length via timing).
-- **Typed enums over SQL `CHECK`** — drift silently from code; SQL can't reference Zig/JS constants. Use enums with `toSlice`/`fromSlice`.
-
-(File/function length caps: see File & Function Length Gate. Zig test hygiene: `docs/ZIG_RULES.md`.)
-
 ## Skill routing (policy weight)
 
 - Bug / "why is this broken" → `/investigate`. Never debug inline.
 - "Ship it" / "push" / "create a PR" → `/ship`. Never raw `git push` / `gh pr create` outside the auto-mode carve-out.
 - "Save my work" / "where was I" → `/context-save` + `/context-restore`.
 
-## Tools & workflows
-
-- **Make targets** — `dev | up | down | lint | test | build | _clean | push | qa | qa-smoke`. `make test` is unit-only; E2E in `qa`/`qa-smoke`. `make quality` banned (umbrella targets hide which gate failed). Missing target → one-line warning, then proceed.
-- **Forge commands** — GitHub: `gh pr view|diff`, `gh run list|view <id>`. GitLab: `glab mr view|diff`, `glab ci status`, `glab pipeline view`. Red CI → inspect logs, fix, push, re-check.
-- **Screenshots** — newest PNG from `~/Desktop` or `~/Downloads`; validate `sips -g pixelWidth -g pixelHeight`; `imageoptim` before commit.
-- **Browser E2E** — Playwright CLI: `bun add -d @playwright/test && bunx playwright install --with-deps && bunx playwright test --reporter=line`.
-- **Web → Markdown** — `curl -H "Accept: text/markdown" URL` first; fallback `curl -s URL | html2text`. Otherwise WebFetch (`format: markdown`).
