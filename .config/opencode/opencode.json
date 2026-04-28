@@ -120,17 +120,6 @@
     }
   },
   "mcp": {
-    "context7": {
-      "command": ["npx", "@upstash/context7-mcp@latest"],
-      "type": "local"
-    },
-    "lightpanda": {
-      "command": ["npx", "lightpanda-mcp@latest"],
-      "environment": {
-        "LIGHTPANDA_PATH": "{env:HOME}/bin/lightpanda"
-      },
-      "type": "local"
-    },
     "playwright": {
       "command": ["npx", "@playwright/mcp@latest"],
       "type": "local"
@@ -138,16 +127,16 @@
   },
   "provider": {
     "ollama": {
+      "models": {
+        "qwen3-coder-next:cloud": {
+          "name": "qwen3-coder-next:cloud"
+        }
+      },
       "name": "Ollama (local)",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "http://localhost:11434/v1",
         "apiKey": "{env:OLLAMA_CLOUD_API_KEY}"
-      },
-      "models": {
-        "qwen3.6:35b": {
-          "name": "Qwen 3.6 35B"
-        }
       }
     },
     "fireworks": {
@@ -166,6 +155,32 @@
         },
         "accounts/fireworks/models/deepseek-v4-pro": {
           "name": "DeepSeek V4 Pro"
+        }
+      }
+    },
+    "openrouter": {
+      "name": "OpenRouter",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://openrouter.ai/api/v1",
+        "apiKey": "{env:OPENROUTER_API_KEY}"
+      },
+      "models": {
+        "moonshotai/kimi-k2.5": {
+          "name": "Kimi K2.5 (OR)"
+        }
+      }
+    },
+    "moonshot": {
+      "name": "Moonshot",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://api.moonshot.com/v1",
+        "apiKey": "{env:MOONSHOT_API_KEY}"
+      },
+      "models": {
+        "kimi-k2.5": {
+          "name": "Kimi K2.5"
         }
       }
     }
