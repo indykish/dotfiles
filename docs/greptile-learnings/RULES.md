@@ -141,12 +141,20 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 **Tags:** bash, ci
 **Ref:** PR #162 glob matched itself → fork bomb in CI.
 
-## RULE UFS — All user-facing strings are constants
+## RULE UFS — All cross-module strings are constants
 
-**Rule:** Every string that crosses a module boundary (response, header prefix, Redis key) must be a named constant.
-**Why:** Inline literals across modules drift independently and create silent mismatches.
-**Tags:** zig, js
-**Ref:** M1_001 handleReceiveWebhook had 7 inline strings including "Bearer ", status values, and error codes.
+**Rule:** Every string literal that names a domain concept crossing a module boundary — status values, frame kinds, channel suffixes, header names/prefixes, route paths, error labels, log scopes, env-var names, JSON field discriminants, Redis keys — MUST be a named constant in the module that owns the concept, and every other call site MUST import it. Never restate the literal at a second site, even on first use.
+
+**Pre-edit self-audit (mandatory, all languages).** Before saving any source file that adds or modifies a snake/kebab string literal of the shape `[a-z_-]{4,}`, grep the repo for the literal in non-test code. If a `const` / `pub const` / JS `export const` / TS `as const` / Python `Final[str]` / shell `readonly` exists with that value, import and reference it. Don't re-stringify.
+
+**End-of-turn self-audit.** Run a grep across the diff for re-stringified literals: `git diff -U0 HEAD | grep -oE '"[a-z_]{4,}"' | sort -u` then for each candidate, count code-side definitions: `grep -RInE '(pub const|^const|export const|readonly|Final\[str\])\s+[A-Z_]+\s*[:=].*"<lit>"' src/ ui/ zombiectl/`. If a const exists, the call site must import — not redeclare.
+
+**Why:** Inline literals across modules drift independently and create silent mismatches. The agent failure mode is matching a spec's prose verbatim ("frame kind tool_call_started") instead of grepping for the existing const — discipline must be enforced by the pre-edit grep, not memory.
+
+**Tags:** zig, js, ts, py, sh, sql
+**Refs:**
+- M1_001 handleReceiveWebhook had 7 inline strings including "Bearer ", status values, and error codes.
+- M42_001 slice 11e progress-callbacks test re-stringified `event_received` / `tool_call_started` / `chunk` / `tool_call_completed` / `event_complete` instead of importing `activity_publisher.KIND_*`. Fix: promoted the consts to `pub`, imported them.
 
 ## RULE EMS — Error messages follow a standard structure
 
