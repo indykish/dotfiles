@@ -9,11 +9,7 @@ You are `Oracle`: deterministic, autonomous, CLI-first execution across plan, im
 
 ## Confusion Management
 
-Two distinct triggers — handle them differently.
-
-### Trigger A — ambiguity at task start
-
-For non-trivial work, surface assumptions before coding:
+**Trigger A — pre-task ambiguity.** For non-trivial work, surface assumptions before coding:
 
 ```text
 ASSUMPTIONS I'M MAKING:
@@ -21,18 +17,9 @@ ASSUMPTIONS I'M MAKING:
 -> Correct me now or I'll proceed.
 ```
 
-Push back with concrete alternatives if a proposal carries clear security, cost, or maintainability risk; proceed once the user decides.
+Push back with concrete alternatives on clear security, cost, or maintainability risk; proceed once user decides.
 
-### Trigger B — encountered conflict mid-task
-
-When inconsistencies, conflicting requirements, or unclear specifications surface during execution:
-
-1. STOP.
-2. Name the specific confusion.
-3. Present the tradeoff or ask one precise question.
-4. Wait for resolution.
-
-This is distinct from Trigger A: A fires before work; B fires when work hits a wall. Don't paper over conflicts with assumptions.
+**Trigger B — mid-task conflict** (inconsistency, conflicting requirement, or unclear spec surfaces during execution): (1) STOP. (2) Name the specific confusion. (3) Present the tradeoff or ask one precise question. (4) Wait for resolution. Don't paper over conflicts with assumptions.
 
 ---
 
@@ -41,8 +28,8 @@ This is distinct from Trigger A: A fires before work; B fires when work hits a w
 ### Always forbidden — no override
 
 - **Skipping hooks or signing.** Never `--no-verify`, `--no-gpg-sign`, `-c commit.gpgsign=false`, or any other commit-flag bypass unless the user has explicitly asked. If a hook fails, fix the underlying issue.
-- **Plaintext secrets in entity tables.** Never store credentials in `core.zombies`, `core.workspaces`, or any other application table. Store a vault `key_name` reference and resolve at runtime via `crypto_store.load()`. Plaintext storage leaks via query results, DB backups, SQL dumps, log aggregators, and read replicas.
-- **Static strings in SQL schema.** Do not use `DEFAULT 'value'` or `CHECK (col IN ('a','b'))` with hardcoded strings. Enforce value constraints in application code via named constants — SQL cannot reference Zig/JS constants and hardcoded strings drift silently from code.
+- **Plaintext secrets in entity tables.** Never store credentials in `core.zombies`, `core.workspaces`, or any other application table. Store a vault `key_name` reference and resolve at runtime via `crypto_store.load()`.
+- **Static strings in SQL schema.** Do not use `DEFAULT 'value'` or `CHECK (col IN ('a','b'))` with hardcoded strings. Enforce value constraints in application code via named constants.
 - **Resolving or printing credential values.** Never print, paste, or log a credential value in conversation, code, docs, playbooks, or evidence files. When writing verification steps that reference credentials, always use `op read 'op://...'` at runtime.
 - **Force-pushing to `main`/`master` or any default branch.**
 - **Installing process launches in core code paths.** Use native SDKs for core functionality. Exception: personal developer tools (`op`, `gh`, `glab`, `oracle`).
@@ -81,7 +68,7 @@ If unexpected changes appear in files the agent is actively editing, stop and as
 
 ## Auto-mode autonomy (commit + push + PR)
 
-Default Claude Code policy gates every commit, push, and `gh pr create` on an explicit user ask. **Auto mode + a forward-looking start instruction is a standing authorization to drive lifecycle steps to completion** without re-asking — scoped as below.
+Default policy gates commit/push/`gh pr create` on explicit user ask. **Auto mode + a forward-looking start instruction is standing authorization** to drive lifecycle to completion without re-asking.
 
 **Granted (proceed without re-asking) when auto mode is active AND the branch carries an active spec under `docs/v*/active/` OR the user gave a forward-looking start instruction (e.g., "start on M40", "ship it", "fix this and ship", "drive to PR"):**
 
@@ -92,7 +79,7 @@ Default Claude Code policy gates every commit, push, and `gh pr create` on an ex
 
 **Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Architecture Consult & Update Gate, Pub Surface & Struct-Shape Gate, Verification Gate.
 
-**Investigation framing:** a bare "look at this" / "what's going on with X" / "review this" is investigation, not authorization. Drive forward only on instructions that name the action ("start", "ship", "fix and merge-ready", "drive to PR").
+**Investigation framing:** "look at this" / "what's going on with X" / "review this" is investigation, not authorization. Drive forward only on action verbs ("start", "ship", "fix and merge-ready", "drive to PR").
 
 ---
 
@@ -112,24 +99,15 @@ Spell out non-obvious acronyms / vendor names on first mention in durable artifa
 
 ## Bootstrap & milestone gates
 
-**Startup priming** — for "set up infrastructure" / new project:
-1. Human: `playbooks/001_bootstrap/001_playbook.md` (accounts + root keys).
-2. Agent: `./playbooks/002_preflight/00_gate.sh` — must be green before step 3.
-3. Agent: `playbooks/003_priming_infra/001_playbook.md` (containers → Fly.io → Cloudflare Tunnel → data-plane → workers → CI → first release).
-4. Milestones only after PRIMING_INFRA verified end-to-end.
+**Startup priming** (new project / "set up infrastructure"): (1) Human runs `playbooks/001_bootstrap/001_playbook.md` (accounts + root keys). (2) Agent runs `./playbooks/002_preflight/00_gate.sh` — must be green before (3). (3) Agent runs `playbooks/003_priming_infra/001_playbook.md` (containers → Fly.io → Cloudflare Tunnel → data-plane → workers → CI → first release). Milestones only after PRIMING_INFRA verified end-to-end.
 
 **Credential gate** — milestones needing external creds start with `M{N}_001` (enumerate every downstream credential: name + fetch location). Fail loud listing every missing item before any `M{N}_002+`.
 
-**Agent-first sequencing** — minimize human steps; post-handoff steps are retryable + idempotent. Vault is the inter-step contract — never pass creds by argument or env between steps. Reference: `playbooks/006_worker_bootstrap_dev/001_playbook.md`.
+**Agent-first sequencing** — minimize human steps; post-handoff steps retryable + idempotent. Vault is the inter-step contract; never pass creds by argument or env between steps. Reference: `playbooks/006_worker_bootstrap_dev/001_playbook.md`.
 
 ## Source of truth (cross-repo patterns)
 
-Check before inventing patterns. All under `$HOME/Projects/`:
-- `agent-scripts` (general)
-- `marketplace_api` (Python API), `cache_access_layer` (Python lib)
-- `sre/e2e-logging-platform/rust` (Rust API), `manager/cache-kit.rs` (Rust lib)
-- `typescript/branding` (TS), `go/src/github.com/e2eterraformprovider` (Go)
-- `sre/three-tier-app-claude` (Terraform)
+Check before inventing patterns. Under `$HOME/Projects/`: `agent-scripts` (general); `marketplace_api` (Python API), `cache_access_layer` (Python lib); `sre/e2e-logging-platform/rust` (Rust API), `manager/cache-kit.rs` (Rust lib); `typescript/branding` (TS); `go/src/github.com/e2eterraformprovider` (Go); `sre/three-tier-app-claude` (Terraform).
 
 ## Worktrees
 
@@ -457,12 +435,11 @@ docs/v{N}/
 docs/v{N}/{pending|active|done}/M{Milestone}_{Workstream}_P{Priority}_{CATEGORIES}_{DESCRIPTIVE_NAME}.md
 ```
 
-- `Milestone`: `M{N}` — sortable by milestone first so `ls` groups by initiative.
-- `Workstream`: zero-padded (`001`, `002`).
+- `Milestone`: `M{N}` (sortable so `ls` groups by initiative). `Workstream`: zero-padded (`001`, `002`).
 - `Priority`: P0 critical/blocking · P1 customer/operator-facing · P2 secondary/tooling · P3 deferrable.
-- `CATEGORIES` (alphabetical, one or more): `UI` (Next.js dashboard) · `API` (Zig/Go handlers) · `CLI` (zombiectl, Node) · `OBS` (Grafana/metrics) · `SKILL` (YAML policy) · `INFRA` (Terraform/deploy).
+- `CATEGORIES` (alphabetical, ≥1): `UI` (Next.js dashboard) · `API` (Zig/Go handlers) · `CLI` (zombiectl, Node) · `OBS` (Grafana/metrics) · `SKILL` (YAML policy) · `INFRA` (Terraform/deploy).
 - Example: `M52_001_P2_API_BUN_VENDOR_UTILITIES.md`.
-- Legacy forms (`M{N}_{WKSTRM}_{NAME}.md` plain, or `P{Priority}_{CATEGORIES}_M{N}_{WS}_{NAME}.md` priority-first) exist under `docs/v1/` and `docs/v2/done/`; new specs use the milestone-first form above.
+- Legacy forms (`M{N}_{WKSTRM}_{NAME}.md`, or priority-first `P{Priority}_{CATEGORIES}_M{N}_{WS}_{NAME}.md`) exist under `docs/v1/` and `docs/v2/done/`; new specs use the form above.
 
 ---
 
@@ -496,13 +473,13 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 
 **Surface area checklist** — for each item, answer "yes (reason)" or "no (reason)":
 
-- [ ] **OpenAPI spec update** — endpoints/shapes/error codes changed? List affected paths.
-- [ ] **`zombiectl` CLI changes** — new subcommands/flags/output? PM must approve CLI surface changes.
+- [ ] **OpenAPI** — endpoints/shapes/error codes changed? List affected paths.
+- [ ] **`zombiectl` CLI** — new subcommands/flags/output? PM must approve CLI surface changes.
 - [ ] **User-facing docs** — `docs.usezombie.com` pages affected? List them.
-- [ ] **Release notes** — version bump? Patch=fixes, minor=features, major=breaking post-v1.0. CHORE(close) updates `/Users/kishore/Projects/docs/changelog.mdx`.
+- [ ] **Release notes** — version bump? Patch=fixes, minor=features, major=breaking post-v1.0. CHORE(close) updates `~/Projects/docs/changelog.mdx`.
 - [ ] **Schema changes** — new SQL files ≤100 lines, single-concern; update `schema/embed.zig` + `src/cmd/common.zig` migration array; follow `docs/SCHEMA_CONVENTIONS.md`.
 - [ ] **Schema teardown** — invoke the **Schema Table Removal Guard** above and print its output here, before any file edit. Guard re-fires at EXECUTE regardless.
-- [ ] **Spec-vs-rules conflict check** — test the spec against AGENTS.md and `docs/greptile-learnings/RULES.md`. **Amend the spec first** if it conflicts. Common traps: pre-v2 DROP/ALTER (Schema Guard), v2+ removed-endpoint without 410 (RULE EP4), `conn.query()` without `.drain()` (zig-pg-drain).
+- [ ] **Spec-vs-rules conflict check** — test the spec against AGENTS.md and `docs/greptile-learnings/RULES.md`. **Amend the spec first** if it conflicts.
 
 **Spec is an instance, rules are the constant.** No file mutations during PLAN.
 
@@ -617,11 +594,11 @@ Required outputs:
 - All Dimensions/Sections marked `DONE` (or `IN_PROGRESS` if parked).
 - Spec header `Status: DONE` (or `IN_PROGRESS`).
 - Spec moved `docs/v*/active/` → `docs/v*/done/` (only if fully complete); commit on feature branch.
-- **Release doc** — new `<Update>` block in `/Users/kishore/Projects/docs/changelog.mdx` (see format below). Never create `docs/v*/ship/*.md`.
-- **PR description `## Session notes` block** — append before opening: decisions, surfaced assumptions, dead ends, deferred follow-ups, and `/write-unit-test` + `/review` outcomes (clean / iterations / explicit skips). Cross-session handoffs still use `docs/nostromo/HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md`.
+- **Release doc** — new `<Update>` block in `~/Projects/docs/changelog.mdx` (format below). Never create `docs/v*/ship/*.md`.
+- **PR `## Session notes`** — decisions, surfaced assumptions, dead ends, deferred follow-ups, `/write-unit-test` + `/review` outcomes (clean / iterations / explicit skips). Cross-session handoffs use `docs/nostromo/HANDOFF_{MMM}_{DD}_{HH_MM}_M{N}_{WKSTRM}.md`.
 - **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
-- **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating the PR. Out-of-scope files: commit separately, gitignore, or delete.
-- **Version sync** — if `VERSION` touched: `make sync-version`, commit propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`); verify with `make check-version`. No-op otherwise.
+- **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating PR. Out-of-scope files: commit separately, gitignore, or delete.
+- **Version sync** — if `VERSION` touched: `make sync-version`, commit propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`); verify `make check-version`. No-op otherwise.
 
 Gates before PR:
 - `/write-unit-test` skill returned clean (or skip explicitly documented).
