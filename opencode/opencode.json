@@ -158,9 +158,6 @@
   "provider": {
     "ollama": {
       "models": {
-        "deepseek-v3.2:cloud": {
-          "name": "deepseek-v3.2:cloud"
-        },
         "qwen3-coder-next:cloud": {
           "name": "qwen3-coder-next:cloud"
         }
@@ -180,8 +177,11 @@
         "apiKey": "{env:FIREWORKS_API_KEY}"
       },
       "models": {
-        "accounts/fireworks/models/glm-5": {
-          "name": "GLM 5"
+        "accounts/fireworks/models/glm-5p1": {
+          "name": "GLM 5.1"
+        },
+        "accounts/fireworks/models/kimi-k2p6": {
+          "name": "Kimi K2.6"
         },
         "accounts/fireworks/models/deepseek-v4-pro": {
           "name": "DeepSeek V4 Pro"
@@ -196,9 +196,6 @@
         "apiKey": "{env:OPENROUTER_API_KEY}"
       },
       "models": {
-        "thudm/glm-5": {
-          "name": "GLM 5 (OR)"
-        },
         "moonshotai/kimi-k2.5": {
           "name": "Kimi K2.5 (OR)"
         }
