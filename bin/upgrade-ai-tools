@@ -4,6 +4,7 @@ set -euo pipefail
 # Colors
 ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
 info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
+warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 
 info "🤖 Upgrading AI coding tools..."
 
