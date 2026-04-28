@@ -308,41 +308,34 @@ Non-empty output = violations introduced this turn. Fix before reporting done.
 
 A repository's `docs/ARCHITECHTURE.md` (or `docs/ARCHITECTURE.md`) is the canonical source for stream names, consumer groups, channel names, table cardinality, ownership, and end-to-end flows. Reinventing terms or asserting flow shapes from training data — instead of grounding in the doc — is the failure mode. Specs are *instances*; the architecture doc is the *constant*. When a spec and the architecture doc disagree, the architecture doc wins until the spec author and the architecture maintainer reconcile.
 
-**Triggers** — before any of these, the gate fires and the printable block is mandatory in the user-facing message:
+**Triggers — before any of these, grep or read the relevant section of `docs/ARCHITECHTURE.md` first:**
 
 - Naming a stream / pub-sub channel / Redis key namespace / consumer group / queue / RPC method / Postgres schema / table.
 - Asserting cardinality ("one row per X", "exactly one consumer per stream", "fleet-wide vs per-tenant").
 - Describing a flow ("on crash → X reclaims via Y", "trigger source A lands on stream B with actor C").
 - Answering a user question about how data flows between components.
 - Proposing a change to any of the above as part of a spec or implementation.
+- A new architecture-adjacent question that arises mid-task — re-consult per topic, not once per task.
 
-**Required output format** (print before any architecture-affecting edit OR before answering an architecture-flow question in chat):
+**Behavior — no ceremony, just lookup:**
 
-```
-ARCH GATE: <topic>
-  Grounded in: docs/ARCHITECHTURE.md §<section> lines <N-M>
-  Canonical text: <one-line quote or precise paraphrase>
-  Proposal / claim: <what is being asserted or about to change>
-  Verdict: consistent | extends | conflicts
-  If extends/conflicts: WAITING FOR USER DECISION before edit.
-  Post-agreement landing rule (NO LATER than implementation):
-    EITHER (a) immediate doc-only commit on the active branch
-           (preferred — captures decisions the moment they crystallise,
-           avoids "I'll add it when I commit" drift), OR
-    (b) same commit as the implementation that depends on it.
-    NEVER (c) a follow-up commit AFTER the code lands. That is the
-    failure mode this gate exists to prevent.
-```
+- Doc answers the question → proceed. Don't print a citation block; don't ask the user a question the doc resolves.
+- Doc is silent → proceed with extra care; the implementation lands the doc decision in the same commit (see landing rule below).
+- Proposal extends or conflicts the doc → surface with a one-line citation (`grounded in §X.Y, proposal extends/conflicts because <reason>`) and wait for user decision.
 
-If the file does not exist (greenfield repo or pre-architecture project), state `Grounded in: NO ARCHITECHTURE.md present — proposing initial decision; will land doc + code in same commit on user agreement` and proceed with extra care.
+If the file does not exist (greenfield or pre-architecture project), proceed with extra care and land the initial doc + code in the same commit.
 
-**Brainstorming-time corollary** (binding the moment a decision is reached, not when code starts): if a brainstorming exchange — even one that did not yet write code — settles an architecture-affecting decision (a stream rename, a new channel, a flow change, a cardinality assertion, an ownership reassignment), the next `Edit`/`Write` tool call on the active branch is the `docs/ARCHITECHTURE.md` update that captures it. Not the next code change; the next file write of any kind. This forces doc-first hygiene and prevents the "we agreed on X 40 minutes ago, but it never made it into the doc because we got busy implementing" drift mode.
+**Landing rule (non-negotiable):**
 
-**EXECUTE-time corollary** (binding even outside this gate's printable block): an architecture decision agreed mid-task — naming, cardinality, ownership, new stream / channel / column — has its `docs/ARCHITECHTURE.md` edit either already landed (per the brainstorming-time corollary above) OR riding in the SAME commit as the code that depends on it. Never split the doc edit into a follow-up commit AFTER the implementing code. The PR that introduces a new stream without a corresponding doc edit anywhere on the branch fails this gate retroactively at CHORE(close).
+An architecture decision agreed mid-task — naming, cardinality, ownership, new stream / channel / column — has its `docs/ARCHITECHTURE.md` edit either:
+- (a) **immediate doc-only commit** on the active branch (preferred — captures decisions the moment they crystallise, avoids "I'll add it when I commit" drift), OR
+- (b) **same commit** as the implementation that depends on it.
 
-**CHORE(close) corollary**: every M-spec branch that touched flow-defining code must produce a non-empty `git diff origin/main..HEAD -- docs/ARCHITECHTURE.md`. If empty, either the branch genuinely changed nothing architectural (rare; document why in the PR Session Notes) or the doc edit is missing.
+Never (c) a follow-up commit AFTER the code lands. That is the failure mode this gate exists to prevent.
 
-**Override syntax:** `ARCH GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit. Do not use to dodge; use only when the work is genuinely architecture-neutral (e.g. a typo fix in user-facing error text).
+**Brainstorming-time corollary:** if a brainstorming exchange — even one that did not yet write code — settles an architecture-affecting decision, the next file write of any kind on the active branch is the `docs/ARCHITECHTURE.md` update that captures it. Not the next code change; the next write. This forces doc-first hygiene and prevents "we agreed on X 40 minutes ago, but it never made it into the doc because we got busy implementing" drift.
+
+**CHORE(close) corollary:** every M-spec branch that touched flow-defining code must produce a non-empty `git diff origin/main..HEAD -- docs/ARCHITECHTURE.md`. If empty, either the branch genuinely changed nothing architectural (rare; document why in the PR Session Notes) or the doc edit is missing.
 
 ### Pub Surface & Struct-Shape Gate
 
