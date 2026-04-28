@@ -109,6 +109,7 @@
       "npx *": "allow",
       "bunx *": "allow",
       "stagehand *": "allow",
+      "playwright *": "allow",
       "xcrun *": "allow",
       "simctl *": "allow"
     }
@@ -128,6 +129,10 @@
       "environment": {
         "LIGHTPANDA_PATH": "{env:HOME}/bin/lightpanda"
       },
+      "type": "local"
+    },
+    "playwright": {
+      "command": ["npx", "@playwright/mcp@latest"],
       "type": "local"
     }
   },
