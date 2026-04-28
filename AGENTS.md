@@ -94,7 +94,7 @@ Default Claude Code policy gates every commit, push, and `gh pr create` on an ex
 - `gh pr create` once CHORE(close) gates pass.
 - `gh pr review` (review-comment via `/review-pr`) on the agent's own PR.
 
-**Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Pub Surface & Struct-Shape Gate, Verification Gate.
+**Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Architecture Consult & Update Gate, Pub Surface & Struct-Shape Gate, Verification Gate.
 
 **Investigation framing:** a bare "look at this" / "what's going on with X" / "review this" is investigation, not authorization. Drive forward only on instructions that name the action ("start", "ship", "fix and merge-ready", "drive to PR").
 
@@ -305,6 +305,39 @@ git diff --name-only HEAD | \
 Non-empty output = violations introduced this turn. Fix before reporting done.
 
 **Override syntax:** `MILESTONE ID ALLOWED per user override (reason: ...)` in the immediately-preceding comment line.
+
+### Architecture Consult & Update Gate
+
+A repository's `docs/ARCHITECHTURE.md` (or `docs/ARCHITECTURE.md`) is the canonical source for stream names, consumer groups, channel names, table cardinality, ownership, and end-to-end flows. Reinventing terms or asserting flow shapes from training data — instead of grounding in the doc — is the failure mode. Specs are *instances*; the architecture doc is the *constant*. When a spec and the architecture doc disagree, the architecture doc wins until the spec author and the architecture maintainer reconcile.
+
+**Triggers** — before any of these, the gate fires and the printable block is mandatory in the user-facing message:
+
+- Naming a stream / pub-sub channel / Redis key namespace / consumer group / queue / RPC method / Postgres schema / table.
+- Asserting cardinality ("one row per X", "exactly one consumer per stream", "fleet-wide vs per-tenant").
+- Describing a flow ("on crash → X reclaims via Y", "trigger source A lands on stream B with actor C").
+- Answering a user question about how data flows between components.
+- Proposing a change to any of the above as part of a spec or implementation.
+
+**Required output format** (print before any architecture-affecting edit OR before answering an architecture-flow question in chat):
+
+```
+ARCH GATE: <topic>
+  Grounded in: docs/ARCHITECHTURE.md §<section> lines <N-M>
+  Canonical text: <one-line quote or precise paraphrase>
+  Proposal / claim: <what is being asserted or about to change>
+  Verdict: consistent | extends | conflicts
+  If extends/conflicts: WAITING FOR USER DECISION before edit.
+  Post-agreement: ARCHITECHTURE.md update lands in the SAME commit
+                  as the implementation that depends on it.
+```
+
+If the file does not exist (greenfield repo or pre-architecture project), state `Grounded in: NO ARCHITECHTURE.md present — proposing initial decision; will land doc + code in same commit on user agreement` and proceed with extra care.
+
+**EXECUTE-time corollary** (binding even outside this gate's printable block): an architecture decision agreed mid-task — naming, cardinality, ownership, new stream / channel / column — has its `docs/ARCHITECHTURE.md` edit ride in the SAME commit as the code that depends on it. Never split the doc edit into a follow-up. The PR that introduces a new stream without updating the architecture doc fails this gate retroactively at CHORE(close).
+
+**CHORE(close) corollary**: every M-spec branch that touched flow-defining code must produce a non-empty `git diff origin/main..HEAD -- docs/ARCHITECHTURE.md`. If empty, either the branch genuinely changed nothing architectural (rare; document why in the PR Session Notes) or the doc edit is missing.
+
+**Override syntax:** `ARCH GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit. Do not use to dodge; use only when the work is genuinely architecture-neutral (e.g. a typo fix in user-facing error text).
 
 ### Pub Surface & Struct-Shape Gate
 
