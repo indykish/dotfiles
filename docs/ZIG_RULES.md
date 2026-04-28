@@ -316,7 +316,7 @@ Extends "Type Design Rules". Two patterns, both legitimate; pick deliberately an
 
 ## Single-Type-Module Pattern
 
-**Binding for new files; advisory on existing.** When a *new* `*.zig` file's primary purpose is exactly one struct, use the file-as-struct layout — the Pub Surface & Struct-Shape Gate (in `AGENTS.md`) requires the layout choice to be declared before saving. For existing conventional modules, retrofit only when you're touching the file substantially AND it is genuinely single-primary-type; never retrofit a 2-line change into a layout overhaul.
+**Binding — applies to new files AND to any existing single-primary-type file the moment an edit touches it, regardless of touch size.** When a `*.zig` file's primary purpose is exactly one struct, use the file-as-struct layout (`const Foo = @This();`). If your edit lands on an existing conventional single-primary-type file — even a one-line bug fix — the same diff that lands the change rearchitects the file to file-as-struct shape. The Pub Surface & Struct-Shape Gate (in `AGENTS.md`) requires the layout choice and any rearchitect plan to be declared before saving. Multi-type modules (tagged unions + helpers, protocols with multiple shapes, handler-collection files) keep conventional layout.
 
 The file-as-struct layout eliminates a level of nesting:
 

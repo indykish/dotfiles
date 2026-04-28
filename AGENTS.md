@@ -347,6 +347,7 @@ If the file does not exist (greenfield repo or pre-architecture project), state 
 
 - A new `*.zig` file.
 - An `Edit`/`Write` to a `*.zig` file that adds at least one new `pub` symbol — including new variants on an existing `pub` error/enum/union, since those expand the pub surface just as much as a new top-level declaration.
+- ANY `Edit`/`Write` to an existing `*.zig` file whose primary purpose is exactly one struct — regardless of touch size. Per ZIG_RULES.md Single-Type-Module Pattern, single-primary-type files are required to use file-as-struct shape on every touch; the gate forces you to declare either "already file-as-struct" or "rearchitect in this diff."
 
 **Pre-edit check (mandatory — run for EVERY Edit/Write to a `*.zig` file, not just ones you "think" add pubs):**
 
