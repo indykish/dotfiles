@@ -110,6 +110,23 @@ for agent_config in "${AGENTS[@]}"; do
     fi
 done
 
+# 5. Sync opencode.json config (XDG location)
+info "Syncing opencode.json..."
+OPENCODE_CONFIG_SRC="$DOTFILES/.config/opencode/opencode.json"
+OPENCODE_CONFIG_DST="$HOME/.config/opencode/opencode.json"
+if [ -f "$OPENCODE_CONFIG_SRC" ]; then
+    if [ -f "$OPENCODE_CONFIG_DST" ] && [ ! -L "$OPENCODE_CONFIG_DST" ]; then
+        backup_file="${OPENCODE_CONFIG_DST}.backup.$(date +%Y%m%d_%H%M%S)"
+        cp "$OPENCODE_CONFIG_DST" "$backup_file"
+        warn "Backed up existing opencode.json to $backup_file"
+    fi
+    rm -f "$OPENCODE_CONFIG_DST"
+    ln -snf "$OPENCODE_CONFIG_SRC" "$OPENCODE_CONFIG_DST"
+    ok "Linked $OPENCODE_CONFIG_DST → $OPENCODE_CONFIG_SRC"
+else
+    warn "Source opencode.json not found at $OPENCODE_CONFIG_SRC"
+fi
+
 ok "Skills synced! All agents now use unified skills from $UNIFIED_SKILLS"
 info "Gstack installed at: $GSTACK_DIR"
 info "Unified skills at: $UNIFIED_SKILLS"
