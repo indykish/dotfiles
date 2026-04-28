@@ -141,20 +141,29 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 **Tags:** bash, ci
 **Ref:** PR #162 glob matched itself → fork bomb in CI.
 
-## RULE UFS — All cross-module strings are constants
+## RULE UFS — String literals are always constants
 
-**Rule:** Every string literal that names a domain concept crossing a module boundary — status values, frame kinds, channel suffixes, header names/prefixes, route paths, error labels, log scopes, env-var names, JSON field discriminants, Redis keys — MUST be a named constant in the module that owns the concept, and every other call site MUST import it. Never restate the literal at a second site, even on first use.
+**Rule:** Default: every string literal in source code is a named constant. The literal lives at exactly one declaration site; every other reference imports it. There is no "this one is small," no "this one is just a domain value," no "I'll inline it once and extract later." Adding a literal is the trigger to add (or import) the const.
 
-**Pre-edit self-audit (mandatory, all languages).** Before saving any source file that adds or modifies a snake/kebab string literal of the shape `[a-z_-]{4,}`, grep the repo for the literal in non-test code. If a `const` / `pub const` / JS `export const` / TS `as const` / Python `Final[str]` / shell `readonly` exists with that value, import and reference it. Don't re-stringify.
+**Allowed exceptions, narrow:**
+- Single-use, throwaway log/error message bodies that are not asserted on by other code (e.g. `log.warn("zombie.claim_fail err={s}", .{...})` — the format string is fine inline).
+- Test-fixture human-readable names that have no production counterpart (e.g. `"scrooge-mcduck"` tenant name).
+- Single-character separators / `""` / whitespace strings.
 
-**End-of-turn self-audit.** Run a grep across the diff for re-stringified literals: `git diff -U0 HEAD | grep -oE '"[a-z_]{4,}"' | sort -u` then for each candidate, count code-side definitions: `grep -RInE '(pub const|^const|export const|readonly|Final\[str\])\s+[A-Z_]+\s*[:=].*"<lit>"' src/ ui/ zombiectl/`. If a const exists, the call site must import — not redeclare.
+Everything else — status values, frame kinds, channel suffixes/prefixes, header names, route paths, error codes, error labels, log *scope* names, env-var names, JSON field discriminants, Redis keys, SQL table/column references, regex patterns, version strings, file paths, content types — gets a const, no exceptions, on first appearance.
 
-**Why:** Inline literals across modules drift independently and create silent mismatches. The agent failure mode is matching a spec's prose verbatim ("frame kind tool_call_started") instead of grepping for the existing const — discipline must be enforced by the pre-edit grep, not memory.
+**Pre-edit self-audit (mandatory, all languages).** Before saving any source file that adds or modifies a string literal of length ≥4, grep the repo for the literal: `grep -RInF '"<lit>"' src/ ui/ zombiectl/ --include='*.{zig,js,ts,tsx,jsx,py,sh,go,rs,sql}'`. If any prior occurrence exists as a `const` / `pub const` / `export const` / `as const` / `Final[str]` / `readonly` declaration, import it. If the literal is novel, declare it as a const at the appropriate ownership site (the module that "owns" the concept) before using it elsewhere.
 
-**Tags:** zig, js, ts, py, sh, sql
+**End-of-turn self-audit.** `git diff -U0 HEAD | grep -oE '"[^"]{4,}"' | sort -u` — for each unique literal in the diff, run the pre-edit grep again. Any literal appearing at >1 call site without a shared const is a violation.
+
+**Anti-rationalization clause.** "It's not a domain value" / "it's just a label" / "I'll only use it here" are not exceptions. The rule is mechanical: if it's a string literal and it doesn't fall in the narrow exception list, it's a const. The exceptions are hardcoded above; do not invent new ones.
+
+**Why:** Inline literals across modules drift independently and create silent mismatches. The agent failure mode is matching a spec's prose verbatim instead of grepping for the existing const — discipline must be enforced by the pre-edit grep, not memory or judgment about whether a literal "feels" domain-significant.
+
+**Tags:** zig, js, ts, py, sh, sql, go, rs
 **Refs:**
 - M1_001 handleReceiveWebhook had 7 inline strings including "Bearer ", status values, and error codes.
-- M42_001 slice 11e progress-callbacks test re-stringified `event_received` / `tool_call_started` / `chunk` / `tool_call_completed` / `event_complete` instead of importing `activity_publisher.KIND_*`. Fix: promoted the consts to `pub`, imported them.
+- M42_001 slice 11e progress-callbacks test re-stringified `event_received` / `tool_call_started` / `chunk` / `tool_call_completed` / `event_complete` instead of importing `activity_publisher.KIND_*`. Fix: promoted the consts to `pub`, imported them. Caught only at human review — pre-edit grep would have caught it automatically.
 
 ## RULE EMS — Error messages follow a standard structure
 
