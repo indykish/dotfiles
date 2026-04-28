@@ -84,6 +84,29 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
 - When a struct carries data from different sources (e.g. vault ref + Bearer token), consider whether a tagged union better represents the "exactly one of these" constraint.
 - `deinit()` methods on tagged union types must switch on all variants and free only what that variant owns.
 
+## Buffer Type Selection (BUFFER GATE)
+
+Three byte-accumulation tools are available; picking the wrong one creates realloc churn or unnecessary materialize-and-copy steps. Pick deliberately.
+
+**Triggers** — every Edit/Write to a `*.zig` file that net-adds byte-accumulation code (request bodies, JSON serialization, log construction, byte recorders, response builders, anything assembling many writes into one slice):
+
+- A new `std.ArrayList(u8)` declaration intended as a byte buffer.
+- A new `StringBuilder.init` / `initCapacity` call (`src/util/strings/string_builder.zig`).
+- A new `StringJoiner.init` call (`src/util/strings/string_joiner.zig`).
+- Any new function whose body is a write/append loop accumulating into a buffer.
+
+**Decision table:**
+
+| Tool                | Use when                                                  | Why                                                                                                                                        |
+| ------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `StringBuilder`     | Total size known up front                                 | Two-phase `count → allocate → append`. Single allocation; slices borrow from one backing buffer. No realloc churn.                          |
+| `StringJoiner`      | Many small slices, total size unknown                     | Rope of nodes; `pushStatic` (borrow) / `pushCloned` (own); `done(alloc)` materializes once. Lower realloc cost than `ArrayList` on heavy writes. |
+| `std.ArrayList(u8)` | Append-as-you-go AND need random-access reads of `.items` | One contiguous slice always available — direct `std.mem.indexOf` / grep. Realloc churn on growth, but fine when read access dominates write throughput. |
+
+**Required output (before the edit):** `BUFFER GATE: <ArrayList|StringBuilder|StringJoiner> for <field/var name> — <one-line reason matching the table>.`
+
+**Override syntax:** `BUFFER GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
+
 ## Progressive Cleanup (apply on file touch)
 
 When you touch a file during any workstream and see one of these patterns,
