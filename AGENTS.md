@@ -311,13 +311,35 @@ Never (c) a follow-up commit AFTER the code lands. The next file write of any ki
 
 `docs/ZIG_RULES.md` mandates two Zig-file rules that drift silently if not surfaced:
 1. **`pub` only when an external file imports the symbol** — default private; strip stale `pub`s when touching a file.
-2. **File-as-struct shape for single-primary-type modules** — `const Foo = @This();` with fields immediately after, methods next, imports at file end. Multi-type modules (tagged unions + helpers, protocol with multiple shapes) keep conventional layout.
+2. **File-as-struct shape — required ONLY when both:**
+   - Exactly one **public** type lives in the file, AND
+   - Every public function takes `self` (i.e. is a method of that type).
 
-**Triggers** — before saving any of:
+   Layout: `const Foo = @This();` at the top, fields immediately after, methods next (constructors → queries → mutators), imports at the file end.
+
+   **Conventional layout — required when ANY of these are true:**
+   - More than one public type.
+   - Any public free function (a `pub fn` that does not take `self`/`*@This()`/`*const @This()`).
+   - File is a tagged-union dispatch table, a parser/DSL, a constants module, or otherwise a "module that operates on values" rather than a "type that exposes behavior."
+
+   **Tie-break:** if the file's primary intent is *operations over a passive value* (queries, parsers, builders, listing functions over a row type) → conventional. If the primary intent is *behavior bound to state* → file-as-struct.
+
+**Coverage scan — applies to every `Edit`/`Write` of a `*.zig` file:**
+
+1. **Out-of-scope (silent — no gate, no warning):** files matching `*_test.zig`, `*_test_*.zig`, anything under `tests/`, `vendor/`, `third_party/`, `node_modules/`, or `.zig-cache/`.
+2. **In-scope (decide per edit):** every other `*.zig` under `src/`.
+
+For an in-scope file:
+- **Gate fires** (print the full PUB GATE block before the edit): the file is new, OR the diff adds at least one new `pub` symbol (including new variants on a pub error/enum/union), OR the file already qualifies for file-as-struct under rule 2 above (any touch re-asserts the shape decision).
+- **Gate skipped** (print a one-line warning before the edit): in-scope file with no new `pub` surface and not single-primary-type. Format: `PUB GATE: skipped — <one-line reason>` (e.g. `no new pub symbols; multi-type module`).
+
+The skip-warning is mandatory whenever in-scope but quiet — it protects against silently editing a file that should have surfaced the gate. Never produce a `pub` change on an in-scope file without either the full gate block OR the skip warning preceding the edit.
+
+**Triggers — gate fires (full block required):**
 
 - A new `*.zig` file.
-- An `Edit`/`Write` to a `*.zig` file that adds at least one new `pub` symbol — including new variants on an existing `pub` error/enum/union, since those expand the pub surface just as much as a new top-level declaration.
-- ANY `Edit`/`Write` to an existing `*.zig` file whose primary purpose is exactly one struct — regardless of touch size. Per ZIG_RULES.md Single-Type-Module Pattern, single-primary-type files are required to use file-as-struct shape on every touch; the gate forces you to declare either "already file-as-struct" or "rearchitect in this diff."
+- An `Edit`/`Write` that adds at least one new `pub` symbol — including new variants on an existing `pub` error/enum/union, since those expand the pub surface just as much as a new top-level declaration.
+- ANY `Edit`/`Write` to an existing `*.zig` file that already qualifies for file-as-struct under rule 2 above — regardless of touch size. The gate forces you to declare either "already file-as-struct" or "rearchitect in this diff."
 
 **Pre-edit check (mandatory — run for EVERY Edit/Write to a `*.zig` file, not just ones you "think" add pubs):**
 
