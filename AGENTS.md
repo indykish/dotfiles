@@ -57,6 +57,7 @@ If unexpected changes appear in files the agent is actively editing, stop and as
 - Editing other dotfiles (`.zshrc`, `.gitconfig`, agent configs not under dotfiles repo): timestamped backup first; minimal edits.
 - Before any `git commit`/`git push`: `gitleaks` must pass.
 - Touching `*.zig` (commit or new file): read `docs/ZIG_RULES.md` and follow its workflow.
+- Auth-flow / Clerk / OIDC edits — anything under `src/auth/`, `src/auth/middleware/**`, `ui/packages/app/lib/auth/**`, route handlers that mint or proxy Bearer tokens, or any spec dimension naming a credential type (cookie, JWT, API key, session): read `docs/AUTH.md` first. The three principal-type sequences (CLI, UI, API key) and the cookie-vs-Bearer reasoning live there, not in chat. Don't re-litigate the audience-claim or Next-Route-Handler decision without consulting it.
 - `conn.query()` requires `.drain()` in the same function before `deinit()`. Verify with `make check-pg-drain`. Use `conn.exec()` when no rows are needed.
 - Local Docker `ENOSPC`: `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
 
@@ -151,18 +152,7 @@ Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a prin
 - Authoring tests that exercise the legacy path — stop and ask whether the test (and path) should exist.
 - Choosing between "patch the legacy path" vs "remove it entirely" — this is never your call to make silently.
 
-**Required output (user-facing, before any edit):**
-
-```
-LEGACY CONSULT: <one-line description of the legacy design>
-  Discovered in: <file:line or spec section>
-  Options:
-    (A) Remove it entirely — blast radius: <files/tests/callers>.
-    (B) Patch around it — change: <what to add>, risk: <null/fallback/security>.
-    (C) Keep as-is — justification: <why>.
-  Recommendation: <A|B|C> because <reason>.
-  WAITING FOR USER DECISION.
-```
+**Required output (user-facing, before any edit):** `LEGACY CONSULT: <desc> | found:<file:line> | (A) remove [blast:<files>] / (B) patch [risk] / (C) keep [why] | rec:<A|B|C> because <reason> | WAITING.`
 
 Block on the user's reply. If the user previously approved one class of legacy decisions this session, note that and proceed — but every *new* class of finding still triggers a consult.
 
@@ -186,14 +176,7 @@ Block on the user's reply. If the user previously approved one class of legacy d
 
 **Spec conflicts:** spec violates the guard → **amend the spec first**.
 
-**Required output format:**
-
-```
-SCHEMA GUARD: VERSION=<value> (<2.0.0) → full teardown branch.
-  Deleting: schema/<file>.sql
-  Removing: <const> from embed.zig
-  Removing: version <N> entry from canonicalMigrations()
-```
+**Required output format:** `SCHEMA GUARD: VERSION=<v> (<2.0.0) teardown | rm:schema/<file>.sql | rm-embed:<const> | rm-migration:v<N>.`
 
 Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
 
@@ -218,14 +201,7 @@ Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
 4. If projected > 350, **STOP**. Split first: extract a cohesive block to a sibling file using the repo's `<module>_<concern>.<ext>` convention (`zombie_list.js` beside `zombie.js`). Then apply the original edit.
 5. Function sub-gate: project post-edit line count for any touched function. If > 50 (function) or > 70 (method), split into named helpers **before** writing.
 
-**Required output format** (math runs every edit; print block only when projected ≥ 300 lines, or touched function within 10 of its cap):
-
-```
-LENGTH GATE: <file> currently N lines; adding Δ → N+Δ.
-  File cap: 350. Headroom after: 350-(N+Δ).
-  Function check: <fn_name> post-edit <F> lines (cap 50/70).
-  Decision: proceed | split first.
-```
+**Required output format** (print only when projected ≥ 300 lines OR touched function within 10 of cap): `LENGTH GATE: <file> N+Δ=<N+Δ> (cap 350, headroom <H>) | fn:<name> <F> lines (cap 50/70) | proceed|split.`
 
 **Splitting conventions:**
 
@@ -263,16 +239,7 @@ M[0-9]+_[0-9]+          # M27_001, M11_006, M2_001
 
 If any match, **strip the reference before saving.** Rewrite to describe the code's purpose, not its spec lineage.
 
-**Self-audit at end of turn (before declaring done):**
-
-```bash
-git diff --name-only HEAD | \
-  grep -vE '(^docs/|\.md$)' | \
-  xargs -r grep -nE 'M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b' | \
-  head
-```
-
-Non-empty output = violations introduced this turn. Fix before reporting done.
+**Self-audit at end of turn (before declaring done):** run `git diff --name-only HEAD | grep -vE '(^docs/|\.md$)' | xargs -r grep -nE 'M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b' | head`. Non-empty output = violations introduced this turn; fix before reporting done.
 
 **Override syntax:** `MILESTONE ID ALLOWED per user override (reason: ...)` in the immediately-preceding comment line.
 
@@ -369,16 +336,11 @@ git diff -U0 HEAD -- '*.zig' | grep -E '^\+pub |^\+\s+pub fn |^\+\s+[A-Z][a-zA-Z
 
 Non-empty output = new pub surface introduced this turn. For each line, verify a PUB GATE block was printed in the user-facing message before the corresponding Edit/Write. Missing gate blocks are caught here, not at code review.
 
-**Required output format** (print before the edit when the file is new OR when at least one new `pub` is being added):
-
+**Required output format** (print when file is new OR ≥1 new `pub` added):
 ```
-PUB GATE: <file>
-  Primary type count: <0|1|>1>
-  Layout: <file-as-struct | conventional> (<one-line justification>)
-  New `pub` symbols this edit:
-    <symbol>: external consumer = <file:line> | NONE → strip
-    <symbol>: external consumer = <file:line> | NONE → strip
-  Existing `pub`s audited: <count> kept · <count> stripped
+PUB GATE: <file> | types=<0|1|>1> | layout=<file-as-struct|conventional> (<why>)
+  New: <sym> consumer=<file:line>|NONE→strip; <sym> consumer=...
+  Audited: <K> kept · <M> stripped
 ```
 
 If no new `pub` symbols and the file is not new, the gate is a no-op — skip the printable block.
@@ -427,15 +389,7 @@ Package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` withou
 - `make down && make up && make test-integration` — at least once per branch before declaring ship-ready (tier 3).
 - Add-on gates (`make memleak`, `make bench`, cross-compile, `make check-pg-drain`) per the trigger table in `VERIFY`.
 
-**Required output in the user-facing "done" message:**
-
-```
-Verified:
-  make lint             ✓ clean
-  make test             ✓ <N> passed, <M> skipped
-  make test-integration ✓  (or "N/A — no handler/schema/redis changes")
-  cross-compile         ✓  (when *.zig touched; omit otherwise)
-```
+**Required output in done message:** `Verified: lint ✓ | test ✓ <N>p/<M>s | test-integration ✓ (or N/A — no handler/schema/redis) | cross-compile ✓ (zig only).`
 
 **Override syntax** (only when a target is genuinely unrunnable — e.g. Docker missing for integration tests): `VERIFY GATE: <target> skipped per environment constraint (reason: ...)`. Call out the limitation in the done message — not as "tests pass".
 
@@ -539,6 +493,7 @@ Required outputs: one-paragraph goal · explicit assumptions · file/task impact
 - Read `docs/greptile-learnings/RULES.md` first (universal). Re-read when sub-task changes shape (new layer/language, resuming after break). Conflicts → state and ask, never silently skip.
 - Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe, cross-compile, TLS, memory, errdefer, ownership, sentinel, `pub` audit). Required by file-extension trigger even if spec omits it.
 - HTTP handler / OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first: Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI editing), §7 (5-place route registration), §8 (`Hx` handler contract), §10 (pre-PR gates). Triggered by `src/http/handlers/**` or `public/openapi/**`.
+- Auth-flow changes → read `docs/AUTH.md` first (CLI device flow, UI Next Route Handler proxy, API-key prefix dispatch). Triggered by `src/auth/**`, `ui/packages/app/lib/auth/**`, `ui/packages/app/app/backend/**` route handlers, or any spec dimension naming a credential type. The single Bearer-at-the-wire convergence and the audience-mismatch reasoning live there.
 - Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE).
 - Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request (exception: symlinked-dotfiles carve-out — see Operational Defaults).
 
