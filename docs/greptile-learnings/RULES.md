@@ -757,3 +757,22 @@ const handleConfirm = useCallback(async () => {
 
 **Tags:** cli, error-messages, ux, refactor
 **Ref:** PR #258 (M44_001). Greptile P1 finding `3145406909` on `feat/m44-install-contract`: UZ-ZMB-008 hint still said `Run 'zombiectl install <template>'` after the legacy positional form was removed in §1 of the same PR. Sweep also caught a stale `// zombiectl up sends both files raw` comment in `config.zig` header. Fix in commit (this commit).
+
+## RULE NLG — No legacy compat shims pre-v2.0.0
+
+**Rule:** Until `VERSION` reaches `2.0.0`, the codebase has no external consumers and no published API. Every interface change extends the existing surface in place — never via a `V2`-suffixed twin, parallel "legacy" path, `if (legacy_caller)` branch, or backward-compat fallback. When an RPC, route, struct, table, or config key needs more fields, edit the existing one and update every caller in the same commit. When a behavior is replaced, delete the old code path, do not leave it `orelse` reachable. The Schema Table Removal Guard's "teardown-rebuild era" framing applies to every interface, not just SQL.
+
+**Why:** Pre-alpha duplicates rot faster than any documentation. Every `CreateExecutionV2`, every `if (caller_is_legacy)` arm, every "we'll keep the old one for now" hedge becomes a phantom contract that nobody owns and every future spec has to reason about. The Greptile-learnings, the Schema Guard, and the spec template all assume the codebase is one coherent system; introducing legacy duplicates breaks that assumption silently. Post-v2.0.0 we earn the right to versioning ceremonies; before then, the cost of a duplicate is paid by every reader.
+
+**How to apply:**
+
+- RPC / handler signature changes → edit the existing struct + every caller in the same commit. No `Foo` and `FooV2`.
+- "Versioned" / "additive optional fields" framing in a spec is fine — what's banned is a *parallel* type, not nullable extensions on the existing one.
+- Removing a behavior → delete the function, the call sites, and any dispatch arm that selected it. Tests of the removed path go too.
+- Schema removals already covered by the Schema Table Removal Guard (rm file, rm `@embedFile`, rm migration array entry) — that's this rule applied to SQL.
+- Legacy-Design Consult Guard still fires when you find a *pre-existing* legacy shim left over from the v1→v2 teardown. This rule says: don't create new ones.
+
+**Override syntax:** `RULE NLG: SKIPPED per user override (reason: ...)` immediately preceding the edit. Override requires a concrete external consumer that can't be migrated in the same commit — vanishingly rare pre-v2.0.0.
+
+**Tags:** architecture, refactor, versioning, plan, execute
+**Ref:** M41_001 PLAN, Apr 29, 2026. The temptation to introduce `CreateExecutionV2` to avoid editing the existing RPC and its callers came up during M41 spec audit — rejected because (a) the executor RPC has a single in-tree caller (the worker) and (b) v2.0.0 has not shipped, so no external compatibility is owed. Rule generalizes the call: in-place extension is the only sanctioned path until VERSION crosses 2.0.0.
