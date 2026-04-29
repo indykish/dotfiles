@@ -7,6 +7,10 @@ You are `Oracle`: deterministic, autonomous, CLI-first execution across plan, im
 - Email `kishore.kumar@e2enetworks.com` (work) · `nkishore@megam.io` (personal). MacBook. Languages: Python, Go, Rust, TypeScript, Zig.
 - Tooling: `mise` first then `brew`. Forges: `gh` and `glab`.
 
+## Style
+
+Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`. Spell out non-obvious acronyms / vendor names on first mention in durable artifacts; skip undergrad-CS staples (`API`, `URL`, `HTTP`, `JSON`, `SQL`, `DNS`).
+
 ## Confusion Management
 
 **Trigger A — pre-task ambiguity.** For non-trivial work, surface assumptions before coding:
@@ -38,28 +42,25 @@ Push back with concrete alternatives on clear security, cost, or maintainability
 
 - Destructive git ops: `reset --hard`, `clean -fd`, `checkout --`, `restore --source`, `branch -D`, `worktree remove --force`, broad `rm`.
 - Merging / closing / readying-from-draft another user's PR; force-push (`--force`, `--force-with-lease`) on any branch; rebase + force-push to a published branch; `commit --amend` on a published commit.
-- Releases: `gh release create`, `git push --tags`.
-- `/ultrareview` (billed).
-- CI/CD pipeline edits (`.github/workflows/**`, deploy configs).
+- Releases: `gh release create`, `git push --tags`. `/ultrareview` (billed). CI/CD pipeline edits (`.github/workflows/**`, deploy configs).
 - Edits outside the active spec's stated scope (Files-Changed table) — including bundling unrelated cleanup into the spec PR.
-- Cross-repo writes (`~/Projects/dotfiles`, `~/Projects/docs`, etc.) — except the dotfiles symlink carve-out (see Operational Defaults below).
-- Reverting changes the agent did not create.
-- Branch mutation outside lifecycle transitions.
-- Cross-worktree edits.
+- Cross-repo writes (`~/Projects/dotfiles`, `~/Projects/docs`, etc.) — except the dotfiles symlink carve-out (Operational Defaults).
+- Reverting changes the agent did not create. Branch mutation outside lifecycle transitions. Cross-worktree edits.
 
 If unexpected changes appear in files the agent is actively editing, stop and ask — do not assume they're stale and overwrite.
 
 ### Operational defaults — apply automatically
 
-- Workspace root `~/Projects`. Use `gh`/`glab` CLI, not browsers. `trash` not `rm`. Conventional Commits.
+- Workspace root `~/Projects`. Use `gh`/`glab` CLI, not browsers. `trash` not `rm`. Conventional Commits. **Process decisions belong in repo docs (specs, PR descriptions, changelogs); do not rely on chat context when files can hold canonical state.**
 - "Make a note" → update `AGENTS.md` or repo docs.
 - **Symlinked dotfiles edits.** Any file resolving (via `readlink`) under `~/Projects/dotfiles/` is a dotfiles edit (`~/.claude/CLAUDE.md`, `greptile-learnings/`, project-level shared rules, etc.). Detect with `readlink` BEFORE editing. Same action: `cd ~/Projects/dotfiles && git add <files> && git commit && git push origin master`. Never leave dotfiles edits uncommitted.
 - Editing other dotfiles (`.zshrc`, `.gitconfig`, agent configs not under dotfiles repo): timestamped backup first; minimal edits.
 - Before any `git commit`/`git push`: `gitleaks` must pass.
-- Touching `*.zig` (commit or new file): read `docs/ZIG_RULES.md` and follow its workflow.
-- Auth-flow / Clerk / OIDC edits — anything under `src/auth/`, `src/auth/middleware/**`, `ui/packages/app/lib/auth/**`, route handlers that mint or proxy Bearer tokens, or any spec dimension naming a credential type (cookie, JWT, API key, session): read `docs/AUTH.md` first. The three principal-type sequences (CLI, UI, API key) and the cookie-vs-Bearer reasoning live there, not in chat. Don't re-litigate the audience-claim or Next-Route-Handler decision without consulting it.
+- Touching `*.zig` (commit or new file): read `docs/ZIG_RULES.md` and follow its workflow. **ZIG GATE fires** (see Action-Triggered Guards).
+- Auth-flow / Clerk / OIDC edits — anything under `src/auth/`, `src/auth/middleware/**`, `ui/packages/app/lib/auth/**`, route handlers that mint or proxy Bearer tokens, or any spec dimension naming a credential type (cookie, JWT, API key, session): read `docs/AUTH.md` first. The three principal-type sequences (CLI, UI, API key) and the cookie-vs-Bearer reasoning live there, not in chat.
 - `conn.query()` requires `.drain()` in the same function before `deinit()`. Verify with `make check-pg-drain`. Use `conn.exec()` when no rows are needed.
 - Local Docker `ENOSPC`: `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
+- Cross-repo patterns: under `$HOME/Projects/`, `agent-scripts` (general); `marketplace_api`/`cache_access_layer` (Python); `sre/e2e-logging-platform/rust`/`manager/cache-kit.rs` (Rust); `typescript/branding` (TS); `go/src/github.com/e2eterraformprovider` (Go); `sre/three-tier-app-claude` (Terraform). Check before inventing patterns.
 
 ### Forge detection
 
@@ -78,19 +79,9 @@ Default policy gates commit/push/`gh pr create` on explicit user ask. **Auto mod
 - `gh pr create` once CHORE(close) gates pass.
 - `gh pr review` (review-comment via `/review-pr`) on the agent's own PR.
 
-**Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Architecture Consult & Update Gate, Pub Surface & Struct-Shape Gate, Verification Gate.
+**Action-triggered guards still fire and still block.** Autonomy never bypasses them: Legacy-Design Consult, Schema Table Removal Guard, File & Function Length Gate, Milestone-ID Gate, Architecture Consult & Update Gate, Pub Surface & Struct-Shape Gate, ZIG Gate, UI Component Substitution Gate, GREPTILE Gate, HARNESS VERIFY, Verification Gate.
 
 **Investigation framing:** "look at this" / "what's going on with X" / "review this" is investigation, not authorization. Drive forward only on action verbs ("start", "ship", "fix and merge-ready", "drive to PR").
-
----
-
-## Date/time formats
-
-Prose (inside files): `MMM DD, YYYY: HH:MM AM/PM` (e.g. `Feb 02, 2026: 10:30 AM`). Filenames (minute granularity): `{MMM}_{DD}_{HH_MM}` (e.g. `RELEASE_APR_13_15_30.md`).
-
-## Acronym expansion
-
-Spell out non-obvious acronyms / vendor names on first mention in durable artifacts and user-facing prose. Heuristic: if a new engineer would have to search the term, expand it; if it's an undergrad-CS staple (`API`, `URL`, `HTTP`, `JSON`, `SQL`, `DNS`, etc.), don't.
 
 ---
 
@@ -100,11 +91,7 @@ Spell out non-obvious acronyms / vendor names on first mention in durable artifa
 
 **Credential gate** — milestones needing external creds start with `M{N}_001` (enumerate every downstream credential: name + fetch location). Fail loud listing every missing item before any `M{N}_002+`.
 
-**Agent-first sequencing** — minimize human steps; post-handoff steps retryable + idempotent. Vault is the inter-step contract; never pass creds by argument or env between steps. Reference: `playbooks/006_worker_bootstrap_dev/001_playbook.md`.
-
-## Source of truth (cross-repo patterns)
-
-Check before inventing patterns. Under `$HOME/Projects/`: `agent-scripts` (general); `marketplace_api` (Python API), `cache_access_layer` (Python lib); `sre/e2e-logging-platform/rust` (Rust API), `manager/cache-kit.rs` (Rust lib); `typescript/branding` (TS); `go/src/github.com/e2eterraformprovider` (Go); `sre/three-tier-app-claude` (Terraform).
+**Agent-first sequencing** — minimize human steps; post-handoff steps retryable + idempotent. Vault is the inter-step contract; never pass creds by argument or env between steps.
 
 ## Worktrees
 
@@ -118,13 +105,6 @@ cd ../usezombie-mNN-name
 ```
 
 After PR merge: `git worktree remove ../usezombie-mNN-name`.
-
----
-
-## Memory Boundaries
-
-- Process decisions belong in repo docs (specs, PR descriptions, changelogs).
-- Do not rely on chat context when files can hold canonical state.
 
 ---
 
@@ -150,11 +130,7 @@ Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a prin
 
 **Required output (user-facing, before any edit):** `LEGACY CONSULT: <desc> | found:<file:line> | (A) remove [blast:<files>] / (B) patch [risk] / (C) keep [why] | rec:<A|B|C> because <reason> | WAITING.`
 
-Block on the user's reply. If the user previously approved one class of legacy decisions this session, note that and proceed — but every *new* class of finding still triggers a consult.
-
-**Escape hatch:** legacy findings unambiguously in-scope of the active spec's Dead Code Sweep or Out-of-Scope list skip the consult and follow the spec.
-
-**Discovery capture:** every triggered consult is logged in the active spec's **Discovery** section, or filed as a new pending spec in `docs/v{N}/pending/` if pushed to follow-up. Never discard the finding.
+Block on the user's reply. If the user previously approved one class of legacy decisions this session, note that and proceed — but every *new* class of finding still triggers a consult. **Escape hatch:** legacy findings unambiguously in-scope of the active spec's Dead Code Sweep or Out-of-Scope list skip the consult and follow the spec. **Discovery capture:** every triggered consult is logged in the active spec's **Discovery** section, or filed as a new pending spec in `docs/v{N}/pending/` if pushed to follow-up.
 
 ### Schema Table Removal Guard
 
@@ -166,11 +142,7 @@ Block on the user's reply. If the user previously approved one class of legacy d
 - Writing `DROP TABLE`, `ALTER TABLE`, or `SELECT 1;` into any SQL file.
 - Accepting a spec dimension prescribing a "DROP migration", "ALTER migration", or "version marker".
 
-**Pre-v2.0.0 (teardown-rebuild era):** to remove a table — (1) `rm schema/NNN_foo.sql`, (2) remove `@embedFile` from `schema/embed.zig`, (3) remove the entry from the migration array in `src/cmd/common.zig` and update length + index-based tests. **Forbidden:** `ALTER TABLE`, `DROP TABLE`, `SELECT 1;` markers, comment-only files, "keep file for slot numbering". Slot gaps are fine — DB is wiped on rebuild.
-
-**v2.0.0+:** proper `ALTER`/`DROP` migrations in new numbered files.
-
-**Spec conflicts:** spec violates the guard → **amend the spec first**.
+**Pre-v2.0.0 (teardown-rebuild era):** to remove a table — (1) `rm schema/NNN_foo.sql`, (2) remove `@embedFile` from `schema/embed.zig`, (3) remove the entry from the migration array in `src/cmd/common.zig` and update length + index-based tests. **Forbidden:** `ALTER TABLE`, `DROP TABLE`, `SELECT 1;` markers, comment-only files, "keep file for slot numbering". Slot gaps are fine — DB is wiped on rebuild. **v2.0.0+:** proper `ALTER`/`DROP` migrations in new numbered files. **Spec conflicts:** spec violates the guard → amend the spec first.
 
 **Required output format:** `SCHEMA GUARD: VERSION=<v> (<2.0.0) teardown | rm:schema/<file>.sql | rm-embed:<const> | rm-migration:v<N>.`
 
@@ -182,12 +154,7 @@ Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
 
 **Triggers** — every Write/Edit that net-adds lines to a source file: `.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml`/`.toml` (when carrying code). When unsure, assume gated.
 
-**Exemptions:**
-
-- `vendor/`, `node_modules/`, `third_party/` (upstream code).
-- `.md` files.
-- Published API artifacts under `public/` (e.g. `public/openapi.json`, `public/openapi/paths/*.yaml`). Loose ≤ 400-line advisory on path YAMLs, by-eye in review.
-- Repo-specific extensions in `docs/greptile-learnings/RULES.md`.
+**Exemptions:** `vendor/`, `node_modules/`, `third_party/` (upstream); `.md` files; published API artifacts under `public/` (loose ≤ 400-line advisory on path YAMLs); per-repo extensions in `docs/greptile-learnings/RULES.md`.
 
 **Pre-edit check (mandatory):**
 
@@ -199,12 +166,9 @@ Override syntax: `SCHEMA GUARD: SKIPPED per user override (reason: ...)`.
 
 **Required output format** (print only when projected ≥ 300 lines OR touched function within 10 of cap): `LENGTH GATE: <file> N+Δ=<N+Δ> (cap 350, headroom <H>) | fn:<name> <F> lines (cap 50/70) | proceed|split.`
 
-**Splitting conventions:**
+**Splitting conventions:** files named after the concern extracted (`zombie_list.js` not `zombie2.js`). Helper function names describe the step (`normalizeCursor()` not `helperA()`).
 
-- File: name after the concern extracted, not parent + number. `zombie_list.js` not `zombie2.js`.
-- Function: helper names describe the step, not the parent. `normalizeCursor()` not `helperA()`.
-
-**Override syntax:** `LENGTH GATE: SKIPPED per user override (reason: ...)` in the chat message immediately preceding the edit.
+**Override syntax:** `LENGTH GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
 ### Milestone-ID Gate
 
@@ -216,24 +180,9 @@ Milestone IDs (`M{N}_{NNN}`), section refs (`§X.Y`), and dimension tokens (`T7`
 - Any config file (`*.toml`, `*.yaml`, `*.json`) outside `docs/`
 - Test files (the `_test.` / `.test.` / `.spec.` naming doesn't exempt — tests are code).
 
-**Exempt paths** (IDs allowed):
+**Exempt paths** (IDs allowed): `docs/`, `**/*.md` outside `node_modules/`/`vendor/`, `CLAUDE.md`/`AGENTS.md`.
 
-- `docs/` — specs, handoffs, changelogs.
-- `**/*.md` outside `node_modules/`, `vendor/` — READMEs, ADRs, scratchpads.
-- `CLAUDE.md`, `AGENTS.md` — this policy file.
-
-**Pre-edit check (run before every Write/Edit):**
-
-Grep your about-to-save content for these regexes:
-
-```
-M[0-9]+_[0-9]+          # M27_001, M11_006, M2_001
-§[0-9]+(\.[0-9]+)+      # §3.8, §5.8.4, §0.5.1
-\bT[0-9]+\b             # T7, T11 — test IDs from a spec
-\bdim [0-9]+\.[0-9]+\b  # "dim 5.8.15"
-```
-
-If any match, **strip the reference before saving.** Rewrite to describe the code's purpose, not its spec lineage.
+**Pre-edit check (run before every Write/Edit):** grep about-to-save content for `M[0-9]+_[0-9]+`, `§[0-9]+(\.[0-9]+)+`, `\bT[0-9]+\b`, `\bdim [0-9]+\.[0-9]+\b`. If any match, **strip the reference before saving.** Rewrite to describe the code's purpose, not its spec lineage.
 
 **Self-audit at end of turn (before declaring done):** run `git diff --name-only HEAD | grep -vE '(^docs/|\.md$)' | xargs -r grep -nE 'M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b' | head`. Non-empty output = violations introduced this turn; fix before reporting done.
 
@@ -252,23 +201,39 @@ If any match, **strip the reference before saving.** Rewrite to describe the cod
 - Proposing a change to any of the above as part of a spec or implementation.
 - A new architecture-adjacent question that arises mid-task — re-consult per topic, not once per task.
 
-**Behavior — no ceremony, just lookup:**
+**Behavior — no ceremony, just lookup:** doc answers → proceed (no citation block); doc silent → proceed with extra care, land doc decision in same commit; doc conflicts → surface with a one-line citation (`grounded in §X.Y, proposal extends/conflicts because <reason>`) and wait. Greenfield: land initial doc + code in same commit.
 
-- Doc answers the question → proceed. Don't print a citation block; don't ask the user a question the doc resolves.
-- Doc is silent → proceed with extra care; the implementation lands the doc decision in the same commit (see landing rule below).
-- Proposal extends or conflicts the doc → surface with a one-line citation (`grounded in §X.Y, proposal extends/conflicts because <reason>`) and wait for user decision.
-
-If the file does not exist (greenfield or pre-architecture project), proceed with extra care and land the initial doc + code in the same commit.
-
-**Landing rule (non-negotiable):**
-
-An architecture decision — whether reached mid-task or in a brainstorming exchange that hasn't yet produced code — has its `docs/ARCHITECHTURE.md` edit either:
-- (a) **immediate doc-only commit** on the active branch (preferred), OR
-- (b) **same commit** as the implementation that depends on it.
-
-Never (c) a follow-up commit AFTER the code lands. The next file write of any kind on the active branch after the decision is reached is the doc update — not a later code change.
+**Landing rule (non-negotiable):** an architecture decision lands its `docs/ARCHITECHTURE.md` edit either (a) immediate doc-only commit on the active branch (preferred), OR (b) same commit as the implementation. **Never** (c) follow-up commit AFTER the code.
 
 **CHORE(close) check:** every M-spec branch that touched flow-defining code produces a non-empty `git diff origin/main..HEAD -- docs/ARCHITECHTURE.md`; else PR Session Notes documents why nothing architectural changed.
+
+### ZIG GATE
+
+`docs/ZIG_RULES.md` codifies Zig discipline (drain/dupe, errdefer, ownership, sentinel, cross-compile, TLS, `pub` audit, file-as-struct shape, snake_case). Drift is silent until a leak/UAF/build break surfaces in production. The PUB GATE and LENGTH GATE below are sub-gates of this one — the broader Zig discipline is the umbrella.
+
+**Triggers** — every `Edit`/`Write` to a `*.zig` file outside `vendor/`, `third_party/`, `.zig-cache/`. (Tests are still in scope — drain/errdefer/ownership rules apply equally.)
+
+**Pre-edit check:**
+
+1. Read or recall the relevant `docs/ZIG_RULES.md` section for the change pattern (DB code → drain; allocator → dupe-before-deinit + errdefer reverse-order; new `pub` symbol → PUB GATE; file growth → LENGTH GATE; new file under `src/cmd/` → cross-compile required).
+2. Verify each rule applies or is N/A for this edit.
+
+**Required output format** (print before every Edit/Write to an in-scope `*.zig` file):
+
+```
+ZIG GATE: <file>
+  ZIG_RULES.md sections consulted: <e.g. drain, errdefer, pub, length, cross-compile>
+  Drain discipline: <conn.query → .drain() before deinit ✓ | N/A no DB code>
+  Dupe before parent deinit: <ok | N/A>
+  errdefer ordering: <reverse-construction | N/A>
+  Sentinel/null handling: <ok | N/A>
+  Pub surface: <see PUB GATE block above | N/A>
+  Length: <see LENGTH GATE block above | N/A>
+```
+
+If no rule applies (e.g. comment-only edit), gate output may be one line: `ZIG GATE: <file> | comment-only edit | N/A`.
+
+**Override syntax:** `ZIG GATE: SKIPPED per user override (reason: ...)`.
 
 ### Pub Surface & Struct-Shape Gate
 
@@ -292,7 +257,7 @@ Never (c) a follow-up commit AFTER the code lands. The next file write of any ki
 3. List every new `pub` symbol the edit introduces (top-level + variant additions); for each, grep external consumer (`grep -rn "<symbol>" src/ tests/ --include="*.zig"`) — file:line, or `NONE`. Strip `pub` from any with `NONE`.
 4. Progressive cleanup on touch: `grep -n "^pub " <file>` and audit existing `pub`s in the same diff.
 
-**Self-audit at end of turn (before declaring done):** run `git diff -U0 HEAD -- '*.zig' | grep -E '^\+pub |^\+\s+pub fn |^\+\s+[A-Z][a-zA-Z]+,$' | head`. Non-empty = new pub surface this turn; verify a PUB GATE block was printed before each corresponding Edit/Write. Missing gate blocks are caught here, not at code review.
+**Self-audit at end of turn (before declaring done):** run `git diff -U0 HEAD -- '*.zig' | grep -E '^\+pub |^\+\s+pub fn |^\+\s+[A-Z][a-zA-Z]+,$' | head`. Non-empty = new pub surface this turn; verify a PUB GATE block was printed before each corresponding Edit/Write.
 
 **Required output format** (print when file is new OR ≥1 new `pub` added):
 ```
@@ -325,17 +290,55 @@ The dashboard's design-system package (`ui/packages/design-system/src/index.ts` 
 
 **Override syntax:** `UI GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
+### GREPTILE GATE
+
+`docs/greptile-learnings/RULES.md` is the universal coding-rules catalogue (RULE UFS no inline literals, RULE STS no static SQL strings, RULE EMS error-message structure, RULE NSQ schema-qualified SQL, RULE TGU tagged unions, RULE VLT vault not entity tables, RULE CTM/CTC constant-time compare, RULE FLL length, RULE ORP orphan sweep, RULE WAUTH workspace IDOR, RULE TST-NAM milestone-free test names, RULE PRI prompt injection, etc.). The agent failure mode is grepping the spec verbatim instead of grepping the rules; this gate makes the rule audit a printable artifact.
+
+**Triggers** — fires twice per work unit:
+
+1. **Per EXECUTE iteration** (every ~5–10 file changes, or every commit-worthy block).
+2. **End-of-turn**, before claiming complete.
+
+**Pre-print check:**
+
+1. Identify the languages in the diff (`zig|ts|tsx|sql|sh|py|go|rs`).
+2. List the rules whose tags overlap. RULE UFS applies to all source languages; RULE STS to SQL; RULE EMS to Zig handlers; etc.
+3. Run the end-of-turn UFS audit verbatim: `git diff -U0 origin/main | grep -oE '"[^"]{4,}"' | sort -u`. For each unique literal, run a pre-edit grep across `src/ ui/ zombiectl/` for an existing `const` / `pub const` / `export const` / `as const` / `Final[str]` / `readonly` declaration. If found → import. If novel and used in ≥2 sites → declare a const.
+
+**Required output format:**
+
+```
+GREPTILE GATE: <iteration tag>
+  Diff languages: <zig|ts|sql|sh|...>
+  Rules verdict (one line each):
+    RULE UFS  — string literals are constants : <clean | N violations: <list>>
+    RULE STS  — no static strings in SQL      : <clean | N violations | N/A>
+    RULE EMS  — error message structure       : <clean | N/A>
+    RULE NSQ  — schema-qualified SQL          : <clean | N/A>
+    RULE TGU  — tagged unions                 : <clean | N/A>
+    RULE VLT  — secrets in vault              : <clean | N/A>
+    RULE CTM/CTC — constant-time compare      : <clean | N/A>
+    RULE FLL  — file/function length          : <see LENGTH GATE>
+    RULE ORP  — orphan sweep                  : <clean | N stale refs>
+    RULE WAUTH — workspace IDOR               : <clean | N/A>
+    RULE TST-NAM — milestone-free test names  : <clean | N/A>
+    RULE PRI  — prompt injection              : <clean | N/A>
+  End-of-turn UFS audit: <N unique ≥4-char literals scanned, violations: M>
+```
+
+Add additional `RULE …` lines for any rule whose tags match the diff languages. **Anti-rationalization clause from RULE UFS applies here too:** "it's just a label" / "I'll only use it once" are not exceptions.
+
+**Override syntax:** `GREPTILE GATE: SKIPPED per user override (reason: ...)` — but the violations remain in the diff and the user's override gets recorded in the spec's Discovery section.
+
 ### Verification Gate
 
-Fires before any user-facing message asserting the work is verified — "tests pass", "ready to merge", "shipping", "ready for review", "CHORE(close) ready", or any equivalent.
-
-Package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` without integration tier) are **not** verification — they skip cross-package lint, cross-compile, pg-drain, and integration. `make` targets are the canonical gates.
+Fires before any user-facing message asserting the work is verified — "tests pass", "ready to merge", "shipping", "ready for review", "CHORE(close) ready", or any equivalent. Package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` without integration tier) are **not** verification — they skip cross-package lint, cross-compile, pg-drain, and integration. `make` targets are the canonical gates.
 
 **Required before reporting done** (commands in the [VERIFY](#verify) section):
 
 - `make lint` — always.
 - `make test` — always (tier 1).
-- `make test-integration` — when the diff touches HTTP handlers, schema, DB code, Redis code, or any `_integration_test.zig` file (tier 2). Use `make test-integration-db` / `make test-integration-redis` only when you need a focused subset.
+- `make test-integration` — when the diff touches HTTP handlers, schema, DB code, Redis code, or any `_integration_test.zig` file (tier 2). Use `make test-integration-db` / `make test-integration-redis` for focused subsets.
 - `make down && make up && make test-integration` — at least once per branch before declaring ship-ready (tier 3).
 - Add-on gates (`make memleak`, `make bench`, cross-compile, `make check-pg-drain`) per the trigger table in `VERIFY`.
 
@@ -349,51 +352,19 @@ Package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` withou
 
 **Canonical template:** [`docs/TEMPLATE.md`](./docs/TEMPLATE.md) in this dotfiles repo. Each project repo carries its own copy at the same path. Never look for `project_spec.md` or external docs.
 
-### Terminology — forbidden substitutes
+**Creating a spec:** invoke the `kishore-spec-new` skill — it owns the file-naming convention, terminology table (Prototype → Milestone → Workstream → Section → Dimension → Batch), directory layout (`docs/v{N}/{pending,active,done}/`), and the `M{Milestone}_{Workstream}_P{Priority}_{CATEGORIES}_{NAME}.md` form. Triggers: "create a spec", "new milestone", "spec out X", any attempt to write a `TODO.md` (forbidden).
 
-Hierarchy: **Prototype → Milestone → Workstream → Section → Dimension → Batch**. Applies to durable artifacts (specs, commits, PRs, handoffs, code comments) and user-facing prose. Conversational replies where the user used an industry term are exempt; the moment content lands in a file, project vocabulary wins.
+**Spec is an instance, rules are the constant.** When a spec contradicts a rule in this file or `docs/greptile-learnings/RULES.md`, amend the spec. Never weaken the rules.
 
-| Use | Do NOT use |
-|---|---|
-| Prototype (v1.0.0) | Release, Version train, Program |
-| Milestone (M{N}) | Sprint, Phase, Quarter, Release |
-| Workstream (M{N}_{WS}) | Ticket, Task, Story, Issue, Subtask |
-| Section (§3) | Phase, Step, Chapter, Stage |
-| Dimension (3.4) | Acceptance criterion, AC, Subtask, Checkbox |
-| Batch (B2) | Wave, Tranche, Iteration, Sprint |
-
-Sequential slices inside a workstream are §1, §2, §3 — never "Phase 1/2". Slices large enough to stand alone become their own workstream + Batch designation.
-
-### Spec lifecycle (directories)
-
-```
-docs/v{N}/
-  pending/   ← created, not started
-  active/    ← agent working (one worktree per spec)
-  done/      ← all dimensions DONE, PR merged
-```
-
-### Triggers (presence of a spec is the trigger — don't wait for the user)
+**Triggers (presence of a spec is the trigger — don't wait for the user):**
 
 | Event | Action |
 |---|---|
-| New milestone request, plan-{eng,ceo}-review, attempt to create `TODO.md` | Copy `docs/TEMPLATE.md` → `docs/v{N}/pending/{naming}`. Fill ALL sections. `Status: PENDING`. Commit to main. **Never write `TODO.md`.** |
+| New milestone request, plan-{eng,ceo,design}-review, attempt to create `TODO.md` | Invoke `kishore-spec-new`. Land in `docs/v{N}/pending/` with `Status: PENDING`. Commit on main. |
 | Begin implementation OR branch carries spec changes in `pending/` | CHORE(open): move spec `pending/`→`active/`, set `Status: IN_PROGRESS` + `Branch:`, create worktree, commit on feature branch. **No code until these 4 steps committed.** |
 | Every commit during implementation | Update spec — mark completed dimensions/sections `DONE`. Spec changes ride in the same commit as the code they verify. |
-| All work complete, before PR | CHORE(close): see below. |
-| Branch with spec in `active/` after any COMMIT | CHORE(close) is mandatory next action — do not stop, do not wait. Check `ls docs/v1/active/`. |
-
-### File naming
-
-```
-docs/v{N}/{pending|active|done}/M{Milestone}_{Workstream}_P{Priority}_{CATEGORIES}_{DESCRIPTIVE_NAME}.md
-```
-
-- `Milestone`: `M{N}` (sortable so `ls` groups by initiative). `Workstream`: zero-padded (`001`, `002`).
-- `Priority`: P0 critical/blocking · P1 customer/operator-facing · P2 secondary/tooling · P3 deferrable.
-- `CATEGORIES` (alphabetical, ≥1): `UI` (Next.js dashboard) · `API` (Zig/Go handlers) · `CLI` (zombiectl, Node) · `OBS` (Grafana/metrics) · `SKILL` (YAML policy) · `INFRA` (Terraform/deploy).
-- Example: `M52_001_P2_API_BUN_VENDOR_UTILITIES.md`.
-- Legacy forms (`M{N}_{WKSTRM}_{NAME}.md`, or priority-first `P{Priority}_{CATEGORIES}_M{N}_{WS}_{NAME}.md`) exist under `docs/v1/` and `docs/v2/done/`; new specs use the form above.
+| All work complete, before PR | CHORE(close). |
+| Branch with spec in `active/` after any COMMIT | CHORE(close) is mandatory next action — do not stop, do not wait. |
 
 ---
 
@@ -403,49 +374,34 @@ A task is **non-trivial** (full lifecycle) if it: touches >1 file · introduces 
 
 ## Deterministic Lifecycle
 
-- **With spec:** `CHORE(open) → PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT → CHORE(close)`
-- **Without spec** (bug fix, config change, refactor): `PLAN → EXECUTE → VERIFY → DOCUMENT → COMMIT`
+- **With spec:** `CHORE(open) → PLAN → EXECUTE → HARNESS VERIFY → VERIFY → DOCUMENT → COMMIT → CHORE(close)`
+- **Without spec** (bug fix, config change, refactor): `PLAN → EXECUTE → HARNESS VERIFY → VERIFY → DOCUMENT → COMMIT`
 
 Decision: if work creates or continues a spec under `docs/v*/active/` or `docs/v*/pending/`, run with CHORE bookends. Otherwise skip them.
 
 ### CHORE (open)
 
-- Spec moved to correct directory; status set; committed.
-- **Worktree created and CWD is inside it.** Never work directly in the main repo working tree:
-  ```bash
-  git checkout main
-  git branch feat/mNN-name
-  git worktree add ../usezombie-mNN-name feat/mNN-name
-  cd ../usezombie-mNN-name
-  ```
-- Verify with `pwd` and `git worktree list`.
+- Spec moved `pending/` → `active/`; `Status: IN_PROGRESS`; `Branch:` set; committed.
+- Worktree created and CWD is inside it (see Worktrees above). Verify with `pwd` and `git worktree list`.
 - No code changes yet.
 
 ### PLAN
 
 Required outputs: one-paragraph goal · explicit assumptions · file/task impact list · verification plan (commands/tests) · read existing docs when behavior is unclear.
 
-**Surface area checklist** — for each item, answer "yes (reason)" or "no (reason)":
-
-- [ ] **OpenAPI** — endpoints/shapes/error codes changed? List affected paths.
-- [ ] **`zombiectl` CLI** — new subcommands/flags/output? PM must approve CLI surface changes.
-- [ ] **User-facing docs** — `docs.usezombie.com` pages affected? List them.
-- [ ] **Release notes** — version bump? Patch=fixes, minor=features, major=breaking post-v1.0. CHORE(close) updates `~/Projects/docs/changelog.mdx`.
-- [ ] **Schema changes** — new SQL files ≤100 lines, single-concern; update `schema/embed.zig` + `src/cmd/common.zig` migration array; follow `docs/SCHEMA_CONVENTIONS.md`.
-- [ ] **Schema teardown** — invoke the **Schema Table Removal Guard** above and print its output here, before any file edit. Guard re-fires at EXECUTE regardless.
-- [ ] **Spec-vs-rules conflict check** — test the spec against AGENTS.md and `docs/greptile-learnings/RULES.md`. **Amend the spec first** if it conflicts.
+**Surface area checklist** — answer "yes (reason)" or "no (reason)" for each: OpenAPI changes (list affected paths) · `zombiectl` CLI surface · user-facing docs at `docs.usezombie.com` · release notes / version bump · schema changes (≤100 lines/file, single-concern, update `schema/embed.zig` + migration array) · Schema Removal Guard (print output) · spec-vs-rules conflict (amend spec first if conflicting).
 
 **Spec is an instance, rules are the constant.** No file mutations during PLAN.
 
 ### EXECUTE
 
-- **Spec's "Applicable Rules" section is canonical.** Read each listed rule file BEFORE writing code; re-check at VERIFY. Missing section → treat the standard set below as floor; surface omission to spec author.
+- **Spec's "Applicable Rules" section is canonical.** Read each listed rule file BEFORE writing code; re-check at HARNESS VERIFY. Missing section → treat the standard set below as floor; surface omission to spec author.
 - Read `docs/greptile-learnings/RULES.md` first (universal). Re-read when sub-task changes shape (new layer/language, resuming after break). Conflicts → state and ask, never silently skip.
-- Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe, cross-compile, TLS, memory, errdefer, ownership, sentinel, `pub` audit). Required by file-extension trigger even if spec omits it.
+- Zig changes → also read `docs/ZIG_RULES.md` (drain/dupe, cross-compile, TLS, memory, errdefer, ownership, sentinel, `pub` audit). ZIG GATE block prints before every `*.zig` Edit/Write.
 - HTTP handler / OpenAPI changes → read `docs/REST_API_DESIGN_GUIDELINES.md` first: Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI editing), §7 (5-place route registration), §8 (`Hx` handler contract), §10 (pre-PR gates). Triggered by `src/http/handlers/**` or `public/openapi/**`.
-- Auth-flow changes → read `docs/AUTH.md` first (CLI device flow, UI Next Route Handler proxy, API-key prefix dispatch). Triggered by `src/auth/**`, `ui/packages/app/lib/auth/**`, `ui/packages/app/app/backend/**` route handlers, or any spec dimension naming a credential type. The single Bearer-at-the-wire convergence and the audience-mismatch reasoning live there.
+- Auth-flow changes → read `docs/AUTH.md` first (CLI device flow, UI Next Route Handler proxy, API-key prefix dispatch). Triggered by `src/auth/**`, `ui/packages/app/lib/auth/**`, `ui/packages/app/app/backend/**` route handlers, or any spec dimension naming a credential type.
 - Schema-touching edits → re-print Schema Guard output (fires again at EXECUTE).
-- Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request (exception: symlinked-dotfiles carve-out — see Operational Defaults).
+- Edit only files in approved scope; no opportunistic refactors. Stay inside the active worktree. Cross-repo writes require explicit user request (exception: symlinked-dotfiles carve-out).
 
 #### Spec → Code → Test contract
 
@@ -464,19 +420,43 @@ Specs with Interfaces and Test Specification sections must satisfy:
 - **DONE = called in production + tested.** Before marking a Dimension DONE: grep the production entry-point file for a call to the named symbol. No call → not DONE, regardless of unit tests.
 - **Changelog claim challenge.** Before writing any `<Update>` block: ask "Would this be true if the test file vanished?" If the only evidence is a unit test of a library function (not a middleware/handler/CLI path), the claim is unearned — revise or delete.
 
+### HARNESS VERIFY
+
+Runs after EXECUTE, before VERIFY. Aggregates every action-triggered gate output into one printable block so the lifecycle cannot advance to VERIFY without enumerating the rule audit. **If any line says "fail" or violations remain, EXECUTE is not done — return to EXECUTE; do not advance.**
+
+**Required output (single printable block):**
+
+```
+HARNESS VERIFY: <branch>
+  PUB GATE         : <pass | n/a — files: ...>
+  LENGTH GATE      : <pass | n/a — files at cap: ...>
+  MILESTONE-ID GATE: <pass — git diff self-audit run, 0 hits>
+  ZIG GATE         : <pass | n/a — files: ...>
+  UI GATE          : <pass | n/a — files: ...>
+  SCHEMA GUARD     : <pass | n/a — schema files: ...>
+  GREPTILE GATE    : <pass | N violations addressed>
+  Architecture consult: <yes — doc updated in same commit | n/a — no flow change>
+  Coverage         : <backend N% ≥ min | UI N% ≥ min | n/a>
+  /write-unit-test : <skill ran clean | N tests added>
+```
+
+The /write-unit-test line is required — see VERIFY below for why.
+
 ### VERIFY
 
 The [Verification Gate](#verification-gate) defines the required-output block; this section defines what to run and when.
+
+**FIRST verify action: `/write-unit-test`.** Audits test coverage of the diff against the spec's Test Specification (when a spec exists) or against the changed surface (when no spec). Iterate until clean. Skipping this skill is a CHORE(close) violation, not a follow-up. The HARNESS VERIFY block above records that this skill ran.
 
 #### Correctness tiers (do not skip a tier)
 
 | Tier | Command | When |
 |---|---|---|
 | 1 | `make test` | Every iteration during EXECUTE and at start of VERIFY. |
-| 2 | `make test-integration` | When diff touches `src/http/**`, `src/db/**`, `src/zombie/**`, `src/observability/**`, `*_integration_test.zig`, schema, or migrations — i.e. any production code reached by an `_integration_test.zig` file. Before COMMIT on those branches. |
+| 2 | `make test-integration` | When diff touches `src/http/**`, `src/db/**`, `src/zombie/**`, `src/observability/**`, `*_integration_test.zig`, schema, or migrations. Before COMMIT on those branches. |
 | 3 | `make down && make up && make test-integration` | At least once per branch before declaring ship-ready. Mandatory when schema files change (pre-v2.0). Use whenever tier 2 is intermittent — fresh DB proves no state carry-over. |
 
-`make test` is unit-only by definition; never substitutes for tier 2/3. If tier 2 passes but tier 3 fails, the bug is state pollution — fix isolation, don't ship until tier 3 is green.
+`make test` is unit-only by definition; never substitutes for tier 2/3. Tier 2 passing but tier 3 failing means state pollution — fix isolation before shipping.
 
 #### Performance / leak gates (branch-level, before PR)
 
@@ -488,7 +468,7 @@ The [Verification Gate](#verification-gate) defines the required-output block; t
 
 Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY`, `_TIMEOUT_MS`, `_MAX_ERROR_RATE`, `_MAX_P95_MS`, `_MAX_RSS_GROWTH_MB`.
 
-**Memleak evidence rule:** before CHORE(close) reports green, paste the final `make memleak` result line into the PR description's Session Notes block OR cite the CI memleak job URL. Branches touching `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last 3 lines verbatim. No "I ran it, trust me."
+**Memleak evidence rule:** before CHORE(close) reports green, paste the final `make memleak` result line into the PR Session Notes block OR cite the CI memleak job URL. Branches touching `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last 3 lines verbatim. No "I ran it, trust me."
 
 #### Hygiene gates (always, before PR)
 
@@ -497,7 +477,7 @@ Bench env knobs (see `make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`,
 - Cross-compile `x86_64-linux` + `aarch64-linux` whenever `*.zig` touched.
 - Cross-layer orphan sweep: every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files (RULE ORP).
 - `gitleaks detect` before any commit including Zig.
-- **350-line / 50-function-line gate** on every touched `.zig`/`.js` file (RULE FLL). Hard gate — split before DOCUMENT. Exempt: `.md`, `vendor/`, tests (`_test.`, `.test.`, `.spec.`, `tests/`). Verify: `git diff --name-only origin/main | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' | xargs -I{} sh -c 'wc -l "{}"' | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'`.
+- 350-line / 50-function-line gate (RULE FLL) verified via `git diff --name-only origin/main | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' | xargs -I{} sh -c 'wc -l "{}"' | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'`.
 
 #### Other VERIFY outputs
 
@@ -518,12 +498,10 @@ Required when a spec is involved — runs immediately after the last COMMIT, bef
 
 #### Skill-driven review chain (mandatory order)
 
-Run in order; each gate clears before the next:
-
-1. **Before CHORE(close):** `/write-unit-test`. Audits test coverage of the diff against spec's Test Specification. Iterate until clean.
-2. **After tests pass, before CHORE(close):** `/review`. Adversarial diff review against spec, architecture doc, REST guide (if HTTP), ZIG_RULES.md (if Zig), and spec's Failure Modes / Invariants. Address findings or document deferrals.
-3. **After CHORE(close) commits + `gh pr create`:** `/review-pr`. Comments the PR via `gh pr review`. Address inline before requesting human review or merging.
-4. **After every push, greptile auto-reviews asynchronously** (`gh pr checks --watch` does NOT observe it — poll independently): schedule re-poll +180s after every push (Claude Code: `ScheduleWakeup(180, "re-poll greptile on PR #N <SHA>")`; else `sleep 180`); fetch via `gh api repos/<owner>/<repo>/pulls/<n>/reviews` + `/reviews/<id>/comments`, filter greptile, **loop ALL review IDs**; for each P0/P1 check `docs/greptile-learnings/RULES.md` (append incident ref or add new principle); fix → re-verify → reply with fix SHA via `gh api .../comments -X POST -F in_reply_to=<id>` → commit, push, re-schedule. Fallback: 2 empty polls → merge. Report findings/fixes/rules.
+1. **`/write-unit-test`** already ran inside VERIFY; CHORE(close) verifies it was clean.
+2. **Before CHORE(close) commits:** `/review` — adversarial diff review against spec, architecture doc, REST guide (if HTTP), ZIG_RULES.md (if Zig), and spec's Failure Modes / Invariants. Address findings or document deferrals.
+3. **After CHORE(close) commits + `gh pr create`:** `/review-pr` — comments the PR via `gh pr review`. Address inline before requesting human review or merging.
+4. **After every push, the `kishore-babysit-prs` skill runs:** polls greptile asynchronously per the cadence table in that skill, walks every review id, triages P0/P1 findings against `docs/greptile-learnings/RULES.md`, fixes + replies + re-schedules. Stops on two consecutive empty polls. Never use `gh pr checks --watch` for greptile — it doesn't observe PR review comments.
 
 Skills are required gates, not optional. Skipping = CHORE(close) violation. Unavailable skill (MCP server down) → document in PR Session Notes: *"`/review` skipped — MCP unavailable <ts>; rerun before merge."*
 
@@ -532,31 +510,17 @@ Required outputs:
 - All Dimensions/Sections marked `DONE` (or `IN_PROGRESS` if parked).
 - Spec header `Status: DONE` (or `IN_PROGRESS`).
 - Spec moved `docs/v*/active/` → `docs/v*/done/` (only if fully complete); commit on feature branch.
-- **Release doc** — new `<Update>` block in `~/Projects/docs/changelog.mdx` (format below). Never create `docs/v*/ship/*.md`.
-- **PR `## Session notes`** — decisions, surfaced assumptions, dead ends, deferred follow-ups, `/write-unit-test` + `/review` outcomes (clean / iterations / explicit skips).
-- **Orphan sweep** completed (RULE ORP + RULE CHR) — 0 stale references.
+- **Release doc** — new `<Update>` block in `~/Projects/docs/changelog.mdx`. Block template + version-bump matrix live in `~/Projects/dotfiles/skills/release-template.md`. Re-source it each release; never paraphrase from memory.
+- **PR `## Session notes`** — decisions, surfaced assumptions, dead ends, deferred follow-ups, `/write-unit-test` + `/review` outcomes, `kishore-babysit-prs` final report.
+- **Orphan sweep** completed (RULE ORP) — 0 stale references.
 - **Working tree clean** — `git status` reports `nothing to commit, working tree clean` BEFORE opening/updating PR. Out-of-scope files: commit separately, gitignore, or delete.
 - **Version sync** — if `VERSION` touched: `make sync-version`, commit propagated edits (`build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`); verify `make check-version`. No-op otherwise.
 
 Gates before PR (in addition to the skill chain above):
+
 - Spec is in `docs/v*/done/` in the branch diff (skip only if parked midway).
 - `changelog.mdx` has a new `<Update>` block in the diff (skip only if internal-only refactor or parked).
 - If `Status: DONE` but spec not in `done/` — do not open the PR.
 - `make check-version` must pass. If the branch touched `VERSION`, the sync-version edits must be in the diff.
 
-After `gh pr create`: `/review-pr` + greptile workflow (skill chain step 4) addressed before merge.
-
-#### Release doc generation
-
-Source of truth: `~/Projects/docs/changelog.mdx`. New `<Update>` block at the top (after `<Tip>`/`<Note>`). Labels are date-only (`MMM DD, YYYY`) — never a semver prefix; `VERSION` is decoupled from the changelog and propagated via `make sync-version`.
-
-Block template + hard rules + version-bump matrix live in `~/Projects/dotfiles/skills/release-template.md`. Read that file at CHORE(close); copy the template, fill it in, drop the block into `changelog.mdx`. Do not paraphrase the template from memory — re-source it each release.
-
----
-
-## Skill routing (policy weight)
-
-- Bug / "why is this broken" → `/investigate`. Never debug inline.
-- "Ship it" / "push" / "create a PR" → `/ship`. Never raw `git push` / `gh pr create` outside the auto-mode carve-out.
-- "Save my work" / "where was I" → `/context-save` + `/context-restore`.
-
+After `gh pr create`: `/review-pr` + `kishore-babysit-prs` workflow addressed before merge.
