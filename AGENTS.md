@@ -251,7 +251,20 @@ If no rule applies (e.g. comment-only edit), gate output may be one line: `ZIG G
 
 `docs/ZIG_RULES.md` mandates two Zig-file rules that drift silently if not surfaced:
 1. **`pub` only when an external file imports the symbol** — default private; strip stale `pub`s when touching a file.
-2. **File-as-struct shape — required ONLY when** exactly one public type lives in the file AND every public function takes `self`. Layout: `const Foo = @This();` at top, fields, methods (constructors → queries → mutators), imports at end. **Conventional layout otherwise** — multi-type modules, modules with `pub` free functions, tagged-union dispatch tables, parsers/DSLs, constants modules, or any "operations over a passive value" file. Tie-break for ambiguous cases: behavior-bound-to-state → file-as-struct; operations-over-value → conventional.
+2. **File-as-struct shape is the default for new behavior-bound-to-state files.** A file *is* a struct in Zig — modeling that shape exposes ownership and testability cheaply. Conventional layout (multi-type modules, parsers/DSLs, constants modules, pub-free-fn-dominant modules, tagged-union dispatch tables, "operations over a passive value") **must be justified at PLAN**, not chosen by inertia. Tie-break for ambiguous cases stays: behavior-bound-to-state → file-as-struct; operations-over-value → conventional. **The escape clause is "I can articulate in one sentence why this is operations-over-value." If you can't, file-as-struct wins.**
+
+**Layout when file-as-struct is chosen:** `const Foo = @This();` at top, fields, methods (constructors → queries → mutators), imports at end.
+
+**Design-first decision (mandatory before creating any new `*.zig` file under `src/` — print at PLAN, not after the file exists):**
+```
+FILE SHAPE DECISION: <intended-path>
+  Purpose (one sentence): <what this file's job is>
+  Primary type (if any): <Name | none>
+  Methods bound to that type: <N> | Pub free fns: <M>
+  Verdict: <file-as-struct | conventional>
+  Why not the other: <one sentence — required when verdict is conventional>
+```
+Skipping this block is a PLAN violation, not just an EXECUTE one. The block is the audit trail that the design choice happened up-front. If you find yourself writing the file first and then declaring "it's a parser module so conventional," you are doing the gauntlet and the rule was not followed — back up to PLAN.
 
 **Coverage scan — applies to every `Edit`/`Write` of a `*.zig` file:**
 
@@ -440,6 +453,7 @@ Runs after EXECUTE, before VERIFY. Aggregates every action-triggered gate output
 
 ```
 HARNESS VERIFY: <branch>
+  FILE SHAPE       : <verdicts for new files this branch | n/a — no new *.zig files>
   PUB GATE         : <pass | n/a — files: ...>
   LENGTH GATE      : <pass | n/a — files at cap: ...>
   MILESTONE-ID GATE: <pass — git diff self-audit run, 0 hits>
