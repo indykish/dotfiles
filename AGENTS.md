@@ -255,16 +255,31 @@ If no rule applies (e.g. comment-only edit), gate output may be one line: `ZIG G
 
 **Layout when file-as-struct is chosen:** `const Foo = @This();` at top, fields, methods (constructors → queries → mutators), imports at end.
 
-**Design-first decision (mandatory before creating any new `*.zig` file under `src/` — print at PLAN, not after the file exists):**
+**Design-first decision (mandatory at PLAN — print BEFORE the first `Write`/`Edit` that creates or reshapes the file):**
 ```
 FILE SHAPE DECISION: <intended-path>
+  Trigger: <new file | existing file crossing threshold: <which>>
   Purpose (one sentence): <what this file's job is>
   Primary type (if any): <Name | none>
   Methods bound to that type: <N> | Pub free fns: <M>
   Verdict: <file-as-struct | conventional>
   Why not the other: <one sentence — required when verdict is conventional>
 ```
-Skipping this block is a PLAN violation, not just an EXECUTE one. The block is the audit trail that the design choice happened up-front. If you find yourself writing the file first and then declaring "it's a parser module so conventional," you are doing the gauntlet and the rule was not followed — back up to PLAN.
+
+**When the gate fires** (any one triggers the block):
+1. Creating any new `*.zig` file under `src/` (out-of-scope: `*_test.zig`, `vendor/`, `third_party/`).
+2. **Threshold crossing on an existing file:** an Edit that adds the file's first `pub` type, OR adds a `pub fn ... self ...` method to a file currently dominated by pub free fns, OR removes the last pub free fn from a multi-pub-fn file. These transitions are exactly when conventional/file-as-struct should be re-evaluated; previous "this file is conventional" inertia is invalid the moment the shape shifts.
+3. Any user message saying "rethink the layout of <file>" or equivalent.
+
+Skipping this block is a PLAN violation, not just an EXECUTE one. If you find yourself writing the file first and then declaring "it's a parser module so conventional," you are doing the gauntlet and the rule was not followed — back up to PLAN.
+
+**Self-audit at end of turn (before declaring done):**
+```
+git diff --diff-filter=A --name-only origin/<base> -- 'src/**/*.zig' | grep -v -E '_test\.zig$|^vendor/|^third_party/'
+```
+Each path in the output must have had a `FILE SHAPE DECISION` block printed before its first Write. Non-empty result with no matching block in the turn's audit trail = violation; report it as `FILE SHAPE: missed for <path>` in HARNESS VERIFY rather than silently passing.
+
+**Override syntax:** `FILE SHAPE DECISION: SKIPPED per user override (reason: ...)` immediately preceding the file's first Write. Override requires the user's explicit ask in this turn; auto-mode standing authorization does not cover it (the whole point of the gate is to prevent the agent from skipping the design step).
 
 **Coverage scan — applies to every `Edit`/`Write` of a `*.zig` file:**
 
