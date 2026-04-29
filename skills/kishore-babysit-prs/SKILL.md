@@ -3,9 +3,9 @@ name: kishore-babysit-prs
 description: |
   Async polling layer on top of gstack's greptile-triage helper. Fires after
   every push to a PR, schedules re-polls per a backoff cadence, walks every
-  greptile review id (not just the first), and stops on two consecutive
-  empty polls. Delegates fetch / classify / reply to
-  `~/.local/share/gstack/review/greptile-triage.md`.
+  greptile review id (not just the first), classifies via gstack's
+  greptile-triage.md, suppresses against per-project + global
+  greptile-history.md, and stops on two consecutive empty polls.
 
   Use after `gh pr create`, after every `git push` to a PR, or when asked
   to "babysit", "watch greptile", "poll the PR", "watch reviews",
@@ -23,9 +23,33 @@ human stops checking — so they get missed.
 
 This skill is the **polling cadence + walk-every-review-id loop**. The
 fetch, classify, and reply mechanics live in gstack's
-`greptile-triage.md` (`~/.local/share/gstack/review/greptile-triage.md`,
-also referenced by `/review` Step 2.5 and `/ship` Step 3.75). Use the
-triage helper for everything except scheduling — don't duplicate it here.
+`greptile-triage.md` — open and follow it; do not paraphrase from
+memory. This skill never duplicates the triage helper's logic.
+
+## STEP 0 — Open greptile-triage.md every cycle
+
+Before doing anything else in a polling cycle, read the triage helper:
+
+```bash
+GREPTILE_TRIAGE="$HOME/.local/share/gstack/review/greptile-triage.md"
+[ -r "$GREPTILE_TRIAGE" ] || GREPTILE_TRIAGE="$HOME/Projects/dotfiles/.unified-skills/review/greptile-triage.md"
+[ -r "$GREPTILE_TRIAGE" ] || { echo "BABYSIT: greptile-triage.md missing — abort cycle"; exit 1; }
+```
+
+Then walk it section by section:
+
+| Triage section | What this skill triggers |
+|---|---|
+| `## Fetch` | Run verbatim per detected review id (multi-review loop below) |
+| `## Suppressions Check` | Read `$HOME/.gstack/projects/<slug>/greptile-history.md`; skip lines tagged `fp` matching `repo + file-pattern + category` |
+| `## Classify` | Read file ±10 lines around each comment's `path:line`; classify VALID & ACTIONABLE / VALID BUT ALREADY FIXED / FALSE POSITIVE / SUPPRESSED |
+| `## Reply APIs` | Tier 1 first response, Tier 2 on greptile re-flag |
+| `## Reply Templates` | Use Tier 1 / Tier 2 template verbatim — do not invent new wording |
+| `## Severity Assessment & Re-ranking` | Re-rank greptile's severity against the project's actual risk profile |
+| `## History File Writes` | Append to BOTH per-project and global history files (see below) |
+| `## Output Format` | Use the triage helper's report shape, augmented with our cadence line |
+
+If the triage helper is missing on the host, abort with `BABYSIT: greptile-triage.md missing` rather than guessing — the abort is visible, a silent re-implementation is not.
 
 ## Triggers
 
@@ -60,27 +84,66 @@ via the agent's native cron/wakeup mechanism.
 ## Polling loop
 
 ```bash
-# 1. Detect PR (matches greptile-triage.md "Fetch" section)
+# 1. Detect repo + PR (also referenced by greptile-triage.md "Fetch")
 REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
 PR_NUMBER=$(gh pr view --json number --jq '.number')
 
-# 2. Walk EVERY review id — greptile sometimes posts more than one review
-#    per push. The default agent failure mode is processing only the first.
+# 2. Derive history paths — both files are gstack convention; the
+#    triage helper's Suppressions Check + History File Writes both
+#    expect them.
+REMOTE_SLUG=$(~/.claude/skills/gstack/browse/bin/remote-slug 2>/dev/null \
+              || basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)")
+PROJECT_HISTORY="$HOME/.gstack/projects/$REMOTE_SLUG/greptile-history.md"
+GLOBAL_HISTORY="$HOME/.gstack/greptile-history.md"
+mkdir -p "$(dirname "$PROJECT_HISTORY")" "$(dirname "$GLOBAL_HISTORY")"
+
+# 3. Walk EVERY review id — greptile may post more than one review
+#    per push. The default agent failure mode is processing only the
+#    first. The for-loop here lives outside the triage helper which
+#    fetches once per call.
 REVIEW_IDS=$(gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" \
               --jq '.[] | select(.user.login | test("greptile"; "i")) | .id')
 
-# 3. For each review id, follow gstack greptile-triage.md:
-#    - Fetch line-level + top-level comments in parallel.
-#    - Run Suppressions Check against $HOME/.gstack/projects/<slug>/greptile-history.md.
-#    - Classify (Severity Assessment & Re-ranking section).
-#    - Reply per Tier 1 / Tier 2 templates.
-#    - Write to History File per the History File Writes section.
+for rid in $REVIEW_IDS; do
+  # 4. Follow greptile-triage.md from STEP 0 above:
+  #    - Fetch line-level + top-level comments for THIS review id.
+  #    - Suppressions Check against $PROJECT_HISTORY.
+  #    - Classify each non-suppressed comment.
+  #    - Reply with Tier 1 (first response) or Tier 2 (greptile re-flag).
+  #    - Append outcome to BOTH $PROJECT_HISTORY and $GLOBAL_HISTORY
+  #      using the canonical line format:
+  #        <YYYY-MM-DD> | <owner/repo> | <type> | <file-pattern> | <category>
+  #      type ∈ {fp, fix, already-fixed}
+  #      category ∈ {race-condition, null-check, error-handling, style,
+  #                  type-safety, security, performance, correctness, other}
+  :
+done
 ```
 
 **Critical: walk every review id.** Greptile may post multiple reviews per
-push (one structural, one security, etc.). The `for` loop above is
-non-negotiable — gstack's triage doc fetches once per call, so the
-multi-review walk lives here.
+push (one structural, one security, etc.). The triage helper fetches
+once per call; the multi-review walk lives here.
+
+## History file discipline
+
+Every triaged comment writes one line to BOTH:
+
+| File | Purpose |
+|---|---|
+| `$HOME/.gstack/projects/<slug>/greptile-history.md` | Per-project. Drives Suppressions Check on next cycle — `fp` lines suppress matching comments forever. |
+| `$HOME/.gstack/greptile-history.md` | Global aggregate. Cross-project retro / pattern-mining. |
+
+Line format (from the triage helper's "History File Writes" section):
+
+```
+<YYYY-MM-DD> | <owner/repo> | <type:fp|fix|already-fixed> | <file-pattern> | <category>
+```
+
+- **`fp`** — false positive. Suppressed on future polls.
+- **`fix`** — real issue, fixed in this cycle. Not suppressed.
+- **`already-fixed`** — real issue, fixed in a prior commit on this branch. Not suppressed.
+
+The categories are a fixed set: `race-condition`, `null-check`, `error-handling`, `style`, `type-safety`, `security`, `performance`, `correctness`, `other`. Don't invent new categories — if a finding doesn't fit, use `other` and mention the actual concern in the reply, not the history line.
 
 ## After a fix lands
 
@@ -89,7 +152,12 @@ multi-review walk lives here.
 3. Reply via the triage helper's "Reply APIs" section (Tier 1 / Tier 2
    templates). Include the fix SHA in the body.
 4. Commit and push.
-5. Re-schedule the next poll using the cadence table above.
+5. Append the history line(s) to both files.
+6. If the finding generalizes beyond this PR (recurring pattern, new
+   class of bug), capture as a named rule in the project's
+   `docs/greptile-learnings/RULES.md` in the same commit as the fix.
+   Otherwise the history line alone is the durable record.
+7. Re-schedule the next poll using the cadence table above.
 
 ## Stop conditions
 
@@ -136,10 +204,15 @@ BABYSIT REPORT — PR #<n> @ <SHA>
 
 ## References
 
-- `~/.local/share/gstack/review/greptile-triage.md` — fetch/classify/reply
-  mechanics. Also at `~/Projects/dotfiles/.unified-skills/review/greptile-triage.md`.
-- `~/Projects/dotfiles/AGENTS.md` — CHORE(close) skill chain step 4 cites
-  this skill.
-- `docs/greptile-learnings/RULES.md` — incident capture target (history
-  file writes route here via the triage helper).
+- `~/.local/share/gstack/review/greptile-triage.md` — fetch / classify /
+  reply / suppressions / history-write mechanics. Also at
+  `~/Projects/dotfiles/.unified-skills/review/greptile-triage.md`.
+- `$HOME/.gstack/projects/<slug>/greptile-history.md` — per-project
+  history; drives Suppressions Check.
+- `$HOME/.gstack/greptile-history.md` — global aggregate.
+- `docs/greptile-learnings/RULES.md` — project-level named rules
+  (durable principles). New rule added here only when the finding
+  generalizes; per-incident rows go to greptile-history.md.
+- `~/Projects/dotfiles/AGENTS.md` — CHORE(close) skill chain step 4
+  cites this skill.
 - `gh api` documentation: https://cli.github.com/manual/gh_api
