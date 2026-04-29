@@ -112,6 +112,18 @@ After PR merge: `git worktree remove ../usezombie-mNN-name`.
 
 Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a printable required-output block that must appear in the user-facing message before the gated edit. Pre-existing violations are not the agent's responsibility unless the task includes cleanup — but any new edit that introduces, extends, or perpetuates a violation does trigger the gate.
 
+### RULE NLG — No legacy framing pre-v2.0.0
+
+**Rule:** While `cat VERSION` < `2.0.0`, the project has no external consumers and no published API. Do not introduce *new* legacy concepts in any form: no `legacy_*` error variant names, no `if (legacy_caller)` branches, no `V2`-suffixed twin types, no backward-compat shims, no "rejecting legacy X" prose in specs/docs/commit messages. Edit interfaces in place; update every caller in the same commit. Name errors by *what is wrong*, not *when it was wrong* (e.g. `runtime_keys_outside_block`, not `legacy_top_level_runtime`).
+
+**Why:** Pre-alpha duplicates rot faster than documentation. Every `legacy_*` name introduces a phantom contract nobody owns; every future spec then has to reason about it. Schema Table Removal Guard already encodes this for SQL — RULE NLG generalizes it to every interface (RPC, route, struct, error name, config key, spec prose).
+
+**How to apply:** When draft code or doc text says "reject legacy X" or names errors `legacy_*`, rephrase. The Legacy-Design Consult Guard (next section) still fires for *pre-existing* legacy shims — that's the cleanup side. RULE NLG is the prevention side.
+
+**Override:** `RULE NLG: SKIPPED per user override (reason: ...)` immediately preceding the edit. Override requires a concrete external consumer that can't be migrated in the same commit — vanishingly rare pre-v2.0.0.
+
+**Full text:** `docs/greptile-learnings/RULES.md` RULE NLG (this is the short summary that all agents see in AGENTS.md).
+
 ### Legacy-Design Consult Guard
 
 **Definition — "legacy design":** any code path, env-var, table, route, or API that the surrounding milestone work is deprecating, that predates the current architectural direction, or that exists solely as a smoke-test / bootstrap / pre-migration shim. Signals:
