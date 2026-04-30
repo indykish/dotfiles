@@ -110,7 +110,7 @@ After PR merge: `git worktree remove ../usezombie-mNN-name`.
 
 ## Action-Triggered Guards
 
-Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a printable required-output block that must appear in the user-facing message before the gated edit. Touch-it-fix-it (RULE NLR): any edit to a file that contains pre-existing legacy framing or dead code — `?*` fields with no non-null caller, `legacy_*` symbols, `V2`-twin types, dead branches, "legacy startup path" comments — must remove the legacy/dead code in the same diff. No "out of scope" carve-out. If cleanup balloons the diff beyond review-ability, abort the edit and file a cleanup spec first; do not commit a partial cleanup that leaves the file half-rotten.
+Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a printable required-output block that must appear in the user-facing message before the gated edit. Touch-it-fix-it (RULE NLR): any edit to a file that contains pre-existing legacy framing or dead code — `?*` fields with no non-null caller, `legacy_*` symbols, `V2`-twin types, dead branches, "legacy startup path" comments — must remove the legacy/dead code in the same diff. No "out of scope" carve-out. **No agent-invokable balloon clause** — if cleanup is judged infeasible at the cost-benefit margin, surface both options to the user and wait; never autonomously abort, defer, or route around the dirty file.
 
 ### RULE NLR — No legacy retained (touch-it-fix-it)
 
@@ -129,9 +129,26 @@ Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a prin
 1. Before the first `Edit`/`Write` to a file, scan for the patterns above in the *whole file*, not just the lines you're touching.
 2. List the violations in the gate output before the edit.
 3. Remove them in the same diff. Update every caller in the same commit.
-4. If the cleanup balloons the diff beyond review-ability (rule of thumb: > 200 net lines of cleanup in a non-cleanup PR, or cross-package cascade), abort the edit and file a cleanup spec under `docs/v*/pending/` first. Do NOT commit a partial cleanup that leaves the file half-rotten.
+4. If cleanup is judged infeasible at the cost-benefit margin (large net-line delta, cross-package cascade, or a meaningfully different design path emerges): **the agent has no autonomous escape.** Print the decision block below, then wait. The user is the only authority that can choose deferral, alternative approach, or any path that leaves the legacy in place. The agent never silently reroutes around the dirty file to dodge cleanup.
 
-**Override:** `RULE NLR: SKIPPED per user override (reason: ...)` immediately preceding the edit. Override requires a concrete reason — typically "this is a hot-fix branch and cleanup blocks customer impact." Generic "scope creep" is not a valid override.
+```
+NLR DECISION: <file>
+  Cleanup-in-place cost: +<N> net lines, <M> files touched.
+  Alternative approach: <one-line description> (avoids the dirty file).
+  If alternative chosen, legacy that survives:
+    - <symbol/pattern>: <file:line>
+    - ...
+  WAITING for user: clean / alternative.
+```
+
+**Override:** `RULE NLR: SKIPPED per user override (reason: ...)` immediately preceding the edit. The override is **user-invokable only** — the agent cannot self-override. Acceptable reasons are concrete and must include either an external-impact constraint (e.g. "this is a hot-fix branch and cleanup blocks customer impact") or an architectural decision the user has explicitly made via the NLR DECISION block above. Generic "scope creep" / "too big" / "save for later" are NOT valid overrides; if the agent finds itself reaching for one, it must surface to the user instead.
+
+**Anti-evasion clause.** The three failure modes the agent may NOT use to skip cleanup:
+1. **Route-around design.** Picking an architecture that avoids the dirty file specifically to dodge cleanup. If NLR avoidance was a motivation, surface it.
+2. **Silent rejection.** Quietly choosing not to touch a file because cleanup looked expensive, without disclosing the decision.
+3. **Shim-and-skip.** Introducing a wrapper/adapter to sidestep a dirty interface — the new code becomes its own legacy debt, the original rots in place.
+
+If any of these patterns is in play, the agent surfaces it to the user (via the NLR DECISION block or equivalent prose) before proceeding. The user retains all discretion; the agent retains none.
 
 **Interaction with other rules:** RULE NLR is the cleanup-on-touch arm of the legacy/dead-code family. RULE NDC catches obvious unused symbols at write time. RULE NLG bans new legacy framing pre-v2.0.0. Legacy-Design Consult Guard covers the harder judgment calls ("should this whole subsystem exist") that need the user's input. NLR covers the easy mechanical cleanups that don't.
 
@@ -143,7 +160,9 @@ Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a prin
 
 **How to apply:** When draft code or doc text says "reject legacy X" or names errors `legacy_*`, rephrase. The Legacy-Design Consult Guard (next section) still fires for *pre-existing* legacy shims — that's the cleanup side. RULE NLG is the prevention side.
 
-**Override:** `RULE NLG: SKIPPED per user override (reason: ...)` immediately preceding the edit. Override requires a concrete external consumer that can't be migrated in the same commit — vanishingly rare pre-v2.0.0.
+**Override:** `RULE NLG: SKIPPED per user override (reason: ...)` immediately preceding the edit. The override is **user-invokable only** — the agent cannot self-override. Override requires a concrete external consumer that can't be migrated in the same commit — vanishingly rare pre-v2.0.0.
+
+**Tracking-list ban.** Any constant, doc structure, or carve-out list whose purpose is to catalog "violations to be cleaned up later" is itself an NLG violation. Names containing `LEGACY_`, `PENDING_`, `_VIOLATIONS`, `_CARVE_OUTS` (when meant for deferred cleanup), `TO_FIX_`, `DEFERRED_`, or any equivalent — banned. Either fix every entry in the same diff that introduces or touches the list, or delete the list and let the next touch fix the underlying violations. The tracking list **legitimizes deferral**; the rule exists to prevent that. **Vendor-immortal carve-outs** — paths or names dictated by external contracts that genuinely cannot be renamed (e.g. OAuth callback URLs that Slack/GitHub register with us) — are a separate class. Name those explicitly with `VENDOR_` or `EXTERNAL_` so the distinction from "deferred cleanup" is mechanical, and add a comment line stating the external contract that pins the name.
 
 **Full text:** `docs/greptile-learnings/RULES.md` RULE NLG (this is the short summary that all agents see in AGENTS.md).
 
