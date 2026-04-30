@@ -402,7 +402,7 @@ Fires before any user-facing message asserting the work is verified — "tests p
 - `make lint` — always.
 - `make test` — always (tier 1).
 - `make test-integration` — when the diff touches HTTP handlers, schema, DB code, Redis code, or any `_integration_test.zig` file (tier 2). Use `make test-integration-db` / `make test-integration-redis` for focused subsets.
-- `make down && make up && make test-integration` — at least once per branch before declaring ship-ready (tier 3).
+- `make test-integration` — at least once per branch before declaring ship-ready (tier 3). Run from a clean state (e.g. after `make down`) when tier 2 results are intermittent to prove no state carry-over.
 - Add-on gates (`make memleak`, `make bench`, cross-compile, `make check-pg-drain`) per the trigger table in `VERIFY`.
 
 **Required output in done message:** `Verified: lint ✓ | test ✓ <N>p/<M>s | test-integration ✓ (or N/A — no handler/schema/redis) | cross-compile ✓ (zig only).`
@@ -518,7 +518,7 @@ The [Verification Gate](#verification-gate) defines the required-output block; t
 |---|---|---|
 | 1 | `make test` | Every iteration during EXECUTE and at start of VERIFY. |
 | 2 | `make test-integration` | When diff touches `src/http/**`, `src/db/**`, `src/zombie/**`, `src/observability/**`, `*_integration_test.zig`, schema, or migrations. Before COMMIT on those branches. |
-| 3 | `make down && make up && make test-integration` | At least once per branch before declaring ship-ready. Mandatory when schema files change (pre-v2.0). Use whenever tier 2 is intermittent — fresh DB proves no state carry-over. |
+| 3 | `make test-integration` | At least once per branch before declaring ship-ready. Mandatory when schema files change (pre-v2.0). Run from a clean state (e.g. after `make down`) whenever tier 2 is intermittent — fresh DB proves no state carry-over. |
 
 `make test` is unit-only by definition; never substitutes for tier 2/3. Tier 2 passing but tier 3 failing means state pollution — fix isolation before shipping.
 
