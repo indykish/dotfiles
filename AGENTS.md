@@ -110,7 +110,30 @@ After PR merge: `git worktree remove ../usezombie-mNN-name`.
 
 ## Action-Triggered Guards
 
-Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a printable required-output block that must appear in the user-facing message before the gated edit. Pre-existing violations are not the agent's responsibility unless the task includes cleanup — but any new edit that introduces, extends, or perpetuates a violation does trigger the gate.
+Guards fire regardless of lifecycle phase, pre-hoc not post-hoc. Each has a printable required-output block that must appear in the user-facing message before the gated edit. Touch-it-fix-it (RULE NLR): any edit to a file that contains pre-existing legacy framing or dead code — `?*` fields with no non-null caller, `legacy_*` symbols, `V2`-twin types, dead branches, "legacy startup path" comments — must remove the legacy/dead code in the same diff. No "out of scope" carve-out. If cleanup balloons the diff beyond review-ability, abort the edit and file a cleanup spec first; do not commit a partial cleanup that leaves the file half-rotten.
+
+### RULE NLR — No legacy retained (touch-it-fix-it)
+
+**Rule:** Any edit to a file that contains pre-existing legacy framing or dead code MUST remove the legacy/dead code in the same diff. The carve-out "pre-existing violations are not the agent's responsibility" does NOT apply when the agent is already touching the file. Concrete patterns covered:
+
+- `?*T = null` fields whose only caller always sets a non-null value (dead defense for a phantom caller).
+- `legacy_*` symbol names, `V2`-suffixed twin types, `if (legacy_caller)` branches, `// legacy` / `// pre-M*` / `// bootstrap` comments, runtime warn logs that say `legacy path` / `deprecated` / `*_bootstrap_*`.
+- `pub` fns / fields with no in-tree consumer (verify with `grep -rn`).
+- `defer if (x) ... else null` patterns that compensate for an `?T` that should have been `T`.
+- Unused parameters, unused captures, unreachable branches that exist only because the rule's earlier prevention side (RULE NDC) didn't catch them on commit.
+
+**Why:** RULE NDC + RULE NLG cover the prevention side (don't author dead code, don't author legacy framing). The carve-out for pre-existing violations was intended to keep one-line bug fixes from ballooning into refactors, but in practice it became a structural loophole — every PR could defer cleanup to "the next one," and the dead-code curve accumulated. The "you saw it, you own it" rule (NLR) closes that loop: if you're already opening the file and reading the surrounding context, you're the right person to remove the rot.
+
+**How to apply:**
+
+1. Before the first `Edit`/`Write` to a file, scan for the patterns above in the *whole file*, not just the lines you're touching.
+2. List the violations in the gate output before the edit.
+3. Remove them in the same diff. Update every caller in the same commit.
+4. If the cleanup balloons the diff beyond review-ability (rule of thumb: > 200 net lines of cleanup in a non-cleanup PR, or cross-package cascade), abort the edit and file a cleanup spec under `docs/v*/pending/` first. Do NOT commit a partial cleanup that leaves the file half-rotten.
+
+**Override:** `RULE NLR: SKIPPED per user override (reason: ...)` immediately preceding the edit. Override requires a concrete reason — typically "this is a hot-fix branch and cleanup blocks customer impact." Generic "scope creep" is not a valid override.
+
+**Interaction with other rules:** RULE NLR is the cleanup-on-touch arm of the legacy/dead-code family. RULE NDC catches obvious unused symbols at write time. RULE NLG bans new legacy framing pre-v2.0.0. Legacy-Design Consult Guard covers the harder judgment calls ("should this whole subsystem exist") that need the user's input. NLR covers the easy mechanical cleanups that don't.
 
 ### RULE NLG — No legacy framing pre-v2.0.0
 

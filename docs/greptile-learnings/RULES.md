@@ -16,6 +16,13 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 **Tags:** zig, js, all
 **Ref:** M1_001 unused deps in zombie.js; dead currentObj branch in simpleYamlParse. M30_002 dead CLI variables.
 
+## RULE NLR — No legacy retained (touch-it-fix-it)
+
+**Rule:** Any edit to a file that contains pre-existing legacy framing or dead code MUST remove the legacy/dead code in the same diff. Patterns: `?*T = null` fields with no real null caller, `legacy_*` symbol names, `V2`-twin types, `if (legacy_caller)` branches, `// legacy` / `// bootstrap` / `// pre-M*` comments, runtime warn logs saying "legacy path" / "deprecated", pub symbols with no in-tree consumer, defensive `?T` patterns compensating for what should be `T`. Verify "no caller" with `grep -rn`. The "pre-existing violations are not the agent's responsibility" carve-out does NOT apply when the agent is already opening the file. If cleanup > ~200 net lines, abort and file a cleanup spec first; do not commit a partial cleanup.
+**Why:** RULE NDC and RULE NLG cover prevention. The carve-out became a loophole — every PR deferred cleanup to "the next one," and dead code accumulated. NLR closes the loop: the agent already reading the surrounding context is the right person to remove the rot.
+**Tags:** zig, js, all, governance
+**Ref:** M41_001 §9 reload_pending: ?*T = null with one always-non-null caller (worker_watcher.spawnZombieThread) — original commit followed cancel_flag's optional pattern, user called it dead defense. Same struct's cancel_flag/worker_state/executor follow the same anti-pattern; NLR mandates same-diff cleanup.
+
 ## RULE PSR — Use standard parsers — never hand-roll
 
 **Rule:** Use the language's built-in parser for JSON/YAML/TOML/XML; never use indexOf or regex on structured formats.
