@@ -225,9 +225,9 @@ Milestone IDs (`M{N}_{NNN}`), section refs (`§X.Y`), and dimension tokens (`T7`
 
 ### Architecture Consult & Update Gate
 
-`docs/ARCHITECHTURE.md` (or `ARCHITECTURE.md`) is canonical for stream/channel/queue names, table cardinality, ownership, and end-to-end flows. **The failure mode is reinventing terms or asserting flow shapes from training data instead of grounding in the doc.** Specs are *instances*; this doc is the *constant* — when they disagree, the doc wins until reconciled.
+`docs/architecture/` (the directory; topic files linked from `docs/architecture/README.md`) is canonical for stream/channel/queue names, table cardinality, ownership, and end-to-end flows. **The failure mode is reinventing terms or asserting flow shapes from training data instead of grounding in the doc.** Specs are *instances*; this doc is the *constant* — when they disagree, the doc wins until reconciled.
 
-**Triggers — before any of these, grep or read the relevant section of `docs/ARCHITECHTURE.md` first:**
+**Triggers — before any of these, grep or read the relevant topic file in `docs/architecture/` first:**
 
 - Naming a stream / pub-sub channel / Redis key namespace / consumer group / queue / RPC method / Postgres schema / table.
 - Asserting cardinality ("one row per X", "exactly one consumer per stream", "fleet-wide vs per-tenant").
@@ -238,9 +238,9 @@ Milestone IDs (`M{N}_{NNN}`), section refs (`§X.Y`), and dimension tokens (`T7`
 
 **Behavior — no ceremony, just lookup:** doc answers → proceed (no citation block); doc silent → proceed with extra care, land doc decision in same commit; doc conflicts → surface with a one-line citation (`grounded in §X.Y, proposal extends/conflicts because <reason>`) and wait. Greenfield: land initial doc + code in same commit.
 
-**Landing rule (non-negotiable):** an architecture decision lands its `docs/ARCHITECHTURE.md` edit either (a) immediate doc-only commit on the active branch (preferred), OR (b) same commit as the implementation. **Never** (c) follow-up commit AFTER the code.
+**Landing rule (non-negotiable):** an architecture decision lands its `docs/architecture/` edit either (a) immediate doc-only commit on the active branch (preferred), OR (b) same commit as the implementation. **Never** (c) follow-up commit AFTER the code.
 
-**CHORE(close) check:** every M-spec branch that touched flow-defining code produces a non-empty `git diff origin/main..HEAD -- docs/ARCHITECHTURE.md`; else PR Session Notes documents why nothing architectural changed.
+**CHORE(close) check:** every M-spec branch that touched flow-defining code produces a non-empty `git diff origin/main..HEAD -- docs/architecture/`; else PR Session Notes documents why nothing architectural changed.
 
 ### ZIG GATE
 
