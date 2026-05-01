@@ -783,3 +783,28 @@ const handleConfirm = useCallback(async () => {
 
 **Tags:** architecture, refactor, versioning, plan, execute
 **Ref:** M41_001 PLAN, Apr 29, 2026. The temptation to introduce `CreateExecutionV2` to avoid editing the existing RPC and its callers came up during M41 spec audit — rejected because (a) the executor RPC has a single in-tree caller (the worker) and (b) v2.0.0 has not shipped, so no external compatibility is owed. Rule generalizes the call: in-place extension is the only sanctioned path until VERSION crosses 2.0.0.
+
+## RULE RTM — Route matchers segment-based, never substring-based
+
+**Rule:** All HTTP path matchers (in projects with a custom dispatch layer) operate on a canonical `Path` view — a stack-allocated array of segments parsed once at the dispatch boundary. Matchers compare by **segment count + segment[i] equality**. Do not use `startsWith` / `endsWith` / `indexOf` against the raw path. Do not encode disambiguation as call-site ordering. Reservations of literal segments live as explicit `if (p.eq(i, RESERVED)) return null` predicates inside the matchers, so any two matchers in a family are mutually exclusive by structure.
+
+**Why:** Substring-driven matchers smear parsing logic across every matcher. Each matcher independently re-derives "what counts as a segment," and reservations get encoded either as in-matcher special-case rejections (easy to forget when a peer matcher is added) or as evaluation order in `match()` (silently broken by a refactor that re-orders cases). Segment-based matching expresses route semantics in **data shape** instead of **control flow**: mutual exclusivity becomes a property of the predicates, not the dispatch order. Trailing-slash bugs, double-slash bugs, separator drift over time — all foreclosed by a single canonical parse + index-based access.
+
+**How to apply:**
+
+- Parse once at the dispatch entry: `var buf: [N][]const u8 = undefined; const p = Path.parse(path, &buf);`. Strip the API-version prefix once via `p.tail(1)` so no matcher hardcodes `"v1"`.
+- Each matcher: `if (p.segs.len != N) return null;` first, then `if (!p.eq(i, "literal")) return null;` for static slots, then `const id = p.param(j) orelse return null;` for path-parameter slots. `Path.param` rejects empty segments — `//` and trailing slashes never silently route.
+- Reserved literals (e.g. `/credentials/llm` reserving the BYOK slot, `/webhooks/svix` reserving the prefix) become predicates inside the catch-all matcher: `if (p.eq(i, RESERVED)) return null;` — paired with the dedicated matcher requiring `if (!p.eq(i, RESERVED)) return null;`. Both can run in any order and at most one fires.
+- Each route variant gets its own typed struct with semantic field names (`credential_name`, `agent_id`, `grant_id`, `memory_key`, `gate_id`). Parsing logic may be shared via a private helper that returns a generic view; the public surface stays type-distinct.
+
+**Banned in new matchers:**
+
+- `std.mem.startsWith` / `endsWith` / `indexOf` on the path string.
+- Suffix-driven dispatch (`if endsWith(path, "/foo")`).
+- Reservations encoded as call-site ordering ("approval matcher must run before secret-form matcher").
+- Generic shared-leaf field names like `leaf_id` on the public surface (collapses semantically distinct IDs into one type).
+
+**Override syntax:** `RULE RTM: SKIPPED per user override (reason: ...)` immediately preceding the edit. Override is **user-invokable only**; the agent cannot self-override. Acceptable reasons are concrete and rare — e.g. a third-party router framework whose API doesn't expose segment-level access.
+
+**Tags:** architecture, http, routing, zig, refactor
+**Ref:** M41_002 (Apr 30, 2026). The /steer→/messages and /memory/*→/memories rename surfaced a substring-driven matcher tree where ordering in `match()` was load-bearing for correctness (e.g. `/credentials/llm` reservation enforced as a special-case rejection inside the credential matcher; `/webhooks/{id}/approval` precedence over `/webhooks/{id}/{secret}` enforced by call-site order). Adversarial review (multiple rounds) drove the conclusion: substring matching is a model-correctness issue, not a perf issue. The refactor introduced `Path` + segment-indexed matchers + reserved-segment predicates, eliminating both the duplication and the order-dependence in one pass. Rule encodes the pattern so future matchers don't regress.
