@@ -904,31 +904,31 @@ const handleConfirm = useCallback(async () => {
 **Tags:** architecture, http, routing, zig, refactor
 **Ref:** M41_002 (Apr 30, 2026). The /steer→/messages and /memory/*→/memories rename surfaced a substring-driven matcher tree where ordering in `match()` was load-bearing for correctness (e.g. `/credentials/llm` reservation enforced as a special-case rejection inside the credential matcher; `/webhooks/{id}/approval` precedence over `/webhooks/{id}/{secret}` enforced by call-site order). Adversarial review (multiple rounds) drove the conclusion: substring matching is a model-correctness issue, not a perf issue. The refactor introduced `Path` + segment-indexed matchers + reserved-segment predicates, eliminating both the duplication and the order-dependence in one pass. Rule encodes the pattern so future matchers don't regress.
 
-## RULE PLK — Platform LLM key lives in admin workspace vault, not a magic constant
+## RULE GRD — Ground in the source of truth before writing or reviewing
 
-**Rule:** When describing or implementing the platform-managed LLM provider key, do NOT use any of these framings:
+**Rule:** Before writing OR reviewing a spec, architecture doc, scenario, or any cross-cutting design claim that touches an existing system surface, walk the canonical reference set in this order until you find the locked decision:
 
-- A magic compile-time constant (`PLATFORM_FIREWORKS_KEY`, `PLATFORM_ANTHROPIC_KEY`, etc.).
-- "Loaded at API boot from a config file or env var."
-- "Stored in a special platform vault at a platform-scope identifier" (no such separate vault exists).
-- "Server-side config" or "server config" as the storage medium.
-- An env-var fallback path (none exists; see M11_006 §1).
+1. `playbooks/` — operational contracts (bootstrap, rotation, deploy, admin setup, credential setup).
+2. `docs/v*/done/` — merged spec decisions.
+3. `docs/v*/pending/` — in-flight specs that may already lock the surface.
+4. `docs/architecture/` — canonical concept reference (TOC + topic files).
+5. `schema/*.sql`, `src/http/handlers/`, `src/state/`, `samples/fixtures/` — code-level contracts when prose claims persist or surface them.
 
-The actual contract:
+Cite the most-specific source of truth by **file path** in the new doc (in the spec's `Implementing agent — read these first` list, the architecture doc's `Canonical architecture` pointer block, or inline). Do not invent a framing that contradicts the locked decision. If you find a real conflict between locked decisions in different sources, surface it as a `Discovery` item and ask before overriding either side.
 
-1. The `usezombie-admin` user (one global Clerk account per environment, see [`playbooks/012_usezombie_admin_bootstrap/001_playbook.md`](../../playbooks/012_usezombie_admin_bootstrap/001_playbook.md)) signs up like any user, gets promoted to `role=admin` in Clerk, and stores their own LLM provider credential in their own workspace's `vault.secrets` — same M45 crypto_store path any user's BYOK uses.
-2. They register that credential as the active platform default via `PUT /v1/admin/platform-keys` (M11_006 endpoint, handler at `src/http/handlers/admin/platform_keys.zig`).
-3. `core.platform_llm_keys` (`schema/006_platform_llm_keys.sql`) stores **only a pointer** `(provider, source_workspace_id, active)`. **No key material.**
-4. At resolution time (worker `processEvent` → `tenant_provider.resolveActiveProvider` under `mode=platform` or no `tenant_providers` row): read `platform_llm_keys` → follow `source_workspace_id` → `vault.loadJson` on the admin workspace → fetch the api_key on-demand.
-5. If `platform_llm_keys` has no active row OR the admin's vault row is missing → `error.PlatformKeyMissing` (operator-side incident, dead-letter; not user-recoverable).
+**Applies symmetrically to:**
+- **Authors** drafting a new spec, scenario, or architecture section.
+- **Reviewers** (the `/review` skill, greptile, the user, manual code-review): when a diff introduces a contract claim, verify it against the prior-art set before accepting; flag any contradiction with `RULE GRD`.
 
-The platform default model + cap **are** code constants (RULE UFS, declared once in `src/state/tenant_provider.zig` — at v2.0 `accounts/fireworks/models/kimi-k2.6` + `256000`). The api_key is **never** a code constant.
+**Why:** Ad-hoc framings invented during PR review or fresh spec drafting cause drift. A doc that reads as internally consistent but contradicts the schema + handler + playbook is wrong — and the "internally consistent but ungrounded" failure mode produces multi-round review rediscovery loops. Three review rounds chasing the same wrong framing is the symptom; skipping the prior-art walk is the cause.
 
-**Why:** Earlier doc drafts repeatedly framed the platform key as a magic constant or "platform vault" — three review rounds chased the same rabbit hole. The actual M11_006 design is that the platform reuses the user-credential vault infrastructure with a pointer table for routing; there's no parallel storage path. Encoding the contract here so the next reviewer doesn't have to rediscover it from `M11_006_*.md` + `schema/006_platform_llm_keys.sql` + the playbook.
+**How to apply:**
+- **Spec author:** start every new pending spec with the `Canonical architecture` pointer block (file paths only) and the `Implementing agent — read these first` list. The list is not optional; an empty list means "no prior art consulted" and the reviewer should challenge it.
+- **Architecture-doc author:** when adding a concept that has a corresponding playbook + schema + handler, link all three from the new section. The reader should be one click from the actual contract.
+- **Reviewer:** if a diff introduces a contract claim (key storage location, schema column meaning, who-owns-what, security boundary, etc.), spend 30 seconds checking the relevant playbook + done spec + schema before accepting the framing. If they conflict, the diff is wrong.
+- **Cite as `RULE GRD`** when flagging in a review.
 
-**How to apply:** Every time the platform LLM key is mentioned in a spec, scenario, architecture doc, or commit message — refer to it as "fetched via `core.platform_llm_keys` pointer → admin workspace vault" or equivalent. Reference the playbook + schema. Never invent a constant name. The `/review` skill should flag any new mention that uses the banned framings above.
+**Override syntax:** `RULE GRD: SKIPPED per user override (reason: ...)` immediately preceding the edit. User-invokable only; rare, and only when the locked decision is itself being explicitly revised in the same PR (with the override-PR cleaning up the prior-art it supersedes).
 
-**Override syntax:** `RULE PLK: SKIPPED per user override (reason: ...)` immediately preceding the edit. User-invokable only; the agent cannot self-override.
-
-**Tags:** architecture, billing, byok, security, governance
-**Ref:** May 01, 2026 PR #278 review. Platform-default swap (Sonnet → Fireworks Kimi K2.6) repeatedly triggered the wrong framing across `billing_and_byok.md`, `scenarios/01`, `scenarios/03`, M48 spec, and `user_flow.md` §8.7. Three review rounds and a user nudge to read [`playbooks/012_usezombie_admin_bootstrap/001_playbook.md`](../../playbooks/012_usezombie_admin_bootstrap/001_playbook.md) finally surfaced the actual M11_006 contract. Source of truth: the playbook + `schema/006_platform_llm_keys.sql` + `src/http/handlers/admin/platform_keys.zig` + `docs/v2/done/M11_006_P1_API_AUTH_BIL_BOOTSTRAP_REMOVAL_AND_BALANCE_GATE.md`.
+**Tags:** governance, architecture, all
+**Ref:** PR #278 (May 01, 2026). Three review rounds reframed the platform-managed LLM api_key as a magic constant, "loaded at API boot from server config," and "platform vault at platform-scope identifier" before the user pointed at `playbooks/012_usezombie_admin_bootstrap/001_playbook.md` + `schema/006_platform_llm_keys.sql` + `docs/v2/done/M11_006_P1_API_AUTH_BIL_BOOTSTRAP_REMOVAL_AND_BALANCE_GATE.md`. Each prior framing was internally consistent within its own doc but contradicted the locked M11_006 contract (admin user signs up like any user, stores credential in own workspace vault, registers via `PUT /v1/admin/platform-keys`, the `platform_llm_keys` table stores only a pointer). The pattern — skip the playbook + done-spec walk, invent a fresh framing — is fully generalisable across any cross-cutting domain, so the rule is intentionally domain-agnostic.
