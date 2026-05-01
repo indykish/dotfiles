@@ -341,10 +341,105 @@ Everything else — status values, frame kinds, channel suffixes/prefixes, heade
 
 ## RULE OBS — Every observable state must have a log/event entry
 
-**Rule:** Every result variant operators need to know about must emit a log line or activity event; .truncated without an event is a blind spot.
-**Why:** Silent state transitions are invisible in dashboards and incident response.
-**Tags:** zig
-**Ref:** M6_001 content scanner returned .truncated but eventTypeForScan mapped it to null — no event fired.
+**Rule:** Every branch that changes how an external party perceives the system MUST emit a structured log line. "External party" includes operators reading dashboards, callers receiving an HTTP response, downstream consumers of a queue, end-users running `zombiectl`, and incident responders running `journalctl`. If a code path can be read as "we decided to do something different here," it is observable, and it MUST be logged. **Applies to every Zig source file under `src/` and every JS source file under `zombiectl/src/`** — handler code, middleware, workers, CLI commands, lifecycle code, retries, fallbacks, all of it.
+
+**Why:** Silent state transitions are invisible in dashboards and incident response. The code can be 100% correct on the wire and 100% opaque to the operator at the same time. A dropped GitHub webhook the user can't explain, a `zombiectl` command that exited 0 with no output, a worker that silently skipped a job — same root cause, same fix: log the branch.
+
+### Concrete trigger list (any one fires the rule, in either stack)
+
+1. **Result variants** returned from a function that mean "we took a non-default path" — `.truncated`, `.fallback`, `.degraded`, `.partial`, `.skipped`, `.deduped`, `.ignored`, `.rate_limited`, `.retry_scheduled`. The original M6_001 case.
+2. **Every error-emitting branch** that converts an internal condition into a user-visible response or exit code: Zig `hx.fail(...)`, `common.internalDbError(...)`, `return error.X` at a function the spec names; JS `writeError(ctx, code, msg)`, `process.exit(non-zero)`, `throw` from a CLI command implementation.
+3. **Every "200/0 with diagnostic body"** branch — `hx.ok(.ignored = ...)`, `hx.ok(.deduped = ...)`, `hx.ok(.skipped = ...)`, JS CLI `process.exit(0)` after writing `{"status":"noop"}` or similar. The diagnostic survives to the caller; the operator's logs do not unless logged here.
+4. **Every catch branch** that converts an error into a non-error outcome (fail-closed-but-200, fail-open, silent retry, JS `try { ... } catch { return; }`).
+5. **Every "early return"** where the function exits before reaching its primary side effect (no DB write, no XADD, no queue publish, no API call from the CLI).
+6. **Every retry / backoff / circuit-break** transition. Each attempt and each terminal outcome must be logged with the attempt number and the reason.
+7. **Every config or feature-flag branch** that changes runtime behavior (`if (env.FEATURE_FOO)` / `if (cfg.dryRun)` / `if (--json)`). Log which mode the code took.
+
+### Per-stack convention
+
+#### Zig — `std.log.scoped(.module_name)`
+
+Every Zig source file that emits any log MUST declare a file-scoped logger with a snake_case scope tag derived from the module's job:
+
+```zig
+const log = std.log.scoped(.<module_name>);
+```
+
+Picking the scope name:
+- The scope IS the module identity in operator-facing logs. Choose specifically (`.webhook_sig_lookup`, `.zombie_event_loop`, `.firewall`, `.clerk_webhook`) rather than generically (`.zombied`, `.utils`).
+- One scope per file is the default. Sibling files in the same package use the same scope only if they're a single logical module split across files for length-gate reasons.
+- Existing scopes already cover most subsystems — grep `std.log.scoped\(\.` before inventing a new one. Consistency with neighbors beats novelty.
+
+Format the message body as `<scope>.<state> <key>=<value> <key>=<value>`:
+- **state** is a short snake_case noun phrase naming the branch — `parse_failed`, `dedup_replay`, `ignored_event`, `metering_debit`, `claim_skipped`. Operators grep on `<scope>.<state>`; make it unique and stable.
+- **key=value** pairs carry correlation IDs needed to join with downstream traces. Always include `req_id` for request-scoped paths. Add `zombie_id` / `workspace_id` / `tenant_id` / `delivery` / `reason` / `err` where relevant.
+- Severity: `log.info` for routine non-default branches (ignores, dedupes, retries), `log.warn` for malformed input / fail-closed / unexpected-but-recoverable, `log.err` for internal failures and contract violations.
+
+```zig
+const log = std.log.scoped(.http_webhook_github);
+// ...
+log.info("github_webhook.ignored_event zombie_id={s} delivery={s} event={s}", .{ zombie_id, delivery, event });
+log.warn("github_webhook.parse_failed zombie_id={s} delivery={s} err={s}", .{ zombie_id, delivery, @errorName(err) });
+log.err("github_webhook.enqueue_failed zombie_id={s} delivery={s} err={s}", .{ zombie_id, delivery, @errorName(err) });
+```
+
+#### JS CLI (`zombiectl`) — structured stderr via `writeError` + diagnostic JSON in `--json` mode
+
+The CLI's "log" surface is whatever the user (or a calling script) sees. Two channels:
+
+- **Human mode (default):** call `ui.err(...)` / `ui.warn(...)` / `ui.dim(...)` from `ui-theme.js` and write to `ctx.stderr` via `writeLine`. Always include the operator-meaningful reason, never just "failed." Include the upstream error code if the API returned one (`UZ-WH-010`, etc.).
+- **JSON mode (`--json`):** call `writeError(ctx, code, message)` from `program/io.js`, which emits `{"error":{"code":"<code>","message":"<msg>"}}` on stderr. Every non-success branch must have a `code` from `zombiectl/src/constants/error-codes.js` (add a new constant if none fits — RULE UFS).
+
+The same trigger list applies: every retry, fallback, "no-op exit 0," `process.exit(non-zero)`, swallowed `catch` block must produce an entry on stderr. The bar is "could a user paste the stderr to support and have us reproduce the decision?" If not, the log is missing or insufficient.
+
+```javascript
+// program/io.js
+import { writeError } from "../program/io.js";
+// ...
+if (resp.status === 401) {
+  writeError(ctx, "UZ-WH-010", "webhook signature rejected (check signing secret)");
+  return 1;
+}
+```
+
+For routine info (e.g. "noop: nothing to do"), write to stderr in human mode and include a `{"status":"noop","reason":"..."}` record in JSON mode — never silently exit 0.
+
+### How to apply (both stacks)
+
+1. Before any branch that matches the trigger list: ask **"if a user/operator at 3am sees this happened 400 times in the last hour, what would they need to know?"** — log that.
+2. The log must carry enough correlation IDs to join across systems (Zig: `req_id` + scope tag; CLI: error code + the API `req_id` from the response if present).
+3. **Pre-edit self-check** before adding any new `hx.fail` / `hx.ok(.ignored=)` / `writeError` / `process.exit` / `return error.X`: `git diff -U0` and confirm every `+` line that emits a response or terminal state has a corresponding `+` `log.*` (Zig) or `+` `writeError`/`writeLine(ctx.stderr` (JS) line in the same function.
+4. **At commit time:** run the GREPTILE GATE block (see `AGENTS.md`). RULE OBS is verified per file in the diff.
+
+### Post-execution verification (HARNESS VERIFY block)
+
+RULE OBS is a self-audit, not a separate `make` target — it runs at HARNESS VERIFY (the same phase as MILESTONE-ID and PUB GATE). Before reporting any work complete, run this grep on your own diff and confirm zero violations:
+
+```bash
+# Zig: every newly-added hx.fail / hx.ok-with-discriminant / common.internal*Error
+#      line in a handler or middleware file must have a log.{info,warn,err,debug}
+#      line within the same function.
+# JS:  every newly-added writeError / process.exit(non-zero) line in zombiectl/src
+#      must have a writeError / writeLine(ctx.stderr / log.* line in the same
+#      function (writeError itself counts — it writes to stderr).
+#
+# How to run:
+#   git diff -U0 HEAD -- 'src/**/*.zig' 'zombiectl/src/**/*.js' \
+#     | grep -E '^\+.*(hx\.fail\(|hx\.ok\(\.[a-z]|common\.internal.*Error\(|writeError\(|process\.exit\([1-9])'
+#
+# For each match: open the file, locate the enclosing function, and confirm
+# at least one `+` line within the same function emits a log/stderr message.
+# If not: add it before declaring done. The HARNESS VERIFY block reports
+# the result as `RULE OBS: clean | N violations: <file:line>...`.
+```
+
+This is intentionally manual — the structural diversity of "function body" across Zig + JS (free fns, methods, lambdas, arrow fns, blocks) makes a reliable grep gate hard to write, and the human-readable form keeps the rule honest. Add more rigor (an awk-driven gate) only if violations recur after several PRs.
+
+**Tags:** zig, javascript, observability, http, handlers, middleware, cli, workers
+
+**Refs:**
+- M6_001 — content scanner returned `.truncated` but `eventTypeForScan` mapped it to null; no event fired. The original miss.
+- M43_001 review (PR #273) — github webhook handler had four un-logged response branches: `parse_failed`, `malformed_payload`, `filter_ignored`, `ignored_event`. Operators saw 200/4xx in their dashboard with zero context. The rule's prior wording read as "applies to enum result variants" and missed the handler's `hx.fail`/`hx.ok` discriminant branches entirely. Rule rewritten with cross-stack triggers + the canonical scoped-logger pattern so the next branch-without-log surfaces at gate time, not at incident time.
 
 ## RULE BRQ — ~~Large comptime loops need @setEvalBranchQuota~~ ELIMINATED (M16_001)
 
