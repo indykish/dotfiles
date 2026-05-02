@@ -41,14 +41,21 @@ PROJECT_LINKS=(
 
 # Project repos. Override per-invocation via:
 #   KISHORES_TARGETS="path1 path2 ..." sync-agents
+# (env value is captured BEFORE the default array assignment, otherwise
+# the array would overwrite the env string and the override would be lost.)
 #
 # ~/Projects/docs is intentionally excluded — it carries its own
 # Mintlify-site-specific AGENTS.md (different terminology, different
 # scope) and does not follow the Oracle Operating Model.
+_KISHORES_TARGETS_ENV="${KISHORES_TARGETS:-}"
 KISHORES_TARGETS=(
   "$HOME/Projects/usezombie"
   "$HOME/Projects/cache-kit.rs"
 )
+if [[ -n "$_KISHORES_TARGETS_ENV" ]]; then
+  read -ra KISHORES_TARGETS <<< "$_KISHORES_TARGETS_ENV"
+fi
+unset _KISHORES_TARGETS_ENV
 
 # ---------------------------------------------------------------------------
 # Agent home-dir manifest — each agent's global instructions file.
@@ -63,23 +70,6 @@ AGENT_HOME_LINKS=(
   "AGENTS.md:$HOME/.opencode/AGENTS.md"
   "AGENTS.md:$HOME/.amp/AGENTS.md"
 )
-
-# ---------------------------------------------------------------------------
-# CLI: env override via KISHORES_TARGETS as a space-separated string.
-# ---------------------------------------------------------------------------
-# Detect string-style env override (env vars are always strings; if a string
-# was passed, treat it as space-separated paths).
-case "${KISHORES_TARGETS-__unset__}" in
-  __unset__) ;;
-  *)
-    if [[ "$(declare -p KISHORES_TARGETS 2>/dev/null)" != *"declare -a"* ]]; then
-      # came in as a string from env, split on whitespace
-      _str="$KISHORES_TARGETS"
-      unset KISHORES_TARGETS
-      read -ra KISHORES_TARGETS <<< "$_str"
-    fi
-    ;;
-esac
 
 if [[ "${1:-}" == "--list" ]]; then
   echo "Project-repo manifest (sources in $DOTFILES):"
