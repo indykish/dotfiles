@@ -1,4 +1,4 @@
-# 🛡️ Legacy-Design Consult Guard
+# 🚧 Legacy-Design Consult Guard
 
 **Family:** Legacy-control. Sibling rules: **RULE NDC**, **RULE NLR**, **RULE NLG**. **Source:** `AGENTS.md` (project-side guard, not a greptile-derived rule).
 

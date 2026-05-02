@@ -1,4 +1,4 @@
-# 🛡️ Schema Table Removal Guard
+# 🚧 Schema Table Removal Guard
 
 **Family:** Schema discipline. **Source:** `AGENTS.md` (project-side guard). Related: **RULE STS** (no static strings in SQL schema), **RULE NSQ** (named constants, schema-qualified SQL) — both in `docs/greptile-learnings/RULES.md`.
 

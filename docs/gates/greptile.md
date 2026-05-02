@@ -1,4 +1,4 @@
-# 🛡️ GREPTILE GATE
+# 🚧 GREPTILE GATE
 
 **Family:** Universal coding-rules audit. **Source:** `docs/greptile-learnings/RULES.md`.
 

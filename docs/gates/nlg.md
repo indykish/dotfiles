@@ -1,4 +1,4 @@
-# 🛡️ RULE NLG — No legacy framing pre-v2.0.0
+# 🚧 RULE NLG — No legacy framing pre-v2.0.0
 
 **Family:** Legacy-control. Sibling rules: **RULE NDC**, **RULE NLR**, **Legacy-Design Consult Guard**. **Source:** `docs/greptile-learnings/RULES.md` RULE NLG.
 

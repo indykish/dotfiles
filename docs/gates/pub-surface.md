@@ -1,4 +1,4 @@
-# 🛡️ Pub Surface & Struct-Shape Gate
+# 🚧 Pub Surface & Struct-Shape Gate
 
 **Family:** Zig discipline (sub-gate of ZIG GATE). **Source:** `docs/ZIG_RULES.md`. **Parent:** `docs/gates/zig.md`.
 

@@ -1,4 +1,4 @@
-# 🛡️ File & Function Length Gate
+# 🚧 File & Function Length Gate
 
 **Family:** Universal length discipline. **Source:** `docs/greptile-learnings/RULES.md` RULE FLL (File & Function Length).
 

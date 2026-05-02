@@ -1,4 +1,4 @@
-# 🛡️ ZIG GATE
+# 🚧 ZIG GATE
 
 **Family:** Zig discipline (umbrella). **Source:** `docs/ZIG_RULES.md`. **Sub-gates:** Pub Surface & Struct-Shape (`docs/gates/pub-surface.md`), File & Function Length (`docs/gates/file-length.md`).
 

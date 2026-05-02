@@ -1,4 +1,4 @@
-# 🛡️ Verification Gate
+# 🚧 Verification Gate
 
 **Family:** Verification & ship-readiness. **Source:** `AGENTS.md` (project-side guard). Tier definitions and `make` target ownership live in this file.
 
@@ -41,7 +41,7 @@ Before CHORE(close) reports green, paste the final `make memleak` result line in
 **Success:**
 
 ```
-✅ Verified: 🧪 lint ✓ · 🧪 test ✓ <N>p/<M>s · 🔌 test-integration ✓ (or N/A — no handler/schema/redis) · 🏗️ cross-compile ✓ (zig only)
+✅ Verified: 🧪 lint ✓ · 🧪 test ✓ <N>p/<M>s · 🧩 test-integration ✓ (or N/A — no handler/schema/redis) · 🎯 cross-compile ✓ (zig only)
 ```
 
 **Failure (any required target failed):**
@@ -66,6 +66,6 @@ A skipped target MUST be surfaced — never dressed up as "tests pass".
 | 🔴 | Verification failed — at least one target failed |
 | ⚠️ | Skipped per environment constraint — read the reason |
 | 🧪 | Lint / unit / integration test |
-| 🔌 | Integration test (cross-process) |
-| 🏗️ | Cross-compile target |
-| 💡 | Informational note (does not affect verdict) |
+| 🧩 | Integration test (cross-process) |
+| 🎯 | Cross-compile target |
+| 🔆 | Informational note (does not affect verdict) |

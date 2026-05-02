@@ -1,4 +1,4 @@
-# 🛡️ RULE NLR — No legacy retained (touch-it-fix-it)
+# 🚧 RULE NLR — No legacy retained (touch-it-fix-it)
 
 **Family:** Legacy-control. Sibling rules: **RULE NDC** (no dead code at write time), **RULE NLG** (no new legacy framing pre-v2.0.0), **Legacy-Design Consult Guard** (judgment calls on whole subsystems). **Source:** `docs/greptile-learnings/RULES.md` RULE NLR.
 

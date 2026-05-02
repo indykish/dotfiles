@@ -1,4 +1,4 @@
-# 🛡️ Invariance Suite Gate (meta-gate)
+# 🚧 Invariance Suite Gate (meta-gate)
 
 **Family:** Meta-gate — protects the gate contract itself. Sibling: none (this gate has no peer; it watches every other gate's source-of-truth files).
 **Source:** `AGENTS.md` (project-side guard). Questionnaire body: `AGENTS_INVARIANCE.md` at repo root.
@@ -63,7 +63,7 @@ The sign-off must be tied to the **post-commit HEAD SHA**, so the order is:
 ## Required output (in-session)
 
 ```
-🛡️ INVARIANCE SUITE GATE: <branch> @ <head-sha>
+🚧 INVARIANCE SUITE GATE: <branch> @ <head-sha>
   Step 1 (script):        ✅ ALL CHECKS PASSED
   Step 2 (questionnaire): ✅ <N>/<N> YES
   Step 3 (report):        emitted

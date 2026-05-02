@@ -1,4 +1,4 @@
-# 🛡️ UI Component Substitution Gate
+# 🚧 UI Component Substitution Gate
 
 **Family:** Frontend design-system discipline. **Source:** `AGENTS.md` (project-side guard). Authoritative primitive set: `ui/packages/design-system/src/index.ts`.
 

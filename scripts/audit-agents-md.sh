@@ -49,7 +49,7 @@ fi
 fail() { printf '%s🔴 FAIL%s: %s\n' "$C_RED" "$C_RESET" "$*" >&2; FAIL=1; SEEN_LABELS+=("$*"); }
 pass() { printf '%s🟢 PASS%s: %s\n' "$C_GREEN" "$C_RESET" "$*";       SEEN_LABELS+=("$*"); }
 warn() { printf '%s🟡 WARN%s: %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2; }
-info() { printf '%s💡 %s%s\n' "$C_BLUE" "$*" "$C_RESET"; }
+info() { printf '%s🔆 %s%s\n' "$C_BLUE" "$*" "$C_RESET"; }
 
 info "Auditing $AGENTS"
 
@@ -231,11 +231,11 @@ for gf in "${GATE_FILES[@]}"; do
   fi
   grep -qE '^\*\*Triggers' "$full"   || { fail "$gf missing **Triggers** marker"; gate_body_fail=1; }
   grep -qE '^\*\*Override' "$full"   || { fail "$gf missing **Override** marker"; gate_body_fail=1; }
-  grep -qE '^# 🛡️ '          "$full" || { fail "$gf missing 🛡️ shield in H1";    gate_body_fail=1; }
+  grep -qE '^# 🚧 '          "$full" || { fail "$gf missing 🚧 shield in H1";    gate_body_fail=1; }
   # AGENTS.md must point at this gate body
   grep -qF "$gf" "$AGENTS"           || { fail "AGENTS.md does not reference $gf"; gate_body_fail=1; }
 done
-[[ $gate_body_fail -eq 0 ]] && pass "gate bodies complete (${#GATE_FILES[@]} files, each with Triggers + Override + 🛡️ + AGENTS.md ref)"
+[[ $gate_body_fail -eq 0 ]] && pass "gate bodies complete (${#GATE_FILES[@]} files, each with Triggers + Override + 🚧 + AGENTS.md ref)"
 
 # ---------------------------------------------------------------------------
 # 10. AGENTS_INVARIANCE.md presence + basic shape (questionnaire layer).

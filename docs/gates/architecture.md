@@ -1,4 +1,4 @@
-# 🛡️ Architecture Consult & Update Gate
+# 🚧 Architecture Consult & Update Gate
 
 **Family:** Architecture grounding. **Source:** `AGENTS.md` (project-side guard); canonical body of architectural decisions lives at `docs/architecture/` (the directory; topic files linked from `docs/architecture/README.md`).
 

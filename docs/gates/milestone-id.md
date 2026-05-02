@@ -1,4 +1,4 @@
-# 🛡️ Milestone-ID Gate
+# 🚧 Milestone-ID Gate
 
 **Family:** Source-rot prevention. **Source:** `AGENTS.md` (project-side guard). Related: **RULE TST-NAM** (test identifiers are milestone-free) in `docs/greptile-learnings/RULES.md`.
 
