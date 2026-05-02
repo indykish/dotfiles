@@ -285,6 +285,53 @@ Five places, in order. Skip any one and the build or sync gate fails.
 
 5. **`public/openapi/paths/<tag>.yaml`** — add the endpoint (§6).
 
+### Matcher style — segment-based, not substring-based
+
+All path matchers in `src/http/route_matchers.zig` operate on a canonical
+`Path` view: a stack-allocated array of segments parsed once at the dispatch
+boundary. Matchers compare by **segment count + segment[i] equality**.
+Disambiguation is shape-driven, not order-driven.
+
+**Pattern (mandatory for any new matcher):**
+
+```zig
+pub fn matchMyEndpoint(p: Path) ?MyRoute {
+    if (p.segs.len != N) return null;        // exact segment count
+    if (!p.eq(0, "literal-1")) return null;  // literal slots
+    if (!p.eq(2, "literal-2")) return null;
+    const id_a = p.param(1) orelse return null;  // path-param slots: param() rejects empty
+    const id_b = p.param(3) orelse return null;
+    return .{ .field_a = id_a, .field_b = id_b };
+}
+```
+
+**Banned in new matchers:**
+- `std.mem.startsWith` / `endsWith` / `indexOf` on the path string.
+- Suffix-driven dispatch (`if endsWith(path, "/foo")`).
+- Implicit segment boundaries via offset arithmetic.
+- Reservations encoded as call-site ordering ("must run matcher A before B").
+
+**Required properties of a matcher set:**
+- **Mutual exclusivity by structure.** Any two matchers must be reject-incompatible
+  by segment count or segment-equality predicates. If two matchers can both
+  fire on the same path, one of them needs a tighter predicate (e.g. an explicit
+  `if (p.eq(i, RESERVED)) return null` exclusion). Order in `match()` must not
+  decide correctness.
+- **Empty-segment safety.** `Path.parse` preserves empty segments from `//` and
+  trailing slashes. Matchers extract path-parameter slots via `param(idx)`,
+  which returns null on empty — empty IDs reject at the matcher, not the
+  handler.
+- **Semantic-named typed structs.** Each `Route` enum variant gets its own
+  struct with semantic field names (`credential_name`, `agent_id`, `grant_id`,
+  `memory_key`, `gate_id`, …). Parsing logic may be shared via a private
+  helper, but the public surface stays type-distinct.
+
+**Single API-version site.** The dispatcher in `router.zig::match()` calls
+`Path.parse(...)` once, checks `segs[0]` against the API version, then hands
+`p.tail(1)` to the version-specific matchers (`matchV1`, future `matchV2`).
+The string `"v1"` lives in exactly one place — that dispatch line. No matcher
+body checks the API version.
+
 ### Middleware policy table — pick one at step 3
 
 | Policy | Use for |
