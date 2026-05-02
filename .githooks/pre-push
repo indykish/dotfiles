@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Pre-push hook for dotfiles.
+#
+# Behaviour:
+# - Runs scripts/audit-agents-md.sh always (script layer; deterministic).
+# - When the push includes commits that touched AGENTS.md, AGENTS_INVARIANCE.md,
+#   or any docs/gates/*.md, ALSO requires a fresh sign-off file written by an
+#   LLM agent that ran the AGENTS_INVARIANCE.md questionnaire.
+#
+# Sign-off file: .agents-invariance-signoff (gitignored — it's a machine-local
+# attestation, not a tracked artifact). Format:
+#
+#     <commit-sha-short>  <UTC-timestamp>  <result>
+#
+# A sign-off is "fresh" if its <commit-sha-short> matches HEAD and the file was
+# written within the last 24 hours.
+#
+# To produce the sign-off: open AGENTS_INVARIANCE.md in an LLM session and
+# instruct: "Read AGENTS.md and answer every question in AGENTS_INVARIANCE.md.
+# When all-YES, write the sign-off line to .agents-invariance-signoff."
+#
+# One-off bypass:  SKIP_INVARIANCE_PUSH=1 git push ...
+# (Use sparingly, with a reason in the most recent commit message.)
+
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 1
+
+# 1. Always run the script layer.
+echo "pre-push: running scripts/audit-agents-md.sh" >&2
+if ! bash "$ROOT/scripts/audit-agents-md.sh"; then
+  echo "pre-push: script layer failed — fix before push" >&2
+  exit 1
+fi
+
+# 2. Detect contract changes in the commits being pushed.
+# Read the standard pre-push stdin: <local ref> <local sha> <remote ref> <remote sha>
+contract_changed=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "$local_sha" || "$local_sha" = "0000000000000000000000000000000000000000" ]] && continue
+  if [[ "$remote_sha" = "0000000000000000000000000000000000000000" ]]; then
+    range="$local_sha"
+    files=$(git log --name-only --pretty=format: "$range")
+  else
+    range="$remote_sha..$local_sha"
+    files=$(git diff --name-only "$range")
+  fi
+  if echo "$files" | grep -qE '^(AGENTS\.md|AGENTS_INVARIANCE\.md|docs/gates/.*\.md)$'; then
+    contract_changed=1
+  fi
+done
+
+if [[ $contract_changed -eq 0 ]]; then
+  echo "pre-push: no contract changes — sign-off not required ✅" >&2
+  exit 0
+fi
+
+# 3. Contract changed — require fresh sign-off.
+SIGNOFF="$ROOT/.agents-invariance-signoff"
+if [[ "${SKIP_INVARIANCE_PUSH:-0}" = "1" ]]; then
+  cat >&2 <<'MSG'
+pre-push: ⚠️  SKIP_INVARIANCE_PUSH=1 — bypassing AGENTS_INVARIANCE sign-off.
+          Document the reason in your most recent commit message.
+MSG
+  exit 0
+fi
+
+if [[ ! -f "$SIGNOFF" ]]; then
+  cat >&2 <<MSG
+
+pre-push: 🔴 BLOCKED — AGENTS.md / docs/gates / AGENTS_INVARIANCE.md changed in
+          this push, but no .agents-invariance-signoff file exists.
+
+To proceed:
+  1. Open AGENTS_INVARIANCE.md in an LLM agent session.
+  2. Instruct: "Read AGENTS.md and answer every question. When all-YES, write
+     a sign-off line to .agents-invariance-signoff in this format:
+         <commit-sha-short>  <UTC-timestamp>  PASS"
+  3. Re-run: git push ...
+
+Bypass (last resort): SKIP_INVARIANCE_PUSH=1 git push ...
+MSG
+  exit 1
+fi
+
+# Validate sign-off freshness.
+HEAD_SHA=$(git rev-parse --short HEAD)
+SIGNOFF_LINE=$(tail -1 "$SIGNOFF" | tr -d '\r')
+SIGNOFF_SHA=$(echo "$SIGNOFF_LINE" | awk '{print $1}')
+SIGNOFF_RESULT=$(echo "$SIGNOFF_LINE" | awk '{print $NF}')
+
+if [[ "$SIGNOFF_SHA" != "$HEAD_SHA" ]]; then
+  cat >&2 <<MSG
+
+pre-push: 🔴 BLOCKED — sign-off SHA ($SIGNOFF_SHA) does not match HEAD ($HEAD_SHA).
+          Regenerate .agents-invariance-signoff against the current HEAD.
+MSG
+  exit 1
+fi
+
+if [[ "$SIGNOFF_RESULT" != "PASS" ]]; then
+  cat >&2 <<MSG
+
+pre-push: 🔴 BLOCKED — sign-off result is "$SIGNOFF_RESULT", expected "PASS".
+          Re-run the questionnaire until every question answers YES.
+MSG
+  exit 1
+fi
+
+# Freshness — file mtime within last 24 h.
+NOW=$(date +%s)
+SIGNOFF_MTIME=$(stat -f %m "$SIGNOFF" 2>/dev/null || stat -c %Y "$SIGNOFF" 2>/dev/null)
+AGE=$((NOW - SIGNOFF_MTIME))
+if [[ $AGE -gt 86400 ]]; then
+  cat >&2 <<MSG
+
+pre-push: 🔴 BLOCKED — sign-off is $((AGE / 3600))h old (>24h).
+          Re-run the questionnaire to refresh.
+MSG
+  exit 1
+fi
+
+echo "pre-push: ✅ AGENTS_INVARIANCE sign-off PASS for $HEAD_SHA (age $((AGE / 60)) min)" >&2
+exit 0

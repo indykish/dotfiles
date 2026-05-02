@@ -143,7 +143,18 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 ---
 
-## Step 3 — Tabulated audit report
+## Step 3 — Write the sign-off file
+
+After all questions answer YES and the report below has been produced, write a sign-off line to `.agents-invariance-signoff` (gitignored). The pre-push hook reads this to allow the push.
+
+```bash
+printf '%s  %s  PASS\n' "$(git rev-parse --short HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  > .agents-invariance-signoff
+```
+
+Sign-off format: `<short-sha>  <UTC-timestamp>  <PASS|FAIL>`. The hook accepts `PASS` only when the SHA matches HEAD and the file is < 24 h old.
+
+## Step 4 — Tabulated audit report
 
 After all questions answer YES, the agent emits a final report in this exact shape:
 

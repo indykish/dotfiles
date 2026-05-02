@@ -11,10 +11,23 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 AGENTS="$ROOT/AGENTS.md"
 FIXTURES="$ROOT/scripts/fixtures"
+GATES_DIR="$ROOT/docs/gates"
 FAIL=0
 
-fail() { printf 'FAIL: %s\n' "$*" >&2; FAIL=1; }
-pass() { printf 'PASS: %s\n' "$*"; }
+# Colours — disable when stdout is not a TTY (e.g. piped, hook).
+if [[ -t 1 ]]; then
+  C_GREEN=$'\033[32m'; C_RED=$'\033[31m'; C_YELLOW=$'\033[33m'
+  C_BLUE=$'\033[34m'; C_BOLD=$'\033[1m';  C_RESET=$'\033[0m'
+else
+  C_GREEN=''; C_RED=''; C_YELLOW=''; C_BLUE=''; C_BOLD=''; C_RESET=''
+fi
+
+fail() { printf '%s🔴 FAIL%s: %s\n' "$C_RED" "$C_RESET" "$*" >&2; FAIL=1; }
+pass() { printf '%s🟢 PASS%s: %s\n' "$C_GREEN" "$C_RESET" "$*"; }
+warn() { printf '%s🟡 WARN%s: %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2; }
+info() { printf '%sℹ️  %s%s\n' "$C_BLUE" "$*" "$C_RESET"; }
+
+info "Auditing $AGENTS"
 
 [[ -f "$AGENTS" ]] || { echo "FAIL: $AGENTS missing" >&2; exit 2; }
 
@@ -151,7 +164,40 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 9. AGENTS_INVARIANCE.md presence + basic shape (questionnaire layer).
+# 9. Gate-body completeness — every gate referenced by AGENTS.md has a
+#    body file under docs/gates/<slug>.md, and that body carries the
+#    three required structural markers (Triggers, Override, body content).
+# ---------------------------------------------------------------------------
+GATE_FILES=(
+  "docs/gates/nlr.md"
+  "docs/gates/nlg.md"
+  "docs/gates/legacy-design.md"
+  "docs/gates/schema-removal.md"
+  "docs/gates/file-length.md"
+  "docs/gates/milestone-id.md"
+  "docs/gates/architecture.md"
+  "docs/gates/zig.md"
+  "docs/gates/pub-surface.md"
+  "docs/gates/ui-substitution.md"
+  "docs/gates/greptile.md"
+  "docs/gates/verification.md"
+)
+gate_body_fail=0
+for gf in "${GATE_FILES[@]}"; do
+  full="$ROOT/$gf"
+  if [[ ! -f "$full" ]]; then
+    fail "gate body missing: $gf"; gate_body_fail=1; continue
+  fi
+  grep -qE '^\*\*Triggers' "$full"   || { fail "$gf missing **Triggers** marker"; gate_body_fail=1; }
+  grep -qE '^\*\*Override' "$full"   || { fail "$gf missing **Override** marker"; gate_body_fail=1; }
+  grep -qE '^# 🛡️ '          "$full" || { fail "$gf missing 🛡️ shield in H1";    gate_body_fail=1; }
+  # AGENTS.md must point at this gate body
+  grep -qF "$gf" "$AGENTS"           || { fail "AGENTS.md does not reference $gf"; gate_body_fail=1; }
+done
+[[ $gate_body_fail -eq 0 ]] && pass "gate bodies complete (${#GATE_FILES[@]} files, each with Triggers + Override + 🛡️ + AGENTS.md ref)"
+
+# ---------------------------------------------------------------------------
+# 10. AGENTS_INVARIANCE.md presence + basic shape (questionnaire layer).
 # ---------------------------------------------------------------------------
 INV="$ROOT/AGENTS_INVARIANCE.md"
 if [[ -f "$INV" ]]; then
@@ -166,10 +212,11 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 10. Size cap — soft guard against drift back to bloat.
+# 11. Size cap — soft guard against drift back to bloat.
+#     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
-LIMIT=${AGENTS_MD_SIZE_LIMIT:-30720}
+LIMIT=${AGENTS_MD_SIZE_LIMIT:-25600}
 if [[ $SIZE -le $LIMIT ]]; then
   pass "size $SIZE bytes (limit $LIMIT)"
 else
@@ -179,9 +226,9 @@ fi
 # ---------------------------------------------------------------------------
 echo
 if [[ $FAIL -eq 0 ]]; then
-  echo "ALL CHECKS PASSED"
+  printf '%s✅ ALL CHECKS PASSED%s\n' "$C_GREEN$C_BOLD" "$C_RESET"
   exit 0
 else
-  echo "REGRESSION DETECTED — see FAIL lines above"
+  printf '%s🔴 REGRESSION DETECTED%s — see FAIL lines above\n' "$C_RED$C_BOLD" "$C_RESET"
   exit 1
 fi

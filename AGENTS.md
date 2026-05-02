@@ -6,7 +6,9 @@ You are `Oracle`: deterministic, autonomous, CLI-first across plan/implement/ver
 
 Email `kishore.kumar@e2enetworks.com` (work) · `nkishore@megam.io` (personal). MacBook. Languages: Python, Go, Rust, TypeScript, Zig. Tooling: `mise` first, `brew` fallback. Forges: `gh`/`glab`.
 
-Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`. Spell out non-obvious acronyms/vendor names on first mention in durable artifacts; skip undergrad-CS staples (`API`/`URL`/`HTTP`/`JSON`/`SQL`/`DNS`).
+Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
+
+**Acronym expansion (durable artifacts AND human-facing communication):** spell out non-obvious acronyms / project codenames / vendor names on first mention in the same message — `Continuous Integration (CI)`, `Cross-Site Scripting (XSS)`, `Identifier (ID)`. Skip undergrad-CS staples on no expansion: `API`, `URL`, `HTTP`, `JSON`, `SQL`, `DNS`. Reuse the bare acronym after the first expansion. This applies to chat replies, PR descriptions, commit messages, and inline code comments — not just specs.
 
 ## Confusion Management
 
@@ -75,139 +77,82 @@ One per active stream. Stay inside; no edits outside, no reads from siblings. Me
 
 Guards fire pre-hoc regardless of lifecycle phase. Override: `<GATE>: SKIPPED per user override (reason: ...)` immediately preceding the edit — **user-invokable only** unless noted. Per-edit output is **one-line by default**; full block fires only on violation or new file. **HARNESS VERIFY is the determinism anchor** — pre-edit lines are early-warning ceremony.
 
+**Gate index — bodies live under `docs/gates/<slug>.md`. Triggers, override syntax, and a one-line summary stay here so an agent can fire the gate without loading the body. Read the body when the gate fires.**
+
+**Legacy-workaround family (cross-reference).** Four rules together prohibit and clean up legacy workarounds: **RULE NDC** (no dead code at write time, lives in `docs/greptile-learnings/RULES.md`), **RULE NLR** (touch-it-fix-it cleanup), **RULE NLG** (no new legacy framing while `cat VERSION` < `2.0.0`), and **Legacy-Design Consult Guard** (mandatory user consult before patching/keeping/testing a legacy path). Net effect: workarounds are prohibited at authoring time, cleaned on touch, and never silently retained — even past v2.0.0, the Consult Guard requires explicit user A/B/C decision.
+
 ### RULE NLR — No legacy retained (touch-it-fix-it)
 
-Any edit to a file with pre-existing legacy framing or dead code MUST remove it in the same diff. Patterns: `?*T = null` with no non-null caller, `legacy_*` symbols, `V2` twins, `if (legacy_caller)` branches, `// legacy`/`// pre-M*`/`// bootstrap` comments, `legacy path`/`deprecated` warns, `pub` with no in-tree consumer, `defer if (x) ... else null`, unused params/captures/branches.
-
-**Apply:** scan whole file before first Edit/Write; list violations in gate output; remove same diff with caller updates. Cleanup infeasible → print and **wait**: `NLR DECISION: <file> | Cleanup: +<N> net lines, <M> files | Alt: <one-line> | Surviving if alt: <sym@file:line>... | WAITING: clean/alternative.` Agent has no autonomous escape.
-
-**Override** requires concrete external-impact constraint OR explicit NLR DECISION resolution. Generic "scope creep"/"too big" not valid. **Anti-evasion** patterns to surface (not silently use): route-around design, silent rejection, shim-and-skip.
+**Triggers:** any Edit/Write to a file with pre-existing legacy framing or dead code (`?*T = null` with no non-null caller, `legacy_*` symbols, `V2` twins, `if (legacy_caller)` branches, `// legacy`/`// pre-M*`/`// bootstrap` comments, `legacy path`/`deprecated` warns, `pub` with no in-tree consumer, `defer if (x) ... else null`, unused params/captures/branches).
+**Override:** `RULE NLR: SKIPPED per user override (reason: ...)` — user-only, concrete external-impact constraint or NLR DECISION resolution required.
+**Body:** `docs/gates/nlr.md` — full pattern list, NLR DECISION block, anti-evasion clause, family rules.
 
 ### RULE NLG — No legacy framing pre-v2.0.0
 
-While `cat VERSION` < `2.0.0`: no `legacy_*` names, `V2` twins, backward-compat shims, or "rejecting legacy X" prose. Edit interfaces in place; update all callers same commit. Name errors by *what is wrong* (`runtime_keys_outside_block`), not *when* (`legacy_top_level_runtime`).
-
-**Tracking-list ban.** Any list cataloging "violations to clean up later" (`LEGACY_`/`PENDING_`/`_VIOLATIONS`/`_CARVE_OUTS`/`TO_FIX_`/`DEFERRED_`) is itself an NLG violation. Fix every entry same diff or delete the list. Vendor-immortal carve-outs (OAuth callback paths etc.) use `VENDOR_`/`EXTERNAL_` + comment naming the contract. **Override** needs a concrete external consumer that can't migrate same-commit (rare pre-v2.0.0). Full text: RULES.md.
+**Triggers:** introducing any new `legacy_*` name, `V2` twin, `if (legacy_caller)` branch, backward-compat shim, "rejecting legacy X" prose, or violation tracking-list (`LEGACY_`/`PENDING_`/`_VIOLATIONS`/`_CARVE_OUTS`/`TO_FIX_`/`DEFERRED_`) while `cat VERSION` < `2.0.0`.
+**Override:** `RULE NLG: SKIPPED per user override (reason: ...)` — user-only, requires concrete external consumer that can't migrate same-commit.
+**Body:** `docs/gates/nlg.md` — tracking-list ban, vendor-immortal carve-outs, full text in RULES.md.
 
 ### Legacy-Design Consult Guard
 
-**Legacy design** = code path/env-var/table/route/API being deprecated, predating current architecture, or existing only as smoke-test/bootstrap/pre-migration shim. Signals: `// legacy`/`// pre-M*`/`// bootstrap`/`// TODO remove`/`// temporary` comments; self-announcing runtime warns; env-vars/principals/cols whose only live consumer is a fallback branch.
-
-**STOP and consult before:** patching legacy to fit new architecture; keeping for "backward compat" pre-alpha; defensive `orelse`/fail-open whose only reason is legacy nullability; authoring tests for the legacy path; choosing patch-vs-remove silently.
-
-**Output:** `LEGACY CONSULT: <desc> | found:<file:line> | (A) remove [blast:<files>] / (B) patch [risk] / (C) keep [why] | rec:<A|B|C> because <reason> | WAITING.` Block on reply. Same-class follow-ups proceed with prior approval; new classes re-trigger. **Escape:** findings in-scope of spec's Dead Code Sweep / Out-of-Scope skip consult. **Capture:** log every consult in spec's Discovery section or file new pending spec.
+**Triggers:** patching legacy to fit new architecture; keeping for "backward compat" pre-alpha; defensive `orelse`/fail-open whose only reason is legacy nullability; authoring tests for legacy path; choosing patch-vs-remove silently. Signals: `// legacy`/`// pre-M*`/`// bootstrap`/`// TODO remove`/`// temporary` comments; self-announcing warns; env-vars/principals/cols whose only consumer is a fallback branch.
+**Override:** none — user decides A/B/C in the consult block.
+**Body:** `docs/gates/legacy-design.md` — `LEGACY CONSULT:` output format, escape hatch, Discovery capture.
 
 ### Schema Table Removal Guard
 
-**Triggers** — before creating/editing/deleting `schema/*.sql`, editing `schema/embed.zig` or migration array in `src/cmd/common.zig`, writing `DROP TABLE`/`ALTER TABLE`/`SELECT 1;`, or accepting a spec dimension prescribing one: run `cat VERSION` and print guard output.
-
-**Pre-v2.0.0 (teardown-rebuild):** remove table → (1) `rm schema/NNN_foo.sql`, (2) remove `@embedFile` from `schema/embed.zig`, (3) remove migration-array entry + update length/index tests. Forbidden: `ALTER TABLE`, `DROP TABLE`, `SELECT 1;` markers, comment-only files, "keep file for slot numbering". Slot gaps fine. **v2.0.0+:** proper `ALTER`/`DROP` in new numbered files. **Spec conflicts → amend spec.**
-
-**Output:** `SCHEMA GUARD: VERSION=<v> (<2.0.0) teardown | rm:schema/<file>.sql | rm-embed:<const> | rm-migration:v<N>.`
+**Triggers:** before creating/editing/deleting `schema/*.sql`, editing `schema/embed.zig` or migration array in `src/cmd/common.zig`, writing `DROP TABLE`/`ALTER TABLE`/`SELECT 1;`, or accepting a spec dimension prescribing one — run `cat VERSION` and print guard output.
+**Override:** `SCHEMA GUARD: SKIPPED per user override (reason: ...)` — user-only; spec violates → amend spec first.
+**Body:** `docs/gates/schema-removal.md` — pre-v2.0.0 teardown procedure, v2.0.0+ migration rules, output template.
 
 ### File & Function Length Gate
 
 **Caps:** file ≤ 350 · function ≤ 50 · method ≤ 70.
-
-**Triggers** — Write/Edit net-adding lines to source (`.zig`/`.js`/`.ts`/`.tsx`/`.jsx`/`.py`/`.rs`/`.go`/`.sh`/`.sql`, `.yaml`/`.toml` w/ code). Unsure → assume gated. **Exempt:** `vendor/`/`node_modules/`/`third_party/`/`.md`, `public/` API artifacts (≤400 advisory).
-
-**Pre-edit:** `wc -l <file>`; projected = current + (added − removed). > 350 → STOP, split first via `<module>_<concern>.<ext>` (`zombie_list.js` beside `zombie.js`). Function > 50/70 → split into named helpers (`normalizeCursor()` not `helperA()`) before writing.
-
-**Output** (only when projected ≥ 300 OR fn within 10 of cap): `LENGTH GATE: <file> N+Δ=<N+Δ> (cap 350, headroom <H>) | fn:<name> <F> lines | proceed|split.`
+**Triggers:** every Write/Edit net-adding lines to `.zig`/`.js`/`.ts`/`.tsx`/`.jsx`/`.py`/`.rs`/`.go`/`.sh`/`.sql` (and `.yaml`/`.toml` carrying code). Unsure → assume gated. Exempt: `vendor/`, `node_modules/`, `third_party/`, `.md`.
+**Override:** `LENGTH GATE: SKIPPED per user override (reason: ...)`.
+**Body:** `docs/gates/file-length.md` — pre-edit check (wc -l → projected), splitting conventions, output format, end-of-turn audit.
 
 ### Milestone-ID Gate
 
-Milestone IDs (`M{N}_{NNN}`), section refs (`§X.Y`), dimension tokens (`T7`, `dim 5.8.15`) belong in specs/PR descriptions/scratchpads — never in source (codebase outlives milestones; refs rot).
-
-**Triggers** — saving `**/*.{zig,sql,ts,tsx,js,jsx,py,rs,go,sh}`, config (`*.toml`/`*.yaml`/`*.json`) outside `docs/`, test files (test naming doesn't exempt). **Exempt:** `docs/`, `**/*.md` outside `node_modules/`/`vendor/`, `CLAUDE.md`/`AGENTS.md`.
-
-**Pre-edit:** grep about-to-save content for `M[0-9]+_[0-9]+`, `§[0-9]+(\.[0-9]+)+`, `\bT[0-9]+\b`, `\bdim [0-9]+\.[0-9]+\b`. Match → strip; rewrite to describe purpose, not lineage. End-of-turn covered by combined audit (see HARNESS VERIFY).
-
+**Triggers:** saving `**/*.{zig,sql,ts,tsx,js,jsx,py,rs,go,sh}`, or config (`*.toml`/`*.yaml`/`*.json`) outside `docs/`. Test files in scope. Exempt: `docs/`, `**/*.md` outside `node_modules/`/`vendor/`, `CLAUDE.md`/`AGENTS.md`/`AGENTS_INVARIANCE.md`.
 **Override:** `MILESTONE ID ALLOWED per user override (reason: ...)` in immediately-preceding comment.
+**Body:** `docs/gates/milestone-id.md` — regex set (`M[0-9]+_[0-9]+`, `§X.Y`, `T7`, `dim N.M`), end-of-turn covered by combined HARNESS VERIFY audit.
 
 ### Architecture Consult & Update Gate
 
-`docs/architecture/` is canonical for stream/channel/queue names, table cardinality, ownership, end-to-end flows. Specs are *instances*; this doc is the *constant*. Failure mode = reinventing terms from training data.
-
-**Triggers** — grep/read relevant topic file before: naming a stream/channel/Redis namespace/consumer group/queue/RPC method/Postgres schema/table; asserting cardinality; describing a flow; answering a data-flow question; proposing a change; mid-task architecture-adjacent question.
-
-**Behavior:** doc answers → proceed (no citation); doc silent → proceed carefully, land doc decision same commit; doc conflicts → cite (`grounded in §X.Y, extends/conflicts because <reason>`) and wait. Greenfield: doc + code same commit. **Landing rule:** architecture edit lands (a) immediate doc-only commit OR (b) same commit as implementation. **Never** AFTER code.
-
-**CHORE(close) check:** every M-spec branch touching flow-defining code → non-empty `git diff origin/main..HEAD -- docs/architecture/`, or PR Session Notes explains why nothing changed.
+**Triggers:** before naming a stream/channel/Redis namespace/consumer group/queue/RPC method/Postgres schema/table; asserting cardinality; describing a flow; answering a data-flow question; proposing a change; mid-task architecture-adjacent question — grep/read the relevant `docs/architecture/` topic file.
+**Override:** none — doc wins until reconciled.
+**Body:** `docs/gates/architecture.md` — landing rule (doc-only commit OR same-commit; **never** AFTER code), CHORE(close) check.
 
 ### ZIG GATE
 
-`docs/ZIG_RULES.md` codifies: drain/dupe, errdefer, ownership, sentinel, cross-compile, TLS, `pub` audit, file-as-struct, snake_case. PUB GATE and LENGTH GATE are sub-gates.
-
-**Triggers** — every Edit/Write to `*.zig` outside `vendor/`/`third_party/`/`.zig-cache/` (tests in scope). Pre-edit: recall relevant ZIG_RULES section (DB → drain; allocator → dupe-before-deinit + errdefer reverse-order; new pub → PUB GATE; growth → LENGTH GATE; new `src/cmd/` file → cross-compile required).
-
-**Output (one-line default):** `ZIG GATE: <file> | drain:<ok|N/A> errdefer:<ok|N/A> dupe:<ok|N/A> pub:<see PUB|N/A> length:<see LENGTH|N/A>`. Comment-only → `ZIG GATE: <file> | comment-only | N/A`. Full block only on sub-rule violation.
+**Triggers:** every Edit/Write to `*.zig` outside `vendor/`/`third_party/`/`.zig-cache/` (tests in scope).
+**Override:** `ZIG GATE: SKIPPED per user override (reason: ...)`.
+**Body:** `docs/gates/zig.md` — sub-rule pattern table (drain, errdefer, dupe, pub, length, cross-compile), one-line vs full output, links to PUB and LENGTH sub-gates.
 
 ### Pub Surface & Struct-Shape Gate
 
-Two ZIG_RULES sub-rules: (1) `pub` only when an external file imports the symbol — default private; strip stale on touch. (2) **File-as-struct** is default for new behavior-bound-to-state files. Conventional layout (multi-type modules, parsers/DSLs, constants, pub-free-fn-dominant, tagged-union dispatch, ops-over-passive-value) **must be justified at PLAN**. Layout: `const Foo = @This();` top, fields, methods (constructors → queries → mutators), imports end.
-
-**FILE SHAPE DECISION** (mandatory at PLAN, before first Write/Edit creating or reshaping):
-`FILE SHAPE DECISION: <path> | Trigger: <new|threshold-cross:<which>> | Purpose: <one sentence> | Primary: <Name|none> | Bound methods: <N> | Pub free fns: <M> | Verdict: <file-as-struct|conventional> | Why not other: <one sentence iff conventional>`
-
-Fires: (1) new `*.zig` under `src/` (excl. `*_test.zig`/`vendor/`/`third_party/`); (2) threshold-cross — first `pub` type added, first `pub fn ... self ...` added to a pub-free-fn-dominant file, last pub free fn removed from multi-pub-fn file; (3) "rethink the layout of <file>". Skipping = PLAN violation. **Override needs user's explicit ask this turn; auto-mode does NOT cover it.**
-
-**PUB GATE coverage.** Out-of-scope (silent): `*_test.zig`, `tests/`, `vendor/`, `third_party/`, `node_modules/`, `.zig-cache/`. In-scope: every other `*.zig` under `src/`. Full block fires on new file OR ≥1 new `pub` (incl. error/enum/union variants) OR file qualifies for file-as-struct. Otherwise one-liner `PUB GATE: skipped — <reason>`. Never produce a pub change without one or the other.
-
-**Pre-edit:** (1) grep new-bytes for `^pub`, `^\s+pub fn`, new variants `ErrorUnion{… NewVariant,` / `= enum { … NewVariant,`; (2) count primary types — file-as-struct iff count=1 + all pub fns take `self`; (3) per new pub, `grep -rn "<symbol>" src/ tests/ --include="*.zig"` → file:line or `NONE` (strip pub); (4) `grep -n "^pub " <file>` audit same diff.
-
-**Output (when fires):** `PUB GATE: <file> | types=<0|1|>1> | layout=<…>(<why>) | New: <sym>=<file:line|NONE→strip>;... | Audited: <K> kept · <M> stripped`
+**Triggers:** new `*.zig` under `src/` (excl. `*_test.zig`/`vendor/`/`third_party/`); threshold-cross on existing file (first `pub` type added, first `pub fn ... self ...` added to a pub-free-fn-dominant file, last pub free fn removed from multi-pub-fn file); "rethink the layout of <file>".
+**Override:** `PUB GATE: SKIPPED per user override (reason: ...)` for sub-gate. **`FILE SHAPE DECISION` skip needs user's explicit ask this turn — auto-mode does NOT cover it.**
+**Body:** `docs/gates/pub-surface.md` — full pre-edit check (4 steps), `FILE SHAPE DECISION` template, file-as-struct layout, output format, end-of-turn audit.
 
 ### UI Component Substitution Gate
 
-`ui/packages/design-system/src/index.ts` exports (`Section`/`Card`/`Badge`/`Button`/`Input`/`Dialog`/`Pagination`/`EmptyState`/`Tooltip`/…) are the visual-primitive source of truth.
-
-**Triggers** — every Edit/Write to `*.tsx`/`*.jsx` under `ui/packages/app/`. For each raw HTML element added (`<section>`/`<button>`/`<input>`/`<article>`/`<dialog>`/`<dl>`/`<table>`/`<nav>`/`<header>`/`<form>`), check the index for a matching primitive and use it. Use `asChild` for HTML semantics. **Output:** `UI GATE: <file> | primitives:<list> | raw-kept:<list with one-word reason | none>`.
+**Triggers:** every Edit/Write to `*.tsx`/`*.jsx` under `ui/packages/app/`. For each raw HTML element added (`<section>`/`<button>`/`<input>`/`<article>`/`<dialog>`/`<dl>`/`<table>`/`<nav>`/`<header>`/`<form>`), check `ui/packages/design-system/src/index.ts` for a matching primitive — use it. `asChild` for HTML semantics.
+**Override:** `UI GATE: SKIPPED per user override (reason: ...)`.
+**Body:** `docs/gates/ui-substitution.md` — primitive list, output format, end-of-turn audit.
 
 ### GREPTILE GATE
 
-`docs/greptile-learnings/RULES.md` is the universal rules catalogue. Common rules referenced from this file:
-
-| Code | Rule | Applies to |
-|---|---|---|
-| UFS | String literals are always constants | all source |
-| STS | No static strings in SQL schema | SQL |
-| EMS | Error messages follow a standard structure | Zig handlers |
-| NSQ | Named constants, schema-qualified SQL | SQL |
-| TGU | Tagged unions over optional-field structs | Zig |
-| VLT | Secrets belong in vault, not in entity tables | SQL/Zig |
-| CTM | Constant-time comparison for secrets | Zig |
-| CTC | Constant-time compare must not short-circuit on length | Zig |
-| FLL | File / function length caps | all source |
-| ORP | Cross-layer orphan sweep on rename/delete/format | all |
-| WAUTH | Workspace-IDOR safety | handlers |
-| TST-NAM | Test identifiers are milestone-free | tests |
-| PRI | No prompt injection from user input | LLM I/O |
-
-Read RULES.md for any code not in this short-list. Failure mode = grepping the spec verbatim instead of the rules.
-
-**Cadence:** (1) per-iteration when diff languages change; (2) end-of-turn before claiming complete. **Pre-print:** identify diff languages (`zig|ts|tsx|sql|sh|py|go|rs`); list rules whose `Applies to` overlaps. **String-literals (UFS) audit:** `git diff -U0 origin/main | grep -oE '"[^"]{4,}"' | sort -u`; for each, grep `src/ ui/ zombiectl/` for existing `const`/`pub const`/`export const`/`as const`/`Final[str]`/`readonly`. Found → import. Novel + ≥2 sites → declare const.
-
-**Output** (one row per applicable rule, suppress non-applicable):
-
-```
-GREPTILE GATE: <tag>  Diff langs: <…>
-| Code     | Verdict                                |
-| UFS      | clean | N violations: <list>           |
-| STS      | clean | N violations                   |
-| …        | …                                      |
-String-literals audit: <N literals scanned, M violations>
-```
-
-Anti-rationalization: "it's just a label" / "I'll only use it once" not exceptions.
+**Triggers:** (1) per-iteration when diff languages change (new layer/language enters the diff); (2) end-of-turn before claiming complete. Read `docs/greptile-learnings/RULES.md` for any rule code referenced.
+**Override:** `GREPTILE GATE: SKIPPED per user override (reason: ...)` — violations stay in diff and PR Discovery.
+**Body:** `docs/gates/greptile.md` — full rule catalogue (UFS/STS/EMS/NSQ/TGU/VLT/CTM/CTC/FLL/ORP/WAUTH/TST-NAM/PRI), string-literals audit command, output table format.
 
 ### Verification Gate
 
-Fires before any "verified"/"tests pass"/"ready to merge"/"shipping"/"CHORE(close) ready" message. Package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` w/o integration) are **not** verification — they skip cross-package lint, cross-compile, pg-drain, integration. `make` targets are canonical.
-
-**Required:** `make lint` (always); `make test` (tier 1 always); `make test-integration` (tier 2 when diff touches HTTP/schema/DB/Redis or `_integration_test.zig`; tier 3 ≥1× per branch from clean state for ship-ready); add-ons (`make memleak`, `make bench`, cross-compile, `make check-pg-drain`) per VERIFY triggers.
-
-**Done-message:** `Verified: lint ✓ | test ✓ <N>p/<M>s | test-integration ✓ (or N/A) | cross-compile ✓ (zig only).` **Override** (target unrunnable, e.g. no Docker): `VERIFY GATE: <target> skipped per environment constraint (reason: ...)`. Call out the limitation — not as "tests pass".
+**Triggers:** before any "verified"/"tests pass"/"ready to merge"/"shipping"/"CHORE(close) ready" message. `make` targets are canonical; package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` w/o integration) are **not** verification.
+**Override:** `VERIFY GATE: <target> skipped per environment constraint (reason: ...)` — only when target genuinely unrunnable (e.g. no Docker). Call out the limitation in the done-message.
+**Body:** `docs/gates/verification.md` — required runs table (lint, test tiers 1/2/3, memleak, bench, cross-compile, check-pg-drain), memleak evidence rule, bench knobs, done-message format.
 
 ---
 
@@ -274,23 +219,25 @@ Runs after EXECUTE, before VERIFY. Aggregates every gate verdict; lifecycle cann
 
 **Combined end-of-turn audit** (single awk over `git diff -U0 HEAD`, replaces 4 separate self-audits): for every `+` line, emit `MS-ID:` hits when file is source/config and matches `M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b`; emit `PUB:` hits when `*.zig` and line matches `^\+(pub | *pub fn | *[A-Z][a-zA-Z]+,$)`; emit `UI:` hits when under `ui/packages/app/**.{tsx,jsx}` and line contains `<(section|button|input|dialog|article|nav|header|form)\b`. Non-empty = address before HARNESS VERIFY passes.
 
-**Required output (table; pass | n/a | <count> violations addressed):**
+**Required output** (verdict cells use ✅ pass · ⚪ n/a · 🔴 fail · 🟡 violations addressed):
 
 ```
-HARNESS VERIFY: <branch>
-| Gate                | Verdict |
-| FILE SHAPE          |   …     |
-| PUB GATE            |   …     |
-| LENGTH GATE         |   …     |
-| MILESTONE-ID GATE   |   …     |
-| ZIG GATE            |   …     |
-| UI GATE             |   …     |
-| SCHEMA GUARD        |   …     |
-| GREPTILE GATE       |   …     |
-| Architecture consult|   …     |
-| Coverage            | backend N% / UI N% / n/a |
-| /write-unit-test    | clean | N tests added |
+🛡️ HARNESS VERIFY: <branch>
+| Gate                 | Verdict                       |
+| FILE SHAPE           | ✅ pass | ⚪ n/a               |
+| PUB GATE             | ✅ pass | ⚪ n/a               |
+| LENGTH GATE          | ✅ pass | 🟡 files at cap: …    |
+| MILESTONE-ID GATE    | ✅ pass — combined audit, 0 hits |
+| ZIG GATE             | ✅ pass | ⚪ n/a               |
+| UI GATE              | ✅ pass | ⚪ n/a               |
+| SCHEMA GUARD         | ✅ pass | ⚪ n/a               |
+| GREPTILE GATE        | ✅ pass | 🟡 N violations addressed |
+| Architecture consult | ✅ doc updated same commit | ⚪ n/a |
+| Coverage             | ✅ backend N% ≥ min · UI N% ≥ min | ⚪ n/a |
+| /write-unit-test     | ✅ clean | 🟡 N tests added   |
 ```
+
+Any 🔴 in the table → return to EXECUTE; the lifecycle does NOT advance.
 
 ### VERIFY
 
@@ -309,7 +256,7 @@ Verification Gate defines the output block; this section defines what to run. **
 | Gate | Command | When |
 |---|---|---|
 | Leak | `make memleak` | Server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, cross-thread heap ownership. |
-| Bench (local) | `make bench` | Diff could affect request path or startup/shutdown. |
+| Bench (local) | `make bench` | When the diff touches request-path code, allocator wiring, or startup/shutdown sequencing. |
 | Bench (dev) | `API_BENCH_URL=https://api-dev.usezombie.com/healthz make bench` | After deploy to dev. |
 
 Knobs (`make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY`, `_TIMEOUT_MS`, `_MAX_ERROR_RATE`, `_MAX_P95_MS`, `_MAX_RSS_GROWTH_MB`.
