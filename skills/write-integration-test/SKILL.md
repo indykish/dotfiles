@@ -140,7 +140,7 @@ Vague claim "503 on Redis failure" → real test with deterministic injection. E
 - **Lease contention** — N callers race for same lease → one acquires, others queue or fail predictably
 - **Transaction isolation** — assert no dirty reads, no phantom reads at chosen level
 - **Randomised execution order** — suite passes under `--shuffle` / `pytest -p randomly` / equivalent. Ordered-only pass = hidden coupling, fix isolation.
-- **Per-test cleanup** — txn rollback, schema reset, or `TRUNCATE`/Redis `FLUSHDB` between tests; no row/key leakage
+- **Per-test isolation is the test's responsibility** — txn rollback, unique IDs, namespaced keys, `TRUNCATE`, or Redis `FLUSHDB` scoped to the test. Suite-level resets (drop+migrate between full runs, schema teardown scripts) are setup hygiene, **not** a substitute for per-test isolation: they only make the *first* run from clean state correct. Tests run inside one process must not see each other's rows.
 
 ### T6 — Resource lifecycle
 
@@ -177,7 +177,8 @@ Spec claim "real-time" → assert *bytes arrive incrementally*, not just that th
 
 - **Real deps or it's not integration.** Mocking PG, Redis, or any internal module disqualifies. External-edge HTTP may be mocked at the HTTP boundary, not at the SDK call site.
 - **Assert state, not just response.** Body assertion alone is half a test.
-- **Per-test isolation.** Txn rollback or schema/key reset per test. Suite passes shuffled.
+- **Per-test isolation is the test's job.** Txn rollback, unique IDs, namespaced keys, or scoped truncation — pick one and apply per test. Suite-level resets (drop+migrate before the run, fixture teardown scripts) are setup hygiene; they don't isolate tests from each other inside one run. Suite passes shuffled.
+- **Tier may be env-gated, not binary-gated.** Many projects ship one test binary that runs both unit and integration tests, with env vars / build tags / pytest markers / Zig comptime flags switching the live-deps tier on. That's fine — but the env contract that flips the gate must be documented in the suite README and surfaced in CI, not folklore.
 - **Specific error contracts.** Status code + error code + message + structured fields. Bare `expect 500` is a smell.
 - **Failure injection is deterministic.** If you can't reproduce a failure on demand, the test is fiction.
 - **Drain + leak proofs are required, not optional.** Once per suite, recorded in PR Session Notes.
@@ -256,7 +257,7 @@ Cross-stack failure-injection tools:
 
 Stack-specific must-knows:
 
-- **Zig (usezombie)** — `conn.query()` requires `.drain()` in same fn before `deinit()`. Per-request arena, not per-app. `std.testing.allocator` over the full request, not just handler unit. Cross-compile (`x86_64-linux`, `aarch64-linux`) before declaring done.
+- **Zig** — `conn.query()` paired with `.drain()` in the same fn before `deinit()`; verify with the project's drain-audit target. Per-request arena, not per-app. `std.testing.allocator` over the full request lifecycle, not just handler unit, to catch cross-thread leaks. If integration tests share the binary with unit tests, an env var / build flag should gate live-deps mode — assert that gate is set in CI, not assumed. Cross-compile (`x86_64-linux`, `aarch64-linux`) before declaring done.
 - **Python** — `pytest-asyncio` event loop scope = `function`, not `session` (avoid leakage). `respx`/`responses` for external HTTP only.
 - **Rust** — `#[sqlx::test]` for per-test schema; `tokio::test(flavor = "multi_thread")` for real concurrency. `loom` for races, not raw threads.
 - **Go** — `t.Parallel()` only after isolation proven; `httptest.NewServer` over a real listener.
