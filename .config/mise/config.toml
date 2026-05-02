@@ -1,5 +1,5 @@
 [tools]
-ansible = "latest"
+ansible = { version = "latest", pipx_args = "--include-deps", uvx = "false" }
 "aqua:temporalio/cli" = "latest"
 aws = { version = "latest", symlink_bins = "true" }
 bun = "latest"
@@ -22,7 +22,7 @@ protoc = "latest"
 python = "3.14"
 ripgrep = "latest"
 ruby = "3.4.8"
-rust = "1.94.0"
+rust = "1.95.0"
 shfmt = "latest"
 shellcheck = "latest"
 sops = "latest"
@@ -32,7 +32,7 @@ uv = "latest"
 zig = "0.15.2"
 usage = "latest"
 protobuf = "latest"
-glab = "1.85.1"
+glab = { version = "latest", exe = "glab" }
 tmux = "latest"
 node = "25"
 yarn = "latest"
@@ -42,6 +42,9 @@ pnpm = "latest"
 1password-cli = "latest"
 railway = "latest"
 cloudflared = "latest"
+"go:github.com/rakyll/hey" = "latest"
+yamllint = "latest"
+rclone = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python"]
