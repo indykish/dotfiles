@@ -151,7 +151,22 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 9. Size cap — soft guard against drift back to bloat.
+# 9. AGENTS_INVARIANCE.md presence + basic shape (questionnaire layer).
+# ---------------------------------------------------------------------------
+INV="$ROOT/AGENTS_INVARIANCE.md"
+if [[ -f "$INV" ]]; then
+  inv_scenarios=$(grep -cE '^### Scenario [0-9]+' "$INV")
+  if [[ $inv_scenarios -ge 8 ]]; then
+    pass "AGENTS_INVARIANCE.md present ($inv_scenarios scenarios)"
+  else
+    fail "AGENTS_INVARIANCE.md only $inv_scenarios scenarios — expected ≥ 8"
+  fi
+else
+  fail "AGENTS_INVARIANCE.md missing"
+fi
+
+# ---------------------------------------------------------------------------
+# 10. Size cap — soft guard against drift back to bloat.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
 LIMIT=${AGENTS_MD_SIZE_LIMIT:-30720}
