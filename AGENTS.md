@@ -10,6 +10,8 @@ Email `kishore.kumar@e2enetworks.com` (work) · `nkishore@megam.io` (personal). 
 
 Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
 
+**Banned vocabulary:** "contract" and "phase" — bureaucratic / waterfall framing. Use **Prototype → Milestone → Workstream → Section → Dimension → Batch** for the hierarchy; **Tasks**/**Slices** for finer units; **stages** for lifecycle steps (CHORE(open), PLAN, etc.); **rules** / **operating model** for what AGENTS.md enforces. Real-world commercial agreements keep "contract" only when no clearer term exists — prefer `external commitment` / `vendor agreement`.
+
 **Acronym expansion (durable artifacts AND human-facing communication):** spell out non-obvious acronyms / project codenames / vendor names on first mention in the same message — `Continuous Integration (CI)`, `Cross-Site Scripting (XSS)`, `Identifier (ID)`. Skip undergrad-CS staples on no expansion: `API`, `URL`, `HTTP`, `JSON`, `SQL`, `DNS`. Reuse the bare acronym after the first expansion. This applies to chat replies, PR descriptions, commit messages, and inline code comments — not just specs.
 
 ## Confusion Management
@@ -67,7 +69,7 @@ Default gates commit/push/PR on explicit ask. **Auto mode + forward-looking star
 
 - **Priming:** (1) Human runs `playbooks/001_bootstrap/001_playbook.md`. (2) Agent runs `./playbooks/002_preflight/00_gate.sh` (green before next). (3) Agent runs `playbooks/003_priming_infra/001_playbook.md`. Milestones only after PRIMING_INFRA verified.
 - **Credential gate** — milestones needing external creds start `M{N}_001` enumerating every downstream credential (name + fetch location). Fail loud listing all missing before any `M{N}_002+`.
-- **Agent-first sequencing** — minimize human steps; post-handoff steps retryable + idempotent. Vault is the inter-step contract; never pass creds by argument/env.
+- **Agent-first sequencing** — minimize human steps; post-handoff steps retryable + idempotent. Vault is the inter-step interface; never pass creds by argument/env.
 
 ## Worktrees
 
@@ -77,9 +79,9 @@ One per active stream. Stay inside; no edits outside, no reads from siblings. Me
 
 ## Action-Triggered Guards
 
-Guards fire pre-hoc regardless of lifecycle phase. Override: `<GATE>: SKIPPED per user override (reason: ...)` immediately preceding the edit — **user-invokable only** unless noted. Per-edit output is **one-line by default**; full block fires only on violation or new file. **HARNESS VERIFY is the determinism anchor** — pre-edit lines are early-warning ceremony.
+Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED per user override (reason: ...)` immediately preceding the edit — **user-invokable only** unless noted. Per-edit output is **one-line by default**; full block fires only on violation or new file. **HARNESS VERIFY is the determinism anchor** — pre-edit lines are early-warning ceremony.
 
-**Rule extension protocol** — when introducing a new rules file (e.g. `docs/<TOPIC>_RULES.md`) or a new gate body (`docs/gates/<slug>.md`), the agent MUST land all four steps in the same diff: (1) add a row to the EXECUTE doc-reads table mapping the file class to the rules file; (2) add at least one question to `AGENTS_INVARIANCE.md` asserting the rules-file is required reading for that class; (3) add the path to `DOTFILES_RESIDENT` in `scripts/audit-agents-md.sh` so its existence is enforced; (4) run `make audit` — `✅ ALL CHECKS PASSED` before commit. The Invariance Suite Gate fires on this commit and the questionnaire all-YES + sign-off are mandatory before push.
+**Rule extension protocol** — when adding a new rules file (`docs/<TOPIC>_RULES.md`) or gate body (`docs/gates/<slug>.md`), all four steps land in the same diff: (1) row in EXECUTE doc-reads table; (2) ≥1 question in `AGENTS_INVARIANCE.md`; (3) path in `DOTFILES_RESIDENT` (audit script); (4) `make audit` ALL CHECKS PASSED. The Invariance Suite Gate fires; questionnaire all-YES + sign-off are mandatory before push.
 
 **Gate index — bodies live under `docs/gates/<slug>.md`. Triggers, override syntax, and a one-line summary stay here so an agent can fire the gate without loading the body. Read the body when the gate fires.**
 
@@ -87,7 +89,7 @@ Guards fire pre-hoc regardless of lifecycle phase. Override: `<GATE>: SKIPPED pe
 
 **Triggers:** any Edit/Write **the agent itself performs in this session** to `AGENTS.md`, `AGENTS_INVARIANCE.md`, any file under `docs/gates/`, `scripts/audit-agents-md.sh`, or `scripts/fixtures/*.diff`.
 **Override:** none from the agent side. User-only push bypass: `SKIP_INVARIANCE_PUSH=1 git push ...` with reason in the most recent commit message.
-**Required action (in-session, BEFORE declaring complete):** (1) run `bash scripts/audit-agents-md.sh` — STOP on fail; (2) read `AGENTS_INVARIANCE.md` and answer every question vs current contract; (3) emit the tabulated report; (4) after `git commit`, write `.agents-invariance-signoff` (`<short-sha>  <UTC-ts>  PASS`); (5) surface result to the user. Print `🚧 INVARIANCE SUITE GATE` block before declaring done.
+**Required action (in-session, BEFORE declaring complete):** (1) run `bash scripts/audit-agents-md.sh` — STOP on fail; (2) read `AGENTS_INVARIANCE.md` and answer every question against the current rules; (3) emit the tabulated report; (4) after `git commit`, write `.agents-invariance-signoff` (`<short-sha>  <UTC-ts>  PASS`); (5) surface result to the user. Print `🚧 INVARIANCE SUITE GATE` block before declaring done.
 **Body:** `docs/gates/invariance-suite.md`.
 
 **Legacy-workaround family (cross-reference).** Four rules together prohibit and clean up legacy workarounds: **RULE NDC** (no dead code at write time, lives in `docs/greptile-learnings/RULES.md`), **RULE NLR** (touch-it-fix-it cleanup), **RULE NLG** (no new legacy framing while `cat VERSION` < `2.0.0`), and **Legacy-Design Consult Guard** (mandatory user consult before patching/keeping/testing a legacy path). Net effect: workarounds are prohibited at authoring time, cleaned on touch, and never silently retained — even past v2.0.0, the Consult Guard requires explicit user A/B/C decision.
@@ -215,13 +217,13 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 | Spec's "Applicable Rules" | Each rule (canonical). Missing → standard set is floor; surface omission. |
 | `*.zig` | `docs/ZIG_RULES.md`. ZIG GATE per edit. |
 | `*.ts`/`*.tsx`/`*.js`/`*.jsx` | `docs/BUN_RULES.md` — TS FILE SHAPE DECISION (§1) at PLAN, const/import/Bun-primitive discipline, anti-patterns. |
-| `src/http/handlers/**` or `public/openapi/**` | `docs/REST_API_DESIGN_GUIDELINES.md` — Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI), §7 (5-place route registration), §8 (`Hx` handler contract), §10 (pre-PR gates). |
+| `src/http/handlers/**` or `public/openapi/**` | `docs/REST_API_DESIGN_GUIDELINES.md` — Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI), §7 (5-place route registration), §8 (`Hx` handler interface), §10 (pre-PR gates). |
 | Auth-flow | `docs/AUTH.md`. |
 | Schema-touching | Re-print Schema Guard output. |
 
 Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes need explicit ask (except symlinked-dotfiles).
 
-**Spec → Code → Test contract:** every Dimension → test case (no test = not implemented); every Interface → exact spec signature (signature change → update spec first); every Acceptance Criterion → verifiable command ("works correctly" not a criterion; "`make test` passes" is); no code commits without tests (`/write-unit-test`); Zig → cross-compile mandatory: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux`; every Error Contract row → negative test.
+**Spec → Code → Test alignment:** every Dimension → test case (no test = not implemented); every Interface → exact spec signature (signature change → update spec first); every Acceptance Criterion → verifiable command ("works correctly" not a criterion; "`make test` passes" is); no code commits without tests (`/write-unit-test`); Zig → cross-compile mandatory: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux`; every Error Table row → negative test.
 
 **Spec discipline:** **Golden-path before PLAN approval** — walk concrete end-to-end with every lookup/data-source/secret-storage; any `[?]` blocks the spec. **DONE = called in production + tested** — grep production entry-point for the named symbol; no call → not DONE. **Changelog claim challenge** — before any `<Update>` ask "Would this be true if the test file vanished?" Only test evidence (not middleware/handler/CLI) → claim unearned.
 

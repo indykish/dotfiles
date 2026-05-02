@@ -1,9 +1,9 @@
 # AGENTS.md Invariance Suite
 
-A two-layer contract that proves AGENTS.md still holds the line after edits:
+A two-layer ruleset that proves AGENTS.md still holds the line after edits:
 
 1. **Deterministic layer** — `scripts/audit-agents-md.sh` (mechanical, fast, runs in `pre-commit`).
-2. **Prompt-invariance layer** — this file. An LLM agent reads AGENTS.md and answers every question below. Every answer must be **YES**. A NO means the contract regressed.
+2. **Prompt-invariance layer** — this file. An LLM agent reads AGENTS.md and answers every question below. Every answer must be **YES**. A NO means the ruleset regressed.
 
 You run this suite **before** any AGENTS.md change AND **after** the change. Both runs must produce the same all-YES result. A pass that flips to NO is the precise definition of a broken invariant.
 
@@ -109,7 +109,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | # | Question | Expected |
 |---|---|---|
 | 8.1 | Does every spec Dimension require a corresponding test case (no test → not implemented)? | YES |
-| 8.2 | Does every Error Contract row require a negative test? | YES |
+| 8.2 | Does every Error Table row require a negative test? | YES |
 | 8.3 | Is "DONE" defined as **called in production + tested** (grep entry-point for the symbol)? | YES |
 | 8.4 | Does the Changelog Claim Challenge ask "Would this be true if the test file vanished?" before any `<Update>` block? | YES |
 
@@ -142,7 +142,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 12.1 | Does auto-mode autonomy require BOTH auto-mode-active AND (active spec OR forward-looking start instruction) before commit/push/PR proceed without re-asking? | YES |
 | 12.2 | Do action-triggered guards still block under auto mode (autonomy bypasses none)? | YES |
 
-### Scenario 13 — Contract changes (Invariance Suite meta-gate)
+### Scenario 13 — Ruleset changes (Invariance Suite meta-gate)
 
 | # | Question | Expected |
 |---|---|---|
@@ -235,7 +235,7 @@ AGENTS.md INVARIANCE REPORT — <commit sha> — <UTC timestamp>
 
 Gates present:        <count> / 12       (list any missing)
 Rules referenced:     <count> / 13       (list any missing)
-Lifecycle phases:     <count> / 8        (CHORE(open), PLAN, EXECUTE, HARNESS VERIFY, VERIFY, DOCUMENT, COMMIT, CHORE(close))
+Lifecycle stages:     <count> / 8        (CHORE(open), PLAN, EXECUTE, HARNESS VERIFY, VERIFY, DOCUMENT, COMMIT, CHORE(close))
 Always-forbidden:     <count> / 6        (list any missing)
 Skill chain order:    <ordered | broken>
 Cross-refs:           <ok | broken: list>

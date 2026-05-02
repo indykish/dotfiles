@@ -36,9 +36,9 @@ info "🔄 Running sync-skills to keep skills updated..."
 ~/bin/sync-skills
 
 echo ""
-info "🔗 Running sync-agents-contract to symlink AGENTS.md contract into project repos..."
-if [[ -x "$HOME/bin/sync-agents-contract" ]]; then
-  ~/bin/sync-agents-contract
+info "🔗 Running sync-agents to symlink AGENTS.md ruleset into project repos and agent home dirs..."
+if [[ -x "$HOME/bin/sync-agents" ]]; then
+  ~/bin/sync-agents
 else
-  warn "sync-agents-contract not found in ~/bin/ — copy from dotfiles/bin/ to enable"
+  warn "sync-agents not found in ~/bin/ — symlink from dotfiles/bin/ to enable"
 fi

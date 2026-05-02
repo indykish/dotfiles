@@ -1,6 +1,6 @@
 # 🚧 Invariance Suite Gate (meta-gate)
 
-**Family:** Meta-gate — protects the gate contract itself. Sibling: none (this gate has no peer; it watches every other gate's source-of-truth files).
+**Family:** Meta-gate — protects the gate ruleset itself. Sibling: none (this gate has no peer; it watches every other gate's source-of-truth files).
 **Source:** `AGENTS.md` (project-side guard). Questionnaire body: `AGENTS_INVARIANCE.md` at repo root.
 
 **Triggers:** any Edit/Write in this session to **any one of**:
@@ -39,7 +39,7 @@ The agent runs these steps in order. Each step's output appears in the user-faci
 
 The sign-off must be tied to the **post-commit HEAD SHA**, so the order is:
 
-1. Edit contract files.
+1. Edit ruleset files.
 2. Step 1 (script) ✓.
 3. Step 2 (questionnaire) ✓.
 4. Step 3 (report) ✓.
@@ -49,7 +49,7 @@ The sign-off must be tied to the **post-commit HEAD SHA**, so the order is:
 
 ## Why this gate exists
 
-`AGENTS.md` is the agent's contract. Every other gate trusts that contract. If the contract drifts silently — a gate vanishes, a trigger silently drops a file class, an override path widens — every downstream gate is now wrong. The script catches mechanical regressions; the questionnaire catches semantic regressions that need reading comprehension. Together they prove the contract still holds *before* the bad version reaches the remote.
+`AGENTS.md` is the agent's ruleset. Every other gate trusts that ruleset. If the ruleset drifts silently — a gate vanishes, a trigger silently drops a file class, an override path widens — every downstream gate is now wrong. The script catches mechanical regressions; the questionnaire catches semantic regressions that need reading comprehension. Together they prove the ruleset still holds *before* the bad version reaches the remote.
 
 ## Failure modes the gate guards against
 

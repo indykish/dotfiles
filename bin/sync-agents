@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+# sync-agents — propagate the AGENTS.md ruleset from ~/Projects/dotfiles
+# into every calling project repo AND into each agent's home directory
+# (~/.claude, ~/.codex, ~/.opencode, ~/.amp).
+#
+# Run after pulling new dotfiles changes that add or rename a rules file
+# (gate body, *_RULES.md, questionnaire). Idempotent — re-running is safe.
+#
+# Manifests below name every file/dir to propagate. Adding a new entry
+# is the only edit required when a new rules file lands.
+#
+# Skip rule: if a target already exists as a real file/dir (NOT a symlink),
+# warn and skip — never clobber project-local content.
+
+set -uo pipefail
+
+DOTFILES="$HOME/Projects/dotfiles"
+
+ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
+info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
+warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
+fail() { printf '\033[31m✘\033[0m %s\n' "$1" >&2; }
+
+# ---------------------------------------------------------------------------
+# Project-repo manifest — files mirrored under each calling repo at the
+# same relative path. Format: `<source-rel-to-dotfiles>:<target-rel-to-repo>`.
+# Add a line here when a new rules file is introduced.
+# ---------------------------------------------------------------------------
+PROJECT_LINKS=(
+  "AGENTS.md:AGENTS.md"
+  "AGENTS_INVARIANCE.md:AGENTS_INVARIANCE.md"
+  "docs/TEMPLATE.md:docs/TEMPLATE.md"
+  "docs/REST_API_DESIGN_GUIDELINES.md:docs/REST_API_DESIGN_GUIDELINES.md"
+  "docs/SCHEMA_CONVENTIONS.md:docs/SCHEMA_CONVENTIONS.md"
+  "docs/ZIG_RULES.md:docs/ZIG_RULES.md"
+  "docs/ZIG_STATIC_OPENSSL.md:docs/ZIG_STATIC_OPENSSL.md"
+  "docs/BUN_RULES.md:docs/BUN_RULES.md"
+  "docs/greptile-learnings:docs/greptile-learnings"
+  "docs/gates:docs/gates"
+)
+
+# Project repos. Override per-invocation via:
+#   KISHORES_TARGETS="path1 path2 ..." sync-agents
+KISHORES_TARGETS=(
+  "$HOME/Projects/usezombie"
+  "$HOME/Projects/cache-kit.rs"
+  "$HOME/Projects/docs"
+)
+
+# ---------------------------------------------------------------------------
+# Agent home-dir manifest — each agent's global instructions file.
+# Format: `<source-rel-to-dotfiles>:<absolute-target>`.
+# Different agents read different filenames; this maps them all to the
+# single dotfiles AGENTS.md so the global instructions stay in sync.
+# Skipped silently when the agent's home dir is missing.
+# ---------------------------------------------------------------------------
+AGENT_HOME_LINKS=(
+  "AGENTS.md:$HOME/.claude/CLAUDE.md"
+  "AGENTS.md:$HOME/.codex/AGENTS.md"
+  "AGENTS.md:$HOME/.opencode/AGENTS.md"
+  "AGENTS.md:$HOME/.amp/AGENTS.md"
+)
+
+# ---------------------------------------------------------------------------
+# CLI: env override via KISHORES_TARGETS as a space-separated string.
+# ---------------------------------------------------------------------------
+# Detect string-style env override (env vars are always strings; if a string
+# was passed, treat it as space-separated paths).
+case "${KISHORES_TARGETS-__unset__}" in
+  __unset__) ;;
+  *)
+    if [[ "$(declare -p KISHORES_TARGETS 2>/dev/null)" != *"declare -a"* ]]; then
+      # came in as a string from env, split on whitespace
+      _str="$KISHORES_TARGETS"
+      unset KISHORES_TARGETS
+      read -ra KISHORES_TARGETS <<< "$_str"
+    fi
+    ;;
+esac
+
+if [[ "${1:-}" == "--list" ]]; then
+  echo "Project-repo manifest (sources in $DOTFILES):"
+  for link in "${PROJECT_LINKS[@]}"; do echo "  ${link%%:*}"; done
+  echo
+  echo "Project-repo targets (KISHORES_TARGETS):"
+  for t in "${KISHORES_TARGETS[@]}"; do echo "  $t"; done
+  echo
+  echo "Agent home-dir links:"
+  for link in "${AGENT_HOME_LINKS[@]}"; do echo "  ${link%%:*}  →  ${link#*:}"; done
+  exit 0
+fi
+
+[[ -d "$DOTFILES" ]] || { fail "$DOTFILES not found"; exit 1; }
+
+LINKED=0
+RETARGETED=0
+SKIPPED=0
+FAILED=0
+
+# Helper: idempotently create one symlink, updating counters.
+make_link() {
+  local src_full="$1"
+  local dst_full="$2"
+  local label="$3"
+
+  if [[ ! -e "$src_full" ]]; then
+    warn "  source missing in dotfiles, skip: ${src_full#$DOTFILES/}"
+    SKIPPED=$((SKIPPED + 1))
+    return
+  fi
+
+  mkdir -p "$(dirname "$dst_full")"
+
+  if [[ -L "$dst_full" ]]; then
+    local cur
+    cur=$(readlink "$dst_full")
+    if [[ "$cur" = "$src_full" ]]; then
+      return  # already correct, silent
+    fi
+    warn "  retarget: $label was → $cur"
+    rm "$dst_full"
+    if ln -s "$src_full" "$dst_full"; then
+      ok "  $label → $src_full"
+      RETARGETED=$((RETARGETED + 1))
+    else
+      fail "  ln failed: $label"
+      FAILED=$((FAILED + 1))
+    fi
+    return
+  fi
+
+  if [[ -e "$dst_full" ]]; then
+    warn "  skip: $label exists as real file/dir (would clobber)"
+    SKIPPED=$((SKIPPED + 1))
+    return
+  fi
+
+  if ln -s "$src_full" "$dst_full"; then
+    ok "  $label → $src_full"
+    LINKED=$((LINKED + 1))
+  else
+    fail "  ln failed: $label"
+    FAILED=$((FAILED + 1))
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Pass 1: project repos.
+# ---------------------------------------------------------------------------
+for repo in "${KISHORES_TARGETS[@]}"; do
+  if [[ ! -d "$repo" ]]; then
+    warn "skip target — not a directory: $repo"
+    continue
+  fi
+  info "→ $repo"
+  for link in "${PROJECT_LINKS[@]}"; do
+    src="${link%%:*}"
+    dst="${link#*:}"
+    make_link "$DOTFILES/$src" "$repo/$dst" "$dst"
+  done
+done
+
+# ---------------------------------------------------------------------------
+# Pass 2: agent home dirs.
+# ---------------------------------------------------------------------------
+echo
+info "→ agent home dirs"
+for link in "${AGENT_HOME_LINKS[@]}"; do
+  src="${link%%:*}"
+  dst="${link#*:}"
+  if [[ ! -d "$(dirname "$dst")" ]]; then
+    info "  skip ${dst#$HOME/} (agent not installed)"
+    continue
+  fi
+  make_link "$DOTFILES/$src" "$dst" "${dst#$HOME/}"
+done
+
+echo
+echo "summary: linked=$LINKED retargeted=$RETARGETED skipped=$SKIPPED failed=$FAILED"
+[[ $FAILED -eq 0 ]] && ok "agents sync complete" || { fail "some links failed"; exit 1; }

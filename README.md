@@ -61,11 +61,12 @@ cp .npmrc ~/.npmrc
 
 ### Scripts
 ```bash
-cp bin/sync-op ~/bin/sync-op
-cp bin/sync-skills ~/bin/sync-skills
-cp bin/sync-agents-contract ~/bin/sync-agents-contract
-cp bin/upgrade-ai-tools ~/bin/upgrade-ai-tools
-chmod +x ~/bin/sync-op ~/bin/sync-skills ~/bin/sync-agents-contract ~/bin/upgrade-ai-tools
+mkdir -p ~/bin
+ln -sf ~/Projects/dotfiles/bin/sync-op           ~/bin/sync-op
+ln -sf ~/Projects/dotfiles/bin/sync-skills       ~/bin/sync-skills
+ln -sf ~/Projects/dotfiles/bin/sync-agents       ~/bin/sync-agents
+ln -sf ~/Projects/dotfiles/bin/upgrade-ai-tools  ~/bin/upgrade-ai-tools
+# scripts in dotfiles/bin/ are already executable; symlinks inherit that.
 ```
 
 ### Skills

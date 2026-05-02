@@ -29,7 +29,7 @@ EXPECTED_LABELS=(
   "audit fixture: clean diff"
   "gate bodies complete"
   "AGENTS_INVARIANCE.md present"
-  "lifecycle phases"
+  "lifecycle stages"
   "named scenarios"
   "hook triggers"
   "rule extension protocol"
@@ -253,7 +253,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 11. Lifecycle phase headers — every phase header is present in AGENTS.md.
+# 11. Lifecycle stage headers — every stage header is present in AGENTS.md.
 # ---------------------------------------------------------------------------
 LIFECYCLE_HEADERS=(
   "### CHORE (open)"
@@ -265,11 +265,11 @@ LIFECYCLE_HEADERS=(
   "### COMMIT"
   "### CHORE (close)"
 )
-missing_phases=0
+missing_stages=0
 for h in "${LIFECYCLE_HEADERS[@]}"; do
-  grep -qF "$h" "$AGENTS" || { fail "lifecycle phase missing: $h"; missing_phases=1; }
+  grep -qF "$h" "$AGENTS" || { fail "lifecycle stage missing: $h"; missing_stages=1; }
 done
-[[ $missing_phases -eq 0 ]] && pass "lifecycle phases (${#LIFECYCLE_HEADERS[@]} headers present)"
+[[ $missing_stages -eq 0 ]] && pass "lifecycle stages (${#LIFECYCLE_HEADERS[@]} headers present)"
 
 # ---------------------------------------------------------------------------
 # 12. AGENTS_INVARIANCE.md — named scenarios must exist by title.
@@ -310,7 +310,7 @@ fi
 
 # ---------------------------------------------------------------------------
 # 13. Hook trigger coverage — pre-commit AND pre-push must reference
-#     AGENTS.md AND docs/gates so contract changes can never silently
+#     AGENTS.md AND docs/gates so ruleset changes can never silently
 #     bypass either layer.
 # ---------------------------------------------------------------------------
 PRE_COMMIT="$ROOT/.githooks/pre-commit"
@@ -328,7 +328,7 @@ done
 
 # ---------------------------------------------------------------------------
 # 14. Rule extension protocol — AGENTS.md MUST document the 4-step recipe
-#     for landing a new rules file or gate body. Without this, the contract
+#     for landing a new rules file or gate body. Without this, the ruleset
 #     can grow rules that the questionnaire & audit don't enforce.
 # ---------------------------------------------------------------------------
 if grep -qF "Rule extension protocol" "$AGENTS"; then
