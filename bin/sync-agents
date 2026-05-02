@@ -41,10 +41,13 @@ PROJECT_LINKS=(
 
 # Project repos. Override per-invocation via:
 #   KISHORES_TARGETS="path1 path2 ..." sync-agents
+#
+# ~/Projects/docs is intentionally excluded — it carries its own
+# Mintlify-site-specific AGENTS.md (different terminology, different
+# scope) and does not follow the Oracle Operating Model.
 KISHORES_TARGETS=(
   "$HOME/Projects/usezombie"
   "$HOME/Projects/cache-kit.rs"
-  "$HOME/Projects/docs"
 )
 
 # ---------------------------------------------------------------------------
