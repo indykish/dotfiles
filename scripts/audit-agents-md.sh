@@ -14,6 +14,28 @@ FIXTURES="$ROOT/scripts/fixtures"
 GATES_DIR="$ROOT/docs/gates"
 FAIL=0
 
+# Self-fingerprint — every label here MUST appear in a `pass`/`fail` call
+# below. If a check is removed without updating this list, the final
+# self-fingerprint check will fail. This is the script auditing itself.
+EXPECTED_LABELS=(
+  "gate inventory"
+  "trigger surface"
+  "override syntax"
+  "always-forbidden list"
+  "skill-chain ordering"
+  "HARNESS VERIFY coverage"
+  "cross-references"
+  "audit fixture: dirty diff"
+  "audit fixture: clean diff"
+  "gate bodies complete"
+  "AGENTS_INVARIANCE.md present"
+  "lifecycle phases"
+  "named scenarios"
+  "hook triggers"
+  "size"
+)
+SEEN_LABELS=()
+
 # Colours — disable when stdout is not a TTY (e.g. piped, hook).
 if [[ -t 1 ]]; then
   C_GREEN=$'\033[32m'; C_RED=$'\033[31m'; C_YELLOW=$'\033[33m'
@@ -22,8 +44,8 @@ else
   C_GREEN=''; C_RED=''; C_YELLOW=''; C_BLUE=''; C_BOLD=''; C_RESET=''
 fi
 
-fail() { printf '%s🔴 FAIL%s: %s\n' "$C_RED" "$C_RESET" "$*" >&2; FAIL=1; }
-pass() { printf '%s🟢 PASS%s: %s\n' "$C_GREEN" "$C_RESET" "$*"; }
+fail() { printf '%s🔴 FAIL%s: %s\n' "$C_RED" "$C_RESET" "$*" >&2; FAIL=1; SEEN_LABELS+=("$*"); }
+pass() { printf '%s🟢 PASS%s: %s\n' "$C_GREEN" "$C_RESET" "$*";       SEEN_LABELS+=("$*"); }
 warn() { printf '%s🟡 WARN%s: %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2; }
 info() { printf '%sℹ️  %s%s\n' "$C_BLUE" "$*" "$C_RESET"; }
 
@@ -314,6 +336,22 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Self-fingerprint — every EXPECTED_LABELS entry must have been emitted by
+# at least one pass/fail call. Catches the case where someone deletes a
+# check from the script — the script then runs successfully but with
+# fewer invariants enforced, which is exactly the kind of silent
+# weakening this audit exists to prevent.
+# ---------------------------------------------------------------------------
+fp_fail=0
+for label in "${EXPECTED_LABELS[@]}"; do
+  found=0
+  for seen in "${SEEN_LABELS[@]}"; do
+    [[ "$seen" == *"$label"* ]] && { found=1; break; }
+  done
+  [[ $found -eq 1 ]] || { fail "self-fingerprint: expected check '$label' did not run"; fp_fail=1; }
+done
+[[ $fp_fail -eq 0 ]] && pass "self-fingerprint (${#EXPECTED_LABELS[@]} expected checks ran)"
+
 echo
 if [[ $FAIL -eq 0 ]]; then
   printf '%s✅ ALL CHECKS PASSED%s\n' "$C_GREEN$C_BOLD" "$C_RESET"

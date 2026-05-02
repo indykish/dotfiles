@@ -7,7 +7,14 @@ Personal opinionated dotfiles and agent configuration powered by [gstack](https:
 ```bash
 git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles
 cd ~/Projects/dotfiles
+git config core.hooksPath .githooks    # arms pre-commit + pre-push (one-time, per clone)
 ```
+
+The `core.hooksPath` line wires the AGENTS.md invariance suite into every
+commit and push from this clone. Without it, `.githooks/` is just files —
+git keeps using `.git/hooks/` (sample stubs only). Re-run on every fresh
+clone or worktree. See [AGENTS_INVARIANCE.md](AGENTS_INVARIANCE.md) for the
+contract; run `make audit` any time to verify it by hand.
 
 The instructions below assume you are in the `~/Projects/dotfiles` directory.
 
