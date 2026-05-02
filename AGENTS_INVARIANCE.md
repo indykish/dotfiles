@@ -141,6 +141,62 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 12.1 | Does auto-mode autonomy require BOTH auto-mode-active AND (active spec OR forward-looking start instruction) before commit/push/PR proceed without re-asking? | YES |
 | 12.2 | Do action-triggered guards still block under auto mode (autonomy bypasses none)? | YES |
 
+### Scenario 13 — Contract changes (Invariance Suite meta-gate)
+
+| # | Question | Expected |
+|---|---|---|
+| 13.1 | When the agent itself edits `AGENTS.md`, `AGENTS_INVARIANCE.md`, or any `docs/gates/*.md` in this session, does the Invariance Suite Gate fire and require running the questionnaire before declaring done? | YES |
+| 13.2 | Is the agent forbidden from self-overriding the Invariance Suite Gate? (Only the user may bypass at push time via `SKIP_INVARIANCE_PUSH=1`.) | YES |
+| 13.3 | Does the sign-off line format `<short-sha>  <UTC-timestamp>  PASS` tie to the post-commit HEAD SHA? | YES |
+| 13.4 | Does the pre-push hook block when sign-off SHA ≠ HEAD, result ≠ `PASS`, or mtime > 24 h? | YES |
+
+### Scenario 14 — Communication discipline
+
+| # | Question | Expected |
+|---|---|---|
+| 14.1 | Does AGENTS.md require expanding non-obvious acronyms / project codenames / vendor names on first mention in chat replies, PR descriptions, commit messages, AND inline code comments? | YES |
+| 14.2 | Is there an explicit skip-list of undergrad-CS staples (API, URL, HTTP, JSON, SQL, DNS) that need NO expansion? | YES |
+| 14.3 | Does the tone rule permit dry humour and swear words, while requiring that technical clarity is never traded for it? | YES |
+| 14.4 | Does the verification done-message use ✅ / 🔴 / ⚠️ glyphs and the explicit format defined in `docs/gates/verification.md`? | YES |
+
+### Scenario 15 — Architecture-edit ordering
+
+| # | Question | Expected |
+|---|---|---|
+| 15.1 | Must an architecture decision land its `docs/architecture/` edit either (a) in an immediate doc-only commit OR (b) in the same commit as the implementation, with (c) follow-up AFTER code explicitly forbidden? | YES |
+| 15.2 | Must every M-spec branch touching flow-defining code produce a non-empty `git diff origin/main..HEAD -- docs/architecture/`, OR have PR Session Notes document why nothing architectural changed? | YES |
+
+### Scenario 16 — Credentials & vault
+
+| # | Question | Expected |
+|---|---|---|
+| 16.1 | Are plaintext secrets in entity tables (`core.zombies`, `core.workspaces`, etc.) a **no-override** forbidden? | YES |
+| 16.2 | Must credentials be stored as a vault `key_name` reference and resolved at runtime via `crypto_store.load()`? | YES |
+| 16.3 | Are static strings in SQL schema (`DEFAULT 'value'`, `CHECK (col IN ('a','b'))`) a **no-override** forbidden — enforced via app-code named constants instead? | YES |
+| 16.4 | Must the agent NEVER print/log/paste a credential value, and always use `op read 'op://...'` at runtime when verification steps reference credentials? | YES |
+
+### Scenario 17 — DB discipline (Zig)
+
+| # | Question | Expected |
+|---|---|---|
+| 17.1 | Does `conn.query()` require `.drain()` in the same function before `deinit()`, with `make check-pg-drain` verifying? | YES |
+| 17.2 | Is `conn.exec()` the prescribed alternative when no rows are needed? | YES |
+
+### Scenario 18 — Commit/push hygiene & worktree isolation
+
+| # | Question | Expected |
+|---|---|---|
+| 18.1 | Must `gitleaks` pass before any `git commit` / `git push`? | YES |
+| 18.2 | Is the rule "one worktree per active stream — no edits outside, no reads from siblings, merge only after VERIFY" preserved? | YES |
+| 18.3 | Are cross-worktree edits explicitly forbidden without explicit user approval? | YES |
+
+### Scenario 19 — HARNESS VERIFY combined audit
+
+| # | Question | Expected |
+|---|---|---|
+| 19.1 | Does HARNESS VERIFY include a combined awk pass over `git diff -U0 HEAD` that emits `MS-ID:`, `PUB:`, and `UI:` hits — replacing four separate self-audits? | YES |
+| 19.2 | Is non-empty awk output a violation that MUST be addressed before HARNESS VERIFY passes? | YES |
+
 ---
 
 ## Step 3 — Write the sign-off file

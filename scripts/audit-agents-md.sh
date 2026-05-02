@@ -88,16 +88,20 @@ done
 
 # ---------------------------------------------------------------------------
 # 5. Skill-chain order — /write-unit-test → /review → /review-pr → babysit.
+#    Anchored to within the CHORE(close) section so a stray earlier mention
+#    cannot satisfy the check.
 # ---------------------------------------------------------------------------
 awk '
-  /\/write-unit-test/ && !a { a=NR }
-  /\/review[^-]/ && a && !b { b=NR }
-  /\/review-pr/ && b && !c { c=NR }
-  /kishore-babysit-prs/ && c && !d { d=NR }
+  /^### CHORE \(close\)/                  { in_section=1; next }
+  /^### |^## /                            { if (in_section) in_section=0 }
+  in_section && /\/write-unit-test/  && !a { a=NR }
+  in_section && /\/review[^-]/       && a && !b { b=NR }
+  in_section && /\/review-pr/        && b && !c { c=NR }
+  in_section && /kishore-babysit-prs/&& c && !d { d=NR }
   END { exit (a && b && c && d && a<b && b<c && c<d) ? 0 : 1 }
 ' "$AGENTS" \
-  && pass "skill-chain ordering" \
-  || fail "skill chain not in order: /write-unit-test → /review → /review-pr → kishore-babysit-prs"
+  && pass "skill-chain ordering (anchored to CHORE(close))" \
+  || fail "skill chain not in order within CHORE(close): /write-unit-test → /review → /review-pr → kishore-babysit-prs"
 
 # ---------------------------------------------------------------------------
 # 6. HARNESS VERIFY rows — every gate's keyword appears in the verdict block.
@@ -148,12 +152,22 @@ read -r -d '' AWK_PROG <<'AWKEOF' || true
 AWKEOF
 
 if [[ -f "$FIXTURES/dirty.diff" && -f "$FIXTURES/clean.diff" ]]; then
+  # Fixture content fingerprint — guards against well-meaning rewrites
+  # that "fix" dirty.diff to be clean (which would silently break the smoke).
+  grep -qF "M40_001"  "$FIXTURES/dirty.diff" || fail "fixture dirty.diff missing M40_001 marker"
+  grep -qE '<button>' "$FIXTURES/dirty.diff" || fail "fixture dirty.diff missing raw <button>"
+  ! grep -qF "M40_001"  "$FIXTURES/clean.diff" || fail "fixture clean.diff has milestone-id leak"
+  ! grep -qE '<button>' "$FIXTURES/clean.diff" || fail "fixture clean.diff has raw <button>"
+
   dirty_hits=$(awk "$AWK_PROG" "$FIXTURES/dirty.diff" | wc -l | tr -d ' ')
   clean_hits=$(awk "$AWK_PROG" "$FIXTURES/clean.diff" | wc -l | tr -d ' ')
-  if [[ $dirty_hits -ge 1 ]]; then
-    pass "audit fixture: dirty diff flagged ($dirty_hits hits)"
+
+  # Pin exact expected counts — protects against false-positive "smoke ok"
+  # where a rigged dirty.diff produces ≥1 hit on an unrelated token.
+  if [[ $dirty_hits -eq 4 ]]; then
+    pass "audit fixture: dirty diff flagged exactly 4 hits"
   else
-    fail "audit fixture: dirty diff produced 0 hits — awk audit is broken"
+    fail "audit fixture: dirty diff flagged $dirty_hits hits (expected 4)"
   fi
   if [[ $clean_hits -eq 0 ]]; then
     pass "audit fixture: clean diff produced 0 hits"
@@ -214,7 +228,81 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 11. Size cap — soft guard against drift back to bloat.
+# 11. Lifecycle phase headers — every phase header is present in AGENTS.md.
+# ---------------------------------------------------------------------------
+LIFECYCLE_HEADERS=(
+  "### CHORE (open)"
+  "### PLAN"
+  "### EXECUTE"
+  "### HARNESS VERIFY"
+  "### VERIFY"
+  "### DOCUMENT"
+  "### COMMIT"
+  "### CHORE (close)"
+)
+missing_phases=0
+for h in "${LIFECYCLE_HEADERS[@]}"; do
+  grep -qF "$h" "$AGENTS" || { fail "lifecycle phase missing: $h"; missing_phases=1; }
+done
+[[ $missing_phases -eq 0 ]] && pass "lifecycle phases (${#LIFECYCLE_HEADERS[@]} headers present)"
+
+# ---------------------------------------------------------------------------
+# 12. AGENTS_INVARIANCE.md — named scenarios must exist by title.
+#     Catches the case where a scenario count stays ≥ threshold but a
+#     specific high-value scenario is silently renamed/removed.
+# ---------------------------------------------------------------------------
+INV="$ROOT/AGENTS_INVARIANCE.md"
+NAMED_SCENARIOS=(
+  "New spec"                 # Scenario 1
+  "Brainstorming"            # Scenario 2
+  "human spots and steers"   # Scenario 3
+  "UI"                       # Scenario 4 (covers UI/Zig/TS/JS/shell/CI)
+  "Handover"                 # Scenario 5
+  "Verification lifecycle"   # Scenario 6
+  "/review-pr"               # Scenario 7
+  "/write-unit-test"         # Scenario 8
+  "Hot-fix"                  # Scenario 9
+  "Dotfiles"                 # Scenario 10
+  "Schema"                   # Scenario 11
+  "Auto-mode boundary"       # Scenario 12
+  "Invariance Suite"         # Scenario 13
+  "Communication"            # Scenario 14
+  "Architecture-edit"        # Scenario 15
+  "Credentials"              # Scenario 16
+  "DB discipline"            # Scenario 17
+  "worktree isolation"       # Scenario 18
+  "combined audit"           # Scenario 19
+)
+missing_scenarios=0
+if [[ -f "$INV" ]]; then
+  for s in "${NAMED_SCENARIOS[@]}"; do
+    grep -qF "$s" "$INV" || { fail "AGENTS_INVARIANCE.md missing scenario keyword: $s"; missing_scenarios=1; }
+  done
+  [[ $missing_scenarios -eq 0 ]] && pass "named scenarios (${#NAMED_SCENARIOS[@]} keywords found in AGENTS_INVARIANCE.md)"
+else
+  fail "AGENTS_INVARIANCE.md missing"
+fi
+
+# ---------------------------------------------------------------------------
+# 13. Hook trigger coverage — pre-commit AND pre-push must reference
+#     AGENTS.md AND docs/gates so contract changes can never silently
+#     bypass either layer.
+# ---------------------------------------------------------------------------
+PRE_COMMIT="$ROOT/.githooks/pre-commit"
+PRE_PUSH="$ROOT/.githooks/pre-push"
+hook_fail=0
+for hook in "$PRE_COMMIT" "$PRE_PUSH"; do
+  name=$(basename "$hook")
+  if [[ ! -f "$hook" ]]; then
+    fail "hook missing: .githooks/$name"; hook_fail=1; continue
+  fi
+  grep -qF "AGENTS.md"  "$hook" || { fail "$name missing AGENTS.md trigger reference"; hook_fail=1; }
+  grep -qF "docs/gates" "$hook" || { fail "$name missing docs/gates trigger reference"; hook_fail=1; }
+done
+[[ $hook_fail -eq 0 ]] && pass "hook triggers (.githooks/pre-commit + pre-push both gate AGENTS.md + docs/gates)"
+
+# ---------------------------------------------------------------------------
+# 14. Size cap — soft guard against drift back to bloat.
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
