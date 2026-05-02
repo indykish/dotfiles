@@ -68,6 +68,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.8 (Shell) | Are shell scripts subject to the File & Function Length Gate (≤350 / ≤50 / ≤70)? | YES |
 | 4.9 (Shell) | Must `gitleaks` pass before any commit/push? | YES |
 | 4.10 (CI) | Are CI/CD edits (`.github/workflows/**`, deploy configs) **forbidden without explicit user approval** even in auto mode? | YES |
+| 4.11 (Bun) | For `*.ts`/`*.tsx`/`*.js`/`*.jsx` edits, does AGENTS.md require reading `docs/BUN_RULES.md` (TS FILE SHAPE DECISION at PLAN, const/import/Bun-primitive discipline)? | YES |
 
 ### Scenario 5 — Picking up a handover
 
@@ -158,6 +159,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 14.2 | Is there an explicit skip-list of undergrad-CS staples (API, URL, HTTP, JSON, SQL, DNS) that need NO expansion? | YES |
 | 14.3 | Does the tone rule permit dry humour and swear words, while requiring that technical clarity is never traded for it? | YES |
 | 14.4 | Does the verification done-message use ✅ / 🔴 / ⚠️ glyphs and the explicit format defined in `docs/gates/verification.md`? | YES |
+| 14.5 | Does AGENTS.md identify "the Captain" as Kishore (the human), so addresses like "Aye Aye Captain" resolve unambiguously? | YES |
 
 ### Scenario 15 — Architecture-edit ordering
 
@@ -196,6 +198,14 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 19.1 | Does HARNESS VERIFY include a combined awk pass over `git diff -U0 HEAD` that emits `MS-ID:`, `PUB:`, and `UI:` hits — replacing four separate self-audits? | YES |
 | 19.2 | Is non-empty awk output a violation that MUST be addressed before HARNESS VERIFY passes? | YES |
+
+### Scenario 20 — Rule extension protocol
+
+| # | Question | Expected |
+|---|---|---|
+| 20.1 | Does AGENTS.md document a "Rule extension protocol" requiring 4 same-diff steps when introducing a new rules file (`docs/<TOPIC>_RULES.md`) or gate body (`docs/gates/<slug>.md`)? | YES |
+| 20.2 | Does the protocol require: (a) doc-reads table row, (b) AGENTS_INVARIANCE.md question, (c) `DOTFILES_RESIDENT` audit entry, (d) `make audit` passing before commit? | YES |
+| 20.3 | Does the Invariance Suite Gate fire on any commit landing the protocol's edits, with sign-off mandatory before push? | YES |
 
 ---
 

@@ -32,6 +32,8 @@ EXPECTED_LABELS=(
   "lifecycle phases"
   "named scenarios"
   "hook triggers"
+  "rule extension protocol"
+  "Captain identifier"
   "size"
 )
 SEEN_LABELS=()
@@ -148,6 +150,7 @@ DOTFILES_RESIDENT=(
   "docs/TEMPLATE.md"
   "docs/REST_API_DESIGN_GUIDELINES.md"
   "docs/ZIG_RULES.md"
+  "docs/BUN_RULES.md"
   "docs/greptile-learnings/RULES.md"
 )
 broken_refs=0
@@ -324,7 +327,28 @@ done
 [[ $hook_fail -eq 0 ]] && pass "hook triggers (.githooks/pre-commit + pre-push both gate AGENTS.md + docs/gates)"
 
 # ---------------------------------------------------------------------------
-# 14. Size cap — soft guard against drift back to bloat.
+# 14. Rule extension protocol — AGENTS.md MUST document the 4-step recipe
+#     for landing a new rules file or gate body. Without this, the contract
+#     can grow rules that the questionnaire & audit don't enforce.
+# ---------------------------------------------------------------------------
+if grep -qF "Rule extension protocol" "$AGENTS"; then
+  pass "rule extension protocol section present"
+else
+  fail "AGENTS.md missing 'Rule extension protocol' section"
+fi
+
+# ---------------------------------------------------------------------------
+# 15. Captain identifier — AGENTS.md MUST identify the human user as
+#     "Captain" = Kishore so nautical/affirmation phrasing resolves.
+# ---------------------------------------------------------------------------
+if grep -qF "Captain is Kishore" "$AGENTS"; then
+  pass "Captain identifier present (the Captain is Kishore)"
+else
+  fail "AGENTS.md missing 'Captain is Kishore' identifier"
+fi
+
+# ---------------------------------------------------------------------------
+# 16. Size cap — soft guard against drift back to bloat.
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')

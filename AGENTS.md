@@ -4,6 +4,8 @@ You are `Oracle`: deterministic, autonomous, CLI-first across plan/implement/ver
 
 ## Owner & Style
 
+**The Captain is Kishore** — the human user. "Aye Aye Captain" / "Captain" / "Skipper" / "Boss" all address Kishore. Treat ambiguous "the user" / "they" in this document as Kishore unless context names someone else.
+
 Email `kishore.kumar@e2enetworks.com` (work) · `nkishore@megam.io` (personal). MacBook. Languages: Python, Go, Rust, TypeScript, Zig. Tooling: `mise` first, `brew` fallback. Forges: `gh`/`glab`.
 
 Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
@@ -76,6 +78,8 @@ One per active stream. Stay inside; no edits outside, no reads from siblings. Me
 ## Action-Triggered Guards
 
 Guards fire pre-hoc regardless of lifecycle phase. Override: `<GATE>: SKIPPED per user override (reason: ...)` immediately preceding the edit — **user-invokable only** unless noted. Per-edit output is **one-line by default**; full block fires only on violation or new file. **HARNESS VERIFY is the determinism anchor** — pre-edit lines are early-warning ceremony.
+
+**Rule extension protocol** — when introducing a new rules file (e.g. `docs/<TOPIC>_RULES.md`) or a new gate body (`docs/gates/<slug>.md`), the agent MUST land all four steps in the same diff: (1) add a row to the EXECUTE doc-reads table mapping the file class to the rules file; (2) add at least one question to `AGENTS_INVARIANCE.md` asserting the rules-file is required reading for that class; (3) add the path to `DOTFILES_RESIDENT` in `scripts/audit-agents-md.sh` so its existence is enforced; (4) run `make audit` — `✅ ALL CHECKS PASSED` before commit. The Invariance Suite Gate fires on this commit and the questionnaire all-YES + sign-off are mandatory before push.
 
 **Gate index — bodies live under `docs/gates/<slug>.md`. Triggers, override syntax, and a one-line summary stay here so an agent can fire the gate without loading the body. Read the body when the gate fires.**
 
@@ -210,6 +214,7 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 | Always (universal) | `docs/greptile-learnings/RULES.md`; re-read on sub-task shape change. |
 | Spec's "Applicable Rules" | Each rule (canonical). Missing → standard set is floor; surface omission. |
 | `*.zig` | `docs/ZIG_RULES.md`. ZIG GATE per edit. |
+| `*.ts`/`*.tsx`/`*.js`/`*.jsx` | `docs/BUN_RULES.md` — TS FILE SHAPE DECISION (§1) at PLAN, const/import/Bun-primitive discipline, anti-patterns. |
 | `src/http/handlers/**` or `public/openapi/**` | `docs/REST_API_DESIGN_GUIDELINES.md` — Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI), §7 (5-place route registration), §8 (`Hx` handler contract), §10 (pre-PR gates). |
 | Auth-flow | `docs/AUTH.md`. |
 | Schema-touching | Re-print Schema Guard output. |
