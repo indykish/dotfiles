@@ -1,718 +1,308 @@
 ---
 name: write-unit-test
 description: >
-  Generates robust, multi-tier test coverage for any code change across 8 stacks:
-  Python, Python SDK, OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Go,
-  Shell. Covers happy path, edge cases, error paths,
-  fidelity, concurrency, integration, regression, security, DRY, constants,
-  performance, and API contract compliance. Use when writing tests, reviewing
-  coverage, or hardening a codebase folder-by-folder.
+  Generates risk-weighted, failure-injecting tests across 9 stacks (Python, Python SDK,
+  OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Go, Shell). Enforces behaviour + failure +
+  invariant + integration + regression coverage with explicit anti-patterns and a
+  Definition-of-Done gate. Use during implementation, not after.
 ---
 
 # Write Unit Test
 
-Generate production-grade test coverage that catches bugs before they ship.
+Generate tests that catch bugs before they ship. Tests run *during* implementation, not after.
 
-**When this skill is invoked:** Tests are NOT an afterthought. This skill runs DURING implementation (alongside code), not after. The agent writes tests that define correct behavior, then writes code that satisfies them. If invoked after code exists, the skill audits the code against the spec — not the other way around.
+## Test quality bar
 
-## Do This First
+Every test answers three questions. If it answers none, delete it.
 
-1. **Read the spec FIRST** — before reading code. Look for:
-   - `docs/v1/active/M*.md` or `docs/v1/pending/M*.md` in the repo
-   - The PR description or task list
-   - Any linked milestone doc
-   The spec defines what to test. The code is what gets tested. Do not let the code shape your test expectations.
+1. **What bug would this catch?**
+2. **What behaviour does this prove?**
+3. **What invariant does this enforce?**
 
-2. **Read `docs/greptile-learnings/RULES.md`** — every rule is a test case. If a rule says "use JSON parser, not string scanning", write a test that fails if someone uses string scanning.
+A green test that answers none of these is worse than no test — it's false confidence.
 
-3. Read every changed file top-to-bottom.
+## Truth hierarchy
 
-4. Detect the stack from project files:
+When sources disagree, trust in this order:
 
-| File | Stack |
-|------|-------|
-| `pyproject.toml` / `setup.py` | Python / Python SDK |
-| `openapi.yaml` / `swagger.json` | OpenAPI spec |
-| `package.json` + `bin` field | JS/TS CLI |
-| `package.json` + `react` dep | React/TypeScript |
-| `build.zig` / `build.zig.zon` | Zig |
-| `Cargo.toml` | Rust |
-| `go.mod` | Go |
-| `*.sh` / `*.bash` | Shell script |
+1. **Runtime behaviour** — prod logs, incidents, observed traces
+2. **Spec** — `docs/v*/active/M*.md`, PR description, milestone doc
+3. **Code** — current implementation
 
-5. Follow existing test conventions (naming, file layout, fixture patterns, assertion style).
-6. Run the existing test suite first to establish the green baseline.
-7. **For Zig**: verify the stdlib API you're testing against actually exists on cross-compile targets. Use `context7` MCP to fetch current Zig stdlib docs, or grep the stdlib source at `~/.local/share/mise/installs/zig/{version}/lib/std/`. Do NOT assume an API exists because it works on macOS — check Linux targets.
+Spec contradicts runtime → surface the conflict before testing. Code contradicts spec → spec wins; test the spec, flag the code as a defect.
 
-## Spec-Driven Test Generation
+## First steps
 
-**Step 1: Read the spec's Test Specification section.** If it exists (from TEMPLATE.md), the test cases are already defined. Map each row to a test function:
+1. **Read the spec, then the code** — spec defines what to test; code is what gets tested. Don't let code shape expectations.
+2. **Read `docs/greptile-learnings/RULES.md`** — every rule is a regression test.
+3. **Detect the stack** from project files (`pyproject.toml`, `Cargo.toml`, `go.mod`, `build.zig`, `package.json` + `react`/`bin`, `*.sh`, `openapi.yaml`).
+4. **Run the existing suite first** — establish the green baseline before adding tests.
+5. **Follow existing naming and fixture conventions.**
 
-```
-Spec row:
-  name: stream emits SSE event
-  dimension: 1.1
-  target: stream.zig:handleStreamRun
-  input: redis_message(valid)
-  expected: sse_event(valid)
-  test_type: integration
+## Three execution modes
 
-→ Generates:
-  test "1.1: stream emits SSE event" { ... }
-```
+Pick one. Don't run all categories on every file.
 
-**Step 2: Read the spec's Error Contracts table.** Every row becomes a negative test:
+| Mode | When | Required categories |
+|---|---|---|
+| **Change-set** | Standard PR, isolated fix | Behaviour, Failure, Integration, Regression |
+| **Hardening** | Critical paths: auth, money, data integrity, migrations, distributed ops | + Invariant, Concurrency, Fuzz |
+| **Deep audit** | Infra/core, dependency upgrade, full release QA, security review | All categories + Performance + Contract |
 
-```
-Error Contract row:
-  error: Timeout
-  behavior: return null
-  caller_sees: readMessage() returns null
+Auto-detect from diff: auth/payment/migration/concurrency/streaming files → Hardening. Otherwise → Change-set.
 
-→ Generates:
-  test "T3: readMessage returns null on timeout" { ... }
-```
+## Risk-weighted priority
 
-**Step 3: Read the spec's Failure Modes table.** Every row becomes an integration test:
+Within each mode, write tests in this order. Stop when you've covered the surface.
 
-```
-Failure Mode row:
-  failure: Redis connection reset
-  trigger: server closes TCP
-  behavior: propagate error, caller falls back to DB polling
+1. **State transitions** — PENDING→RUNNING, idempotent vs not, monotonic
+2. **External boundaries** — I/O, network, DB, FS, IPC
+3. **Concurrency paths** — races, ordering, double-fire
+4. **Error handling branches** — every `catch`, `orelse`, `?`, `Result::Err`, `try/except`
+5. **Pure functions** — last; usually low bug density
 
-→ Generates:
-  test "integration: readMessage propagates fatal error on connection reset" { ... }
-```
-
-**Step 4: Read the spec's Implementation Constraints table.** Every row becomes a verification test:
-
-```
-Constraint row:
-  constraint: Cross-compiles on x86_64-linux
-  verify: zig build -Dtarget=x86_64-linux
-
-→ Agent must run this command and report the result.
-```
-
-**If the spec has none of these sections**, fall back to claim tracing (below).
-
-## Spec-Claim Tracing
-
-Before writing any tests, extract behavioral claims from the spec/PR description and build a tracing table:
-
-```
-| Spec claim | What to test | Test type | Test exists? |
-|------------|-------------|-----------|-------------|
-| "gate results print in real time" | bytes arrive incrementally, not buffered | integration (e2e) | ? |
-| "heartbeat fires within 30s" | SO_RCVTIMEO triggers before 30s | integration (Redis) | ? |
-| "reconnect replays only missed events" | Last-Event-ID filters correctly | integration (DB) | ? |
-```
-
-Rules:
-- **Every claim needs a test.** If a claim says "X happens in real time", a unit test that feeds pre-buffered data does NOT cover it — you need an integration test that verifies the transport.
-- **Test the behavior, not the implementation.** "parser works" ≠ "bytes arrive incrementally." Parser tests validate parsing. Transport tests validate transport. Don't conflate them.
-- **Test failure modes the spec doesn't mention.** If the spec says "retry on network error", also test: what happens on Redis connection reset? What happens on HTTP 503? What happens if the user hits Ctrl+C during retry?
-- **Flag untestable claims.** If a claim can't be tested with the available infrastructure (e.g., "no busy-loop on connection reset" needs a way to kill Redis mid-test), flag it explicitly in the tracing table as "needs infra" rather than silently skipping it.
-- **Test error contracts.** If the spec has an Error Contracts table, every row needs a negative test that triggers that exact error condition and asserts the specified behavior.
-- **Test platform constraints.** If the spec lists platform constraints (e.g., "SO_RCVTIMEO doesn't work through TLS"), write a test that documents the behavior on the CI platform, even if it's a skip-with-reason.
-
-## Incremental Coverage Improvement Mode
-
-When asked to improve existing coverage (not just cover a changeset):
-
-1. **Start with a single folder.** Do not boil the ocean.
-2. Run coverage on that folder: identify uncovered lines, branches, functions.
-3. Sort uncovered code by risk: public API > business logic > helpers > glue code.
-4. Write tests tier-by-tier for the highest-risk uncovered code first.
-5. After each batch, re-run coverage and report the delta.
-6. Move to the next folder only when the current one meets the target (≥90% line, ≥80% branch).
-7. Produce a folder-level coverage report card before moving on:
-
-```
-## Coverage Report: {{folder}}
-| Metric        | Before | After | Target |
-|---------------|--------|-------|--------|
-| Line coverage | 62%    | 94%   | ≥90%   |
-| Branch cov.   | 41%    | 85%   | ≥80%   |
-| Functions     | 55%    | 100%  | ≥90%   |
-| Uncovered     | 38 lines | 6 lines | <10  |
-```
-
-### Coverage tools by stack
-
-| Stack | Coverage tool | Command |
-|-------|--------------|---------|
-| Python | `coverage.py` / `pytest-cov` | `pytest --cov=src --cov-branch` |
-| Rust | `proptest` / `criterion` / `cargo test` | `cargo test` / `cargo test --features all` |
-| Zig | `std.testing.allocator` (leak detect) | `zig build test` / `make test` |
-| React/TS | `c8` / `istanbul` / `vitest` | `vitest --coverage` |
-| Go | built-in | `go test -coverprofile=c.out ./...` |
+A string helper does not get the same treatment as a distributed retry loop. Allocate effort by blast radius.
 
 ---
 
-## Test Tiers
+## Five test categories
 
-**Mandatory:** For every file touched, satisfy ALL tiers. If a tier does not apply, state why — with the reason, not just "N/A".
+### 1. Behaviour
+Input → exact output shape AND side effects. Assert *both*. Asserting only the return value misses DB writes, event emits, log lines, state changes.
 
-**Minimum 5 test cases per tier per file** when the tier applies. This is not a suggestion — it's the minimum for production code. M22_001 had 3 test cases for error paths and missed timeout-vs-fatal, connection-reset, and TLS platform behavior. 5 forces you to think beyond the obvious.
+### 2. Failure (≥50% of all tests)
+- **Specific error contracts** — type + message + structured fields (status code, error code, hint). Bare `expect error` / `assert.throws` is a smell.
+- **Boundaries** — empty, null/None/`Option::None`, max (`i64::MAX`, `Number.MAX_SAFE_INTEGER`), overflow, NaN, malformed, truncated, unicode (CJK, emoji, RTL, ZWJ), CRLF/LF, leading/trailing whitespace, embedded newlines.
+- **Expected vs fatal distinction** — a function returning null for both timeout (expected) and connection-reset (fatal) causes busy-loops. Test that they take different paths.
+- **Auth failures** — no token, expired, wrong role, revoked, rate limited.
+- **Downstream errors** — 4xx, 5xx, timeout, DNS, TLS, partial UTF-8, broken pipe.
 
-**Coverage source priority (in order):**
-1. **Spec's Test Specification table** — pre-defined test cases, use them exactly
-2. **Spec's Error Contracts / Failure Modes tables** — every row is a test
-3. **`docs/greptile-learnings/RULES.md`** — every rule is a regression test
-4. **Tier checklists below** — fill gaps the spec didn't anticipate
-5. **Agent judgment** — edge cases specific to this implementation
+### 3. Invariant
+Properties that must hold across all valid inputs. Use property-based testing (`hypothesis`/`proptest`/`fast-check`/`gopter`) when input domain is large.
 
-**Do NOT write tests that only validate your implementation.** Write tests that would catch someone else's wrong implementation of the same spec.
+- **Idempotency** — N calls = 1 effect. Required for webhooks, retries, distributed ops, PUT semantics.
+- **Monotonic state** — RUNNING never goes back to PENDING.
+- **No duplicate side effects** — same event ID never processes twice.
+- **Eventual consistency** — final state converges regardless of order.
+- **Conservation** — sum of debits = sum of credits; total events in = total out + dropped.
+- **Schema lock** — no silent field add/remove on stored or wire format.
 
-### TIER 1 — HAPPY PATH
+### 4. Integration
+End-to-end through real stack. **Mock only at system boundaries** (network, disk, external APIs, clock, randomness). Never mock internal modules — that validates fake behaviour and integration bugs slip through.
 
-For each public function, method, struct impl, component, endpoint, CLI command, or resource:
+- Full middleware chain executes (auth, rate-limit, logging, CORS).
+- Real DB, real serializer, real router. Use containers, not in-memory fakes when behaviour differs.
+- For spec claims involving "real-time" / "streaming" / "incremental": assert bytes arrive incrementally — not just that the parser handles pre-buffered data.
+- Failure modes named in code → integration test with deterministic injection.
 
-- [ ] Call with valid, realistic production-like input
-- [ ] Assert return value, status code, content type, and shape
-- [ ] Assert side effects (DB writes, cache sets, signals, events, state changes)
-- [ ] Assert downstream calls with correct arguments
+### 5. Regression
+Pin behaviour that must not silently change.
 
-**Stack-specific happy path:**
-
-| Stack | Pattern |
-|-------|---------|
-| Python | `assert response.status_code == 200`; `mock.assert_called_once_with(...)` |
-| Python SDK | `client = MySDK(api_key="test"); result = client.resources.list(); assert result.data` |
-| OpenAPI | Validate response against schema: `openapi_core.validate_response(spec, request, response)` |
-| JS/TS CLI | `const { stdout, exitCode } = await execa('./cli', ['cmd', '--flag']); expect(exitCode).toBe(0)` |
-| React | `render(<Component />); expect(screen.getByRole(...)).toBeInTheDocument()` |
-| Zig | `try std.testing.expectEqual(expected, actual);` + assert DB state changed (setup fixture → call → query → verify rows); assert state transitions (PENDING → RUNNING); verify error code + hint pair for new UZ-* codes; `std.testing.allocator` for leak detection; test null for all optional params |
-| Rust gRPC | `let resp = client.get_resource(request).await?; assert_eq!(resp.into_inner().id, expected_id);` |
-| Rust HTTP | `let resp = app.oneshot(Request::get("/api/v1/items")).await; assert_eq!(resp.status(), 200);` |
-| Shell | `run my_script.sh --flag; [ "$status" -eq 0 ]; [[ "$output" == *"expected"* ]]` (bats) |
-
-### TIER 2 — EDGE CASES
-
-For each input parameter:
-
-- [ ] Empty / blank / null / None / undefined / `Option::None` / `null` (Zig) / `nil` (Go)
-- [ ] Zero, negative, float overflow, NaN, Infinity, `i64::MAX`, `i64::MIN`, `Number.MAX_SAFE_INTEGER`
-- [ ] Maximum-length and minimum-length strings
-- [ ] Unicode: multibyte (CJK 中文), emoji (👨‍👩‍👧‍👦), RTL (Arabic/Hebrew), combining chars (é vs é), zero-width joiners
-- [ ] HTML entities (`&amp;`), angle brackets, backticks in user content
-- [ ] Whitespace-only, leading/trailing whitespace, embedded newlines, CRLF vs LF
-- [ ] Single-element vs many-element collections; empty collections
-- [ ] Duplicate entries in lists/sets/vecs
-- [ ] Missing optional keys in dicts/structs/objects
-- [ ] Pagination boundaries: page=0, page=999999, per_page=0, per_page=-1
-- [ ] Date/time: epoch (1970-01-01), far-future (9999-12-31), leap second, DST transitions, timezone boundaries
-
-**Stack-specific edge cases:**
-
-| Stack | Additional edge cases |
-|-------|----------------------|
-| Python SDK | Expired/rotated API keys; paginated responses with `next_page=null`; rate-limit retry with `Retry-After` header |
-| OpenAPI | Request missing required field; extra unknown field (additionalProperties); wrong content-type header |
-| JS/TS CLI | No TTY (piped input); `--help` with/without subcommand; env var overrides flag; `SIGINT` during operation |
-| React | Missing/undefined props; empty `children`; key collisions in lists; controlled vs uncontrolled input switching |
-| Zig | Sentinel-terminated slices; comptime vs runtime paths; `@alignCast` with misaligned data |
-| Rust | `&str` vs `String` ownership; lifetime edge cases; `Vec<T>` capacity 0; `From`/`Into` trait boundary |
-| Shell | Unquoted variables with spaces/globs; `set -euo pipefail` behavior; heredoc with variable expansion; empty `$@` |
-
-### TIER 3 — NEGATIVE / ERROR PATHS
-
-- [ ] Invalid input types (string where int expected, wrong enum variant)
-- [ ] Authentication/authorization failures (no token, expired, wrong role, revoked)
-- [ ] Downstream service errors (HTTP 500, timeout, connection refused, DNS failure)
-- [ ] Database constraint violations (duplicate key, FK violation, deadlock, lock timeout)
-- [ ] File not found / permission denied / disk full
-- [ ] Malformed/corrupt input (truncated JSON, invalid PDF, broken HTML, partial UTF-8)
-- [ ] Assert correct error codes, messages; no sensitive data in error responses
-- [ ] **Timeout vs fatal error distinction**: if code handles both timeout (expected) and connection-reset (fatal), verify they take different paths. A function returning null for both causes busy-loops on fatal errors.
-- [ ] **Connection lost mid-operation**: socket closed by peer during read/write — verify graceful degradation, not silent swallowing into a retry/fallback path meant for timeouts
-
-**Stack-specific error paths:**
-
-| Stack | Error path specifics |
-|-------|---------------------|
-| Python SDK | `raise ApiError(status=429, retry_after=30)` on rate limit; `ConnectionError` on network failure; stale pagination cursor |
-| OpenAPI | 4xx responses match error schema; `406 Not Acceptable` for wrong `Accept` header |
-| JS/TS CLI | Exit code 1 for user error, 2 for usage error; stderr for errors, stdout for output; `--no-color` disables ANSI |
-| React | Error boundary renders fallback UI; `onError` callbacks fire with error object; suspended component shows fallback |
-| Zig | Assert error set members; test `catch` and `orelse` branches; `OutOfMemory` from allocator |
-| Rust gRPC | `tonic::Status::not_found()`; streaming error mid-response; deadline exceeded; invalid protobuf payload |
-| Rust HTTP | `axum::extract::rejection`; missing `Content-Type`; payload too large (413) |
-| Shell | Non-zero exit from subcommand propagates; `trap` handler fires on SIGTERM; missing required env var prints usage |
-
-### TIER 4 — REAL RENDERING / OUTPUT FIDELITY
-
-For any generated artifacts (PDF, HTML, CSV, images, binary formats, CLI output):
-
-- [ ] Use the REAL renderer (not mocked) — assert artifact is structurally valid
-- [ ] For PDFs: `%PDF` header, non-empty bytes, `application/pdf` content type, text extraction
-- [ ] For HTML: valid DOM structure, correct semantic elements, no broken tags
-- [ ] Assert layout/ordering (e.g., "Header before Footer" via positional extraction)
-- [ ] Test with REAL production templates, not synthetic stubs
-- [ ] Verify deterministic data markers survive the render pipeline (names, dates, amounts, currency)
-- [ ] Empty data → graceful "no data" message renders
-- [ ] Large data (100+ rows) → no truncation, crash, or memory blowup
-- [ ] Special characters in data flowing into templates
-
-**Stack-specific fidelity:**
-
-| Stack | Fidelity checks |
-|-------|----------------|
-| Python SDK | Response model `to_dict()` → `from_dict()` round-trip equality; pagination `__iter__` yields all pages |
-| OpenAPI | Generated client code compiles; request/response examples in spec actually validate against schema |
-| JS/TS CLI | `--json` output is valid JSON and parseable; `--plain` strips ANSI; `--help` text matches documented usage |
-| React | Snapshot tests for complex renders; `axe` accessibility audit passes; responsive breakpoints render correctly |
-| Zig | Binary output byte-exact with golden reference; serialized structs round-trip through `@bitCast` |
-| Rust gRPC | Protobuf serialization round-trip; streaming response collects all chunks; `tonic::codec` golden test |
-| Shell | stdout matches golden file via `diff`; stderr is empty on success; output is pipe-safe (no ANSI when `! -t 1`) |
-
-### TIER 5 — CONCURRENCY & RACE CONDITIONS
-
-- [ ] Concurrent identical requests (same user, same endpoint, same payload)
-- [ ] Concurrent conflicting writes (two actors updating the same resource)
-- [ ] Assert no data corruption: final state is consistent
-- [ ] Assert idempotency where expected (retry same request → same result)
-- [ ] Assert proper locking (optimistic/pessimistic) if applicable
-- [ ] Database transaction isolation: no dirty reads, no phantom reads under load
-
-**Stack-specific concurrency (≥5 concurrent calls):**
-
-| Stack | How to test concurrency |
-|-------|------------------------|
-| Python | `concurrent.futures.ThreadPoolExecutor` or `asyncio.gather` |
-| Python SDK | Concurrent `client.resources.create()` calls; assert no duplicate IDs returned |
-| JS/TS CLI | `Promise.all(Array(10).fill().map(() => execa('./cli', ['create'])))` |
-| React | Rapid `userEvent.click` or state updates; `useEffect` cleanup race; `AbortController` cancellation |
-| Zig | `std.Thread.spawn` N concurrent callers; assert final DB state consistent; test duplicate request handling; assert no data corruption under parallel writes; `std.testing.allocator` to catch race-related leaks; `--release-safe` for safety checks |
-| Rust | `tokio::spawn` or `std::thread::scope` with `Arc<Mutex<_>>`; run under MIRI if safe |
-| Go | `sync.WaitGroup` + goroutines; `-race` flag; `t.Parallel()` |
-| Shell | Background jobs `&` + `wait`; file locking with `flock`; signal delivery during operation |
-
-### TIER 6 — INTEGRATION VERIFICATION
-
-- [ ] End-to-end through the real stack (HTTP request → response, not just unit)
-- [ ] Full middleware chain executes (auth, rate-limit, logging, CORS)
-- [ ] Serialization/deserialization round-trip (request → DB → response matches)
-- [ ] Cross-module integration: A calls B with real B (not mocked)
-- [ ] Database migrations + schema compatible with test data
-- [ ] External service contract tests: request shape matches API docs
-- [ ] **Spec-claim transport tests**: if the spec claims "real-time", "incremental", or "streaming", test that bytes arrive incrementally — not just that the parser handles them. A unit test feeding pre-buffered data does NOT verify transport behavior.
-- [ ] **Failure mode tests**: connection reset mid-stream, service restart, timeout vs fatal error distinction. If the code has a `catch` that returns null/fallback, test that fatal errors are NOT swallowed into the same path as expected errors.
-
-**Stack-specific integration:**
-
-| Stack | Integration pattern |
-|-------|---------------------|
-| Python | Django `TestCase` with real DB; `APIClient().post()` end-to-end |
-| Python SDK | Mock HTTP server (`responses` / `httpretty` / `respx`) with real SDK client; assert request headers/body |
-| OpenAPI | `schemathesis` / `dredd` against running server; assert all endpoints match spec |
-| JS/TS CLI | Execute binary as subprocess; parse stdout; verify file system side effects |
-| React | Full page render with `BrowserRouter`, context providers, MSW for API mocks |
-| Zig | Full request lifecycle: HTTP → handler → DB write → response; pg pool under concurrent connections; transaction isolation (no dirty reads); cross-compilation-unit calls; C-ABI boundaries via `@cImport` |
-| Rust gRPC | `tonic` test server + client in same process; tower `ServiceExt::ready().call()` |
-| Rust HTTP | `axum::test::TestServer` with real router, middleware, extractors |
-| Shell | Source functions and call them; test with `bats` using `setup`/`teardown`; `tmpdir` isolation |
-
-### TIER 7 — REGRESSION SAFETY NETS
-
-- [ ] Before/after comparison: same input → same (or explicitly expected different) output
-- [ ] Golden output artifacts: pin a reference PDF/JSON/HTML and assert semantic equivalence
-- [ ] Canary imports: assert every `from X import Y` / `use crate::X` / `@import` still resolves
-- [ ] Version-sniff test: assert installed dependency versions match expected range
-- [ ] For dependency upgrades: run the OLD test suite against NEW code — all must pass
-
-**Stack-specific regression:**
-
-| Stack | Regression specifics |
-|-------|---------------------|
-| Python SDK | Public API surface unchanged: assert all `__all__` exports resolve; `dir(client)` matches expected methods |
-| OpenAPI | Breaking change detector: `oasdiff breaking old.yaml new.yaml` exits 0 |
-| JS/TS CLI | Golden stdout/stderr files per command; `--version` matches `package.json` version |
-| React | Prop-type contract tests; component API shape unchanged; CSS module class names stable |
-| Zig | `@sizeOf(MyStruct)` matches expected; ABI stability for exported functions |
-| Rust | `#[cfg(test)] const _: () = assert!(std::mem::size_of::<MyStruct>() == N);` for ABI stability |
-| Shell | Golden file tests: `diff <(./script.sh --help) expected_help.txt` |
-
-### TIER 8 — SECURITY & ROBUSTNESS
-
-- [ ] SQL injection attempts in string inputs
-- [ ] XSS payloads in user-supplied content that renders to HTML/PDF
-- [ ] Path traversal in file-based inputs (`../../etc/passwd`)
-- [ ] Rate limiting works (if applicable)
-- [ ] CSRF/CORS protections intact
-- [ ] Secret detection is handled by `gitleaks` / pre-commit hooks (not duplicated in unit tests)
-
-**Stack-specific security:**
-
-| Stack | Security specifics |
-|-------|-------------------|
-| Python SDK | API key not logged in debug output; HTTPS enforced; certificate verification enabled by default |
-| OpenAPI | Authentication schemes enforced per-endpoint; response does not leak internal errors to client |
-| JS/TS CLI | `--token` not visible in process list (`/proc/PID/cmdline`); secrets read from env not flags |
-| React | `dangerouslySetInnerHTML` never with unsanitized input; CSP-compatible; no `eval()` |
-| Zig | No `@ptrCast` / `@intFromPtr` without bounds validation; `@memcpy` length checked |
-| Rust | No `unsafe` without safety comment + test; `#[deny(unsafe_code)]` on library crates |
-| Shell | All variables quoted (`"$var"` not `$var`); no `eval` with user input; `mktemp` for temp files |
-
-**OWASP Agent Security — data sent to or propagated through agents:**
-
-When any code path sends data directly to an agent (LLM, tool-calling agent, autonomous workflow) or indirectly propagates data to an agent through intermediate systems (queues, databases, APIs, event buses), the following checks apply:
-
-- [ ] **Prompt injection resistance:** User-controlled input is never concatenated raw into agent prompts; use structured message formats, system/user role separation, or parameterized templates
-- [ ] **Untrusted input handling:** All external input reaching an agent is validated, type-checked, and length-bounded before inclusion; reject or sanitize payloads that contain instruction-like content (`ignore previous`, `you are now`, XML/JSON injection markers)
-- [ ] **Least privilege for tools/actions:** Agents have access only to the minimum set of tools required for the task; tool permissions are scoped per-invocation, not globally granted
-- [ ] **Data minimization and secret redaction:** Only the data necessary for the agent's task is included in the prompt/context; secrets, credentials, PII, and internal identifiers are stripped or replaced with opaque references before reaching the agent
-- [ ] **Output validation before execution:** Agent-generated outputs (code, commands, API calls, file writes) are validated against an allowlist or schema before any side effect executes; never `eval()` or `exec()` raw agent output
-- [ ] **Authorization at every hop:** Each system in the data flow (caller → intermediary → agent → tool) independently verifies authorization; an agent inherits the caller's permissions, not elevated service-level permissions
-- [ ] **Audit logging and traceability:** Every agent invocation logs: who triggered it, what input was provided, what tools were called, what output was produced, and what side effects occurred; logs are tamper-resistant and queryable
-- [ ] **Fail-closed on trust/safety failure:** If any trust check (input validation, output validation, authorization, rate limit) fails, the agent call is rejected — never fall back to a permissive path or silently proceed with partial validation
-
-**Direct vs. indirect data flow checks:**
-
-| Data flow | What to test |
-|-----------|-------------|
-| Direct (caller → agent) | Input sanitization at call site; prompt template immutability; tool scope matches caller intent |
-| Indirect (caller → queue/DB/API → agent) | Data integrity preserved through intermediary; no injection via stored fields; agent re-validates input regardless of upstream checks |
-
-### TIER 9 — CODE DUPLICATION & DRY COMPLIANCE
-
-- [ ] No copy-pasted logic across test files — extract shared fixtures/helpers/builders
-- [ ] No duplicated business logic between modules — if found, flag and refactor to single source
-- [ ] Test helpers themselves are tested if they contain logic (not just wiring)
-- [ ] No magic strings/URLs/ports repeated across tests — use constants or fixtures
-- [ ] Assert no function exceeds 3 near-identical call patterns without parameterization
-- [ ] If test setup is >10 lines, extract to a fixture/builder/factory
-
-**Parameterized test patterns by stack:**
-
-| Stack | How to parameterize |
-|-------|---------------------|
-| Python | `@pytest.mark.parametrize("input,expected", [...])` |
-| Rust | `macro_rules!` generated tests or `#[test_case]` crate |
-| Zig | inline `for` over test case tuples with `std.testing` |
-| React/TS | `it.each([...])` / `describe.each([...])` |
-| Go | table-driven `[]struct{ name, input, want }` in `t.Run` loop |
-| Shell (bats) | Loop over cases in `@test` with array |
-
-### TIER 10 — CONSTANTS & MAGIC VALUES POLICY
-
-- [ ] No magic numbers in production code — every numeric literal has a named constant (0, 1, -1 exempt)
-- [ ] No magic strings (URLs, keys, status names, error messages) — use constants or enums
-- [ ] Constants defined once, in one canonical location
-- [ ] Enum/union variants preferred over string comparisons for state/status/type fields
-- [ ] Configuration values (timeouts, retries, limits) are injectable, not hardcoded
-- [ ] Test data uses realistic but obviously fake values (`user@example.com`, `555-0100`, `Acme Corp`)
-- [ ] No test depends on the specific VALUE of a constant — test behavior, pin constant separately
-
-**Canonical constant locations by stack:**
-
-| Stack | Where constants live |
-|-------|---------------------|
-| Python | `constants.py` or module-level `UPPER_SNAKE_CASE` |
-| Python SDK | `sdk/constants.py`; version in `__version__`; API base URL in config, not code |
-| JS/TS | `src/constants.ts` as named `export const`; no string enums without explicit values |
-| React | co-located `constants.ts` per feature or shared `@/constants` |
-| Zig | `pub const` in dedicated namespace or file; `comptime` for compile-time known values |
-| Rust | `const` or `static` in `constants.rs` or crate root; `enum` for variants, never strings |
-| Go | `const` block in `constants.go` per package; `iota` for enumerations |
-| Shell | `readonly MY_CONST="value"` at top of script; sourced from `lib/constants.sh` |
-
-### TIER 11 — PERFORMANCE & RESOURCE SAFETY
-
-- [ ] No unbounded allocations: test with large input and assert memory stays within bounds
-- [ ] No O(n²) or worse in hot paths: benchmark or assert timing for large-N inputs
-- [ ] File handles / connections are closed (test with resource tracking or mocks)
-- [ ] Timeout guards on all async/network tests (no hanging CI)
-
-**Stack-specific performance:**
-
-| Stack | Performance specifics |
-|-------|----------------------|
-| Python | `assertNumQueries` for Django; no N+1 queries; `@pytest.mark.timeout(10)` |
-| Python SDK | Connection pooling reuses sessions; retry backoff is bounded; pagination doesn't load all pages in memory |
-| JS/TS CLI | Startup time under 500ms; no synchronous `fs.readFileSync` in hot paths |
-| React | No re-render storms; `React.memo` / `useMemo` where measured; bundle size assertion |
-| Zig | `std.testing.allocator` detects leaks automatically; `@memset`/`@memcpy` bounds checked; no `GeneralPurposeAllocator` in prod without `deinit` |
-| Rust | No `.clone()` in hot loops; `#[bench]` or criterion benchmarks; `cargo clippy` pedantic |
-| Rust gRPC | Streaming doesn't buffer full response in memory; connection pool size bounded |
-| Go | `-benchmem` for allocation tracking; `pprof` for profiling; query count via `DB.Stats()` |
-| Shell | No subshell forks in loops (use builtins); `read -r` instead of `cat | while` |
-
-### TIER 12 — API CONTRACT & SCHEMA COMPLIANCE
-
-> Note: Secret/credential leak detection is handled by `gitleaks` and pre-commit hooks, not duplicated here.
-
-- [ ] Every public API endpoint has a matching schema definition (OpenAPI/protobuf/GraphQL)
-- [ ] Request and response shapes match the schema — test with a validator, not just status codes
-- [ ] Breaking changes are detected before merge (field removed, type changed, required added)
-- [ ] Versioning is correct: API version header/path matches handler version
-- [ ] Deprecation warnings present for deprecated fields/endpoints
-- [ ] SDK/client code generated from spec actually compiles and passes type checking
-
-**Stack-specific contract compliance:**
-
-| Stack | Contract tools and patterns |
-|-------|----------------------------|
-| Python | `pydantic` model validation; `jsonschema.validate()` against OpenAPI components |
-| Python SDK | `mypy --strict` on public API surface; `__all__` exports match docs; method signatures match spec |
-| OpenAPI | `schemathesis run spec.yaml --base-url=...` for fuzz testing; `oasdiff breaking old.yaml new.yaml` for breaking changes; `spectral lint spec.yaml` for style |
-| JS/TS CLI | `zod` / `yargs` type inference matches expected; `--help` output tested against documented usage |
-| React | Prop types / TypeScript interfaces match API response types; `tsc --noEmit` passes |
-| Zig | Exported function signatures match header file; `@typeInfo` compile-time checks on public structs |
-| Rust gRPC | Protobuf schema backward-compatible (`buf breaking`); generated code compiles with `--strict` |
-| Rust HTTP | `utoipa` / `aide` generated OpenAPI matches handwritten spec; request extractor types match schema |
-| Shell | `--help` text matches README usage section; exit codes documented and tested |
+- Golden output files — diff on change. Agent must explain *why* a snapshot changed; never silently re-bless.
+- Public API surface (`__all__`, exports, header signatures, `@sizeOf`, ABI stability).
+- Breaking-change detectors (`oasdiff breaking`, `buf breaking`, `cargo public-api`).
+- Old test suite passes against new code on dependency upgrades.
 
 ---
 
-## Output Format
+## Hard rules
 
-For each test:
-1. Name following stack convention:
-   - Python/Go: `test_<module>_<function>_<scenario>`
-   - Rust: `fn <scenario>()` in `mod tests`
-   - Zig: `test "<scenario>"`
-   - React/TS: `it("should <scenario>")`
-   - Shell/bats: `@test "<scenario>"`
-2. Tier(s) it satisfies
-3. The actual test code
-4. What regression it catches if it fails
+- **Mock only at system boundaries.** No mocking internal modules. No asserting on mocks (`expect(mockFn).toHaveBeenCalled()`) without also asserting outcome state.
+- **State isolation per test.** Reset globals, DB rows, fixtures, env vars, caches. Tests must pass under randomised execution order. Run `pytest -p randomly` / `cargo test -- --shuffle` / equivalent at least once per branch.
+- **Specific error contracts.** Assert error type AND message AND structured fields.
+- **≥50% negative-path tests** on changed surface. If success tests outnumber failure tests, you're not done.
+- **Test names read as documentation.** `should_reject_empty_user_id`, `should_retry_on_502_from_gateway`, `should_not_duplicate_event_on_retry`. No `test_1`, `test_basic`, `it works`.
+- **No testing private functions directly.** Test through the public surface. If a private function needs direct testing, it's actually public — promote it.
+- **No duplicating implementation logic in tests.** A test that re-implements the function under test proves nothing.
+- **Tests favour clarity over DRY.** Independence and explicitness beat reuse. Extract a helper only when ≥3 tests share non-trivial setup AND the helper has no logic worth hiding.
+- **Untestable claims are flagged**, not silently skipped. Mark `needs infra` in the claim-tracing table.
 
-## Completeness Matrix
+## Anti-patterns (reject in review)
 
-After writing all tests, produce:
-
-```
-## Coverage Matrix: {{module/folder}}
-| Function/Endpoint | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 |
-|-|-|-|-|-|-|-|-|-|-|-|-|-|
-| function_a        | ✅ | ✅ | ✅ | N/A| ✅ | ✅ | ✅ | ✅ | ✅ | ✅  | ✅  | ✅  |
-| function_b        | ✅ | ✅ | ❌ | ✅ | N/A| ✅ | ✅ | ✅ | ✅ | ✅  | ❌  | N/A |
-
-❌ = skipped — must include written justification
-N/A = not applicable — must state why
-```
-
-## Validation Gate
-
-All tests must pass in a single CI gate invocation.
-Report: exact command, output summary (X passed, Y failed, Z skipped), and coverage delta.
+- ❌ Snapshot-only tests with no behavioural assertion
+- ❌ Asserting on mocks instead of outcomes
+- ❌ Testing private functions directly
+- ❌ Duplicating implementation logic in tests
+- ❌ Bare `expect error` / `assert.throws` with no type/message contract
+- ❌ Tests that pass only when run in a specific order
+- ❌ "Minimum N tests per file" filler that asserts the same invariant N times
+- ❌ Mocking internal modules
+- ❌ Coverage padding — line coverage with no behavioural claim
+- ❌ Hand-wavy performance assertions ("not too slow")
+- ❌ Silent golden-file re-blessing on snapshot drift
 
 ---
 
-## Stack Quick-Reference Examples
+## Failure injection toolkit
 
-### 1. Python (pytest)
-```python
-@pytest.mark.parametrize("input_val,expected", [
-    ("", "default"), ("café ☕", "café ☕"), (None, "default"), ("a" * 10000, "truncated"),
-])
-def test_process_edge_cases(input_val, expected):  # T2 + T9
-    assert process(input_val) == expected
+Vague claim: "handles connection reset". Real test: deterministic injection. If you can't reproduce a failure deterministically, the test is fiction.
 
-def test_concurrent_writes_no_corruption():  # T5
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = [pool.submit(create_order, user_id=1) for _ in range(10)]
-        results = [f.result() for f in futures]
-    assert len(set(r.id for r in results)) == 10
-```
-
-### 2. Python SDK
-```python
-@responses.activate
-def test_sdk_list_resources_paginates():  # T1 + T6
-    responses.get("https://api.example.com/v1/items?page=1", json={"data": [{"id": 1}], "next": "?page=2"})
-    responses.get("https://api.example.com/v1/items?page=2", json={"data": [{"id": 2}], "next": None})
-    client = MySDK(api_key="test-key")
-    items = list(client.items.list())
-    assert len(items) == 2
-
-def test_sdk_rate_limit_retry():  # T3
-    responses.get("https://api.example.com/v1/items", status=429, headers={"Retry-After": "1"})
-    responses.get("https://api.example.com/v1/items", json={"data": []})
-    client = MySDK(api_key="test-key")
-    result = client.items.list()
-    assert result.data == []
-```
-
-### 3. OpenAPI
-```python
-# schemathesis for fuzzing (T2 + T8 + T12)
-# CLI: schemathesis run http://localhost:8080/openapi.json --checks all
-# Programmatic:
-@given(case=schemathesis.from_uri("http://localhost:8080/openapi.json").as_strategy())
-def test_api_conforms_to_spec(case):
-    response = case.call()
-    case.validate_response(response)
-
-# Breaking change detection (T7 + T12)
-# CI: oasdiff breaking main.yaml feature-branch.yaml --fail-on ERR
-```
-
-### 4. JS/TS CLI (vitest + execa)
-```typescript
-test('create command outputs JSON with --json flag', async () => {  // T1 + T4
-  const { stdout, exitCode } = await execa('./bin/cli', ['create', '--name', 'test', '--json']);
-  expect(exitCode).toBe(0);
-  const parsed = JSON.parse(stdout);
-  expect(parsed).toHaveProperty('id');
-});
-
-test('exits 2 on unknown flag', async () => {  // T3
-  const result = await execa('./bin/cli', ['--badflg'], { reject: false });
-  expect(result.exitCode).toBe(2);
-  expect(result.stderr).toContain('unknown flag');
-});
-
-test('respects NO_COLOR env', async () => {  // T2
-  const { stdout } = await execa('./bin/cli', ['status'], { env: { NO_COLOR: '1' } });
-  expect(stdout).not.toMatch(/\x1b\[/);
-});
-```
-
-### 5. React / TypeScript (vitest + testing-library)
-```tsx
-it.each([
-  ['empty name', { ...mockUser, name: '' }],
-  ['unicode name', { ...mockUser, name: '田中太郎 👨‍💻' }],
-  ['missing email', { ...mockUser, email: undefined }],
-])('handles %s gracefully', (_label, user) => {  // T2
-  expect(() => render(<UserProfile user={user} />)).not.toThrow();
-});
-
-it('passes axe accessibility audit', async () => {  // T8
-  const { container } = render(<UserProfile user={mockUser} />);
-  const results = await axe(container);
-  expect(results).toHaveNoViolations();
-});
-
-it('suspense shows fallback while loading', async () => {  // T3
-  render(<Suspense fallback={<Spinner />}><LazyProfile /></Suspense>);
-  expect(screen.getByRole('progressbar')).toBeInTheDocument();
-  await waitFor(() => expect(screen.getByRole('heading')).toBeInTheDocument());
-});
-```
-
-### 6. Zig (zig test) with zap/httpz
-```zig
-test "GET /api/items returns 200 with JSON body" {  // T1
-    const allocator = std.testing.allocator;
-    var app = try App.init(allocator);
-    defer app.deinit();
-    const resp = try app.request(.GET, "/api/items", null);
-    defer allocator.free(resp.body);
-    try std.testing.expectEqual(@as(u16, 200), resp.status);
-    const parsed = try std.json.parseFromSlice(ItemList, allocator, resp.body, .{});
-    defer parsed.deinit();
-    try std.testing.expect(parsed.value.items.len > 0);
-}
-
-test "POST with corrupt JSON returns 400" {  // T3
-    const allocator = std.testing.allocator;
-    var app = try App.init(allocator);
-    defer app.deinit();
-    const resp = try app.request(.POST, "/api/items", "{invalid");
-    defer allocator.free(resp.body);
-    try std.testing.expectEqual(@as(u16, 400), resp.status);
-}
-
-test "no memory leaks in request handler" {  // T11
-    const allocator = std.testing.allocator;  // auto-detects leaks
-    var app = try App.init(allocator);
-    defer app.deinit();
-    for (0..100) |_| {
-        const resp = try app.request(.GET, "/api/items", null);
-        allocator.free(resp.body);
-    }
-}
-```
-
-### 7. Rust gRPC (tonic) + HTTP (axum)
-```rust
-#[tokio::test]
-async fn grpc_get_item_returns_valid_response() {  // T1
-    let (client, _server) = spawn_test_server().await;
-    let resp = client.get_item(GetItemRequest { id: "abc".into() }).await.unwrap();
-    assert_eq!(resp.into_inner().name, "expected-item");
-}
-
-#[tokio::test]
-async fn grpc_invalid_id_returns_not_found() {  // T3
-    let (client, _server) = spawn_test_server().await;
-    let status = client.get_item(GetItemRequest { id: "".into() }).await.unwrap_err();
-    assert_eq!(status.code(), tonic::Code::NotFound);
-}
-
-#[tokio::test]
-async fn http_concurrent_creates_no_duplicates() {  // T5
-    let app = test_app().await;
-    let handles: Vec<_> = (0..10).map(|_| {
-        let app = app.clone();
-        tokio::spawn(async move { app.post("/items").json(&new_item()).send().await })
-    }).collect();
-    let results: Vec<_> = futures::future::join_all(handles).await;
-    let ids: HashSet<_> = results.iter().map(|r| r.as_ref().unwrap().json::<Item>().id).collect();
-    assert_eq!(ids.len(), 10);
-}
-
-#[test]
-fn protobuf_round_trip() {  // T12
-    let original = MyMessage { field: "test".into() };
-    let bytes = original.encode_to_vec();
-    let decoded = MyMessage::decode(bytes.as_slice()).unwrap();
-    assert_eq!(original, decoded);
-}
-```
-
-### 8. Shell (bats)
-```bash
-@test "script exits 0 with valid input" {  # T1
-  run ./deploy.sh --env staging --version 1.2.3
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"deployed 1.2.3 to staging"* ]]
-}
-
-@test "script exits 1 with missing required flag" {  # T3
-  run ./deploy.sh --env staging
-  [ "$status" -eq 1 ]
-  [[ "$output" == *"--version is required"* ]]
-}
-
-@test "script handles spaces in arguments" {  # T2
-  run ./deploy.sh --env "staging env" --version "1.2.3"
-  [ "$status" -eq 0 ]
-}
-
-@test "help text matches golden file" {  # T7
-  run ./deploy.sh --help
-  diff <(echo "$output") tests/fixtures/help.golden.txt
-}
-
-@test "no output to stdout when --quiet" {  # T4
-  run ./deploy.sh --env staging --version 1.2.3 --quiet
-  [ "$status" -eq 0 ]
-  [ -z "$output" ]
-}
-```
-
----
-
-## When to Use Each Tier
-
-| Scenario | Minimum Tiers |
+| Failure | Tool / technique |
 |---|---|
-| Bug fix (single function) | T1, T2, T3, T7, T9, T10 |
-| New feature | T1, T2, T3, T6, T9, T10, T11 |
-| Dependency upgrade | T1, T4, T7 (canary + golden), T11 |
-| PDF / report generation | T1, T2, T4 (all), T5, T9 |
-| Auth / security changes | T1, T3, T6, T8 (all) |
-| Database migration | T1, T3, T5, T6, T11 |
-| UI component (React) | T1, T2, T3, T7 (snapshots), T8 (a11y), T9, T10 |
-| Systems code (Rust/Zig) | T1, T2, T3, T5, T11 (memory + perf) |
-| SDK / client library | T1, T2, T3, T6, T7 (API surface), T12 (contract) |
-| OpenAPI spec change | T2, T7 (breaking change), T12 (all) |
-| Shell script | T1, T2, T3, T4 (golden), T7, T8 (quoting) |
-| Full release QA | ALL TIERS |
-| Incremental coverage uplift | Start T1+T2+T3 per folder, then expand |
+| TCP reset / half-open | `toxiproxy`, `tc netem`, raw socket close from peer |
+| Slow / delayed response | `toxiproxy` latency, `respx` delay, fake clock |
+| Partial read | `io.LimitedReader`, custom `Read` returning short |
+| DB connection drop | `pg_terminate_backend()` mid-transaction |
+| Timeout | shrink `SO_RCVTIMEO`, `tokio::time::pause()` |
+| Clock skew | freeze/advance fake clock; `chrono` mock; `mock-time` |
+| Disk full / EIO | `tmpfs` size limit; mock filesystem |
+| OOM | `FixedBufferAllocator` (Zig), small heap caps |
+| Concurrency races | `loom` (Rust), `-race` (Go), `std.Thread` + barrier |
+| Network partition | `iptables`/`pfctl` block, `toxiproxy` down |
+
+Every failure mode named in the spec or code (`catch`, `orelse`, retry loop) needs at least one injection-driven test.
+
+---
+
+## Coverage that matters
+
+Line coverage is noise. Track and report:
+
+- **Branch coverage** — every `if`/`match`/`switch` arm hit
+- **Error-path coverage** — every `catch`/`orelse`/`Err` constructed in code is exercised by a test
+- **Input-class coverage** — empty / single / many / unicode / malformed each appear at least once per public input
+
+Targets on touched code: branch ≥80%, error-path 100%, negative-path ratio ≥50%.
+
+## Spec integration
+
+When a spec exists with these tables, treat them as authoritative test sources:
+
+| Spec table | Generates |
+|---|---|
+| Test Specification | One test per row, name = `dim X.Y: <name>` |
+| Error Contracts | One negative test per row asserting exact error |
+| Failure Modes | One integration test per row with deterministic injection |
+| Implementation Constraints | Verification command run + result reported |
+
+If the spec has none of these, build a claim-tracing table from spec prose / PR description:
+
+```
+| Claim | Test type | Injection mechanism | Test exists? |
+|---|---|---|---|
+| "gate results print in real time" | integration (streaming) | partial-read reader | ❌ |
+| "heartbeat fires within 30s" | integration (timer) | fake clock | ❌ |
+| "no busy-loop on Redis reset" | failure (fatal vs timeout) | `pg_terminate_backend` | ❌ |
+```
+
+Every claim → ≥1 test. Untestable claims → flag `needs infra`.
+
+---
+
+## Definition of Done
+
+Reject the change if any are missing on touched code:
+
+- [ ] ≥50% negative-path tests for changed surface
+- [ ] Boundary tests: empty, null/None, max, malformed
+- [ ] Error contract tests: type + message + structured fields
+- [ ] Idempotency check where retries / webhooks / distributed ops apply
+- [ ] State isolation: tests pass under random execution order
+- [ ] Integration test through real stack for any spec claim involving transport/streaming/real-time
+- [ ] Failure-injection test for every failure mode named in code
+- [ ] Test names read as documentation
+- [ ] No mocking of internal modules
+- [ ] Golden-file drift, if any, has a written explanation
+- [ ] Branch coverage ≥80%, error-path 100% on touched code
+- [ ] Performance assertions concrete (fixed input + time budget + threshold)
+
+100% required before declaring done.
+
+## CI execution strategy
+
+| Stage | What runs |
+|---|---|
+| **PR** | Behaviour + Failure + Regression unit; fast Integration; lint; type-check; randomised order |
+| **Pre-merge** | Full Integration; Contract (`oasdiff` / `buf breaking`); coverage delta |
+| **Nightly** | Concurrency stress; Fuzz (`schemathesis` / `proptest` / `cargo-fuzz`); Performance benchmarks |
+| **Pre-release** | Golden full-suite; cross-platform; memory-leak (`std.testing.allocator`); ABI stability |
+
+A test in the wrong stage either delays PRs or never runs. Place deliberately.
+
+## Performance assertions
+
+Hand-wavy "no O(n²)" doesn't test anything. Make it concrete:
+
+- **Fixed input size** (e.g. 10k rows)
+- **Time budget** (e.g. p95 < 50ms)
+- **Regression threshold** (fails if 1.5× slower than recorded baseline)
+- **Allocation count** (`testing.allocator` leak detection; Go `-benchmem`)
+- **Connection / FD leak check** — open count before == after
+
+---
+
+## Stack appendix
+
+Tooling per stack:
+
+| Stack | Runner | Branch coverage | Property | Fuzz | Concurrency |
+|---|---|---|---|---|---|
+| Python | `pytest` | `pytest-cov --branch` | `hypothesis` | `atheris` | `ThreadPoolExecutor`, `asyncio` |
+| Python SDK | `pytest` + `responses`/`respx` | same | `hypothesis` | `schemathesis` | `asyncio.gather` |
+| OpenAPI | `schemathesis` | n/a | n/a | `schemathesis run --checks all` | n/a |
+| JS/TS CLI | `vitest` + `execa` | `c8` branch | `fast-check` | `fast-check` | `Promise.all` |
+| React | `vitest` + `testing-library` | `c8` branch | `fast-check` | n/a | `userEvent` rapid |
+| Zig | `zig build test` | manual | manual | manual mutation | `std.Thread.spawn` |
+| Rust | `cargo test` | `cargo-llvm-cov` | `proptest` | `cargo-fuzz` | `loom`, `tokio::spawn` |
+| Go | `go test` | `-cover -covermode=count` | `gopter` | `go test -fuzz` | `-race`, goroutines |
+| Shell | `bats` | `bashcov` | n/a | n/a | `&` + `wait`, `flock` |
+
+Naming convention by stack:
+
+- Python/Go: `test_should_<behaviour>_when_<condition>`
+- Rust: `fn should_<behaviour>_when_<condition>()` in `mod tests`
+- Zig: `test "should <behaviour> when <condition>"`
+- React/TS: `it("should <behaviour> when <condition>")`
+- Shell/bats: `@test "should <behaviour> when <condition>"`
+
+Stack-specific must-knows:
+
+- **Zig** — `std.testing.allocator` auto-detects leaks; verify cross-compile (`x86_64-linux`, `aarch64-linux`) since stdlib API may differ from macOS; `conn.query()` requires `.drain()`.
+- **Python SDK** — assert API key not in debug output; HTTPS enforced; pagination doesn't load all pages in memory; rate-limit retry honours `Retry-After`.
+- **Rust gRPC** — protobuf round-trip; streaming doesn't buffer full response; `tonic::Status` codes assert specific variant.
+- **Rust HTTP** — `axum::extract::rejection` paths; payload too large (413); missing `Content-Type`.
+- **React** — `axe` accessibility audit; no `dangerouslySetInnerHTML` with unsanitized input; controlled vs uncontrolled input switching.
+- **Shell** — all variables quoted (`"$var"`); `set -euo pipefail`; no `eval` with user input; `mktemp` for temp files.
+- **OpenAPI** — `schemathesis run --checks all`; `oasdiff breaking` in CI; `spectral lint` for style.
+
+## OWASP for agent-bound data
+
+Code paths sending data to LLMs / tool-calling agents (directly or via queue/DB/API):
+
+- [ ] User-controlled input never concatenated raw into prompts; structured roles only
+- [ ] Length-bounded, validated, sanitised against instruction-injection markers (`ignore previous`, role-confusion XML/JSON)
+- [ ] Tool permissions scoped per-invocation, not globally granted
+- [ ] Secrets/credentials/PII stripped before reaching the agent; opaque references only
+- [ ] Agent output validated against allowlist/schema before any side effect; never `eval()` raw output
+- [ ] Authorization re-checked at every hop; agent inherits caller's permissions, not service-level
+- [ ] Audit log: who, input, tools called, output, side effects — tamper-resistant
+- [ ] Fail-closed on any trust check failure — never silently fall back
+
+---
+
+## Output format
+
+For each test write:
+
+1. Name (per stack convention)
+2. Category (Behaviour / Failure / Invariant / Integration / Regression)
+3. The bug it catches in one line
+4. The test code
+5. Failure-injection mechanism if applicable
+
+After the suite produce:
+
+```
+## Coverage report: <module>
+| Metric              | Before | After | Target |
+| Branch              | 41%    | 87%   | ≥80%   |
+| Error-path          | 60%    | 100%  | 100%   |
+| Negative-path ratio | 20%    | 55%   | ≥50%   |
+Categories: Behaviour ✅ · Failure ✅ · Invariant ✅ · Integration ✅ · Regression ✅
+DoD checklist: 12/12
+Mode: Change-set | Hardening | Deep audit
+```
+
+## Validation gate
+
+Single command runs all tests in the chosen mode. Report exact command, pass/fail/skip counts, coverage delta, and DoD checklist status. Do not declare done until DoD is 100%.
