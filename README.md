@@ -63,8 +63,9 @@ cp .npmrc ~/.npmrc
 ```bash
 cp bin/sync-op ~/bin/sync-op
 cp bin/sync-skills ~/bin/sync-skills
+cp bin/sync-agents-contract ~/bin/sync-agents-contract
 cp bin/upgrade-ai-tools ~/bin/upgrade-ai-tools
-chmod +x ~/bin/sync-op ~/bin/sync-skills ~/bin/upgrade-ai-tools
+chmod +x ~/bin/sync-op ~/bin/sync-skills ~/bin/sync-agents-contract ~/bin/upgrade-ai-tools
 ```
 
 ### Skills

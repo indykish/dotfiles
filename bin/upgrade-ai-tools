@@ -34,3 +34,11 @@ ok "All AI coding tools upgraded!"
 echo ""
 info "🔄 Running sync-skills to keep skills updated..."
 ~/bin/sync-skills
+
+echo ""
+info "🔗 Running sync-agents-contract to symlink AGENTS.md contract into project repos..."
+if [[ -x "$HOME/bin/sync-agents-contract" ]]; then
+  ~/bin/sync-agents-contract
+else
+  warn "sync-agents-contract not found in ~/bin/ — copy from dotfiles/bin/ to enable"
+fi
