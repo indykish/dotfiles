@@ -35,6 +35,7 @@ info "Auditing $AGENTS"
 # 1. Gate inventory — every named gate still exists.
 # ---------------------------------------------------------------------------
 REQUIRED_GATES=(
+  "Invariance Suite Gate"
   "RULE NLR" "RULE NLG" "Legacy-Design Consult Guard"
   "Schema Table Removal Guard" "File & Function Length Gate"
   "Milestone-ID Gate" "Architecture Consult & Update Gate"
@@ -169,6 +170,7 @@ fi
 #    three required structural markers (Triggers, Override, body content).
 # ---------------------------------------------------------------------------
 GATE_FILES=(
+  "docs/gates/invariance-suite.md"
   "docs/gates/nlr.md"
   "docs/gates/nlg.md"
   "docs/gates/legacy-design.md"
@@ -216,7 +218,7 @@ fi
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
-LIMIT=${AGENTS_MD_SIZE_LIMIT:-25600}
+LIMIT=${AGENTS_MD_SIZE_LIMIT:-27648}  # 27 KB — accommodates 13-gate index incl. meta-gate
 if [[ $SIZE -le $LIMIT ]]; then
   pass "size $SIZE bytes (limit $LIMIT)"
 else

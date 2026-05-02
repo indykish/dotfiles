@@ -79,6 +79,13 @@ Guards fire pre-hoc regardless of lifecycle phase. Override: `<GATE>: SKIPPED pe
 
 **Gate index — bodies live under `docs/gates/<slug>.md`. Triggers, override syntax, and a one-line summary stay here so an agent can fire the gate without loading the body. Read the body when the gate fires.**
 
+### Invariance Suite Gate (meta-gate)
+
+**Triggers:** any Edit/Write **the agent itself performs in this session** to `AGENTS.md`, `AGENTS_INVARIANCE.md`, any file under `docs/gates/`, `scripts/audit-agents-md.sh`, or `scripts/fixtures/*.diff`.
+**Override:** none from the agent side. User-only push bypass: `SKIP_INVARIANCE_PUSH=1 git push ...` with reason in the most recent commit message.
+**Required action (in-session, BEFORE declaring complete):** (1) run `bash scripts/audit-agents-md.sh` — STOP on fail; (2) read `AGENTS_INVARIANCE.md` and answer every question vs current contract; (3) emit the tabulated report; (4) after `git commit`, write `.agents-invariance-signoff` (`<short-sha>  <UTC-ts>  PASS`); (5) surface result to the user. Print `🛡️ INVARIANCE SUITE GATE` block before declaring done.
+**Body:** `docs/gates/invariance-suite.md`.
+
 **Legacy-workaround family (cross-reference).** Four rules together prohibit and clean up legacy workarounds: **RULE NDC** (no dead code at write time, lives in `docs/greptile-learnings/RULES.md`), **RULE NLR** (touch-it-fix-it cleanup), **RULE NLG** (no new legacy framing while `cat VERSION` < `2.0.0`), and **Legacy-Design Consult Guard** (mandatory user consult before patching/keeping/testing a legacy path). Net effect: workarounds are prohibited at authoring time, cleaned on touch, and never silently retained — even past v2.0.0, the Consult Guard requires explicit user A/B/C decision.
 
 ### RULE NLR — No legacy retained (touch-it-fix-it)
