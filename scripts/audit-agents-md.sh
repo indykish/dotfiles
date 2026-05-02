@@ -49,7 +49,7 @@ fi
 fail() { printf '%s🔴 FAIL%s: %s\n' "$C_RED" "$C_RESET" "$*" >&2; FAIL=1; SEEN_LABELS+=("$*"); }
 pass() { printf '%s🟢 PASS%s: %s\n' "$C_GREEN" "$C_RESET" "$*";       SEEN_LABELS+=("$*"); }
 warn() { printf '%s🟡 WARN%s: %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2; }
-info() { printf '%sℹ️  %s%s\n' "$C_BLUE" "$*" "$C_RESET"; }
+info() { printf '%s💡 %s%s\n' "$C_BLUE" "$*" "$C_RESET"; }
 
 info "Auditing $AGENTS"
 

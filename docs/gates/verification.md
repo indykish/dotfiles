@@ -68,4 +68,4 @@ A skipped target MUST be surfaced — never dressed up as "tests pass".
 | 🧪 | Lint / unit / integration test |
 | 🔌 | Integration test (cross-process) |
 | 🏗️ | Cross-compile target |
-| ℹ️ | Informational note (does not affect verdict) |
+| 💡 | Informational note (does not affect verdict) |
