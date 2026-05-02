@@ -1,0 +1,16 @@
+diff --git a/src/example.zig b/src/example.zig
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/example.zig
+@@ -0,0 +1,3 @@
++// M40_001 example
++pub const example_name = "M40_001 sample";
++pub fn run() void {}
+diff --git a/ui/packages/app/page.tsx b/ui/packages/app/page.tsx
+new file mode 100644
+index 0000000..2222222
+--- /dev/null
++++ b/ui/packages/app/page.tsx
+@@ -0,0 +1,1 @@
++export default () => <button>raw</button>;
