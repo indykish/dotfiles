@@ -411,9 +411,10 @@ public/openapi/
 
 1. Edit the relevant YAML under `public/openapi/paths/<tag>.yaml`.
 2. Add / rename / remove the corresponding `match()` arm in `src/http/router.zig`.
-3. Update `src/http/route_manifest.zig` (the (method, path) surface the sync gate asserts).
-4. Run `make openapi` — bundles YAML → JSON, runs Redocly lint, runs `check_openapi_errors.py`, asserts router ↔ openapi.json parity. One target, one gate.
-5. Commit YAML + bundled JSON + `router.zig` + `route_manifest.zig` together. Splitting these across commits leaves CI red.
+3. Run `make openapi` — bundles YAML → JSON, runs Redocly lint, runs `check_openapi_errors.py`, runs `check_openapi_url_shape.py` (REST §1).
+4. Commit YAML + bundled JSON + `router.zig` together. Splitting these across commits leaves CI red.
+
+**Router ↔ openapi.json parity is reviewer-enforced.** There is no mechanical gate cross-checking that every `router.match()` arm has a documented openapi path or vice versa. When you add, rename, or remove a route, both surfaces must move in the same diff and the reviewer must verify it. The previous Python parity gate (`scripts/check_openapi_sync.py`) and its data file (`src/http/route_manifest.zig`) were retired in M61_002.
 
 **Agent-edit recipe:** see `public/openapi/AGENTS.md` for copy-paste-ready rename / append / remove / update-description workflows.
 
@@ -421,7 +422,7 @@ public/openapi/
 
 ## §7 — Registering a route
 
-Five places, in order. Skip any one and the build or sync gate fails — these are the failure modes per omission, so you know which gate caught what:
+Five places, in order. Steps 1–4 fail loudly at build/runtime; step 5 is reviewer-enforced — see §6 for the parity rule.
 
 | Skipped step | Failure mode |
 |---|---|
@@ -429,7 +430,7 @@ Five places, in order. Skip any one and the build or sync gate fails — these a
 | 2 (`match()` arm) | Runtime — your URL returns 404 even though the rest is wired; no compile error. |
 | 3 (`route_table.zig::specFor()`) | Compile error — exhaustive switch on `Route` enum is missing your arm. |
 | 4 (`route_table_invoke.zig` shim) | Compile error — `specFor` references `invoke.invokeMyEndpoint` which doesn't exist. |
-| 5 (OpenAPI YAML) | `make openapi` parity check fails — router has a route the OpenAPI bundle doesn't expose. |
+| 5 (OpenAPI YAML) | **No automated check.** Router ↔ openapi.json parity is reviewer-enforced (§6). Reviewer must confirm both surfaces moved in the same diff. |
 
 If you only see #2's silent-404 failure mode, you've forgotten the matcher even though the route compiles. Test the URL after wiring.
 
