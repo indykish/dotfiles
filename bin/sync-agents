@@ -140,19 +140,61 @@ make_link() {
 }
 
 # ---------------------------------------------------------------------------
-# Pass 1: project repos.
+# Helper: expand a project target into the set of paths to link into.
+#   Includes the target itself + every linked git worktree of the same
+#   repo. Worktrees are common in our flow (one per active milestone);
+#   without this, in-progress branches miss new dotfiles symlinks until
+#   the PR merges.
+#   Skips bare/missing/locked worktrees and silently degrades when the
+#   target isn't a git repo (treats it as a single path).
+# ---------------------------------------------------------------------------
+expand_worktrees() {
+  local repo="$1"
+  if [[ ! -d "$repo/.git" && ! -f "$repo/.git" ]]; then
+    printf '%s\n' "$repo"
+    return
+  fi
+  local listed
+  listed=$(git -C "$repo" worktree list --porcelain 2>/dev/null) || {
+    printf '%s\n' "$repo"
+    return
+  }
+  awk '
+    /^worktree / { wt=$2; bare=0; locked=0; next }
+    /^bare/ { bare=1; next }
+    /^locked/ { locked=1; next }
+    /^$/ {
+      if (wt && !bare && !locked) print wt
+      wt=""; bare=0; locked=0
+    }
+    END {
+      if (wt && !bare && !locked) print wt
+    }
+  ' <<<"$listed"
+}
+
+# ---------------------------------------------------------------------------
+# Pass 1: project repos (expanded across worktrees).
 # ---------------------------------------------------------------------------
 for repo in "${KISHORES_TARGETS[@]}"; do
   if [[ ! -d "$repo" ]]; then
     warn "skip target — not a directory: $repo"
     continue
   fi
-  info "→ $repo"
-  for link in "${PROJECT_LINKS[@]}"; do
-    src="${link%%:*}"
-    dst="${link#*:}"
-    make_link "$DOTFILES/$src" "$repo/$dst" "$dst"
-  done
+  while IFS= read -r wt; do
+    [[ -z "$wt" ]] && continue
+    [[ ! -d "$wt" ]] && { warn "skip worktree — not a directory: $wt"; continue; }
+    if [[ "$wt" = "$repo" ]]; then
+      info "→ $wt"
+    else
+      info "→ $wt (worktree of $repo)"
+    fi
+    for link in "${PROJECT_LINKS[@]}"; do
+      src="${link%%:*}"
+      dst="${link#*:}"
+      make_link "$DOTFILES/$src" "$wt/$dst" "$dst"
+    done
+  done < <(expand_worktrees "$repo")
 done
 
 # ---------------------------------------------------------------------------
