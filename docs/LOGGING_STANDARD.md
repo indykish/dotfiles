@@ -277,6 +277,19 @@ LOGGING RULE §<N>: SKIPPED per user override (reason: ...)
 
 immediately preceding the edit. Generic "scope creep" is not a valid reason — name a concrete external constraint (third-party library log shape, vendored code, pre-launch debugging that won't ship). Auto-mode does NOT cover this override.
 
+## §12A · Carve-out: `src/auth/**`
+
+`src/auth/**` is a **portability island** per `M18_002 §1.3` — `make test-auth` compiles auth/ in isolation, importing nothing outside src/auth/ + a small set of named modules (httpz, hmac_sig). `obs.scoped` lives in `src/observability/logging.zig`, which is outside the portability boundary.
+
+**Effect:** auth/ files keep `std.log.scoped(.tag)` — the legacy API. `audit-logging.sh` skips `src/auth/**` from the std-log INFO finding.
+
+**Wire format is unchanged.** The custom `logFn` in `main.zig` still wraps every emit with `ts_ms / level / scope` keys; auth/ records are still parseable logfmt + colorable in pretty mode. The carve-out is at the source-call API only, not the wire format.
+
+**Lifting the carve-out** is a future workstream:
+- (a) Promote `logging.zig` to a Zig "named module" (like `hmac_sig`) so any file can import it without violating layer rules.
+- (b) Add a small portable shim under `src/auth/log.zig` that re-exposes `obs.scoped`-style API but uses only std.
+- Either approach is straightforward; neither blocks current work.
+
 ## §13 · Family
 
 - `BUN_RULES.md` §10 — banned `console.log` in TS/JS source. Cross-referenced by `audit-logging.sh`.
