@@ -4,7 +4,7 @@
 
 **Triggers** — every `Edit`/`Write` that adds, removes, or changes a log emit:
 
-- `*.zig` outside `vendor/`/`third_party/`/`.zig-cache/`/`*_test.zig` — `std.log.*`, `std.debug.print`, raw stderr writes, calls into `src/observability/logging.zig`.
+- `*.zig` outside `vendor/`/`third_party/`/`.zig-cache/`/`*_test.zig` — `std.log.*`, `std.debug.print`, raw stderr writes, calls into the `log` named module (source: `src/logging/mod.zig`).
 - `*.ts`/`*.tsx`/`*.js`/`*.jsx` outside `vendor/`/`node_modules/`/`*.test.*`/`*.spec.*` — `console.*`, custom logger calls.
 - `*.sh` outside generated dirs — `echo`/`printf` to `&2`.
 
@@ -18,12 +18,12 @@
 
 | Pattern | Rule |
 |---|---|
-| New `obs.scoped(.tag)` call | Scope must exist in `obs.Scope` enum; `event` must be snake_case `verb_noun` and exist in `obs.Event` enum. |
+| New `logging.scoped(.tag)` call | Scope is a Zig enum literal — adding a new tag is freeform. `event` must be snake_case `verb_noun`. |
 | New `err`/`warn` log mapping to a domain failure | `error_code=UZ-XXX-NNN` field required. Registry entry must land in same commit. |
 | Per-iteration / hot-loop log | Use `debug` (hidden by default), not `info`. |
 | `info` level | Event must appear in the `info` allow-list (see `LOGGING_STANDARD.md` §10A.L4). Otherwise downgrade to `debug` or justify. |
 | `console.log`/`std.debug.print` in non-test source | Forbidden. Convert to logger or delete before commit. |
-| `std.log.scoped` outside `src/observability/` | Forbidden. Only `obs.scoped` is callable from non-observability source. |
+| `std.log.scoped` outside `src/logging/` | Migration target. The `log` named module's `scoped` API is the only non-test entry point; flip the file's alias and migrate every call site in the same commit. |
 | `msg=` field | ≤ 300 chars. Stack traces emit as separate `event=stack_trace` debug record. |
 | Multi-line values | Newlines must be `\n` literal (two chars), not raw newline byte. |
 

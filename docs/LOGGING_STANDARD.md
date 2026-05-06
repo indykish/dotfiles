@@ -22,11 +22,11 @@ The **LOGGING GATE** (`docs/gates/logging.md`) sits on top of this file — it f
 
 ## §2 · Today's de-facto standard (survey-derived)
 
-Documented honestly, not aspirationally. As of this milestone:
+Documented honestly, not aspirationally. Pre-M62 baseline (the fix-pass converges every existing emit toward §3 onward):
 
-- Zig calls are mostly `std.log.scoped(.tag).info(comptime fmt, args)` with positional `{s} {d}` placeholders. Severity choice is inconsistent: successful happy-path events sometimes log at `info`, sometimes are silent.
+- Zig calls are mostly `std.log.scoped(.tag).info(comptime fmt, args)` with positional `{s} {d}` placeholders. Severity choice is inconsistent: successful happy-path events sometimes log at `info`, sometimes are silent. Per-call migration to the structured `log.<level>("event", .{ .field = val })` form is in flight.
 - A small number of Zig sites use `std.debug.print` directly — bypasses the scope/level system entirely. Always a violation.
-- `src/observability/logging.zig` provides `logErr`, `logErrWithHint`, `logWarnErr` helpers — closest thing to a standard, not universally adopted.
+- The named module `log` (source: `src/logging/mod.zig`) exposes `scoped(.tag)` returning a logger struct with `.err` / `.warn` / `.info` / `.debug` methods. M62 removed the older free-function helpers (`logErr` / `logErrWithHint` / `logWarnErr`) — there is no compat shim.
 - TypeScript (`zombiectl/src/**`) calls `console.log`/`console.error` directly. No structure. No scope. No severity beyond err vs out.
 - Error-code embedding (`UZ-XXX-NNN`) appears on some `err` lines but not others. The registry (`src/errors/error_registry.zig`) is the source of truth, but enforcement is voluntary.
 - No collector-friendly format. Logs are a mix of free-form English and ad-hoc `key={value}` fragments.
@@ -95,7 +95,7 @@ Every `err` and `warn` record that maps to a domain error MUST carry `error_code
 - **Used-but-undeclared** (`UZ-FAKE-999` appearing in code, no entry in registry): **blocking** in `make lint`.
 - **Declared-but-unreferenced** (registry has `UZ-LEGACY-007`, no code references it): **informational**. Deletion may be deferred to a sweep milestone.
 
-Error helpers in `src/observability/logging.zig` accept a `code: []const u8` parameter and bake it into the emit. CLI (`zombiectl`) renders the code in human format and as `code: "UZ-XXX-NNN"` in `--json` output (see §8).
+Embed the code as a struct field on the logger call: `log.err("event_name", .{ .error_code = error_codes.ERR_X, .err = @errorName(err) })`. The encoding helpers in `src/logging/mod.zig` serialize it as `error_code=UZ-XXX-NNN` per §3. CLI (`zombiectl`) renders the code in human format and as `code: "UZ-XXX-NNN"` in `--json` output (see §8).
 
 System-level failures with no domain meaning (e.g. raw `EACCES` from a syscall before we attribute it to a tenant operation) emit without `error_code`. The follow-up rule: if a syscall failure surfaces to a user, it gets attributed to a registry code at the boundary.
 
@@ -112,18 +112,18 @@ When in doubt, omit. A missing field is recoverable; a leaked secret is not.
 
 ## §7 · Per-language binding — Zig
 
-The wire format above is produced by helpers in `src/observability/logging.zig`. Call sites use:
+The wire format above is produced by helpers in `src/logging/mod.zig`, exposed as the named module `log` so any layer-isolated tree (auth/, executor/) can import it without violating layer rules. Call sites use:
 
 ```zig
-const obs = @import("observability/logging.zig");
-const log = obs.scoped(.executor);  // compile-time tag; .executor must exist in obs.Scope enum
+const logging = @import("log");                  // named module, see build.zig
+const log = logging.scoped(.executor);            // compile-time enum-literal tag
 
-log.info(.tool_call_started, .{
+log.info("tool_call_started", .{
     .correlation_id = req.id,
     .tool = "bash",
 });
 
-log.warn(.tool_call_failed, .{
+log.warn("tool_call_failed", .{
     .error_code = "UZ-EXEC-012",
     .tool = "bash",
     .duration_ms = elapsed,
@@ -133,9 +133,10 @@ log.warn(.tool_call_failed, .{
 
 **Mechanics:**
 
-- `obs.scoped(.tag)` returns a logger bound to that compile-time scope. The `.tag` is an enum literal in `obs.Scope` — adding a new scope edits the enum, which forces every consumer to recompile and the audit script to update.
-- The logger struct exposes `.err`, `.warn`, `.info`, `.debug`, `.trace` methods. Each takes an `event` literal (snake_case `verb_noun`, also constrained to an `obs.Event` enum to prevent free-form drift) and an anonymous-struct of fields.
+- `logging.scoped(.tag)` returns a type bound to that compile-time scope (the `.tag` is an enum literal). The returned type exposes `.err`, `.warn`, `.info`, `.debug` methods.
+- Each method takes a comptime `event: []const u8` (snake_case `verb_noun`) and an anonymous-struct of fields.
 - Field encoding to logfmt happens in the helper, not at the call site. Call sites never assemble strings.
+- Optional fields with null payload are omitted (no `key=null` / `key=`) per §3.
 
 **Compile-time visibility short-circuit** — pattern adapted from Bun's `Output.scoped` (`bun:src/output.zig:869`). Hidden scopes compile to **zero instructions**:
 
@@ -161,10 +162,10 @@ The `comptime if ... return` makes the entire emit path disappear when the scope
 
 | Pattern | Why banned | Fix |
 |---|---|---|
-| `std.log.info("..."` outside `obs.scoped(.tag)` | Bypasses scope/event/field discipline. | Convert to `obs.scoped(.tag).info(.event, .{...})`. |
+| `std.log.info("..."` outside `logging.scoped(.tag)` | Bypasses scope/event/field discipline. | Convert to `logging.scoped(.tag).info("event", .{...})`. |
 | `std.debug.print(` in non-test source | No level, no scope, no field structure. Dev-only debugging that escaped to main. | Convert or delete before commit. |
 | `std.log.err` without `error_code=` field | Drops registry traceability. | Add the registry code, or add a registry entry if missing. |
-| `std.log.scoped(...)` without an `.event` field | Free-form prose, not greppable. | Add a `verb_noun` event tag. |
+| `std.log.scoped(...)` outside `src/logging/` | Free-form printf-style emit. | Switch the file's alias to `const log = logging.scoped(.tag);` and migrate every call site to the event+fields form. |
 | Positional `{s} {d}` placeholders | Not logfmt; not greppable. | Convert to struct-of-fields. |
 
 ## §8 · Per-language binding — TypeScript / JavaScript (`zombiectl`)
@@ -276,19 +277,6 @@ LOGGING RULE §<N>: SKIPPED per user override (reason: ...)
 ```
 
 immediately preceding the edit. Generic "scope creep" is not a valid reason — name a concrete external constraint (third-party library log shape, vendored code, pre-launch debugging that won't ship). Auto-mode does NOT cover this override.
-
-## §12A · Carve-out: `src/auth/**`
-
-`src/auth/**` is a **portability island** per `M18_002 §1.3` — `make test-auth` compiles auth/ in isolation, importing nothing outside src/auth/ + a small set of named modules (httpz, hmac_sig). `obs.scoped` lives in `src/observability/logging.zig`, which is outside the portability boundary.
-
-**Effect:** auth/ files keep `std.log.scoped(.tag)` — the legacy API. `audit-logging.sh` skips `src/auth/**` from the std-log INFO finding.
-
-**Wire format is unchanged.** The custom `logFn` in `main.zig` still wraps every emit with `ts_ms / level / scope` keys; auth/ records are still parseable logfmt + colorable in pretty mode. The carve-out is at the source-call API only, not the wire format.
-
-**Lifting the carve-out** is a future workstream:
-- (a) Promote `logging.zig` to a Zig "named module" (like `hmac_sig`) so any file can import it without violating layer rules.
-- (b) Add a small portable shim under `src/auth/log.zig` that re-exposes `obs.scoped`-style API but uses only std.
-- Either approach is straightforward; neither blocks current work.
 
 ## §13 · Family
 
