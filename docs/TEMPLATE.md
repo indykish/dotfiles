@@ -90,6 +90,7 @@ Priority + categories live in frontmatter (or in the spec header), not in the fi
 - `PENDING` — not started, awaiting work
 - `IN_PROGRESS` — currently being worked on
 - `DONE` or `✅` — complete, verified, tested
+- `DEFERRED` — implementation attempted (or designed) and explicitly not shipped; spec lives in `done/` as a record. The Discovery section MUST capture the rationale and the reactivation conditions that would warrant revisiting the spec.
 
 ---
 
