@@ -69,6 +69,17 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.9 (Shell) | Must `gitleaks` pass before any commit/push? | YES |
 | 4.10 (CI) | Are CI/CD edits (`.github/workflows/**`, deploy configs) **forbidden without explicit user approval** even in auto mode? | YES |
 | 4.11 (Bun) | For `*.ts`/`*.tsx`/`*.js`/`*.jsx` edits, does AGENTS.md require reading `docs/BUN_RULES.md` (TS FILE SHAPE DECISION at PLAN, const/import/Bun-primitive discipline)? | YES |
+| 4.12 (Logging) | For every Edit/Write that adds/removes/changes a log emit (Zig `std.log.*`/`std.debug.print`/`obs.scoped`, TS/JS `console.*`/custom logger, shell `echo` to `&2`), does LOGGING GATE require reading `docs/LOGGING_STANDARD.md` and printing the per-edit gate block citing §3 (wire format) / §4 (severity) / §5 (error codes) / §6 (PII) / §10A (tightenings)? | YES |
+| 4.13 (Logging) | Is `std.debug.print` in non-test source AND `console.log` in `zombiectl/src/**` an automatic blocking violation, with no "temporary" carve-out? | YES |
+| 4.14 (Logging) | Must a new `error_code=UZ-XXX-NNN` reference land in the same commit as its registry entry in `src/errors/error_registry.zig` (used-but-undeclared = blocking)? | YES |
+| 4.15 (Lifecycle) | For every Edit/Write that adds/reshapes a lifecycle method in `*.zig` (`pub fn init|deinit|close|release|destroy|shutdown|dispose|free`) or an `errdefer`/`defer` adjacent to allocation, does LIFECYCLE GATE require reading `docs/LIFECYCLE_PATTERNS.md` and printing the per-edit gate block? | YES |
+| 4.16 (Lifecycle) | Is `defer X.free(Y)` + `errdefer X.free(Y)` on the same allocation in the same scope a blocking violation? | YES |
+| 4.17 (Lifecycle) | Must the LAST `errdefer` in init lexically precede the LAST allocation it protects (no batched-at-bottom errdefer)? | YES |
+| 4.18 (Spec template) | For every Edit/Write to a spec under `docs/v*/{pending,active,done}/` or to `docs/TEMPLATE.md`, does SPEC TEMPLATE GATE forbid time/effort estimates, complexity ratings, percentage-complete fields, owners, and dates (per `TEMPLATE.md` "Prohibited" section)? | YES |
+| 4.19 (Spec template) | Does `audit-spec-template.sh` run as part of `make lint` and block on prohibited-section regex matches? | YES |
+| 4.20 (Doc read) | For every Edit/Write whose file pattern matches a row in the EXECUTE doc-reads table, does DOC READ GATE require a `📖 DOC READ: <path>` proof-line — either citing §N applied OR the cited-skip variant — before the edit? | YES |
+| 4.21 (Doc read) | Is the `📖 DOC READ:` proof-line required **per-edit** (not once per session, not once per file across multiple edits)? | YES |
+| 4.22 (Doc read) | Are auto-mode and "I read this earlier in the session" both invalid grounds to skip the proof-line? | YES |
 
 ### Scenario 5 — Picking up a handover
 

@@ -107,6 +107,17 @@ Use **Priority** (P0/P1/P2) and **Dependencies** for sequencing.
 
 # Spec Body — Copy Everything Below This Line
 
+<!--
+SPEC AUTHORING RULES (load-bearing — do not delete):
+- No time/effort/hour/day estimates anywhere in this spec.
+- No effort columns, complexity ratings, percentage-complete, implementation dates.
+- No assigned owners — use git history and handoff notes.
+- Priority (P0/P1/P2) is the only sizing signal. Use Dependencies for sequencing.
+- If a section below contradicts these rules, the rule wins — delete the section.
+- Enforced by SPEC TEMPLATE GATE (`docs/gates/spec-template.md`) and `scripts/audit-spec-template.sh`.
+- See docs/TEMPLATE.md "Prohibited" section above for canonical list.
+-->
+
 # M{Milestone}_{Workstream}: {Title — must be testable, not vague}
 
 **Prototype:** v{major}.{minor}.{patch}

@@ -35,6 +35,8 @@ PROJECT_LINKS=(
   "docs/ZIG_RULES.md:docs/ZIG_RULES.md"
   "docs/ZIG_STATIC_OPENSSL.md:docs/ZIG_STATIC_OPENSSL.md"
   "docs/BUN_RULES.md:docs/BUN_RULES.md"
+  "docs/LOGGING_STANDARD.md:docs/LOGGING_STANDARD.md"
+  "docs/LIFECYCLE_PATTERNS.md:docs/LIFECYCLE_PATTERNS.md"
   "docs/greptile-learnings:docs/greptile-learnings"
   "docs/gates:docs/gates"
 )

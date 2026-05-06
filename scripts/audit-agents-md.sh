@@ -151,6 +151,8 @@ DOTFILES_RESIDENT=(
   "docs/REST_API_DESIGN_GUIDELINES.md"
   "docs/ZIG_RULES.md"
   "docs/BUN_RULES.md"
+  "docs/LOGGING_STANDARD.md"
+  "docs/LIFECYCLE_PATTERNS.md"
   "docs/greptile-learnings/RULES.md"
 )
 broken_refs=0
@@ -352,7 +354,7 @@ fi
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
-LIMIT=${AGENTS_MD_SIZE_LIMIT:-27648}  # 27 KB — accommodates 13-gate index incl. meta-gate
+LIMIT=${AGENTS_MD_SIZE_LIMIT:-36864}  # 36 KB — accommodates 18-gate index (13 prior + 5 from M62_001: LOGGING, LIFECYCLE, ERROR REGISTRY, SPEC TEMPLATE, DOC READ)
 if [[ $SIZE -le $LIMIT ]]; then
   pass "size $SIZE bytes (limit $LIMIT)"
 else

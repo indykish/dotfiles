@@ -167,6 +167,36 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 **Override:** `VERIFY GATE: <target> skipped per environment constraint (reason: ...)` — only when target genuinely unrunnable (e.g. no Docker). Call out the limitation in the done-message.
 **Body:** `docs/gates/verification.md` — required runs table (lint, test tiers 1/2/3, memleak, bench, cross-compile, check-pg-drain), memleak evidence rule, bench knobs, done-message format.
 
+### LOGGING GATE
+
+**Triggers:** Edit/Write changing log emits — `*.zig`/`*.ts`/`*.tsx`/`*.js`/`*.jsx`/`*.sh` outside vendor/test/node_modules.
+**Override:** `LOGGING GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover.
+**Body:** `docs/gates/logging.md` — logfmt, severity ladder, error-code embedding, audit `scripts/audit-logging.sh`.
+
+### LIFECYCLE GATE
+
+**Triggers:** `*.zig` Edit/Write (incl. tests) adding/reshaping `pub fn init|deinit|close|release|destroy|shutdown|dispose|free`, `errdefer`/`defer` adjacent to alloc, or struct field holding heap/arena/handle.
+**Override:** `LIFECYCLE GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover. Carve-out: both PUB and LIFECYCLE GATE may fire on `pub fn init` — print both.
+**Body:** `docs/gates/lifecycle.md` — pairing, errdefer placement, allocator ownership, audit `scripts/audit-deinit-pairs.sh`.
+
+### ERROR REGISTRY GATE
+
+**Triggers:** Edit/Write adding/modifying `error_code=UZ-XXX-NNN` in `src/**`/`zombiectl/**`, editing `src/errors/error_registry.zig`, or touching HTTP/executor/CLI error surfaces.
+**Override:** `ERROR REGISTRY GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover. Used-but-undeclared = blocking; declared-but-unreferenced = informational.
+**Body:** `docs/gates/error-registry.md` — code format `UZ-<CATEGORY>-<NNN>`, surface conformance, audit `scripts/audit-error-codes.sh`.
+
+### SPEC TEMPLATE GATE
+
+**Triggers:** Edit/Write to spec under `docs/v*/{pending,active,done}/`, to `docs/TEMPLATE.md`, or `*.md` with spec frontmatter.
+**Override:** `SPEC TEMPLATE GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover. Reasons must cite a concrete external constraint.
+**Body:** `docs/gates/spec-template.md` — TEMPLATE.md "Prohibited" enforcement, audit `scripts/audit-spec-template.sh`.
+
+### DOC READ GATE
+
+**Triggers:** Edit/Write whose path matches an EXECUTE doc-reads table row. Required output: `📖 DOC READ: <path>` proof-line per triggered doc, citing §N applied or skip-with-reason.
+**Override:** `DOC READ: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover.
+**Body:** `docs/gates/doc-read.md` — proof-line format, cited-skip variant, audit `scripts/audit-doc-reads.sh`.
+
 ---
 
 ## Specification Standards
@@ -217,9 +247,14 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 | Spec's "Applicable Rules" | Each rule (canonical). Missing → standard set is floor; surface omission. |
 | `*.zig` | `docs/ZIG_RULES.md`. ZIG GATE per edit. |
 | `*.ts`/`*.tsx`/`*.js`/`*.jsx` | `docs/BUN_RULES.md` — TS FILE SHAPE DECISION (§1) at PLAN, const/import/Bun-primitive discipline, anti-patterns. |
+| Log emit (any language; see LOGGING GATE triggers) | `docs/LOGGING_STANDARD.md` — wire format (logfmt), severity ladder, error-code embedding, scope/event discipline, PII redaction, §10A tightenings. LOGGING GATE per edit. |
+| Lifecycle method in `*.zig` (init/deinit/close/release/destroy/shutdown/dispose/free) | `docs/LIFECYCLE_PATTERNS.md` — init/deinit pairing, errdefer placement, allocator ownership, defer/errdefer mutual exclusion, §10A tightenings. LIFECYCLE GATE per edit. |
 | `src/http/handlers/**` or `public/openapi/**` | `docs/REST_API_DESIGN_GUIDELINES.md` — Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI), §7 (5-place route registration), §8 (`Hx` handler interface), §10 (pre-PR gates). |
 | Auth-flow | `docs/AUTH.md`. |
 | Schema-touching | Re-print Schema Guard output. |
+| Any spec under `docs/v*/{pending,active,done}/` or `docs/TEMPLATE.md` | `docs/TEMPLATE.md` "Prohibited" section — no time/effort estimates, no complexity ratings, no percentage-complete, no owners/dates. SPEC TEMPLATE GATE per edit. |
+
+**DOC READ GATE** (`docs/gates/doc-read.md`) promotes this table from advisory to enforced — every triggered edit requires a `📖 DOC READ:` proof-line citing the §N consulted, OR the cited-skip variant when nothing in the doc applies. Audit script: `scripts/audit-doc-reads.sh`.
 
 Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes need explicit ask (except symlinked-dotfiles).
 
