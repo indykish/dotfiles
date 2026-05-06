@@ -65,6 +65,8 @@ REQUIRED_GATES=(
   "Milestone-ID Gate" "Architecture Consult & Update Gate"
   "ZIG GATE" "Pub Surface & Struct-Shape Gate"
   "UI Component Substitution Gate" "GREPTILE GATE" "Verification Gate"
+  "LOGGING GATE" "LIFECYCLE GATE" "ERROR REGISTRY GATE"
+  "SPEC TEMPLATE GATE" "DOC READ GATE"
 )
 missing_gates=0
 for g in "${REQUIRED_GATES[@]}"; do
@@ -224,6 +226,11 @@ GATE_FILES=(
   "docs/gates/ui-substitution.md"
   "docs/gates/greptile.md"
   "docs/gates/verification.md"
+  "docs/gates/logging.md"
+  "docs/gates/lifecycle.md"
+  "docs/gates/error-registry.md"
+  "docs/gates/spec-template.md"
+  "docs/gates/doc-read.md"
 )
 gate_body_fail=0
 for gf in "${GATE_FILES[@]}"; do
