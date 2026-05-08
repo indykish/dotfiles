@@ -932,3 +932,28 @@ Cite the most-specific source of truth by **file path** in the new doc (in the s
 
 **Tags:** governance, architecture, all
 **Ref:** PR #278 (May 01, 2026). Three review rounds reframed the platform-managed LLM api_key as a magic constant, "loaded at API boot from server config," and "platform vault at platform-scope identifier" before the user pointed at `playbooks/012_usezombie_admin_bootstrap/001_playbook.md` + `schema/006_platform_llm_keys.sql` + `docs/v2/done/M11_006_P1_API_AUTH_BIL_BOOTSTRAP_REMOVAL_AND_BALANCE_GATE.md`. Each prior framing was internally consistent within its own doc but contradicted the locked M11_006 contract (admin user signs up like any user, stores credential in own workspace vault, registers via `PUT /v1/admin/platform-keys`, the `platform_llm_keys` table stores only a pointer). The pattern — skip the playbook + done-spec walk, invent a fresh framing — is fully generalisable across any cross-cutting domain, so the rule is intentionally domain-agnostic.
+
+## RULE NCC — No nested CSS comments (CSS doesn't support them)
+
+**Why:** CSS comments do not nest. The first `*/` closes any opening `/*`, leaving the rest as broken syntax. Tailwind v4's parser surfaces this as `Internal server error: Missing opening (` at the *next* unbalanced paren — a confusing failure mode hundreds of lines from the actual broken comment. Vitest never sees it (jsdom doesn't run Tailwind). It surfaces only at Vite dev-server / build time, blocking any computed-style E2E lane.
+
+**How to apply:**
+- Treat `/*` and `*/` as a flat scope: do not embed `/*` or `*/` inside another `/*…*/` block, even inside string-like example fragments (`/* e.g. /* */ */`).
+- If you need to mention "comment markers" in prose, write them with backticks in surrounding markdown (this RULES file is `.md`, not CSS) or escape them with words: `slash-star`, `star-slash`.
+- **Cite as `RULE NCC`** when flagging.
+
+**Tags:** css, tailwind-v4, build-error, dev-server
+**Ref:** PR #308 (May 08, 2026). `tokens.css` carried a comment of the form `/* Type scale (px in /* */ comments). … */` while documenting the type scale. Tailwind v4 parser threw `Missing opening (`; 8 cascading Playwright failures in `make qa-smoke`. Greptile's review caught the symptom (P1 `bg-bg`); chasing the make-qa-smoke output is what surfaced the parse error. Fix: flatten the comment.
+
+## RULE TWS — Tailwind v4 `@theme inline` forwards must be explicit references, not self-loops
+
+**Why:** Writing `@theme inline { --spacing-xs: var(--spacing-xs); }` where the same name `--spacing-xs` is also declared in `:root` works *today* because Tailwind v4 emits `@theme` entries inside `@layer theme`, which has lower cascade priority than the unlayered `:root` block — the unlayered value "wins" and no circular reference occurs. But this is an implementation detail of Tailwind v4's layer ordering. Any future change that flattens the theme layer or processes those properties before the `:root` cascade silently produces invalid values. The collision-free pattern is to give Layer 0 source tokens a non-Tailwind namespace and forward via `@theme inline` to the canonical Tailwind name.
+
+**How to apply:**
+- Layer 0 source tokens use a project-specific prefix that does NOT collide with Tailwind theme namespaces: e.g., `--ff-{sans,mono}` (font families), `--sp-{xs..6xl}` (spacing), `--easing-snap` (easing), `--r-{sm,md,lg}` (radius). The colour bridge already used `--pulse` / `--text` / `--surface-1` etc. — extend the same discipline to every other Tailwind theme axis.
+- `theme.css` `@theme inline` forwards Tailwind-canonical names (`--font-sans`, `--spacing-xs`, `--ease-snap`, `--radius-md`, `--color-pulse`) to the Layer 0 source via `var()`: `--font-sans: var(--ff-sans);`, `--spacing-xs: var(--sp-xs);`, etc.
+- Adding a new theme axis is a same-diff edit in BOTH files: name in tokens.css with the project prefix, forward in theme.css with the Tailwind-canonical name.
+- **Cite as `RULE TWS`** when flagging.
+
+**Tags:** css, tailwind-v4, design-system, layering, design-tokens
+**Ref:** PR #308 (May 08, 2026), greptile P2. The W1 token rewrite shipped 12 self-referencing forwards (`--font-sans`, `--font-mono`, 10× `--spacing-*`, `--ease-snap`). Greptile flagged the latent risk: works today via cascade-priority luck, breaks silently on a future Tailwind layer change. Fix: rename Layer 0 sources to `--ff-*` / `--sp-*` / `--easing-*` and update the forwards in theme.css.
