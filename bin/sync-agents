@@ -53,8 +53,6 @@ _KISHORES_TARGETS_ENV="${KISHORES_TARGETS:-}"
 KISHORES_TARGETS=(
   "$HOME/Projects/usezombie"
   "$HOME/Projects/cache-kit.rs"
-  "$HOME/Projects/www.megam.io"
-  "$HOME/Projects/docs.megam.io"
 )
 if [[ -n "$_KISHORES_TARGETS_ENV" ]]; then
   read -ra KISHORES_TARGETS <<< "$_KISHORES_TARGETS_ENV"
