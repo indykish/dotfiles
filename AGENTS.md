@@ -168,6 +168,12 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 **Override:** `UI GATE: SKIPPED per user override (reason: ...)`.
 **Body:** `docs/gates/ui-substitution.md` — primitive list, output format, end-of-turn audit.
 
+### UFS GATE
+
+**Triggers:** every Edit/Write to source under `src/`, `ui/packages/*/`, `zombiectl/` matching `*.zig`/`*.ts`/`*.tsx`/`*.js`/`*.jsx`. Excludes `vendor/`, `third_party/`, `.zig-cache/`, `node_modules/`. Three discipline points: repeat string literals → named const; semantic numeric literals (conversion factors, thresholds, sub-cent rates, time/byte units) → named const; cross-runtime constants share their identifier verbatim across Zig/TS/JS — no per-constant carve-out. Pin tests keep their literals only when the literal IS the contract (`// pin test: literal is the contract` comment required).
+**Override:** `UFS GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover.
+**Body:** `docs/gates/ufs.md` — pre-edit checks, output format, audit `scripts/audit-ufs.sh` (generic detection: string-dup-file, numeric-suspect powers-of-ten/unit-factors, cross-runtime-orphan).
+
 ### GREPTILE GATE
 
 **Triggers:** (1) per-iteration when diff languages change (new layer/language enters the diff); (2) end-of-turn before claiming complete. Read `docs/greptile-learnings/RULES.md` for any rule code referenced.
@@ -293,6 +299,7 @@ Runs after EXECUTE, before VERIFY. Aggregates every gate verdict; lifecycle cann
 | MILESTONE-ID GATE    | ✅ pass — combined audit, 0 hits |
 | ZIG GATE             | ✅ pass | ⚪ n/a               |
 | UI GATE              | ✅ pass | ⚪ n/a               |
+| UFS GATE             | ✅ pass | 🟡 N violations addressed | 🔴 N unresolved |
 | SCHEMA GUARD         | ✅ pass | ⚪ n/a               |
 | GREPTILE GATE        | ✅ pass | 🟡 N violations addressed |
 | Architecture consult | ✅ doc updated same commit | ⚪ n/a |

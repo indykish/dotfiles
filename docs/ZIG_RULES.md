@@ -336,6 +336,15 @@ Extends "Type Design Rules". Two patterns, both legitimate; pick deliberately an
 
 - snake_case throughout: file names, fields, functions, locals, constants. usezombie has no JS-interop boundary — there is no carve-out for camelCase fields. (Bun mixes the two for JS-mapped fields; we do not.)
 
+## RULE UFS — Named constants for repeated and semantic literals
+
+Mirrors the BUN_RULES §2 clause; both runtimes follow the same rule.
+
+- **String literals used in ≥2 sites become a named const or an enum.** Wire-format values (mode strings, charge types, posture labels) MUST live in an enum (`pub const Mode = enum { platform, self_managed }`) or a `pub const X: []const u8 = "…";` and be referenced by name everywhere else — including test fixtures and `std.mem.eql` arguments at parse boundaries.
+- **Numeric literals carrying semantic meaning become a named const** even at the first use site. Conversion factors (`NANOS_PER_USD`, `NANOS_PER_SECOND`, `BYTES_PER_MIB`), thresholds (`LOW_BALANCE_THRESHOLD_NANOS`, `MAX_RETRY_COUNT`), sub-cent rates, and time scaling factors all need names. `1_000_000_000` in a `wall_seconds * 1_000_000_000` expression is a smell — `wall_seconds * NANOS_PER_SECOND` is the rule. Carve-out: **pin tests** where the literal IS the contract keep the literal with a `// pin test: literal is the contract` comment.
+- **Cross-runtime constants are named identically.** `NANOS_PER_USD` in Zig matches `NANOS_PER_USD` in TS and `NANOS_PER_USD` in JS — never `NANOS_PER_DOLLAR` in one and `NANOS_PER_USD` in another. When a constant exists in a sibling runtime, the Zig version reuses the name verbatim (snake_case → SCREAMING_SNAKE is fine; semantic name stays identical).
+- **HARNESS VERIFY self-audit.** Before declaring done, grep the diff for repeated string literals and bare-numeric divisors/multipliers; every hit either becomes a named const, joins an enum, or earns the `// pin test` carve-out comment. Spec dimensions that introduce a new wire-format value, conversion factor, or threshold must define the constant in PLAN, not EXECUTE.
+
 ## Comptime-Gated Assertions
 
 - For runtime invariants that should be free in release builds, use `std.debug.assert(condition)` — debug-on, release-off automatically. Use this for capacity bounds, monotonic counter checks, and "this can't happen unless we have a bug" assertions.

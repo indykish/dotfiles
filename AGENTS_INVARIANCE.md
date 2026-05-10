@@ -65,6 +65,9 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.5 (Zig) | Is cross-compile to `x86_64-linux` AND `aarch64-linux` mandatory before commit? | YES |
 | 4.6 (TS/JS) | Are milestone IDs (`M{N}_{NNN}`, `§X.Y`, `T7`, `dim 5.8.15`) banned in source files (incl. tests)? | YES |
 | 4.7 (TS/JS) | Does RULE UFS require string literals used in ≥2 sites to become a named constant? | YES |
+| 4.7a (TS/JS/Zig) | Does RULE UFS extend to numeric literals carrying semantic meaning (conversion factors, thresholds, sub-cent rates) — required to become a named constant even at the first use site, with a pin-test carve-out? | YES |
+| 4.7b (cross-runtime) | Must cross-runtime constants share an identical SCREAMING_SNAKE name across Zig + TS + JS (e.g. `NANOS_PER_USD` everywhere, never `NANOS_PER_DOLLAR` in one and `NANOS_PER_USD` in another)? | YES |
+| 4.7c (test fixtures) | Are test fixtures, mock returns, and assertion arguments **not** RULE UFS exceptions — i.e. wire-format strings and semantic numerics in test code must use the named constant just like production code does? | YES |
 | 4.8 (Shell) | Are shell scripts subject to the File & Function Length Gate (≤350 / ≤50 / ≤70)? | YES |
 | 4.9 (Shell) | Must `gitleaks` pass before any commit/push? | YES |
 | 4.10 (CI) | Are CI/CD edits (`.github/workflows/**`, deploy configs) **forbidden without explicit user approval** even in auto mode? | YES |

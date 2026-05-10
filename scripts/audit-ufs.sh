@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+# audit-ufs.sh — enforce RULE UFS (Unified Form for Symbols) across the worktree.
+#
+# Gate body: docs/gates/ufs.md
+# Fires in: make lint, HARNESS VERIFY.
+#
+# Generic detection — no manifest of known literals, so the audit scales
+# as the codebase grows. Three classes of violation:
+#
+#   1. string-dup-file   — same string literal ≥2× in one source file
+#   2. numeric-suspect   — power-of-ten or unit-factor numeric not bound
+#                          to a const, not on a pin-test carve-out line
+#   3. cross-runtime-orphan — SCREAMING_SNAKE const defined in one runtime
+#                          but missing from a sibling runtime the diff touches
+#
+# Carve-out: any `// pin test: literal is the contract` comment on or
+# above the offending line excludes that line from numeric-suspect.
+#
+# Modes:
+#   --diff   (default) audit files in `git diff --name-only origin/main`
+#   --all    audit the whole worktree (slower; periodic runs)
+#
+# Exits 0 clean, 1 on any blocking violation.
+
+set -euo pipefail
+
+MODE="${1:---diff}"
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+FAIL=0
+violations=()
+record() { violations+=("$*"); FAIL=1; }
+ok()     { printf "OK:   %s\n" "$*"; }
+
+# ── File scope ──────────────────────────────────────────────────────────────
+
+is_source() {
+  local f="$1"
+  case "$f" in
+    vendor/*|third_party/*|.zig-cache/*|*/node_modules/*|*.tsbuildinfo) return 1 ;;
+    *_test.zig|*.test.ts|*.test.tsx|*.test.js|*.test.jsx|*.unit.test.js|*.spec.ts) ;; # tests in scope
+  esac
+  case "$f" in
+    *.zig|*.ts|*.tsx|*.js|*.jsx) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+case "$MODE" in
+  --diff|diff)
+    BASE="${UFS_BASE:-origin/main}"
+    git fetch --quiet origin main 2>/dev/null || true
+    mapfile -t FILES < <(git diff --name-only "$BASE"...HEAD 2>/dev/null | while read -r f; do
+      [ -f "$f" ] && is_source "$f" && echo "$f"
+    done)
+    ;;
+  --all|all)
+    mapfile -t FILES < <(git ls-files | while read -r f; do
+      is_source "$f" && echo "$f"
+    done)
+    ;;
+  *)
+    printf "usage: %s [--diff | --all]\n" "$0" >&2
+    exit 2
+    ;;
+esac
+
+[ "${#FILES[@]}" -eq 0 ] && { ok "audit-ufs: no source files in scope"; exit 0; }
+
+# ── 1. string-dup-file ──────────────────────────────────────────────────────
+# Extract double-quoted string literals (best-effort regex; ignores escapes
+# inside strings — fine for this discipline check, not a parser). Skip
+# 1-char strings, common short labels, doc-strings, JSON keys.
+
+for f in "${FILES[@]}"; do
+  # Strip line comments first to avoid matching strings in commentary.
+  # Then extract every "..." literal, sort, count, flag any with count ≥2
+  # whose value length ≥2 and isn't a bare punctuation char.
+  awk '
+    # Drop line comments (// ... and # ...) but keep block comments visible
+    # — they would need a multiline strip; the noise is acceptable.
+    { sub(/\/\/.*$/, ""); print }
+  ' "$f" \
+  | grep -oE '"[^"]{2,}"' \
+  | grep -vE '^"(http|https|file|/|\\\\|\\\\n)' \
+  | sort | uniq -c | awk '$1 >= 2 { sub(/^[ \t]+/, ""); print }' \
+  | while IFS= read -r line; do
+      count="${line%% *}"
+      literal="${line#* }"
+      record "string-dup-file $f $literal $count"
+    done
+done
+
+# ── 2. numeric-suspect ──────────────────────────────────────────────────────
+# Flag bare power-of-ten and unit-factor numerics in expressions.
+# Pattern matches: 1_000, 1_000_000, 1_000_000_000, 1e3, 1e6, 1e9,
+# 60, 3600, 86400, 1024, 1048576, 10_000_000, 100_000.
+# A line is a violation if:
+#  - it contains one of those patterns
+#  - the line is NOT a const declaration (`pub const`, `export const`, `const`)
+#  - the line is NOT marked `// pin test: literal is the contract`
+#  - the line above is NOT marked `// pin test: literal is the contract`
+
+NUMERIC_RE='(\b1[_e]?0{3,12}\b|\b1_000(_000)*\b|\b10_000_000\b|\b100_000\b|\b1024\b|\b1048576\b|\b3600\b|\b86400\b)'
+
+for f in "${FILES[@]}"; do
+  # Walk lines with awk; track previous line to allow above-line carve-out.
+  awk -v file="$f" -v re="$NUMERIC_RE" '
+    BEGIN { prev = "" }
+    {
+      line = $0
+      is_pin_now   = (line ~ /pin test: literal is the contract/)
+      is_pin_above = (prev ~ /pin test: literal is the contract/)
+      is_const_decl = (line ~ /(^|[[:space:]])(pub[[:space:]]+const|export[[:space:]]+const|const)[[:space:]]/)
+      stripped = line
+      sub(/\/\/.*$/, "", stripped)
+      sub(/#.*$/, "", stripped)
+      if (!is_pin_now && !is_pin_above && !is_const_decl && match(stripped, re)) {
+        printf "numeric-suspect %s:%d %s\n", file, NR, substr(stripped, RSTART, RLENGTH)
+      }
+      prev = line
+    }
+  ' "$f" | while IFS= read -r row; do
+      record "$row"
+    done
+done
+
+# ── 3. cross-runtime-orphan ─────────────────────────────────────────────────
+# When the diff touches >1 runtime, every SCREAMING_SNAKE const defined in
+# one runtime in the diff should also exist in any sibling runtime *that
+# the diff touches*. We do not enforce parity for runtime-internal consts
+# that only one runtime uses.
+
+if [ "$MODE" = "--diff" ] || [ "$MODE" = "diff" ]; then
+  zig_touched=0; ts_touched=0; js_touched=0
+  for f in "${FILES[@]}"; do
+    case "$f" in
+      *.zig)             zig_touched=1 ;;
+      *.ts|*.tsx)        ts_touched=1 ;;
+      *.js|*.jsx)        js_touched=1 ;;
+    esac
+  done
+
+  cross_count=$((zig_touched + ts_touched + js_touched))
+  if [ "$cross_count" -ge 2 ]; then
+    # Extract `pub const NAME` from Zig diff hunks
+    zig_consts=$(grep -hE '^\+.*pub const [A-Z][A-Z0-9_]+[[:space:]]*[:=]' \
+      <(git diff "$BASE"...HEAD -- '*.zig' 2>/dev/null) 2>/dev/null \
+      | grep -oE '\bpub const [A-Z][A-Z0-9_]+' | awk '{print $3}' | sort -u || true)
+    # Extract `export const NAME` from TS/JS diff hunks
+    js_consts=$(grep -hE '^\+.*export const [A-Z][A-Z0-9_]+[[:space:]]*[:=]' \
+      <(git diff "$BASE"...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null) 2>/dev/null \
+      | grep -oE 'export const [A-Z][A-Z0-9_]+' | awk '{print $3}' | sort -u || true)
+
+    # Cross-check: each Zig const should appear in TS or JS source IF the
+    # diff also touches those runtimes (heuristic: check whole worktree).
+    for c in $zig_consts; do
+      if [ "$ts_touched" -eq 1 ] && ! grep -rqE "\b$c\b" --include='*.ts' --include='*.tsx' .; then
+        record "cross-runtime-orphan $c absent-in-ts"
+      fi
+      if [ "$js_touched" -eq 1 ] && ! grep -rqE "\b$c\b" --include='*.js' --include='*.jsx' .; then
+        record "cross-runtime-orphan $c absent-in-js"
+      fi
+    done
+    for c in $js_consts; do
+      if [ "$zig_touched" -eq 1 ] && ! grep -rqE "\b$c\b" --include='*.zig' .; then
+        record "cross-runtime-orphan $c absent-in-zig"
+      fi
+    done
+  fi
+fi
+
+# ── Report ──────────────────────────────────────────────────────────────────
+
+if [ "$FAIL" -eq 0 ]; then
+  ok "audit-ufs: no violations across ${#FILES[@]} file(s)"
+  exit 0
+fi
+
+printf "🚧 UFS GATE — %d violation(s):\n" "${#violations[@]}" >&2
+for v in "${violations[@]}"; do
+  printf "  %s\n" "$v" >&2
+done
+printf "\nResolve by either (1) extract to a named const + replace all sites,\n" >&2
+printf "(2) add the matching const in the missing sibling runtime same-commit,\n" >&2
+printf "or (3) annotate '// pin test: literal is the contract' on/above the line.\n" >&2
+exit 1
