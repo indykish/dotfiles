@@ -14,6 +14,19 @@ Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
 
 **Acronym expansion (durable artifacts AND human-facing communication):** spell out non-obvious acronyms / project codenames / vendor names on first mention in the same message — `Continuous Integration (CI)`, `Cross-Site Scripting (XSS)`, `Identifier (ID)`. Skip undergrad-CS staples on no expansion: `API`, `URL`, `HTTP`, `JSON`, `SQL`, `DNS`. Reuse the bare acronym after the first expansion. This applies to chat replies, PR descriptions, commit messages, and inline code comments — not just specs.
 
+## Changelog voice (Mintlify-style)
+
+Editing `~/Projects/docs/changelog.mdx` or any other Mintlify `<Update>` block:
+
+- **One headline per entry, no marketing words.** Banned: "seamless", "magical", "powerful", "robust", "we are pleased to", "we're excited to". The change speaks for itself.
+- **Lead paragraph states the change, not the announcement.** A reader has 30 seconds; they should know what changed in the first sentence. ✅ "Pricing collapses to one number per surface." ❌ "Today we're shipping single-rate pricing."
+- **Bullets follow `**Bold lead-noun** — consequence-first clause`.** One bullet, one fact. Three "and"s in a sentence → split it. Code names always in backticks (functions, paths, env vars, routes, error codes, tables).
+- **Internal cleanup / refactor entries get the most aggressive trimming.** One lead paragraph + one bullet list. Skip "Test coverage" sections unless the test count is the headline. Captain's exact direction: *"Keep internal code cleanup, refactor to a minimal."*
+- **Never drop load-bearing facts.** Error codes (`UZ-AUTH-003`), endpoint paths + method + body shape + status code, env var names + defaults, schema column / table names, CLI subcommand + flag names, migration steps, money amounts. Tighten prose, not contract.
+- **Historical entries are archives.** Brevity-pass them; never rewrite the past. A typo correction (e.g. `$0.001` → `$0.01` when it was never true) is allowed and must be called out in the commit message.
+- **Rate constants flow through three pinned files only:** `src/state/tenant_billing.zig`, `ui/packages/website/src/lib/rates.ts`, `~/Projects/docs/snippets/rates.mdx`. Bumping a rate requires a paired Pull Request (PR) across the docs repo — there is no automated guard. In `*.mdx`, use `import { STARTER_CREDIT, EVENT_RATE, STAGE_RATE } from "/snippets/rates.mdx"` instead of hand-typing `$5`.
+- **The Mintlify reference Captain pasted (May 1 / May 8 entries) is canonical voice.** Mirror its rhythm, not its product nouns.
+
 ## Confusion Management
 
 **Pre-task ambiguity** (non-trivial work) → surface assumptions before coding (`ASSUMPTIONS I'M MAKING: 1. … -> Correct me now or I'll proceed.`). Push back with concrete alternatives on clear security/cost/maintainability risk; proceed once user decides.
