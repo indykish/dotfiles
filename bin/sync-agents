@@ -39,6 +39,7 @@ PROJECT_LINKS=(
   "docs/LIFECYCLE_PATTERNS.md:docs/LIFECYCLE_PATTERNS.md"
   "docs/greptile-learnings:docs/greptile-learnings"
   "docs/gates:docs/gates"
+  "scripts/audit-spec-template.sh:scripts/audit-spec-template.sh"
 )
 
 # Project repos. Override per-invocation via:
