@@ -75,7 +75,14 @@ case "$MODE" in
     ;;
   --diff|diff)
     BASE="${BASE:-origin/main}"
-    if ! git rev-parse --verify "$BASE" >/dev/null 2>&1; then BASE="HEAD"; fi
+    # If the base ref can't be resolved (shallow clone, offline, first
+    # push before `origin` exists), abort with an error. The previous
+    # fallback to BASE=HEAD produced `git diff HEAD...HEAD` (empty file
+    # list) and silently reported OK, defeating the gate.
+    if ! git rev-parse --verify "$BASE" >/dev/null 2>&1; then
+      echo "audit-design-tokens: cannot resolve base ref '$BASE' — run with --all or --staged, or set BASE=<ref>" >&2
+      exit 2
+    fi
     FILES=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || true)
     ;;
   --all|all)
