@@ -134,7 +134,8 @@ awk '
 # ---------------------------------------------------------------------------
 HARNESS_KEYS=(
   "FILE SHAPE" "PUB GATE" "LENGTH GATE" "MILESTONE-ID GATE"
-  "ZIG GATE" "UI GATE" "SCHEMA GUARD" "GREPTILE GATE"
+  "ZIG GATE" "UI GATE" "DESIGN TOKEN GATE"
+  "SCHEMA GUARD" "GREPTILE GATE"
   "Architecture consult"
 )
 missing_rows=0

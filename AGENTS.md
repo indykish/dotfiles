@@ -168,6 +168,12 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 **Override:** `UI GATE: SKIPPED per user override (reason: ...)`.
 **Body:** `docs/gates/ui-substitution.md` — primitive list, output format, end-of-turn audit.
 
+### DESIGN TOKEN GATE
+
+**Triggers:** every Edit/Write to `*.tsx`/`*.jsx` under `ui/packages/app/` or `ui/packages/website/`. Blocks arbitrary `*-[...]` Tailwind classes (`text-[Npx]`, `leading-[...]`, `tracking-[...]`, `max-w-[Npx|Nch]`, `text-[clamp(...)]`, raw palette colours) when an equivalent token utility exists in `ui/packages/design-system/src/theme.css`. Tests + Playwright specs exempt.
+**Override:** `// DESIGN TOKEN: SKIPPED per user override (reason: ...)` immediately preceding the line. Reasons must cite a concrete constraint (e.g. external lib expects px-string). Auto-mode does NOT cover.
+**Body:** `docs/gates/design-token.md` — token utility table, pre-edit check, output format, audit `scripts/audit-design-tokens.sh` (lives in the project repo).
+
 ### UFS GATE
 
 **Triggers:** every Edit/Write to source under `src/`, `ui/packages/*/`, `zombiectl/` matching `*.zig`/`*.ts`/`*.tsx`/`*.js`/`*.jsx`. Excludes `vendor/`, `third_party/`, `.zig-cache/`, `node_modules/`. Three discipline points: repeat string literals → named const; semantic numeric literals (conversion factors, thresholds, sub-cent rates, time/byte units) → named const; cross-runtime constants share their identifier verbatim across Zig/TS/JS — no per-constant carve-out. Pin tests keep their literals only when the literal IS the contract (`// pin test: literal is the contract` comment required).
@@ -270,6 +276,7 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 | Lifecycle method in `*.zig` (init/deinit/close/release/destroy/shutdown/dispose/free) | `docs/LIFECYCLE_PATTERNS.md` — init/deinit pairing, errdefer placement, allocator ownership, defer/errdefer mutual exclusion, §10A tightenings. LIFECYCLE GATE per edit. |
 | `src/http/handlers/**` or `public/openapi/**` | `docs/REST_API_DESIGN_GUIDELINES.md` — Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI), §7 (5-place route registration), §8 (`Hx` handler interface), §10 (pre-PR gates). |
 | `ui/packages/**/*.{tsx,jsx,css}`, `app/**/*.{tsx,jsx,css}`, `components/**/*.{tsx,jsx,css}`, repo-root `globals.css`, or any file changing visual tokens / motion / typography | `DESIGN.md` (repo root) or `docs/DESIGN_SYSTEM.md` — whichever the repo carries. Design system source of truth: typography stack, color tokens, the single accent and its currency rule, motion signature, spacing/density, component principles, CLI palette mapping. DOC READ GATE per edit. |
+| `*.tsx` / `*.jsx` under `ui/packages/{app,website}/` | `docs/gates/design-token.md` — token-utility table (text/tracking/leading/max-w/min-w/spacing/motion/radius/color). DESIGN TOKEN GATE fires per edit; audit via project-side `scripts/audit-design-tokens.sh`. |
 | Auth-flow | `docs/AUTH.md`. |
 | Schema-touching | Re-print Schema Guard output. |
 | Any spec under `docs/v*/{pending,active,done}/` or `docs/TEMPLATE.md` | `docs/TEMPLATE.md` "Prohibited" section — no time/effort estimates, no complexity ratings, no percentage-complete, no owners/dates. SPEC TEMPLATE GATE per edit. |
@@ -299,6 +306,7 @@ Runs after EXECUTE, before VERIFY. Aggregates every gate verdict; lifecycle cann
 | MILESTONE-ID GATE    | ✅ pass — combined audit, 0 hits |
 | ZIG GATE             | ✅ pass | ⚪ n/a               |
 | UI GATE              | ✅ pass | ⚪ n/a               |
+| DESIGN TOKEN GATE    | ✅ pass | 🟡 N arbitraries addressed | 🔴 N unresolved |
 | UFS GATE             | ✅ pass | 🟡 N violations addressed | 🔴 N unresolved |
 | SCHEMA GUARD         | ✅ pass | ⚪ n/a               |
 | GREPTILE GATE        | ✅ pass | 🟡 N violations addressed |

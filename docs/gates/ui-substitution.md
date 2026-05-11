@@ -10,7 +10,7 @@
 
 The design-system package (`ui/packages/design-system/src/index.ts` exports — `Section`, `Card`, `Badge`, `Button`, `Input`, `Dialog`, `Pagination`, `EmptyState`, `Tooltip`, `List`/`ListItem`, `WakePulse`, `Terminal`, `InstallBlock`, etc.) is the source of truth for visual primitives. Raw HTML in either dashboard or marketing files drifts from those tokens silently.
 
-**Marketing-display typography exception (website only):** raw `<h1>` / `<h2>` / `<h3>` with utility classes are allowed for marketing-display sizes (e.g. `clamp(40px, 7vw, 72px)` hero) until DESIGN_SYSTEM.md commits to a `<DisplayTitle>` / `<DisplayHeading>` primitive. The dashboard's `<PageTitle>` is `text-xl ≈ 20px` and is the wrong scale for marketing hero. Use `<PageTitle>` on dashboard surfaces; raw `<h1>+utilities` on marketing-display surfaces. Tracked in `docs/v2/active/M64_003*` Discovery for follow-up.
+**Marketing-display typography — primitives now exist.** `<DisplayXL>` (marketing hero `<h1>`, `text-fluid-hero`) and `<DisplayLG>` (section heads `<h2>`, `text-fluid-display-lg`) ship from `@usezombie/design-system` and compose `font-mono` + the fluid text/leading/tracking tokens internally. Use them on marketing-display surfaces. Raw `<h1>+utilities` is no longer the carve-out — UI GATE blocks it. The dashboard's `<PageTitle>` (`text-heading ≈ 18px`) remains the correct primitive for app surfaces.
 
 This gate enforces "use the primitive when one exists" without enumerating the primitives in this rule (so the rule scales as the design-system grows).
 

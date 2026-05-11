@@ -59,6 +59,9 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | # | Question | Expected |
 |---|---|---|
 | 4.1 (UI) | For every `*.tsx`/`*.jsx` under `ui/packages/app/`, must raw HTML be substituted with a design-system primitive when one exists? | YES |
+| 4.1a (UI) | For every `*.tsx`/`*.jsx` under `ui/packages/{app,website}/`, does DESIGN TOKEN GATE block arbitrary `*-[...]` Tailwind classes (`text-[Npx]`, `leading-[...]`, `tracking-[...]`, `max-w-[Npx|Nch]`, `text-[clamp(...)]`, raw palette colours) when an equivalent token utility exists in `ui/packages/design-system/src/theme.css`? | YES |
+| 4.1b (UI) | Is the DESIGN TOKEN GATE override `// DESIGN TOKEN: SKIPPED per user override (reason: ...)` user-only — i.e. auto-mode does NOT cover it, and reasons must cite a concrete external constraint (not "looks the same" / "shorter to write")? | YES |
+| 4.1c (UI) | Does the project-side `scripts/audit-design-tokens.sh --diff` audit run as part of `make lint` (`_website_lint` + `_app_lint`) and block on any arbitrary that has a token equivalent? | YES |
 | 4.2 (Zig) | For every `*.zig` Edit/Write outside `vendor/`/`third_party/`/`.zig-cache/`, does ZIG GATE fire? | YES |
 | 4.3 (Zig) | Must FILE SHAPE DECISION print before the first Write to a new `*.zig` under `src/` — and is that override **not** covered by auto-mode? | YES |
 | 4.4 (Zig) | Does PUB GATE require external-consumer grep proof for every new `pub` symbol? | YES |
