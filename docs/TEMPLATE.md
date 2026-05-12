@@ -1,8 +1,25 @@
 # Milestone Specification Template
 
-> **CANONICAL TEMPLATE** — Copy this when creating new milestone specs.
+> **CANONICAL TEMPLATE** — Copy this when creating a new milestone spec.
 > Place the copy in `docs/v{N}/pending/M{N}_{NNN}_{NAME}.md`.
-> See `AGENTS.md → Specification Standards → Spec Lifecycle` for the full workflow.
+> See `AGENTS.md → Specification Standards → Spec Lifecycle` for the workflow.
+
+---
+
+## ⚠️ Before you start — pick the right template
+
+This template is **for milestone specs only**: one demoable, end-to-end capability with an executing-agent contract. If your input is anything else, switch templates first:
+
+| Doc type | Lives in | When | Template | Becomes a spec? |
+|---|---|---|---|---|
+| **Spec** | `docs/v{N}/{pending,active,done}/` | Work to be done — one milestone, executable plan | **This file** | Already is |
+| **Proposal / RFC** | `plans/proposals/` | Design exploration before commitment | [`PROPOSAL_TEMPLATE.md`](./PROPOSAL_TEMPLATE.md) | One proposal → one spec when greenlit |
+| **Review / audit** | `plans/reviews/` | Existing-code review, many findings | [`REVIEW_TEMPLATE.md`](./REVIEW_TEMPLATE.md) | **Each finding → its own spec.** Don't bundle. |
+| **Postmortem** | `plans/postmortems/` | After an incident or production failure | N/A — freeform | Action items each → their own spec |
+
+**Litmus test for "is this a spec?":** can the executing agent plan and ship from this file without playing 20-questions with the author? If no, it's a proposal or a review — not a spec. Pick the right template.
+
+**Most common drift:** authors paste a multi-item code review or audit list into this template and call it a spec. Don't. **Each item becomes its own spec.** Convert the highest-priority item using this template; leave the rest in `plans/reviews/`.
 
 ---
 
@@ -21,9 +38,28 @@ A spec must NOT answer:
 - Which exact SQL DDL syntax (the agent reads existing migrations and conforms)
 - Which exact import statements (the agent's lint catches drift)
 
+> **Pseudocode litmus test:** if your spec names a specific library version (`postcard 1.1`), a specific variable name (`var ctx = ...`), or a specific SQL clause (`CREATE TABLE ... DEFAULT 'foo'`), it's pseudocode. Replace with *"use the project's existing serialization library"* and a pointer at where it lives. Pseudocode rots within a sprint.
+
 **The principle:** an executing agent should be able to plan and ship from a spec without playing 20-questions with the spec author. But specs that leak into implementation pseudocode rot fast — implementation drifts and the prose is wrong within a sprint. The middle path is **contract + invariants + tests + pointers to existing patterns**. The agent has agency on the rest.
 
 If you find yourself writing `for (i = 0; i < N; i++)` or naming Zig structs in the spec body, stop. Move that detail into the implementing-agent prologue ("read these files for the pattern") or the test specification ("the test asserts behavior X").
+
+---
+
+## Anti-Patterns (read this BEFORE drafting)
+
+> These are common drifts that conflate goal-contract with implementation pseudocode. Surface-listed here, near the top, because spec authors who find them on line 173 have already drifted.
+
+| # | Anti-pattern | What to do instead | Why |
+|---|---|---|---|
+| 1 | Code blocks inside section bodies | Describe WHAT this slice delivers. If you must specify behavior precisely, write it as a Test (`test_x asserts foo() returns bar`). | The implementation lives in the codebase, not the spec. Code blocks in prose drift; tests don't. |
+| 2 | Listing every variable name | Point at an existing implementation: *"mirror the allocator pattern from `src/http/handlers/zombies/steer.zig`."* | Variable names are the implementing agent's call; they'll match local style. |
+| 3 | Specifying SQL DDL line-by-line | Show the table shape and constraints in prose. Don't paste `CREATE TABLE`. | The agent reads existing migrations and conforms. |
+| 4 | Pinning library versions in spec body | *"Use the existing Redis client"* + pointer to where it's imported. | The package manifest is the source of truth — not the spec. |
+| 5 | Step-by-step ordering ("Step 1: interfaces. Step 2: core.") | Use **Sections** (slices that deliver value). Let the agent sequence within. | Step lists become stale ordering; slices stay coherent. |
+| 6 | Writing the test code in the spec | Test Specification names tests + asserts behavior in prose. Agent writes the test in project style. | Inline test code drifts the moment the test framework changes. |
+
+If you've slipped into any of these, the fix is usually to **move detail to the implementing-agent prologue** (point at a file) or **delete it** (the agent figures it out).
 
 ---
 
@@ -35,7 +71,7 @@ If you find yourself writing `for (i = 0; i < N; i++)` or naming Zig structs in 
 4. Set `Status: PENDING` and commit to `main`.
 5. When work begins, the spec moves to `active/` per the Spec Lifecycle.
 
-**Length target**: 150-300 lines for typical specs. Larger specs are usually two specs trying to share one file — split them.
+**Length target — hard upper bound 300 lines.** Typical specs are 150–300 lines. Larger specs are usually two specs trying to share one file — split them. If you're past 300 lines and haven't gone into the Verification Evidence section yet, your scope is wrong.
 
 ---
 
@@ -71,7 +107,7 @@ A milestone is not complete until evidence is captured: commands, logs, screensh
 
 ### Section Count
 
-- Soft target: 3-9 sections per spec. More than 9 = the spec is doing too much.
+- Soft target: 3–9 sections per spec. More than 9 = the spec is doing too much.
 
 ### File Naming
 
@@ -131,6 +167,9 @@ SPEC AUTHORING RULES (load-bearing — do not delete):
 **Batch:** B{1-4} — {parallel execution context}
 **Branch:** {feat/mNN-name — added when work begins}
 **Depends on:** {M{N}_{NNN} (one-line reason), ...}
+**Provenance:** human-written | LLM-drafted ({model}, {date}) | agent-generated (pre-spec, {source doc})
+
+> **Provenance is load-bearing.** The implementing agent calibrates trust based on who wrote the spec. LLM-drafted specs need extra cross-checking against the codebase; human-written specs assume the author has read the relevant code.
 
 **Canonical architecture:** `docs/ARCHITECTURE.md` §{N} ({brief link to relevant section}).
 
@@ -138,13 +177,15 @@ SPEC AUTHORING RULES (load-bearing — do not delete):
 
 ## Implementing agent — read these first
 
-> **Required prologue.** Point the executing agent at the existing code/docs they should read BEFORE touching any file. This is where you preserve judgment without writing pseudocode.
+> **Required prologue. Minimum 3, maximum 5 pointers.** Fewer than 3 = you haven't done the homework; the agent will end up repeating it. More than 5 = you're writing a tutorial; trim.
+>
+> Point the executing agent at the existing code/docs they should read BEFORE touching any file. This is where you preserve judgment without writing pseudocode.
 
 1. `path/to/file.ext` — {why this is the right pattern to mirror}
 2. `path/to/spec_or_doc.md` — {what canonical knowledge lives there}
 3. {External doc URL, if relevant} — {what convention to follow}
 
-If the spec touches well-trodden code, point at the closest existing example. The agent should be able to read these 3-5 references and have enough context to plan the implementation without asking clarifying questions.
+If the spec touches well-trodden code, point at the closest existing example. The agent should be able to read these 3–5 references and have enough context to plan the implementation without asking clarifying questions.
 
 If the spec is greenfield (no existing pattern in the repo), say so explicitly and point at the architecture doc section that defines the shape.
 
@@ -165,21 +206,6 @@ Pick from the project's canonical rule sources. Add specific rule IDs where the 
 If the spec's scope is fully greenfield with no project-specific rules: write "Standard set only — `docs/greptile-learnings/RULES.md` (universal); no other rule files apply."
 
 The implementing agent reads each listed file BEFORE writing any code, and re-checks during VERIFY that nothing violates the listed rules.
-
----
-
-## Anti-Patterns to Avoid (read this BEFORE drafting the spec)
-
-> These are common drifts that conflate goal-contract with implementation pseudocode. If your draft has any of these, fix before committing the spec. Surfaced at the top so spec authors see them before drifting — not at the bottom where it's too late.
-
-1. **Code blocks in section bodies.** Sections describe WHAT, not HOW. If you need to specify a function call exactly, write it as a test ("the test asserts foo() returns bar"). The implementation lives in the codebase, not the spec.
-2. **Listing every variable name.** "Use `var ctx = std.heap.page_allocator;`" — DON'T. Point at an existing handler in the repo and say "mirror the allocator pattern from `src/http/handlers/zombies/steer.zig`." Let the agent figure out the variable name.
-3. **Specifying SQL DDL line-by-line.** Show the table shape and constraints. Don't write the exact `CREATE TABLE` syntax — the agent reads existing migrations and conforms to project style.
-4. **Pinning library versions.** "Use `redis@4.5.1`." — the project's package manifest is the source of truth. Spec says "use the existing Redis client" and points at where it's already imported.
-5. **Telling the agent which step to do first.** "Step 1: define interfaces. Step 2: implement core logic." — this is a stale ordering that drifts. Use Sections (slices that deliver value) and let the agent sequence.
-6. **Writing the test code in the spec.** Test Specification names tests + asserts behavior in prose ("test_replay_dedupe asserts the second POST returns 200 with deduped:true"). The agent writes the actual test using the project's test framework conventions.
-
-If you've slipped into any of these, the fix is usually to move the detail to the implementing-agent prologue (point at a file) or to delete it (the agent figures it out).
 
 ---
 
@@ -218,8 +244,6 @@ If a non-obvious decision exists in this slice, name it with **Implementation de
 ### §2 — {Next slice}
 
 Same shape.
-
-> **Anti-pattern in section bodies:** writing `for each entry, call foo()` or naming variables. If you need to specify a behavior precisely, do it as a Test (see Test Specification) — not as section prose.
 
 > **Good section example:** "§3 — Replay idempotency. The receiver dedupes on `X-GitHub-Delivery` (the UUID GH provides). Implementation default: 24h dedupe window matching GH's retry window. Storage: a Redis key with TTL. The agent picks the key shape from existing dedupe patterns in the repo."
 
@@ -266,7 +290,7 @@ If the spec has no compile-time / runtime guardrails: write "N/A — no invarian
 
 ## Test Specification
 
-> Every claim from Overview/Goal maps to a test. The implementing agent reads this section to know WHAT TO PROVE. The agent writes the actual test code.
+> **Prose-and-assertions only. No test code in this section.** One row per claim from the Goal. If a test's behavior is hard to describe in prose, that's a sign the Goal is fuzzy — go fix the Goal section, not this one. The implementing agent writes the actual test using the project's test framework conventions.
 
 | Test | Asserts |
 |------|---------|
