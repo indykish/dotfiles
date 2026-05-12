@@ -13,11 +13,10 @@ This template is **for milestone specs only**: one demoable, end-to-end capabili
 | Doc type | Lives in | When | Template | Becomes a spec? |
 |---|---|---|---|---|
 | **Spec** | `docs/v{N}/{pending,active,done}/` | Work to be done — one milestone, executable plan | **This file** | Already is |
-| **Proposal / RFC** | `plans/proposals/` | Design exploration before commitment | [`PROPOSAL_TEMPLATE.md`](./PROPOSAL_TEMPLATE.md) | One proposal → one spec when greenlit |
 | **Review / audit** | `plans/reviews/` | Existing-code review, many findings | [`REVIEW_TEMPLATE.md`](./REVIEW_TEMPLATE.md) | **Each finding → its own spec.** Don't bundle. |
 | **Postmortem** | `plans/postmortems/` | After an incident or production failure | N/A — freeform | Action items each → their own spec |
 
-**Litmus test for "is this a spec?":** can the executing agent plan and ship from this file without playing 20-questions with the author? If no, it's a proposal or a review — not a spec. Pick the right template.
+**Litmus test for "is this a spec?":** can the executing agent plan and ship from this file without playing 20-questions with the author? If no, it's a review (or a doc, or a half-formed idea) — not a spec. Pick the right template, or finish thinking before opening this one.
 
 **Most common drift:** authors paste a multi-item code review or audit list into this template and call it a spec. Don't. **Each item becomes its own spec.** Convert the highest-priority item using this template; leave the rest in `plans/reviews/`.
 
