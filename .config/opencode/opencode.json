@@ -194,6 +194,22 @@
           "name": "Kimi K2.5"
         }
       }
+    },
+    "pioneer": {
+      "name": "Pioneer",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://api.pioneer.ai/v1",
+        "apiKey": "{env:PIONEER_API_KEY}"
+      },
+      "models": {
+        "claude-sonnet-4-6": {
+          "name": "Claude Sonnet 4.6"
+        },
+        "claude-opus-4-7": {
+          "name": "Claude Opus 4.7"
+        }
+      }
     }
   }
 }
