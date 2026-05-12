@@ -174,9 +174,10 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 14.1 | Does AGENTS.md require expanding non-obvious acronyms / project codenames / vendor names on first mention in chat replies, PR descriptions, commit messages, AND inline code comments? | YES |
 | 14.2 | Is there an explicit skip-list of undergrad-CS staples (API, URL, HTTP, JSON, SQL, DNS) that need NO expansion? | YES |
-| 14.3 | Does the tone rule permit dry humour and swear words, while requiring that technical clarity is never traded for it? | YES |
-| 14.4 | Does the verification done-message use ✅ / 🔴 / ⚠️ glyphs and the explicit format defined in `docs/gates/verification.md`? | YES |
-| 14.5 | Does AGENTS.md identify "the Captain" as Kishore (the human), so addresses like "Aye Aye Captain" resolve unambiguously? | YES |
+| 14.3 | Does AGENTS.md require a pre-send self-check scanning outgoing text for unexpanded acronyms (regex `\b[A-Z][A-Z0-9]{1,5}\b`), treating skip as on par with skipping a gate (`ACRONYM CHECK: SKIPPED per user override (reason: ...)`)? | YES |
+| 14.4 | Does the tone rule permit dry humour and swear words, while requiring that technical clarity is never traded for it? | YES |
+| 14.5 | Does the verification done-message use ✅ / 🔴 / ⚠️ glyphs and the explicit format defined in `docs/gates/verification.md`? | YES |
+| 14.6 | Does AGENTS.md identify "the Captain" as Kishore (the human), so addresses like "Aye Aye Captain" resolve unambiguously? | YES |
 
 ### Scenario 15 — Architecture-edit ordering
 
