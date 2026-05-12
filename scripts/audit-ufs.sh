@@ -77,13 +77,26 @@ for f in "${FILES[@]}"; do
   # Strip line comments first to avoid matching strings in commentary.
   # Then extract every "..." literal, sort, count, flag any with count ≥2
   # whose value length ≥2 and isn't a bare punctuation char.
+  #
+  # `|| true` on the two grep stages keeps `set -euo pipefail` from killing
+  # the audit when a file has zero double-quoted literals (e.g. a TS
+  # config file using only single-quoted strings — vitest.config.ts is
+  # the canonical example). Empty pipe input is a valid "no violations in
+  # this file" signal, not a failure.
+  #
+  # NOTE: there is a long-standing latent bug where the `while record`
+  # subshell does not propagate FAIL / violations back to the parent —
+  # so the string-dup audit silently passes even when violations exist.
+  # That deserves its own dedicated cleanup pass (≈275 pre-existing
+  # violations would surface); fixing it together with the grep-empty
+  # guard would expand this script's blast radius mid-flight.
   awk '
     # Drop line comments (// ... and # ...) but keep block comments visible
     # — they would need a multiline strip; the noise is acceptable.
     { sub(/\/\/.*$/, ""); print }
   ' "$f" \
-  | grep -oE '"[^"]{2,}"' \
-  | grep -vE '^"(http|https|file|/|\\\\|\\\\n)' \
+  | { grep -oE '"[^"]{2,}"' || true; } \
+  | { grep -vE '^"(http|https|file|/|\\\\|\\\\n)' || true; } \
   | sort | uniq -c | awk '$1 >= 2 { sub(/^[ \t]+/, ""); print }' \
   | while IFS= read -r line; do
       count="${line%% *}"
