@@ -10,7 +10,7 @@ Email `kishore.kumar@e2enetworks.com` (work) · `nkishore@megam.io` (personal). 
 
 Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
 
-**Banned vocabulary:** "contract" and "phase" — bureaucratic / waterfall framing. Use **Prototype → Milestone → Workstream → Section → Dimension → Batch** for the hierarchy; **Tasks**/**Slices** for finer units; **stages** for lifecycle steps (CHORE(open), PLAN, etc.); **rules** / **operating model** for what AGENTS.md enforces. Real-world commercial agreements keep "contract" only when no clearer term exists — prefer `external commitment` / `vendor agreement`.
+**Banned vocabulary:** "contract" and "phase" — bureaucratic / waterfall framing. Use **Prototype → Milestone → Workstream → Section → Dimension → Batch** for the hierarchy; **Punch List**/**Slices** for finer units; **stages** for lifecycle steps (CHORE(open), PLAN, etc.); **rules** / **operating model** for what AGENTS.md enforces. Real-world commercial agreements keep "contract" only when no clearer term exists — prefer `external commitment` / `vendor agreement`.
 
 **Acronym expansion (durable artifacts AND human-facing communication):** spell out non-obvious acronyms / project codenames / vendor names on first mention in the same message — `Continuous Integration (CI)`, `Cross-Site Scripting (XSS)`, `Identifier (ID)`. Skip undergrad-CS staples with no expansion needed: `API`, `URL`, `HTTP`, `JSON`, `SQL`, `DNS`, `CSS`, `HTML`, `TCP`, `UDP`, `IP`, `OS`. Reuse the bare acronym after the first expansion. Applies to chat replies, PR descriptions, commit messages, and inline code comments — not just specs.
 
