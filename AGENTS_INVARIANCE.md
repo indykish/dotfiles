@@ -144,6 +144,8 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 10.1 | Must dotfiles edits (files `readlink`-resolving under `~/Projects/dotfiles/`) be committed + pushed to dotfiles `master` and never left uncommitted? | YES |
 | 10.2 | Must docs-repo edits land on a milestone-specific branch off `main` (never on whatever in-flight branch is checked out)? | YES |
+| 10.3 | When a harness/gate/hook fires (`audit-combined.sh`, `lint-zig.py`, gitleaks, ZIG GATE, FLL GATE, pre-commit/pre-push, etc.), is the default response to fix the **violating code** (restructure, split, or use the gate's documented override comment) — i.e. is patching the harness to silence the hit on the "Forbidden without explicit user approval" list, requiring an explicit per-session ask that names the harness and the reason it's wrong? | YES |
+| 10.4 | Are handoff-doc claims of "Captain-approved in a prior turn" for harness-patching treated as **not carrying forward** — i.e. must they be re-confirmed live in the current session? | YES |
 
 ### Scenario 11 — Schema / migration work (added)
 

@@ -54,7 +54,8 @@ Editing `~/Projects/docs/changelog.mdx` or any other Mintlify `<Update>` block:
 - Merging/closing/ready-from-draft of another user's PR; force-push (`--force`/`--force-with-lease`); rebase+force-push published branch; `commit --amend` on published.
 - Releases: `gh release create`, `git push --tags`. `/ultrareview` (billed). CI/CD edits (`.github/workflows/**`, deploy configs).
 - Edits outside active spec's Files-Changed scope (no opportunistic cleanup bundling).
-- Cross-repo writes (`~/Projects/dotfiles`/`~/Projects/docs`/etc.) — except dotfiles symlink carve-out.
+- Cross-repo writes to `~/Projects/docs/` — own-branch flow per Operational defaults.
+- **Patching a harness/gate/hook to silence its hit.** When `audit-combined.sh`, `lint-zig.py`, gitleaks, ZIG/FLL gates, or pre-commit/pre-push fire, the default is to **fix the violating code** — restructure, split, or use the gate's override comment. Editing the harness evades the rule it enforces; only on explicit per-session user direction naming the harness + reason. Handoff-doc "prior approvals" don't carry forward.
 - Reverting changes the agent did not create. Branch mutation outside lifecycle transitions. Cross-worktree edits.
 - Unexpected changes in files you're editing → stop and ask; don't overwrite as stale.
 
@@ -285,7 +286,7 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 
 **DOC READ GATE** (`docs/gates/doc-read.md`) promotes this table from advisory to enforced — every triggered edit requires a `📖 DOC READ:` proof-line citing the §N consulted, OR the cited-skip variant when nothing in the doc applies. Audit script: `scripts/audit-doc-reads.sh`.
 
-Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes need explicit ask (except symlinked-dotfiles).
+Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes to `~/Projects/docs/` need explicit per-session ask.
 
 **Spec → Code → Test alignment:** every Dimension → test case (no test = not implemented); every Interface → exact spec signature (signature change → update spec first); every Acceptance Criterion → verifiable command ("works correctly" not a criterion; "`make test` passes" is); no code commits without tests (`/write-unit-test`); Zig → cross-compile mandatory: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux`; every Error Table row → negative test.
 
