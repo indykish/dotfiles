@@ -68,7 +68,7 @@ Editing `~/Projects/docs/changelog.mdx` or any other Mintlify `<Update>` block:
 - `*.zig` → read `docs/ZIG_RULES.md`; ZIG GATE fires. Auth-flow (`src/auth/**`, `ui/packages/app/lib/auth/**`, token-minting handlers, credential-typed spec dimensions): read `docs/AUTH.md` first.
 - `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make check-pg-drain`. Use `conn.exec()` for no-rows.
 - Local Docker `ENOSPC`: `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
-- Cross-repo patterns under `$HOME/Projects/` (check before inventing): `marketplace_api` Py; `sre/e2e-observability-platform/rust`+`manager/cache-kit.rs` Rust; `typescript/branding` TS.
+- Cross-repo patterns under `$HOME/Projects/` (check before inventing): `marketplace_api` Python · `e2e-observability-platform` Rust · `cache-kit.rs` Rust · `docs` MDX · `usezombie` Zig/TS · `docs.megam.io` TS · `www.megam.io` TS · `rioos.megam.io` TS · `posthog-zig` Zig · `oss/bun` Zig · `oss/nullclaw` Zig · `oss/exonum` Rust · `oss/signoz` TS/Go.
 
 **Forge detection:** `github.com` → `gh`; `gitlab.com` → `glab`. Check `git remote -v`.
 
