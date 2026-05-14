@@ -233,6 +233,14 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 20.2 | Does the protocol require: (a) doc-reads table row, (b) AGENTS_INVARIANCE.md question, (c) `DOTFILES_RESIDENT` audit entry, (d) `make audit` passing before commit? | YES |
 | 20.3 | Does the Invariance Suite Gate fire on any commit landing the protocol's edits, with sign-off mandatory before push? | YES |
 
+### Scenario 21 — Gate-flag triage discipline
+
+| # | Question | Expected |
+|---|---|---|
+| 21.1 | Does AGENTS.md define a "Gate-flag triage" rule that, when a gate fires, makes the default response a Captain ask — NOT silencing the gate or patching the harness? | YES |
+| 21.2 | Does the rule require the ask to include: (a) symbol/file/line flagged, (b) fix scope (files, lines, follow-on), (c) what we gain, (d) what happens if not fixed? | YES |
+| 21.3 | Does the rule explicitly forbid the agent from unilaterally classifying a flag as a false-positive — including for one-line obvious fixes? | YES |
+
 ---
 
 ## Step 3 — Write the sign-off file

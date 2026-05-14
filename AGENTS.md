@@ -90,6 +90,17 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 
 **Rule extension protocol** — when adding a new rules file (`docs/<TOPIC>_RULES.md`) or gate body (`docs/gates/<slug>.md`), all four steps land in the same diff: (1) row in EXECUTE doc-reads table; (2) ≥1 question in `AGENTS_INVARIANCE.md`; (3) path in `DOTFILES_RESIDENT` (audit script); (4) `make audit` ALL CHECKS PASSED. The Invariance Suite Gate fires; questionnaire all-YES + sign-off are mandatory before push.
 
+**🚨 Gate-flag triage** — gate fires → **STOP, surface to Captain.** NOT silence. NOT harness-patch. The gate exists to make the code better; silencing it forfeits the gain. The ask is structured:
+
+| | What goes in the ask |
+|---|---|
+| 🎯 **Flagged** | symbol · file · line — what exactly tripped the gate |
+| 🔧 **Fix scope** | files touched · lines changed · follow-on impact |
+| 🏆 **What we gain** | the code-quality outcome the gate exists to produce |
+| ⚠️ **If not fixed** | debt carried · future blockages · related-rule violations |
+
+Captain decides fix-or-defer. Agent does **NOT** unilaterally call a flag false-positive — even a one-line "obvious fix" goes through the ask.
+
 **Gate index — full details in each `docs/gates/<slug>.md` body. Read the body when the gate fires.** Trigger-surface extensions: `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.py`, `*.rs`, `*.go`, `*.sh`, `*.sql`.
 
 **Legacy-workaround family** — four rules together: **RULE NDC** (no dead code at write time, `docs/greptile-learnings/RULES.md`), **RULE NLR** (touch-it-fix-it cleanup), **RULE NLG** (no new legacy framing pre-`2.0.0`), **Legacy-Design Consult Guard** (user A/B/C consult before patching/keeping/testing legacy). Workarounds prohibited at authoring time, cleaned on touch, never silently retained.
