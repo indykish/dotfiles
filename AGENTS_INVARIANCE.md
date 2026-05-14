@@ -64,8 +64,8 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.1c (UI) | Does the project-side `scripts/audit-design-tokens.sh --diff` audit run as part of `make lint` (`_website_lint` + `_app_lint`) and block on any arbitrary that has a token equivalent? | YES |
 | 4.2 (Zig) | For every `*.zig` Edit/Write outside `vendor/`/`third_party/`/`.zig-cache/`, does ZIG GATE fire? | YES |
 | 4.3 (Zig) | Must FILE SHAPE DECISION print before the first Write to a new `*.zig` under `src/` — and is that override **not** covered by auto-mode? | YES |
-| 4.4 (Zig) | Does PUB GATE require external-consumer grep proof for every new `pub` symbol? | YES |
-| 4.4a (Zig) | Does AGENTS.md prohibit inheriting a sibling's `pub fn` decision — i.e. does every new pub surface require its own consumer-grep + shape verdict, and does cloning a sibling's "Public for the integration test in …" comment NOT discharge the gate? | YES |
+| 4.4 (Zig) | Does PUB GATE delegate mechanical consumer-grep to `zlint`'s `unused-decls: error` rule (run by `make lint`), leaving the gate body to enforce shape verdict + no-inheritance + per-edit proof? | YES |
+| 4.4a (Zig) | Does AGENTS.md prohibit inheriting a sibling's `pub fn` decision — i.e. does every new pub surface require its own shape verdict, and does cloning a sibling's "Public for the integration test in …" comment NOT discharge the gate? | YES |
 | 4.4b (Zig) | Does AGENTS.md require a per-edit proof-line (full block OR one-line `PUB GATE: skipped — <reason>`) before every `*.zig` Edit/Write, so silent gate-clean edits are still violations (the proof of consideration is part of the discipline)? | YES |
 | 4.4c (Zig) | Does the PUB GATE trigger set explicitly include "any new `^pub` line in new-bytes" (the pre-edit grep at body §1), so the threshold list (first pub type / first method on pub-free-fn-dominant / last pub free fn removed) is a floor, not a ceiling? | YES |
 | 4.5 (Zig) | Is cross-compile to `x86_64-linux` AND `aarch64-linux` mandatory before commit? | YES |

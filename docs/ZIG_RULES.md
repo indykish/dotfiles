@@ -66,6 +66,7 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
 
 - This repo uses `zlint` as part of `make lint`.
 - Pinned version: `v0.7.9`.
+- **`unused-decls: error` is load-bearing.** PUB GATE (`docs/gates/pub-surface.md`) delegates mechanical consumer-grep to this rule — a `pub` without an in-tree consumer fails `make lint`. Disabling or downgrading it silently bypasses half the gate; if you must, amend PUB GATE in the same diff so the design call is captured elsewhere.
 - `suppressed-errors` stays off because this repo intentionally uses narrow `pg` cleanup patterns that a generic rule cannot classify correctly.
 - `unsafe-undefined` is a good future tightening target once current low-level uses are cleaned up or annotated.
 - A disabled ZLint is not useful; prefer a scoped ruleset that passes today and tightens over time.
