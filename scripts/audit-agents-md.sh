@@ -362,7 +362,7 @@ fi
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
-LIMIT=${AGENTS_MD_SIZE_LIMIT:-36864}  # 36 KB — accommodates 18-gate index (13 prior + 5 from M62_001: LOGGING, LIFECYCLE, ERROR REGISTRY, SPEC TEMPLATE, DOC READ)
+LIMIT=${AGENTS_MD_SIZE_LIMIT:-25600}  # 25 KB — restored post-split (Captain 2026-05-14); gate inventory now collapsed to one-table-row each, doc-reads + verify-tiers + harness-verify-output + changelog-voice extracted to docs/*.md bodies
 if [[ $SIZE -le $LIMIT ]]; then
   pass "size $SIZE bytes (limit $LIMIT)"
 else

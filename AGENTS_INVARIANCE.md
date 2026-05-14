@@ -65,6 +65,9 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.2 (Zig) | For every `*.zig` Edit/Write outside `vendor/`/`third_party/`/`.zig-cache/`, does ZIG GATE fire? | YES |
 | 4.3 (Zig) | Must FILE SHAPE DECISION print before the first Write to a new `*.zig` under `src/` — and is that override **not** covered by auto-mode? | YES |
 | 4.4 (Zig) | Does PUB GATE require external-consumer grep proof for every new `pub` symbol? | YES |
+| 4.4a (Zig) | Does AGENTS.md prohibit inheriting a sibling's `pub fn` decision — i.e. does every new pub surface require its own consumer-grep + shape verdict, and does cloning a sibling's "Public for the integration test in …" comment NOT discharge the gate? | YES |
+| 4.4b (Zig) | Does AGENTS.md require a per-edit proof-line (full block OR one-line `PUB GATE: skipped — <reason>`) before every `*.zig` Edit/Write, so silent gate-clean edits are still violations (the proof of consideration is part of the discipline)? | YES |
+| 4.4c (Zig) | Does the PUB GATE trigger set explicitly include "any new `^pub` line in new-bytes" (the pre-edit grep at body §1), so the threshold list (first pub type / first method on pub-free-fn-dominant / last pub free fn removed) is a floor, not a ceiling? | YES |
 | 4.5 (Zig) | Is cross-compile to `x86_64-linux` AND `aarch64-linux` mandatory before commit? | YES |
 | 4.6 (TS/JS) | Are milestone IDs (`M{N}_{NNN}`, `§X.Y`, `T7`, `dim 5.8.15`) banned in source files (incl. tests)? | YES |
 | 4.7 (TS/JS) | Does RULE UFS require string literals used in ≥2 sites to become a named constant? | YES |
@@ -120,6 +123,9 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 7.5 | Is using `gh pr checks --watch` for greptile explicitly disallowed? | YES |
 | 7.6 | If an MCP-backed skill is unavailable, must PR Session Notes record the skip + a "rerun before merge" note? | YES |
 | 7.7 | Is merging/closing/ready-from-draft of another user's PR forbidden without explicit approval? | YES |
+| 7.8 | Does AGENTS.md require a Captain-acked verbatim quote (in PR Session Notes or the spec's Discovery section, format `> Captain (YYYY-MM-DD HH:MM): "<quote>"`) for any claim that a spec Section/Dimension was "deferred to follow-up" — and does an agent-unilateral deferral count as incomplete scope (not deferral), blocking CHORE(close) until either the item lands or the quote is captured? | YES |
+| 7.9 | Does AGENTS.md treat `HANDOFF.md` (or `HANDOFF_*.md` at any depth) as a faithful state report — i.e. must a pickup agent reading a HANDOFF that claims items were deferred without ack-quotes treat those items as in-scope and surface the contradiction to Captain before continuing? | YES |
+| 7.10 (Architecture) | Does the Architecture Consult & Update Gate body (`docs/gates/architecture.md`) explicitly name "chat brainstorming counts" — i.e. multi-turn chat designing a new pattern fires the gate even before code touches, and capturing the brainstorm as a "punchlist task to land after the code ships" is forbidden (a pickup agent reading such a task must rewrite it to same-commit or doc-only-now)? | YES |
 
 ### Scenario 8 — Conducting `/write-unit-test` while a human steers
 

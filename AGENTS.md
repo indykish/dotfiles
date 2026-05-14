@@ -18,16 +18,7 @@ Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
 
 ## Changelog voice (Mintlify-style)
 
-Editing `~/Projects/docs/changelog.mdx` or any other Mintlify `<Update>` block:
-
-- **One headline per entry, no marketing words.** Banned: "seamless", "magical", "powerful", "robust", "we are pleased to", "we're excited to". The change speaks for itself.
-- **Lead paragraph states the change, not the announcement.** A reader has 30 seconds; they should know what changed in the first sentence. ✅ "Pricing collapses to one number per surface." ❌ "Today we're shipping single-rate pricing."
-- **Bullets follow `**Bold lead-noun** — consequence-first clause`.** One bullet, one fact. Three "and"s in a sentence → split it. Code names always in backticks (functions, paths, env vars, routes, error codes, tables).
-- **Internal cleanup / refactor entries get the most aggressive trimming.** One lead paragraph + one bullet list. Skip "Test coverage" sections unless the test count is the headline. Captain's exact direction: *"Keep internal code cleanup, refactor to a minimal."*
-- **Never drop load-bearing facts.** Error codes (`UZ-AUTH-003`), endpoint paths + method + body shape + status code, env var names + defaults, schema column / table names, CLI subcommand + flag names, migration steps, money amounts. Tighten prose, not contract.
-- **Historical entries are archives.** Brevity-pass them; never rewrite the past. A typo correction (e.g. `$0.001` → `$0.01` when it was never true) is allowed and must be called out in the commit message.
-- **Rate constants flow through three pinned files only:** `src/state/tenant_billing.zig`, `ui/packages/website/src/lib/rates.ts`, `~/Projects/docs/snippets/rates.mdx`. Bumping a rate requires a paired Pull Request (PR) across the docs repo — there is no automated guard. In `*.mdx`, use `import { STARTER_CREDIT, EVENT_RATE, STAGE_RATE } from "/snippets/rates.mdx"` instead of hand-typing `$5`.
-- **The Mintlify reference Captain pasted (May 1 / May 8 entries) is canonical voice.** Mirror its rhythm, not its product nouns.
+Full rules in [`docs/CHANGELOG_VOICE.md`](./docs/CHANGELOG_VOICE.md). Summary: one headline per entry, no marketing words ("seamless"/"magical"/"powerful"/"robust" banned); lead paragraph states the change, not the announcement; bullets follow `**Bold lead-noun** — consequence-first clause`; internal cleanup gets aggressive trimming; never drop load-bearing facts (error codes, endpoints, env vars, schema names, money amounts); historical entries archived not rewritten; rate constants pinned to three files (`tenant_billing.zig`, `rates.ts`, `rates.mdx`).
 
 ## Confusion Management
 
@@ -99,131 +90,32 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 
 **Rule extension protocol** — when adding a new rules file (`docs/<TOPIC>_RULES.md`) or gate body (`docs/gates/<slug>.md`), all four steps land in the same diff: (1) row in EXECUTE doc-reads table; (2) ≥1 question in `AGENTS_INVARIANCE.md`; (3) path in `DOTFILES_RESIDENT` (audit script); (4) `make audit` ALL CHECKS PASSED. The Invariance Suite Gate fires; questionnaire all-YES + sign-off are mandatory before push.
 
-**Gate index — bodies live under `docs/gates/<slug>.md`. Triggers, override syntax, and a one-line summary stay here so an agent can fire the gate without loading the body. Read the body when the gate fires.**
+**Gate index — full details in each `docs/gates/<slug>.md` body. Read the body when the gate fires.** Trigger-surface extensions: `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.py`, `*.rs`, `*.go`, `*.sh`, `*.sql`.
 
-### Invariance Suite Gate (meta-gate)
+**Legacy-workaround family** — four rules together: **RULE NDC** (no dead code at write time, `docs/greptile-learnings/RULES.md`), **RULE NLR** (touch-it-fix-it cleanup), **RULE NLG** (no new legacy framing pre-`2.0.0`), **Legacy-Design Consult Guard** (user A/B/C consult before patching/keeping/testing legacy). Workarounds prohibited at authoring time, cleaned on touch, never silently retained.
 
-**Triggers:** any Edit/Write **the agent itself performs in this session** to `AGENTS.md`, `AGENTS_INVARIANCE.md`, any file under `docs/gates/`, `scripts/audit-agents-md.sh`, or `scripts/fixtures/*.diff`.
-**Override:** none from the agent side. User-only push bypass: `SKIP_INVARIANCE_PUSH=1 git push ...` with reason in the most recent commit message.
-**Required action (in-session, BEFORE declaring complete):** (1) run `bash scripts/audit-agents-md.sh` — STOP on fail; (2) read `AGENTS_INVARIANCE.md` and answer every question against the current rules; (3) emit the tabulated report; (4) after `git commit`, write `.agents-invariance-signoff` (`<short-sha>  <UTC-ts>  PASS`); (5) surface result to the user. Print `🚧 INVARIANCE SUITE GATE` block before declaring done.
-**Body:** `docs/gates/invariance-suite.md`.
-
-**Legacy-workaround family (cross-reference).** Four rules together prohibit and clean up legacy workarounds: **RULE NDC** (no dead code at write time, lives in `docs/greptile-learnings/RULES.md`), **RULE NLR** (touch-it-fix-it cleanup), **RULE NLG** (no new legacy framing while `cat VERSION` < `2.0.0`), and **Legacy-Design Consult Guard** (mandatory user consult before patching/keeping/testing a legacy path). Net effect: workarounds are prohibited at authoring time, cleaned on touch, and never silently retained — even past v2.0.0, the Consult Guard requires explicit user A/B/C decision.
-
-### RULE NLR — No legacy retained (touch-it-fix-it)
-
-**Triggers:** any Edit/Write to a file with pre-existing legacy framing or dead code (`?*T = null` with no non-null caller, `legacy_*` symbols, `V2` twins, `if (legacy_caller)` branches, `// legacy`/`// pre-M*`/`// bootstrap` comments, `legacy path`/`deprecated` warns, `pub` with no in-tree consumer, `defer if (x) ... else null`, unused params/captures/branches).
-**Override:** `RULE NLR: SKIPPED per user override (reason: ...)` — user-only, concrete external-impact constraint or NLR DECISION resolution required.
-**Body:** `docs/gates/nlr.md` — full pattern list, NLR DECISION block, anti-evasion clause, family rules.
-
-### RULE NLG — No legacy framing pre-v2.0.0
-
-**Triggers:** introducing any new `legacy_*` name, `V2` twin, `if (legacy_caller)` branch, backward-compat shim, "rejecting legacy X" prose, or violation tracking-list (`LEGACY_`/`PENDING_`/`_VIOLATIONS`/`_CARVE_OUTS`/`TO_FIX_`/`DEFERRED_`) while `cat VERSION` < `2.0.0`.
-**Override:** `RULE NLG: SKIPPED per user override (reason: ...)` — user-only, requires concrete external consumer that can't migrate same-commit.
-**Body:** `docs/gates/nlg.md` — tracking-list ban, vendor-immortal carve-outs, full text in RULES.md.
-
-### Legacy-Design Consult Guard
-
-**Triggers:** patching legacy to fit new architecture; keeping for "backward compat" pre-alpha; defensive `orelse`/fail-open whose only reason is legacy nullability; authoring tests for legacy path; choosing patch-vs-remove silently. Signals: `// legacy`/`// pre-M*`/`// bootstrap`/`// TODO remove`/`// temporary` comments; self-announcing warns; env-vars/principals/cols whose only consumer is a fallback branch.
-**Override:** none — user decides A/B/C in the consult block.
-**Body:** `docs/gates/legacy-design.md` — `LEGACY CONSULT:` output format, escape hatch, Discovery capture.
-
-### Schema Table Removal Guard
-
-**Triggers:** before creating/editing/deleting `schema/*.sql`, editing `schema/embed.zig` or migration array in `src/cmd/common.zig`, writing `DROP TABLE`/`ALTER TABLE`/`SELECT 1;`, or accepting a spec dimension prescribing one — run `cat VERSION` and print guard output.
-**Override:** `SCHEMA GUARD: SKIPPED per user override (reason: ...)` — user-only; spec violates → amend spec first.
-**Body:** `docs/gates/schema-removal.md` — pre-v2.0.0 teardown procedure, v2.0.0+ migration rules, output template.
-
-### File & Function Length Gate
-
-**Caps:** file ≤ 350 · function ≤ 50 · method ≤ 70.
-**Triggers:** every Write/Edit net-adding lines to `.zig`/`.js`/`.ts`/`.tsx`/`.jsx`/`.py`/`.rs`/`.go`/`.sh`/`.sql` (and `.yaml`/`.toml` carrying code). Unsure → assume gated. Exempt: `vendor/`, `node_modules/`, `third_party/`, `.md`.
-**Override:** `LENGTH GATE: SKIPPED per user override (reason: ...)`.
-**Body:** `docs/gates/file-length.md` — pre-edit check (wc -l → projected), splitting conventions, output format, end-of-turn audit.
-
-### Milestone-ID Gate
-
-**Triggers:** saving `**/*.{zig,sql,ts,tsx,js,jsx,py,rs,go,sh}`, or config (`*.toml`/`*.yaml`/`*.json`) outside `docs/`. Test files in scope. Exempt: `docs/`, `**/*.md` outside `node_modules/`/`vendor/`, `CLAUDE.md`/`AGENTS.md`/`AGENTS_INVARIANCE.md`.
-**Override:** `MILESTONE ID ALLOWED per user override (reason: ...)` in immediately-preceding comment.
-**Body:** `docs/gates/milestone-id.md` — regex set (`M[0-9]+_[0-9]+`, `§X.Y`, `T7`, `dim N.M`), end-of-turn covered by combined HARNESS VERIFY audit.
-
-### Architecture Consult & Update Gate
-
-**Triggers:** before naming a stream/channel/Redis namespace/consumer group/queue/RPC method/Postgres schema/table; asserting cardinality; describing a flow; answering a data-flow question; proposing a change; mid-task architecture-adjacent question — grep/read the relevant `docs/architecture/` topic file.
-**Override:** none — doc wins until reconciled.
-**Body:** `docs/gates/architecture.md` — landing rule (doc-only commit OR same-commit; **never** AFTER code), CHORE(close) check.
-
-### ZIG GATE
-
-**Triggers:** every Edit/Write to `*.zig` outside `vendor/`/`third_party/`/`.zig-cache/` (tests in scope).
-**Override:** `ZIG GATE: SKIPPED per user override (reason: ...)`.
-**Body:** `docs/gates/zig.md` — sub-rule pattern table (drain, errdefer, dupe, pub, length, cross-compile), one-line vs full output, links to PUB and LENGTH sub-gates.
-
-### Pub Surface & Struct-Shape Gate
-
-**Triggers:** new `*.zig` under `src/` (excl. `*_test.zig`/`vendor/`/`third_party/`); threshold-cross on existing file (first `pub` type added, first `pub fn ... self ...` added to a pub-free-fn-dominant file, last pub free fn removed from multi-pub-fn file); "rethink the layout of <file>".
-**Override:** `PUB GATE: SKIPPED per user override (reason: ...)` for sub-gate. **`FILE SHAPE DECISION` skip needs user's explicit ask this turn — auto-mode does NOT cover it.**
-**Body:** `docs/gates/pub-surface.md` — full pre-edit check (4 steps), `FILE SHAPE DECISION` template, file-as-struct layout, output format, end-of-turn audit.
-
-### UI Component Substitution Gate
-
-**Triggers:** every Edit/Write to `*.tsx`/`*.jsx` under `ui/packages/app/`. For each raw HTML element added (`<section>`/`<button>`/`<input>`/`<article>`/`<dialog>`/`<dl>`/`<table>`/`<nav>`/`<header>`/`<form>`), check `ui/packages/design-system/src/index.ts` for a matching primitive — use it. `asChild` for HTML semantics.
-**Override:** `UI GATE: SKIPPED per user override (reason: ...)`.
-**Body:** `docs/gates/ui-substitution.md` — primitive list, output format, end-of-turn audit.
-
-### DESIGN TOKEN GATE
-
-**Triggers:** every Edit/Write to `*.tsx`/`*.jsx` under `ui/packages/app/` or `ui/packages/website/`. Blocks arbitrary `*-[...]` Tailwind classes (`text-[Npx]`, `leading-[...]`, `tracking-[...]`, `max-w-[Npx|Nch]`, `text-[clamp(...)]`, raw palette colours) when an equivalent token utility exists in `ui/packages/design-system/src/theme.css`. Tests + Playwright specs exempt.
-**Override:** `// DESIGN TOKEN: SKIPPED per user override (reason: ...)` immediately preceding the line. Reasons must cite a concrete constraint (e.g. external lib expects px-string). Auto-mode does NOT cover.
-**Body:** `docs/gates/design-token.md` — token utility table, pre-edit check, output format, audit `scripts/audit-design-tokens.sh` (lives in the project repo).
-
-### UFS GATE
-
-**Triggers:** every Edit/Write to source under `src/`, `ui/packages/*/`, `zombiectl/` matching `*.zig`/`*.ts`/`*.tsx`/`*.js`/`*.jsx`. Excludes `vendor/`, `third_party/`, `.zig-cache/`, `node_modules/`. Three discipline points: repeat string literals → named const; semantic numeric literals (conversion factors, thresholds, sub-cent rates, time/byte units) → named const; cross-runtime constants share their identifier verbatim across Zig/TS/JS — no per-constant carve-out. Pin tests keep their literals only when the literal IS the contract (`// pin test: literal is the contract` comment required).
-**Override:** `UFS GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover.
-**Body:** `docs/gates/ufs.md` — pre-edit checks, output format, audit `scripts/audit-ufs.sh` (generic detection: string-dup-file, numeric-suspect powers-of-ten/unit-factors, cross-runtime-orphan).
-
-### GREPTILE GATE
-
-**Triggers:** (1) per-iteration when diff languages change (new layer/language enters the diff); (2) end-of-turn before claiming complete. Read `docs/greptile-learnings/RULES.md` for any rule code referenced.
-**Override:** `GREPTILE GATE: SKIPPED per user override (reason: ...)` — violations stay in diff and PR Discovery.
-**Body:** `docs/gates/greptile.md` — full rule catalogue (UFS/STS/EMS/NSQ/TGU/VLT/CTM/CTC/FLL/ORP/WAUTH/TST-NAM/PRI), string-literals audit command, output table format.
-
-### Verification Gate
-
-**Triggers:** before any "verified"/"tests pass"/"ready to merge"/"shipping"/"CHORE(close) ready" message. `make` targets are canonical; package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` w/o integration) are **not** verification.
-**Override:** `VERIFY GATE: <target> skipped per environment constraint (reason: ...)` — only when target genuinely unrunnable (e.g. no Docker). Call out the limitation in the done-message.
-**Body:** `docs/gates/verification.md` — required runs table (lint, test tiers 1/2/3, memleak, bench, cross-compile, check-pg-drain), memleak evidence rule, bench knobs, done-message format.
-
-### LOGGING GATE
-
-**Triggers:** Edit/Write changing log emits — `*.zig`/`*.ts`/`*.tsx`/`*.js`/`*.jsx`/`*.sh` outside vendor/test/node_modules.
-**Override:** `LOGGING GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover.
-**Body:** `docs/gates/logging.md` — logfmt, severity ladder, error-code embedding, audit `scripts/audit-logging.sh`.
-
-### LIFECYCLE GATE
-
-**Triggers:** `*.zig` Edit/Write (incl. tests) adding/reshaping `pub fn init|deinit|close|release|destroy|shutdown|dispose|free`, `errdefer`/`defer` adjacent to alloc, or struct field holding heap/arena/handle.
-**Override:** `LIFECYCLE GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover. Carve-out: both PUB and LIFECYCLE GATE may fire on `pub fn init` — print both.
-**Body:** `docs/gates/lifecycle.md` — pairing, errdefer placement, allocator ownership, audit `scripts/audit-deinit-pairs.sh`.
-
-### ERROR REGISTRY GATE
-
-**Triggers:** Edit/Write adding/modifying `error_code=UZ-XXX-NNN` in `src/**`/`zombiectl/**`, editing `src/errors/error_registry.zig`, or touching HTTP/executor/CLI error surfaces.
-**Override:** `ERROR REGISTRY GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover. Used-but-undeclared = blocking; declared-but-unreferenced = informational.
-**Body:** `docs/gates/error-registry.md` — code format `UZ-<CATEGORY>-<NNN>`, surface conformance, audit `scripts/audit-error-codes.sh`.
-
-### SPEC TEMPLATE GATE
-
-**Triggers:** Edit/Write to spec under `docs/v*/{pending,active,done}/`, to `docs/TEMPLATE.md`, or `*.md` with spec frontmatter.
-**Override:** `SPEC TEMPLATE GATE: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover. Reasons must cite a concrete external constraint.
-**Body:** `docs/gates/spec-template.md` — TEMPLATE.md "Prohibited" enforcement, audit `scripts/audit-spec-template.sh`.
-
-### DOC READ GATE
-
-**Triggers:** Edit/Write whose path matches an EXECUTE doc-reads table row. Required output: `📖 DOC READ: <path>` proof-line per triggered doc, citing §N applied or skip-with-reason.
-**Override:** `DOC READ: SKIPPED per user override (reason: ...)`. Auto-mode does NOT cover.
-**Body:** `docs/gates/doc-read.md` — proof-line format, cited-skip variant, audit `scripts/audit-doc-reads.sh`.
+| # | Gate | Body | Trigger surface · Override |
+|---|---|---|---|
+| 1 | Invariance Suite Gate (meta) | `docs/gates/invariance-suite.md` | Edit to `AGENTS.md`, `AGENTS_INVARIANCE.md`, `docs/gates/`, `scripts/audit-agents-md.sh`, `scripts/fixtures/*.diff` · **no override** (user-only push: `SKIP_INVARIANCE_PUSH=1`). Body fires the audit + questionnaire + `.agents-invariance-signoff` write. |
+| 2 | RULE NLR | `docs/gates/nlr.md` | Edit to file with legacy framing / dead code (`?*T = null` no caller, `legacy_*`, `V2` twins, `if (legacy_caller)`, `// legacy` comments, `pub` no consumer) · `RULE NLR: SKIPPED per user override (reason: ...)` user-only. |
+| 3 | RULE NLG | `docs/gates/nlg.md` | New `legacy_*` / `V2` / compat shim / tracking-list while `cat VERSION` < `2.0.0` · `RULE NLG: SKIPPED per user override (reason: ...)` user-only. |
+| 4 | Legacy-Design Consult Guard | `docs/gates/legacy-design.md` | Patching legacy to fit new architecture; defensive `orelse` whose only reason is legacy nullability; tests for legacy path · **no override** — user A/B/C decision. |
+| 5 | Schema Table Removal Guard | `docs/gates/schema-removal.md` | Create/edit/delete `schema/*.sql`, edit `schema/embed.zig` / migration array, `DROP TABLE` / `ALTER TABLE` · `SCHEMA GUARD: SKIPPED per user override (reason: ...)`. |
+| 6 | File & Function Length Gate | `docs/gates/file-length.md` | Caps: file ≤ 350 · fn ≤ 50 · method ≤ 70. Net-adding lines to `.zig`/`.js`/`.ts`/`.tsx`/`.jsx`/`.py`/`.rs`/`.go`/`.sh`/`.sql`/`.yaml`/`.toml`. Exempt `vendor/`, `node_modules/`, `third_party/`, `.md` · `LENGTH GATE: SKIPPED per user override (reason: ...)`. |
+| 7 | Milestone-ID Gate | `docs/gates/milestone-id.md` | Saving source / config outside `docs/`. Regex `M[0-9]+_[0-9]+`, `§X.Y`, `T7`, `dim N.M` · `MILESTONE ID ALLOWED per user override (reason: ...)` in preceding comment. |
+| 8 | Architecture Consult & Update Gate | `docs/gates/architecture.md` | Naming a stream/channel/Redis namespace/queue/RPC/Postgres schema; describing a flow; mid-task architecture question — grep relevant `docs/architecture/` · **no override** — doc wins until reconciled. |
+| 9 | ZIG GATE | `docs/gates/zig.md` | `*.zig` outside `vendor/`/`third_party/`/`.zig-cache/` (tests in scope) · `ZIG GATE: SKIPPED per user override (reason: ...)`. |
+| 10 | Pub Surface & Struct-Shape Gate | `docs/gates/pub-surface.md` | New `*.zig` under `src/`; threshold-cross (first pub type / first method-on-pub-free-fn-dominant / last pub free fn removed); **any new `^pub` line in new-bytes** (threshold list is a floor, not a ceiling) · `PUB GATE: SKIPPED per user override (reason: ...)`. **`FILE SHAPE DECISION` skip needs user's explicit ask this turn — auto-mode does NOT cover.** **No inheritance:** each new pub surface requires its own consumer-grep + shape verdict; cloning a sibling's "Public for the integration test in …" comment does NOT discharge. **Per-edit proof-line mandatory** (full block OR one-line `PUB GATE: skipped — <reason>`); silent gate-clean edits are violations. |
+| 11 | UI Component Substitution Gate | `docs/gates/ui-substitution.md` | `*.tsx`/`*.jsx` under `ui/packages/app/`. Raw HTML (`<section>`/`<button>`/`<input>`/`<article>`/`<dialog>`/`<dl>`/`<table>`/`<nav>`/`<header>`/`<form>`) → design-system primitive (`asChild` for HTML semantics) · `UI GATE: SKIPPED per user override (reason: ...)`. |
+| 12 | DESIGN TOKEN GATE | `docs/gates/design-token.md` | `*.tsx`/`*.jsx` under `ui/packages/app/` or `ui/packages/website/`. Blocks `*-[...]` arbitraries (`text-[Npx]`, `leading-[...]`, `tracking-[...]`, `max-w-[Npx|Nch]`, `text-[clamp(...)]`, raw palette) when token utility exists in `theme.css` · `// DESIGN TOKEN: SKIPPED per user override (reason: ...)` immediately preceding the line; auto-mode does NOT cover; reason must cite a concrete external constraint. |
+| 13 | UFS GATE | `docs/gates/ufs.md` | Source under `src/`, `ui/packages/*/`, `zombiectl/` matching `*.zig`/`*.ts`/`*.tsx`/`*.js`/`*.jsx`. Repeat string literals → named const; semantic numeric literals → named const; cross-runtime constants share identifier verbatim across Zig/TS/JS. Pin-test exception requires `// pin test: literal is the contract` · `UFS GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover. |
+| 14 | GREPTILE GATE | `docs/gates/greptile.md` | (1) per-iteration when diff languages change; (2) end-of-turn before claiming complete. Read `docs/greptile-learnings/RULES.md` for any rule code referenced · `GREPTILE GATE: SKIPPED per user override (reason: ...)` — violations stay in PR Discovery. |
+| 15 | Verification Gate | `docs/gates/verification.md` | Before any "verified"/"tests pass"/"ready to merge"/"shipping"/"CHORE(close) ready" message. `make` canonical; package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` w/o integration) **not** verification · `VERIFY GATE: <target> skipped per environment constraint (reason: ...)` only when genuinely unrunnable. |
+| 16 | LOGGING GATE | `docs/gates/logging.md` | Edit changing log emits in `*.zig`/`*.ts`/`*.tsx`/`*.js`/`*.jsx`/`*.sh` outside vendor/test/node_modules · `LOGGING GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover. |
+| 17 | LIFECYCLE GATE | `docs/gates/lifecycle.md` | `*.zig` adding/reshaping `pub fn init|deinit|close|release|destroy|shutdown|dispose|free`, `errdefer`/`defer` adjacent to alloc, struct field holding heap/arena/handle · `LIFECYCLE GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover. PUB + LIFECYCLE may both fire on `pub fn init` — print both. |
+| 18 | ERROR REGISTRY GATE | `docs/gates/error-registry.md` | Edit adding/modifying `error_code=UZ-XXX-NNN` in `src/**`/`zombiectl/**`, editing `src/errors/error_registry.zig`, or touching HTTP/executor/CLI error surfaces · `ERROR REGISTRY GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover. Used-but-undeclared = blocking; declared-but-unreferenced = informational. |
+| 19 | SPEC TEMPLATE GATE | `docs/gates/spec-template.md` | Edit to spec under `docs/v*/{pending,active,done}/`, `docs/TEMPLATE.md`, or `*.md` with spec frontmatter · `SPEC TEMPLATE GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover; reason must cite concrete external constraint. |
+| 20 | DOC READ GATE | `docs/gates/doc-read.md` | Edit whose path matches an EXECUTE doc-reads-table row. Output `📖 DOC READ: <path>` proof-line per triggered doc, citing §N applied or skip-with-reason · `DOC READ: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover. |
 
 ---
 
@@ -267,24 +159,7 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 
 ### EXECUTE
 
-**Doc reads by trigger:**
-
-| Trigger | Read |
-|---|---|
-| Always (universal) | `docs/greptile-learnings/RULES.md`; re-read on sub-task shape change. |
-| Spec's "Applicable Rules" | Each rule (canonical). Missing → standard set is floor; surface omission. |
-| `*.zig` | `docs/ZIG_RULES.md`. ZIG GATE per edit. |
-| `*.ts`/`*.tsx`/`*.js`/`*.jsx` | `docs/BUN_RULES.md` — TS FILE SHAPE DECISION (§1) at PLAN, const/import/Bun-primitive discipline, anti-patterns. |
-| Log emit (any language; see LOGGING GATE triggers) | `docs/LOGGING_STANDARD.md` — wire format (logfmt), severity ladder, error-code embedding, scope/event discipline, PII redaction, §10A tightenings. LOGGING GATE per edit. |
-| Lifecycle method in `*.zig` (init/deinit/close/release/destroy/shutdown/dispose/free) | `docs/LIFECYCLE_PATTERNS.md` — init/deinit pairing, errdefer placement, allocator ownership, defer/errdefer mutual exclusion, §10A tightenings. LIFECYCLE GATE per edit. |
-| `src/http/handlers/**` or `public/openapi/**` | `docs/REST_API_DESIGN_GUIDELINES.md` — Quick Checklist; §1–§5 (URL/method/body/response/error), §6 (OpenAPI), §7 (5-place route registration), §8 (`Hx` handler interface), §10 (pre-PR gates). |
-| `ui/packages/**/*.{tsx,jsx,css}`, `app/**/*.{tsx,jsx,css}`, `components/**/*.{tsx,jsx,css}`, repo-root `globals.css`, or any file changing visual tokens / motion / typography | `DESIGN.md` (repo root) or `docs/DESIGN_SYSTEM.md` — whichever the repo carries. Design system source of truth: typography stack, color tokens, the single accent and its currency rule, motion signature, spacing/density, component principles, CLI palette mapping. DOC READ GATE per edit. |
-| `*.tsx` / `*.jsx` under `ui/packages/{app,website}/` | `docs/gates/design-token.md` — token-utility table (text/tracking/leading/max-w/min-w/spacing/motion/radius/color). DESIGN TOKEN GATE fires per edit; audit via project-side `scripts/audit-design-tokens.sh`. |
-| Auth-flow | `docs/AUTH.md`. |
-| Schema-touching | Re-print Schema Guard output. |
-| Any spec under `docs/v*/{pending,active,done}/` or `docs/TEMPLATE.md` | `docs/TEMPLATE.md` "Prohibited" section — no time/effort estimates, no complexity ratings, no percentage-complete, no owners/dates. SPEC TEMPLATE GATE per edit. |
-
-**DOC READ GATE** (`docs/gates/doc-read.md`) promotes this table from advisory to enforced — every triggered edit requires a `📖 DOC READ:` proof-line citing the §N consulted, OR the cited-skip variant when nothing in the doc applies. Audit script: `scripts/audit-doc-reads.sh`.
+**Doc reads by trigger:** see [`docs/EXECUTE_DOC_READS.md`](./docs/EXECUTE_DOC_READS.md) for the full trigger-to-doc mapping. Always re-read `docs/greptile-learnings/RULES.md` on sub-task shape change; spec's "Applicable Rules" list is canonical; missing rules — standard set is floor + surface omission. DOC READ GATE per edit; audit via `scripts/audit-doc-reads.sh`.
 
 Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes to `~/Projects/docs/` need explicit per-session ask.
 
@@ -294,59 +169,11 @@ Edit only approved scope; no opportunistic refactors. Stay in active worktree. C
 
 ### HARNESS VERIFY
 
-Runs after EXECUTE, before VERIFY. Aggregates every gate verdict; lifecycle cannot advance without enumerating the audit. Any "fail" / remaining violations → return to EXECUTE.
-
-**Combined end-of-turn audit** (single awk over `git diff -U0 HEAD`, replaces 4 separate self-audits): for every `+` line, emit `MS-ID:` hits when file is source/config and matches `M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b`; emit `PUB:` hits when `*.zig` and line matches `^\+(pub | *pub fn | *[A-Z][a-zA-Z]+,$)`; emit `UI:` hits when under `ui/packages/app/**.{tsx,jsx}` and line contains `<(section|button|input|dialog|article|nav|header|form)\b`. Non-empty = address before HARNESS VERIFY passes.
-
-**Required output** (verdict cells use ✅ pass · ⚪ n/a · 🔴 fail · 🟡 violations addressed):
-
-```
-🚧 HARNESS VERIFY: <branch>
-| Gate                 | Verdict                       |
-| FILE SHAPE           | ✅ pass | ⚪ n/a               |
-| PUB GATE             | ✅ pass | ⚪ n/a               |
-| LENGTH GATE          | ✅ pass | 🟡 files at cap: …    |
-| MILESTONE-ID GATE    | ✅ pass — combined audit, 0 hits |
-| ZIG GATE             | ✅ pass | ⚪ n/a               |
-| UI GATE              | ✅ pass | ⚪ n/a               |
-| DESIGN TOKEN GATE    | ✅ pass | 🟡 N arbitraries addressed | 🔴 N unresolved |
-| UFS GATE             | ✅ pass | 🟡 N violations addressed | 🔴 N unresolved |
-| SCHEMA GUARD         | ✅ pass | ⚪ n/a               |
-| GREPTILE GATE        | ✅ pass | 🟡 N violations addressed |
-| Architecture consult | ✅ doc updated same commit | ⚪ n/a |
-| Coverage             | ✅ backend N% ≥ min · UI N% ≥ min | ⚪ n/a |
-| /write-unit-test     | ✅ clean | 🟡 N tests added   |
-```
-
-Any 🔴 in the table → return to EXECUTE; the lifecycle does NOT advance.
+Runs after EXECUTE, before VERIFY. Aggregates every gate verdict — full output block + combined end-of-turn awk audit details live in [`docs/HARNESS_VERIFY_OUTPUT.md`](./docs/HARNESS_VERIFY_OUTPUT.md). Required rows include FILE SHAPE, PUB GATE, LENGTH GATE, MILESTONE-ID GATE, ZIG GATE, UI GATE, DESIGN TOKEN GATE, UFS GATE, SCHEMA GUARD, GREPTILE GATE, Architecture consult, Coverage, /write-unit-test. Any 🔴 → return to EXECUTE; the lifecycle does NOT advance.
 
 ### VERIFY
 
-Verification Gate defines the output block; this section defines what to run. **FIRST: `/write-unit-test`** — audits diff coverage vs spec's Test Specification (or changed surface when no spec). Iterate until clean. Skipping = CHORE(close) violation.
-
-**Correctness tiers (do not skip):**
-
-| Tier | Command | When |
-|---|---|---|
-| 1 | `make test` | Every EXECUTE iteration; start of VERIFY. Unit-only — never substitutes for 2/3. |
-| 2 | `make test-integration` | Diff touches `src/http/**`, `src/db/**`, `src/zombie/**`, `src/observability/**`, `*_integration_test.zig`, schema, migrations. Before COMMIT. |
-| 3 | `make test-integration` | ≥1× per branch from clean state (after `make down`) before ship-ready. Mandatory when schema changes pre-v2.0. Tier 2 passing + 3 failing = state pollution; fix isolation. |
-
-**Performance / leak (before PR):**
-
-| Gate | Command | When |
-|---|---|---|
-| Leak | `make memleak` | Server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, cross-thread heap ownership. |
-| Bench (local) | `make bench` | When the diff touches request-path code, allocator wiring, or startup/shutdown sequencing. |
-| Bench (dev) | `API_BENCH_URL=https://api-dev.usezombie.com/healthz make bench` | After deploy to dev. |
-
-Knobs (`make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY`, `_TIMEOUT_MS`, `_MAX_ERROR_RATE`, `_MAX_P95_MS`, `_MAX_RSS_GROWTH_MB`.
-
-**Memleak evidence:** paste final `make memleak` line into PR Session Notes OR cite CI URL. Branches touching `src/http/**`/`src/cmd/serve.zig`/allocator wiring → last 3 lines verbatim. No "trust me".
-
-**Hygiene (always, before PR):** `make lint` (hard); `make check-pg-drain` + cross-compile `x86_64-linux`+`aarch64-linux` (any `*.zig` touched); cross-layer orphan sweep (RULE ORP — every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files); `gitleaks detect` before any Zig-including commit; 350-line / 50-fn-line check via `git diff --name-only origin/main | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' | xargs -I{} sh -c 'wc -l "{}"' | awk '$1 > 350'`.
-
-**Other:** after refactors, list newly dead code before removing — `NEWLY UNREACHABLE: <symbol/file> — <why now dead>. Remove? Confirm.` **Greptile learning capture:** each finding → "Could this recur?" If yes, add compact rule (Rule/Why/Tags/Ref) to RULES.md same commit. Never defer.
+Verification Gate defines the output block; what to actually run lives in [`docs/VERIFY_TIERS.md`](./docs/VERIFY_TIERS.md) — correctness tiers (1=`make test`, 2/3=`make test-integration`), performance/leak (`make memleak`, `make bench`), hygiene (`make lint`, `make check-pg-drain`, cross-compile both linux targets, `gitleaks`, orphan sweep, 350-line check). **FIRST: `/write-unit-test`** — audits diff coverage vs spec's Test Specification (or changed surface when no spec); skipping = CHORE(close) violation. Memleak evidence pasted into PR Session Notes (or cite CI URL). After refactors, list newly dead code before removing.
 
 ### DOCUMENT
 
@@ -372,5 +199,7 @@ Required when spec involved — after last COMMIT, before PR. Also runs when par
 Skills required. Skipping = violation. MCP down → PR Session Notes: *"`/review` skipped — MCP unavailable <ts>; rerun before merge."*
 
 **Required outputs:** all Dimensions/Sections `DONE` (or `IN_PROGRESS` if parked); spec moved `docs/v*/active/`→`docs/v*/done/` (iff fully complete); new `<Update>` in `~/Projects/docs/changelog.mdx` (template + version-bump matrix in `~/Projects/dotfiles/skills/release-template.md` — re-source each release, never paraphrase); PR `## Session notes` with decisions, assumptions, dead ends, deferrals, `/write-unit-test` + `/review` outcomes, `kishore-babysit-prs` final report; orphan sweep complete (RULE ORP); ephemeral handoff docs deleted (`docs/**/HANDOFF_*.md`, `docs/**/handoff*.md`, `HANDOFF.md` at any depth — these brief the next agent and must not ship in the PR; they belong in agent context, not source history); working tree clean before PR open/update; version sync (`VERSION` touched → `make sync-version`, commit propagated `build.zig.zon`/`zombiectl/package.json`/`zombiectl/src/cli.js`; `make check-version` passes).
+
+**Deferral discipline.** Any claim that a spec Section/Dimension was "deferred to follow-up" — in `HANDOFF.md`, PR description, Session Notes, or chat — requires a **Captain-acked verbatim quote** in PR Session Notes (or spec Discovery). Format: `> Captain (YYYY-MM-DD HH:MM): "<verbatim ack>" — context: <which item, why>`. Agent-unilateral deferral = incomplete scope, not deferral; CHORE(close) blocks until the item lands or the quote is captured. **HANDOFF.md is a faithful state report** — a pickup agent reading a HANDOFF claiming items were deferred without ack-quotes must treat them as in-scope and surface the contradiction to Captain before continuing.
 
 **Pre-PR gates** (besides skill chain): spec in `docs/v*/done/` in diff (skip iff parked); `changelog.mdx` has new `<Update>` in diff (skip iff internal-only or parked); `Status: DONE` but spec not in `done/` → do not open PR; `make check-version` passes.
