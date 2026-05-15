@@ -91,21 +91,30 @@ case "$MODE" in
 esac
 
 # Single awk pass; reads stdin (the unified diff).
+# Override-recognition: an immediately-preceding `+` line in the diff
+# containing the relevant override marker suppresses the next hit for
+# that rule on the current `+` line.
 hits=$($DIFF_CMD | awk '
-  /^\+\+\+ b\// { f=$2; sub("^b/","",f); next }
+  /^\+\+\+ b\// { f=$2; sub("^b/","",f); prev_added=""; next }
+  /^[^+]/ { prev_added=""; next }
   /^\+/ {
     line=$0
     sub(/^\+/,"",line)
-    if (f ~ /\.(zig|sql|ts|tsx|js|jsx|py|rs|go|sh|toml|yaml|json)$/ &&
+    ms_id_override = (prev_added ~ /MILESTONE ID ALLOWED per user override/)
+    ui_override = (prev_added ~ /UI GATE: SKIPPED per user override/)
+    if (!ms_id_override &&
+        f ~ /\.(zig|sql|ts|tsx|js|jsx|py|rs|go|sh|toml|yaml|json)$/ &&
         f !~ /^(docs|node_modules|vendor|third_party)\//) {
       if (match(line, /M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b/)) {
         print "MS-ID  " f ": " line
       }
     }
-    if (f ~ /^ui\/packages\/app\/.*\.(tsx|jsx)$/ &&
+    if (!ui_override &&
+        f ~ /^ui\/packages\/app\/.*\.(tsx|jsx)$/ &&
         line ~ /<(section|button|input|dialog|article|nav|header|form)[ \t>\/]/) {
       print "UI     " f ": " line
     }
+    prev_added = line
   }
 ')
 
