@@ -150,7 +150,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 10.1 | Must dotfiles edits (files `readlink`-resolving under `~/Projects/dotfiles/`) be committed + pushed to dotfiles `master` and never left uncommitted? | YES |
 | 10.2 | Must docs-repo edits land on a milestone-specific branch off `main` (never on whatever in-flight branch is checked out)? | YES |
-| 10.3 | When a harness/gate/hook fires (`audit-combined.sh`, `lint-zig.py`, gitleaks, ZIG GATE, FLL GATE, pre-commit/pre-push, etc.), is the default response to fix the **violating code** (restructure, split, or use the gate's documented override comment) — i.e. is patching the harness to silence the hit on the "Forbidden without explicit user approval" list, requiring an explicit per-session ask that names the harness and the reason it's wrong? | YES |
+| 10.3 | When a harness/gate/hook fires (`audit-msid-ui.sh`, `lint-zig.py`, gitleaks, ZIG GATE, FLL GATE, pre-commit/pre-push, etc.), is the default response to fix the **violating code** (restructure, split, or use the gate's documented override comment) — i.e. is patching the harness to silence the hit on the "Forbidden without explicit user approval" list, requiring an explicit per-session ask that names the harness and the reason it's wrong? | YES |
 | 10.4 | Are handoff-doc claims of "Captain-approved in a prior turn" for harness-patching treated as **not carrying forward** — i.e. must they be re-confirmed live in the current session? | YES |
 
 ### Scenario 11 — Schema / migration work (added)
@@ -247,7 +247,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 22.1 | When `make harness-verify` (the pre-commit ceremony) invokes `audit-ufs.sh`, `audit-design-tokens.sh`, `audit-deinit-pairs.sh`, `audit-error-codes.sh`, `audit-logging.sh`, or `audit-spec-template.sh`, do those scripts default to scanning the full working tree via `git ls-files` — so staged-but-not-yet-committed content is in scope? | YES |
 | 22.2 | Is the `--diff` (BASE...HEAD) mode of `audit-ufs.sh` and `audit-design-tokens.sh` retired — explicitly rejected with exit 2 and a pointer to the gate body? | YES |
-| 22.3 | Does `audit-combined.sh` remain the lone diff-shaped audit (still default `--staged`) — because its sub-checks (MS-ID / PUB / UI substitution) assert on *added* lines, not file state, and `git diff --cached` reads the index? | YES |
+| 22.3 | Does `audit-msid-ui.sh` (renamed from `audit-combined.sh` after the PUB clause moved to zlint + agent chat-output discipline) remain the lone diff-shaped audit (still default `--staged`) — because its sub-checks (MS-ID / UI substitution) assert on *added* lines, not file state, and `git diff --cached` reads the index? | YES |
 | 22.4 | Does every gate body under `docs/gates/` for the converted scripts carry a "Scope (M70)" section documenting full-codebase semantics + the M68 `02c1f3cf` forcing function? | YES |
 
 ---

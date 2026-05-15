@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# audit-combined.sh — single awk pass over the diff, replaces 2 separate
-# self-audits per AGENTS.md "HARNESS VERIFY → Combined end-of-turn audit".
+# audit-msid-ui.sh — single awk pass over the diff, running the two
+# discipline checks that share a regex pass (MS-ID + UI substitution).
+# Previously `audit-combined.sh`; renamed once the PUB clause moved to
+# zlint + agent chat-output discipline (see commit history).
 #
 # Emits per-line hits for:
 #   * MS-ID — milestone-id leak in source/config (M{N}_{NNN}, §X.Y, T{N},
@@ -79,7 +81,7 @@ case "$MODE" in
     LABEL="vs $BASE"
     ;;
   --all|all)
-    # No "all" mode — combined audit is diff-shaped by construction (it
+    # No "all" mode — this audit is diff-shaped by construction (it
     # asserts on *added* lines, not file state). Force callers to pick.
     echo "usage: $0 [--staged|--diff]" >&2
     exit 2
@@ -108,7 +110,7 @@ hits=$($DIFF_CMD | awk '
 ')
 
 if [ -n "$hits" ]; then
-  echo "FAIL: combined audit ($LABEL) — MS-ID / UI hits below"
+  echo "FAIL: audit-msid-ui ($LABEL) — MS-ID / UI hits below"
   printf '%s\n' "$hits"
   echo
   echo "Resolve each hit OR carve out via the relevant gate's override comment."
@@ -117,4 +119,4 @@ if [ -n "$hits" ]; then
   exit 1
 fi
 
-echo "OK:   combined audit ($LABEL) — 0 hits"
+echo "OK:   audit-msid-ui ($LABEL) — 0 hits"

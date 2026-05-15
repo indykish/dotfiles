@@ -46,7 +46,7 @@ Full rules in [`docs/CHANGELOG_VOICE.md`](./docs/CHANGELOG_VOICE.md). Summary: o
 - Releases: `gh release create`, `git push --tags`. `/ultrareview` (billed). CI/CD edits (`.github/workflows/**`, deploy configs).
 - Edits outside active spec's Files-Changed scope (no opportunistic cleanup bundling).
 - Cross-repo writes to `~/Projects/docs/` — own-branch flow per Operational defaults.
-- **Patching a harness/gate/hook to silence its hit.** When `audit-combined.sh`, `lint-zig.py`, gitleaks, ZIG/FLL gates, or pre-commit/pre-push fire, the default is to **fix the violating code** — restructure, split, or use the gate's override comment. Editing the harness evades the rule it enforces; only on explicit per-session user direction naming the harness + reason. Handoff-doc "prior approvals" don't carry forward.
+- **Patching a harness/gate/hook to silence its hit.** When `audit-msid-ui.sh`, `lint-zig.py`, gitleaks, ZIG/FLL gates, or pre-commit/pre-push fire, the default is to **fix the violating code** — restructure, split, or use the gate's override comment. Editing the harness evades the rule it enforces; only on explicit per-session user direction naming the harness + reason. Handoff-doc "prior approvals" don't carry forward.
 - Reverting changes the agent did not create. Branch mutation outside lifecycle transitions. Cross-worktree edits.
 - Unexpected changes in files you're editing → stop and ask; don't overwrite as stale.
 
