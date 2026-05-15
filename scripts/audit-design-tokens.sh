@@ -20,17 +20,24 @@
 #       $REPO/ui/packages/design-system/src/theme.css at runtime.
 # Path (c) is the right long-term shape; not done yet.
 #
+# Scope (M70):
+#   Walks the full working tree via `git ls-files` — sees staged content
+#   because the index is what `ls-files` reports. Pre-commit-safe: a fix
+#   staged but not yet committed satisfies the check on the same hook run.
+#   The previous `--diff` (BASE...HEAD) default was retired with M70
+#   because it was blind to the index at pre-commit time.
+#
 # Modes:
-#   --staged audit files in `git diff --cached --name-only` (pre-commit context)
-#   --diff   (default) audit files in `git diff --name-only origin/main`
-#   --all    audit the whole worktree (slower; periodic runs)
+#   (no flag) / --all  full-codebase scan via `git ls-files` (default)
+#   --staged           narrow to files in `git diff --cached --name-only`
+#                      — opt-in fast loop for iterative dev
 #
 # Exits 0 clean, 1 on any violation. Test files exempt
 # (snapshot/E2E assert on rendered DOM).
 
 set -euo pipefail
 
-MODE="${1:---diff}"
+MODE="${1:---all}"
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
@@ -73,51 +80,54 @@ case "$MODE" in
   --staged|staged)
     FILES=$(git diff --cached --name-only --diff-filter=ACMRT 2>/dev/null || true)
     ;;
-  --diff|diff)
-    BASE="${BASE:-origin/main}"
-    # If the base ref can't be resolved (shallow clone, offline, first
-    # push before `origin` exists), abort with an error. The previous
-    # fallback to BASE=HEAD produced `git diff HEAD...HEAD` (empty file
-    # list) and silently reported OK, defeating the gate.
-    if ! git rev-parse --verify "$BASE" >/dev/null 2>&1; then
-      echo "audit-design-tokens: cannot resolve base ref '$BASE' — run with --all or --staged, or set BASE=<ref>" >&2
-      exit 2
-    fi
-    FILES=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || true)
-    ;;
   --all|all)
-    FILES=$(find ui/packages/app ui/packages/website -type f \( -name '*.tsx' -o -name '*.jsx' \) -not -path '*/node_modules/*' -not -path '*/.next/*' 2>/dev/null)
+    # `git ls-files` reports the index, which includes staged content —
+    # so pre-commit-style invocations see staged-but-not-committed files
+    # without needing a `--staged` flag.
+    FILES=$(git ls-files -- 'ui/packages/app/*.tsx' 'ui/packages/app/*.jsx' 'ui/packages/website/*.tsx' 'ui/packages/website/*.jsx' 2>/dev/null || true)
     ;;
   *)
-    echo "usage: $0 [--staged|--diff|--all]" >&2; exit 2 ;;
+    echo "usage: $0 [--all|--staged]" >&2
+    echo "note: --diff was retired in M70 — see docs/gates/design-token.md (Scope)." >&2
+    exit 2 ;;
 esac
 
 FAIL=0
-FILES_WITH_VIOLATIONS=0
+SEEN_FILES_LIST=""
 
+# Pre-filter FILES list once (drop blanks, non-existent, out-of-scope).
+SCOPED_FILES=()
 while IFS= read -r f; do
   [ -z "$f" ] && continue
   [ ! -f "$f" ] && continue
   in_scope "$f" || continue
+  SCOPED_FILES+=("$f")
+done <<< "$FILES"
 
-  file_failed=0
+if [ "${#SCOPED_FILES[@]}" -gt 0 ]; then
   for entry in "${PATTERNS[@]}"; do
     regex="${entry%%:::*}"
     suggestion="${entry#*:::}"
+    # Single grep across all scoped files per pattern.
+    # `grep -nHE` always prefixes with filename + line; `-H` is required
+    # when a single file is supplied so the parser sees a uniform shape.
     while IFS= read -r match; do
       [ -z "$match" ] && continue
-      # Allow inline override:
-      #   // DESIGN TOKEN: SKIPPED per user override (reason: ...)
-      ln="${match%%:*}"
+      f="${match%%:*}"
+      rest="${match#*:}"
+      ln="${rest%%:*}"
+      # Honor inline override `// DESIGN TOKEN: SKIPPED per user override (reason: ...)`
+      # by checking the matched line and the line above.
       ctx=$(awk -v n="$ln" 'NR>=n-1 && NR<=n' "$f" 2>/dev/null || true)
       if printf '%s' "$ctx" | grep -q 'DESIGN TOKEN: SKIPPED'; then continue; fi
-      printf '%s\n  -> %s\n' "$f:$match" "$suggestion"
-      file_failed=1
+      printf '%s\n  -> %s\n' "$match" "$suggestion"
+      SEEN_FILES_LIST="${SEEN_FILES_LIST}${f}"$'\n'
       FAIL=1
-    done < <(grep -nE "$regex" "$f" 2>/dev/null || true)
+    done < <(grep -nHE "$regex" "${SCOPED_FILES[@]}" 2>/dev/null || true)
   done
-  [ "$file_failed" = "1" ] && FILES_WITH_VIOLATIONS=$((FILES_WITH_VIOLATIONS + 1))
-done <<< "$FILES"
+fi
+
+FILES_WITH_VIOLATIONS=$(printf '%s' "$SEEN_FILES_LIST" | sort -u | grep -c . || true)
 
 if [ "$FAIL" = "0" ]; then
   echo "OK: design-token discipline — no arbitraries that have a token equivalent (mode=$MODE)"

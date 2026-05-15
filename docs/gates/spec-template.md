@@ -47,6 +47,10 @@ SPEC TEMPLATE GATE: <file>
   Audit script: <audit-spec-template.sh on staged diff: 0 findings ✓ | N findings>
 ```
 
+## Scope (M70)
+
+`audit-spec-template.sh` walks the **full pending+active spec set** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
+
 ## End-of-turn audit
 
 `scripts/audit-spec-template.sh` runs as part of `make lint`. Mechanical regex enforcement against the patterns listed above. Failures block `make lint`.

@@ -58,13 +58,20 @@ DESIGN TOKEN GATE: <file>
     ...
 ```
 
+## Scope (M70)
+
+`audit-design-tokens.sh` walks the **full ui/packages working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. The previous `--diff` (`BASE...HEAD`) default was retired with M70 — at pre-commit time `HEAD` is the prior commit, leaving the gate blind to the index.
+
+`--all` is accepted as a back-compat alias for the default. `--staged` is preserved as an opt-in narrowing mode for iterative dev loops. `--diff` is rejected with exit 2 + a pointer to this section.
+
 ## Self-audit (end-of-turn)
 
 ```bash
-scripts/audit-design-tokens.sh --diff
+scripts/audit-design-tokens.sh           # full-codebase scan (default)
+scripts/audit-design-tokens.sh --staged  # opt-in narrowing for iterative dev
 ```
 
-The script lives in the project repo at `scripts/audit-design-tokens.sh`. It prints `file:line` + suggested token utility for every blocking violation and exits 1 on any. Whole-worktree mode: `scripts/audit-design-tokens.sh --all`.
+The script lives in the project repo at `scripts/audit-design-tokens.sh` (symlinked from `~/Projects/dotfiles/scripts/`). It prints `file:line` + suggested token utility for every blocking violation and exits 1 on any.
 
 A clean run is required before HARNESS VERIFY can advance.
 
@@ -76,7 +83,7 @@ _website_lint:
 	@cd ui/packages/website && bun run lint
 	@cd ui/packages/website && bun run typecheck
 	@echo "→ [website] Running design-token audit..."
-	@scripts/audit-design-tokens.sh --diff
+	@scripts/audit-design-tokens.sh
 	@echo "✓ [website] Lint passed"
 ```
 

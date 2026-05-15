@@ -49,13 +49,21 @@ UFS GATE: <file>
   Cross-runtime parity: <status — e.g. "NANOS_PER_USD added to Zig+TS+JS this commit" or "n/a — runtime-internal constant">
 ```
 
+## Scope (M70)
+
+`audit-ufs.sh` walks the **full working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run.
+
+The previous `--diff` (`BASE...HEAD`) default was retired with M70. The forcing function was M68 commit `02c1f3cf`: pre-commit's `HEAD` is the prior commit, so `BASE...HEAD` was blind to nine cross-runtime mismatches the agent had staged but not yet committed. The full-codebase scope removes that blindspot.
+
+`--all` is accepted as a back-compat alias for the default. `--diff` is rejected with exit 2 + a pointer to this section.
+
 ## Self-audit (end-of-turn / HARNESS VERIFY)
 
 `scripts/audit-ufs.sh` is invoked at HARNESS VERIFY by the agent. Convention follows the sibling audit scripts (`audit-logging.sh`, `audit-error-codes.sh`, `audit-deinit-pairs.sh`, `audit-spec-template.sh`) — none of them wire into `make lint`; the agent runs each as part of the gate ceremony, with the result feeding the HARNESS VERIFY table. The script is generic — no manifest of known literals — so it scales as the codebase grows:
 
 ```bash
-bash scripts/audit-ufs.sh --diff   # diff-scoped (default: against origin/main)
-bash scripts/audit-ufs.sh --all    # whole-worktree (slower; for periodic runs)
+bash scripts/audit-ufs.sh          # full-codebase scan (default and only mode)
+bash scripts/audit-ufs.sh --all    # alias for default
 ```
 
 The script emits a violations table. Empty table = pass. Each row is one of:

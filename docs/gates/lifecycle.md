@@ -65,6 +65,10 @@ LIFECYCLE GATE: <file>
   Audit script: <audit-deinit-pairs.sh on staged diff: 0 findings ✓ | N findings>
 ```
 
+## Scope (M70)
+
+`audit-deinit-pairs.sh` walks the **full `src/` working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
+
 ## End-of-turn audit
 
 `scripts/audit-deinit-pairs.sh` runs as part of `make lint`. Mechanical enforcement on init/deinit pairs, errdefer placement, and lifecycle method recognition. Reviewer responsibility for idempotency assertions and arena-leakage acknowledgements.

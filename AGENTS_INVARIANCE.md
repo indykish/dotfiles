@@ -241,6 +241,15 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 21.2 | Does the rule require the ask to include: (a) symbol/file/line flagged, (b) fix scope (files, lines, follow-on), (c) what we gain, (d) what happens if not fixed? | YES |
 | 21.3 | Does the rule explicitly forbid the agent from unilaterally classifying a flag as a false-positive — including for one-line obvious fixes? | YES |
 
+### Scenario 22 — Pre-commit audit scope (M70)
+
+| # | Question | Expected |
+|---|---|---|
+| 22.1 | When `make harness-verify` (the pre-commit ceremony) invokes `audit-ufs.sh`, `audit-design-tokens.sh`, `audit-deinit-pairs.sh`, `audit-error-codes.sh`, `audit-logging.sh`, or `audit-spec-template.sh`, do those scripts default to scanning the full working tree via `git ls-files` — so staged-but-not-yet-committed content is in scope? | YES |
+| 22.2 | Is the `--diff` (BASE...HEAD) mode of `audit-ufs.sh` and `audit-design-tokens.sh` retired — explicitly rejected with exit 2 and a pointer to the gate body? | YES |
+| 22.3 | Does `audit-combined.sh` remain the lone diff-shaped audit (still default `--staged`) — because its sub-checks (MS-ID / PUB / UI substitution) assert on *added* lines, not file state, and `git diff --cached` reads the index? | YES |
+| 22.4 | Does every gate body under `docs/gates/` for the converted scripts carry a "Scope (M70)" section documenting full-codebase semantics + the M68 `02c1f3cf` forcing function? | YES |
+
 ---
 
 ## Step 3 — Write the sign-off file
@@ -289,6 +298,7 @@ Scenario verdicts:
 | 10 | Dotfiles / docs-repo                    | <N/M YES>       |
 | 11 | Schema / migration                      | <N/M YES>       |
 | 12 | Auto-mode boundary                      | <N/M YES>       |
+| 22 | Pre-commit audit scope (M70)            | <N/M YES>       |
 
 OVERALL: PASS | FAIL — <reason if fail>
 ```

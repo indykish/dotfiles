@@ -16,15 +16,31 @@
 # Carve-out: any `// pin test: literal is the contract` comment on or
 # above the offending line excludes that line from numeric-suspect.
 #
-# Modes:
-#   --diff   (default) audit files in `git diff --name-only origin/main`
-#   --all    audit the whole worktree (slower; periodic runs)
+# Scope (M70):
+#   Walks the full working tree via `git ls-files` — sees staged content
+#   because the index is what `ls-files` reports. Pre-commit-safe: a fix
+#   staged but not yet committed satisfies the check on the same hook run.
+#   The previous `--diff` (BASE...HEAD) mode was retired with M70 because
+#   it was blind to the index at pre-commit time.
+#
+# Usage:
+#   audit-ufs.sh           # full-codebase scan (default and only mode)
+#   audit-ufs.sh --all     # alias for default
 #
 # Exits 0 clean, 1 on any blocking violation.
 
 set -euo pipefail
 
-MODE="${1:---diff}"
+# Single mode after M70: full-codebase scan. `--all` accepted as alias
+# for back-compat with the harness-verify-all target.
+case "${1:-}" in
+  ""|--all|all) ;;
+  *)
+    printf "usage: %s [--all]\n" "$0" >&2
+    printf "note: --diff was retired in M70 — see docs/gates/ufs.md (Scope).\n" >&2
+    exit 2
+    ;;
+esac
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
@@ -47,24 +63,9 @@ is_source() {
   esac
 }
 
-case "$MODE" in
-  --diff|diff)
-    BASE="${UFS_BASE:-origin/main}"
-    git fetch --quiet origin main 2>/dev/null || true
-    mapfile -t FILES < <(git diff --name-only "$BASE"...HEAD 2>/dev/null | while read -r f; do
-      [ -f "$f" ] && is_source "$f" && echo "$f"
-    done)
-    ;;
-  --all|all)
-    mapfile -t FILES < <(git ls-files | while read -r f; do
-      is_source "$f" && echo "$f"
-    done)
-    ;;
-  *)
-    printf "usage: %s [--diff | --all]\n" "$0" >&2
-    exit 2
-    ;;
-esac
+mapfile -t FILES < <(git ls-files | while read -r f; do
+  is_source "$f" && echo "$f"
+done)
 
 [ "${#FILES[@]}" -eq 0 ] && { ok "audit-ufs: no source files in scope"; exit 0; }
 
@@ -73,36 +74,44 @@ esac
 # inside strings — fine for this discipline check, not a parser). Skip
 # 1-char strings, common short labels, doc-strings, JSON keys.
 
-for f in "${FILES[@]}"; do
-  # Strip line comments first to avoid matching strings in commentary.
-  # Then extract every "..." literal, sort, count, flag any with count ≥2
-  # whose value length ≥2 and isn't a bare punctuation char.
-  #
-  # `|| true` on the two grep stages keeps `set -euo pipefail` from killing
-  # the audit when a file has zero double-quoted literals (e.g. a TS
-  # config file using only single-quoted strings — vitest.config.ts is
-  # the canonical example). Empty pipe input is a valid "no violations in
-  # this file" signal, not a failure.
-  #
-  # NOTE: there is a long-standing latent bug where the `while record`
-  # subshell does not propagate FAIL / violations back to the parent —
-  # so the string-dup audit silently passes even when violations exist.
-  # That deserves its own dedicated cleanup pass (≈275 pre-existing
-  # violations would surface); fixing it together with the grep-empty
-  # guard would expand this script's blast radius mid-flight.
-  awk '
-    # Drop line comments (// ... and # ...) but keep block comments visible
-    # — they would need a multiline strip; the noise is acceptable.
-    { sub(/\/\/.*$/, ""); print }
-  ' "$f" \
-  | { grep -oE '"[^"]{2,}"' || true; } \
-  | { grep -vE '^"(http|https|file|/|\\\\|\\\\n)' || true; } \
-  | sort | uniq -c | awk '$1 >= 2 { sub(/^[ \t]+/, ""); print }' \
-  | while IFS= read -r line; do
-      count="${line%% *}"
-      literal="${line#* }"
-      record "string-dup-file $f $literal $count"
-    done
+# Perf (M70): single awk over all files instead of per-file pipeline
+# (was 5 forks × ~760 files = ~20s). Group counts by FILENAME so the
+# "≥2 occurrences in one file" semantic is preserved.
+#
+# NOTE: there is a long-standing latent bug where the `while record`
+# subshell does not propagate FAIL / violations back to the parent —
+# so the string-dup audit silently passes even when violations exist.
+# That deserves its own dedicated cleanup pass (≈3019 pre-existing
+# violations would surface — much higher than the ≈275 estimate written
+# when the bug was discovered, because the per-file loop was masking
+# even more than the author knew). Fixing it together with M70 would
+# expand this script's blast radius mid-flight; the subshell shape is
+# preserved deliberately.
+awk '
+  FNR == 1 { prev_file = FILENAME }
+  {
+    line = $0
+    sub(/\/\/.*$/, "", line)
+    rest = line
+    while (match(rest, /"[^"]{2,}"/)) {
+      lit = substr(rest, RSTART, RLENGTH)
+      rest = substr(rest, RSTART + RLENGTH)
+      if (lit ~ /^"(http|https|file|\/|\\\\|\\\\n)/) continue
+      key = FILENAME "\034" lit
+      count[key]++
+      file_of[key] = FILENAME
+      lit_of[key] = lit
+    }
+  }
+  END {
+    for (k in count) {
+      if (count[k] >= 2) {
+        printf "string-dup-file %s %s %d\n", file_of[k], lit_of[k], count[k]
+      }
+    }
+  }
+' "${FILES[@]}" | while IFS= read -r row; do
+  record "$row"
 done
 
 # ── 2. numeric-suspect ──────────────────────────────────────────────────────
@@ -117,26 +126,27 @@ done
 
 NUMERIC_RE='(\b1[_e]?0{3,12}\b|\b1_000(_000)*\b|\b10_000_000\b|\b100_000\b|\b1024\b|\b1048576\b|\b3600\b|\b86400\b)'
 
-for f in "${FILES[@]}"; do
-  # Walk lines with awk; track previous line to allow above-line carve-out.
-  awk -v file="$f" -v re="$NUMERIC_RE" '
-    BEGIN { prev = "" }
-    {
-      line = $0
-      is_pin_now   = (line ~ /pin test: literal is the contract/)
-      is_pin_above = (prev ~ /pin test: literal is the contract/)
-      is_const_decl = (line ~ /(^|[[:space:]])(pub[[:space:]]+const|export[[:space:]]+const|const)[[:space:]]/)
-      stripped = line
-      sub(/\/\/.*$/, "", stripped)
-      sub(/#.*$/, "", stripped)
-      if (!is_pin_now && !is_pin_above && !is_const_decl && match(stripped, re)) {
-        printf "numeric-suspect %s:%d %s\n", file, NR, substr(stripped, RSTART, RLENGTH)
-      }
-      prev = line
+# Perf (M70): single awk across all files; FNR == 1 detects file boundary
+# so the "prev line carve-out" stays per-file. Subshell-pipe shape
+# preserved deliberately (see string-dup-file NOTE above — the latent
+# violations-propagation bug is out of scope for M70).
+awk -v re="$NUMERIC_RE" '
+  FNR == 1 { prev = "" }
+  {
+    line = $0
+    is_pin_now   = (line ~ /pin test: literal is the contract/)
+    is_pin_above = (prev ~ /pin test: literal is the contract/)
+    is_const_decl = (line ~ /(^|[[:space:]])(pub[[:space:]]+const|export[[:space:]]+const|const)[[:space:]]/)
+    stripped = line
+    sub(/\/\/.*$/, "", stripped)
+    sub(/#.*$/, "", stripped)
+    if (!is_pin_now && !is_pin_above && !is_const_decl && match(stripped, re)) {
+      printf "numeric-suspect %s:%d %s\n", FILENAME, FNR, substr(stripped, RSTART, RLENGTH)
     }
-  ' "$f" | while IFS= read -r row; do
-      record "$row"
-    done
+    prev = line
+  }
+' "${FILES[@]}" | while IFS= read -r row; do
+  record "$row"
 done
 
 # ── 3. cross-runtime-orphan ─────────────────────────────────────────────────
@@ -146,25 +156,28 @@ done
 # have a matching Zig pub const ERR_*. Zig-only ERR_* consts are fine
 # (server-internal codes don't need a client mirror).
 #
-# Always runs (both --diff and --all). Pre-commit-friendly: scans the
-# *working tree* via `git ls-files`, which sees staged content even
-# before it lands in HEAD — closing the previous diff-mode blindspot
-# where a fix staged in pre-commit couldn't satisfy a check that only
-# read committed history.
+# Scans the *working tree* via `git ls-files` — sees staged content even
+# before it lands in HEAD, closing the previous diff-mode blindspot where
+# a fix staged in pre-commit couldn't satisfy a check that only read
+# committed history.
+#
+# Perf (M70): batched `xargs grep` (single process across all files)
+# instead of `xargs -I{} grep` (one process per file). On usezombie the
+# server-side scan dropped from ~30s to <2s.
 
-zig_err=$(git ls-files -- 'src/*.zig' 2>/dev/null \
-  | grep -vE '_test\.zig$|^src/zbench_fixtures\.zig$' \
-  | xargs -I{} grep -hE '^pub const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' {} 2>/dev/null \
+zig_err=$(git ls-files -z -- 'src/*.zig' 2>/dev/null \
+  | { grep -zvE '_test\.zig$|^src/zbench_fixtures\.zig$' || true; } \
+  | xargs -0 grep -hE '^pub const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' 2>/dev/null \
   | grep -oE 'ERR_[A-Z][A-Z0-9_]+' | sort -u || true)
 
-js_err=$(git ls-files -- 'zombiectl/src/*.js' 'zombiectl/src/*.jsx' 'zombiectl/src/*.ts' 'zombiectl/src/*.tsx' 2>/dev/null \
-  | grep -vE '\.test\.|\.spec\.' \
-  | xargs -I{} grep -hE '^export const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' {} 2>/dev/null \
+js_err=$(git ls-files -z -- 'zombiectl/src/*.js' 'zombiectl/src/*.jsx' 'zombiectl/src/*.ts' 'zombiectl/src/*.tsx' 2>/dev/null \
+  | { grep -zvE '\.test\.|\.spec\.' || true; } \
+  | xargs -0 grep -hE '^export const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' 2>/dev/null \
   | grep -oE 'ERR_[A-Z][A-Z0-9_]+' | sort -u || true)
 
-ui_err=$(git ls-files -- 'ui/packages/*/src/*.ts' 'ui/packages/*/src/*.tsx' 2>/dev/null \
-  | grep -vE '\.test\.|\.spec\.' \
-  | xargs -I{} grep -hE '^export const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' {} 2>/dev/null \
+ui_err=$(git ls-files -z -- 'ui/packages/*/src/*.ts' 'ui/packages/*/src/*.tsx' 2>/dev/null \
+  | { grep -zvE '\.test\.|\.spec\.' || true; } \
+  | xargs -0 grep -hE '^export const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' 2>/dev/null \
   | grep -oE 'ERR_[A-Z][A-Z0-9_]+' | sort -u || true)
 
 # Every JS ERR_* must exist in Zig.

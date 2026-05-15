@@ -12,9 +12,34 @@
 #
 # Non-empty hit list → exit 1. Otherwise exit 0 + one OK line.
 #
+# Per-check scope (M70):
+#   Unlike the rest of the audit-*.sh family, this script stays
+#   diff-shaped (asserts on *added* `^\+` lines, not file state).
+#   Each sub-check's rule is shaped as "don't introduce X" rather than
+#   "X must not exist anywhere", so a full-codebase scan would change
+#   the semantic:
+#     * MS-ID — flags milestone identifiers added in this commit.
+#               Historical docs in `done/` legitimately contain them,
+#               and code comments may reference them in old commits.
+#               Only newly-added M{N}_{NNN} citations should fail.
+#     * PUB   — flags unannounced `pub` declarations introduced now.
+#               Pre-existing pub surface is owned by the architecture
+#               doc; only *new* unannounced pub is a violation.
+#     * UI    — flags raw HTML primitives added now where a design-system
+#               component exists. Legacy raw-HTML in unrelated files is
+#               cleaned by the touch-it-fix-it rule (RULE NLR), not by
+#               this audit's scope.
+#
+#   Conversion to full-codebase scope is a separate research spec — see
+#   M70_001 §3 + Failure Modes. The M70 thesis (pre-commit sees staged
+#   content) holds here too: `git diff --cached` reads the index, so the
+#   staged-not-committed slip is not a risk for this script's checks.
+#
 # Modes:
 #   --staged  (default) diff against `git diff --cached -U0`
-#   --diff              diff against origin/main
+#             — pre-commit context; index includes staged content
+#   --diff              diff against origin/main (vs BASE...HEAD)
+#             — used by `make harness-verify-all` periodic deep audit
 #
 # Gate bodies:
 #   docs/gates/milestone-id.md

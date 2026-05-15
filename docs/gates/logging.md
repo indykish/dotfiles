@@ -56,6 +56,10 @@ LOGGING GATE: <file>
   Audit script: <audit-logging.sh on staged diff: 0 findings ✓ | N findings>
 ```
 
+## Scope (M70)
+
+`audit-logging.sh` walks the **full `src/` + `zombiectl/src/` working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
+
 ## End-of-turn audit
 
 `scripts/audit-logging.sh` runs as part of `make lint`. Mechanical enforcement; reviewer responsibility for severity-level subjective calls and PII spot-checks (allow-list and msg-length are mechanical).
