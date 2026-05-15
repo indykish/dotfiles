@@ -140,49 +140,45 @@ for f in "${FILES[@]}"; do
 done
 
 # ── 3. cross-runtime-orphan ─────────────────────────────────────────────────
-# When the diff touches >1 runtime, every SCREAMING_SNAKE const defined in
-# one runtime in the diff should also exist in any sibling runtime *that
-# the diff touches*. We do not enforce parity for runtime-internal consts
-# that only one runtime uses.
+# Full-codebase ERR_* parity check. Scoped to ERR_* prefix because that's
+# the cross-runtime contract surface (server error codes consumed by
+# clients). Server (Zig) is the source of truth — every JS/TS ERR_* must
+# have a matching Zig pub const ERR_*. Zig-only ERR_* consts are fine
+# (server-internal codes don't need a client mirror).
+#
+# Always runs (both --diff and --all). Pre-commit-friendly: scans the
+# *working tree* via `git ls-files`, which sees staged content even
+# before it lands in HEAD — closing the previous diff-mode blindspot
+# where a fix staged in pre-commit couldn't satisfy a check that only
+# read committed history.
 
-if [ "$MODE" = "--diff" ] || [ "$MODE" = "diff" ]; then
-  zig_touched=0; ts_touched=0; js_touched=0
-  for f in "${FILES[@]}"; do
-    case "$f" in
-      *.zig)             zig_touched=1 ;;
-      *.ts|*.tsx)        ts_touched=1 ;;
-      *.js|*.jsx)        js_touched=1 ;;
-    esac
-  done
+zig_err=$(git ls-files -- 'src/*.zig' 2>/dev/null \
+  | grep -vE '_test\.zig$|^src/zbench_fixtures\.zig$' \
+  | xargs -I{} grep -hE '^pub const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' {} 2>/dev/null \
+  | grep -oE 'ERR_[A-Z][A-Z0-9_]+' | sort -u || true)
 
-  cross_count=$((zig_touched + ts_touched + js_touched))
-  if [ "$cross_count" -ge 2 ]; then
-    # Extract `pub const NAME` from Zig diff hunks
-    zig_consts=$(grep -hE '^\+.*pub const [A-Z][A-Z0-9_]+[[:space:]]*[:=]' \
-      <(git diff "$BASE"...HEAD -- '*.zig' 2>/dev/null) 2>/dev/null \
-      | grep -oE '\bpub const [A-Z][A-Z0-9_]+' | awk '{print $3}' | sort -u || true)
-    # Extract `export const NAME` from TS/JS diff hunks
-    js_consts=$(grep -hE '^\+.*export const [A-Z][A-Z0-9_]+[[:space:]]*[:=]' \
-      <(git diff "$BASE"...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' 2>/dev/null) 2>/dev/null \
-      | grep -oE 'export const [A-Z][A-Z0-9_]+' | awk '{print $3}' | sort -u || true)
+js_err=$(git ls-files -- 'zombiectl/src/*.js' 'zombiectl/src/*.jsx' 'zombiectl/src/*.ts' 'zombiectl/src/*.tsx' 2>/dev/null \
+  | grep -vE '\.test\.|\.spec\.' \
+  | xargs -I{} grep -hE '^export const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' {} 2>/dev/null \
+  | grep -oE 'ERR_[A-Z][A-Z0-9_]+' | sort -u || true)
 
-    # Cross-check: each Zig const should appear in TS or JS source IF the
-    # diff also touches those runtimes (heuristic: check whole worktree).
-    for c in $zig_consts; do
-      if [ "$ts_touched" -eq 1 ] && ! grep -rqE "\b$c\b" --include='*.ts' --include='*.tsx' .; then
-        record "cross-runtime-orphan $c absent-in-ts"
-      fi
-      if [ "$js_touched" -eq 1 ] && ! grep -rqE "\b$c\b" --include='*.js' --include='*.jsx' .; then
-        record "cross-runtime-orphan $c absent-in-js"
-      fi
-    done
-    for c in $js_consts; do
-      if [ "$zig_touched" -eq 1 ] && ! grep -rqE "\b$c\b" --include='*.zig' .; then
-        record "cross-runtime-orphan $c absent-in-zig"
-      fi
-    done
+ui_err=$(git ls-files -- 'ui/packages/*/src/*.ts' 'ui/packages/*/src/*.tsx' 2>/dev/null \
+  | grep -vE '\.test\.|\.spec\.' \
+  | xargs -I{} grep -hE '^export const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' {} 2>/dev/null \
+  | grep -oE 'ERR_[A-Z][A-Z0-9_]+' | sort -u || true)
+
+# Every JS ERR_* must exist in Zig.
+for c in $js_err; do
+  if ! echo "$zig_err" | grep -qx "$c"; then
+    record "cross-runtime-orphan $c absent-in-zig"
   fi
-fi
+done
+# Every TS (UI) ERR_* must exist in Zig.
+for c in $ui_err; do
+  if ! echo "$zig_err" | grep -qx "$c"; then
+    record "cross-runtime-orphan $c absent-in-zig"
+  fi
+done
 
 # ── Report ──────────────────────────────────────────────────────────────────
 
