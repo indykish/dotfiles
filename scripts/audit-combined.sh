@@ -74,19 +74,41 @@ case "$MODE" in
 esac
 
 # Single awk pass; reads stdin (the unified diff).
+#
+# Block-scope tracking for the variant-line clause: a line like `BrokenPipe,`
+# looks identical whether its enclosing `enum|struct|error{` is `pub` or not.
+# `private_block` tracks whether we're inside an explicitly-private block
+# within this diff so clause 3 fires only on variants in pub blocks.
+# Conservative default (unknown scope → flag) preserves prior behavior when
+# the block opening is outside the staged diff.
 hits=$($DIFF_CMD | awk '
-  /^\+\+\+ b\// { f=$2; sub("^b/","",f); next }
+  /^\+\+\+ b\// { f=$2; sub("^b/","",f); private_block=0; next }
+  /^@@/ { private_block=0; next }
+  /^-/ { next }
   /^\+/ {
     line=$0
     sub(/^\+/,"",line)
+
+    if (line ~ /^pub const [A-Za-z_][A-Za-z0-9_]* *= *(enum|struct|error)/) {
+      private_block = 0
+    } else if (line ~ /^const [A-Za-z_][A-Za-z0-9_]* *= *(enum|struct|error)/) {
+      private_block = 1
+    } else if (line ~ /^\}/) {
+      private_block = 0
+    }
+
     if (f ~ /\.(zig|sql|ts|tsx|js|jsx|py|rs|go|sh|toml|yaml|json)$/ &&
         f !~ /^(docs|node_modules|vendor|third_party)\//) {
       if (match(line, /M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b/)) {
         print "MS-ID  " f ": " line
       }
     }
-    if (f ~ /\.zig$/ && line ~ /^(pub | *pub fn | *[A-Z][a-zA-Z]+,$)/) {
-      print "PUB    " f ": " line
+    if (f ~ /\.zig$/) {
+      if (line ~ /^(pub | *pub fn )/) {
+        print "PUB    " f ": " line
+      } else if (line ~ /^ *[A-Z][a-zA-Z]+,$/ && !private_block) {
+        print "PUB    " f ": " line
+      }
     }
     if (f ~ /^ui\/packages\/app\/.*\.(tsx|jsx)$/ &&
         line ~ /<(section|button|input|dialog|article|nav|header|form)[ \t>\/]/) {
