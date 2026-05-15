@@ -97,21 +97,38 @@ inits_value_type=0
 inits_requires_cleanup=0
 inits_unpaired=0
 
+# Filter to existing files once.
+present_files=()
 for f in "${FILES[@]}"; do
-  [[ -f "$f" ]] || continue
-  files_scanned=$((files_scanned + 1))
+  [[ -f "$f" ]] && present_files+=("$f") && files_scanned=$((files_scanned + 1))
+done
 
-  has_cleanup=0
-  if grep -qE "$CLEANUP_RE" "$f"; then
-    has_cleanup=1
-  fi
+# M70 perf: pre-compute file sets in batched greps instead of one grep
+# per file (~760 forks → 2 forks). Reads as "membership sets" for the
+# per-init loop below.
+declare -A files_with_cleanup=()
+if [[ ${#present_files[@]} -gt 0 ]]; then
+  while IFS= read -r f; do
+    [[ -n "$f" ]] && files_with_cleanup["$f"]=1
+  done < <(grep -lE "$CLEANUP_RE" "${present_files[@]}" 2>/dev/null || true)
+fi
 
-  while IFS=: read -r ln sig; do
-    [[ -z "$ln" ]] && continue
+# Enumerate every `pub fn init(` site in one batched grep. Output shape:
+# `<file>:<line>:<sig>` — same as the per-file `grep -nE` produced, just
+# with the filename prepended by `-H`.
+inits_list=$(grep -nHE 'pub fn init\(' "${present_files[@]}" 2>/dev/null || true)
+
+if [[ -n "$inits_list" ]]; then
+  while IFS= read -r row; do
+    [[ -z "$row" ]] && continue
+    f="${row%%:*}"
+    rest="${row#*:}"
+    ln="${rest%%:*}"
+    sig="${rest#*:}"
     inits_total=$((inits_total + 1))
 
     heap=0
-    if grep -qE "$HEAP_RETURN_RE" <<<"$sig"; then
+    if [[ "$sig" =~ \)[[:space:]]*\!?\*([A-Z@]|Self) ]]; then
       heap=1
     fi
 
@@ -134,7 +151,7 @@ for f in "${FILES[@]}"; do
     fi
 
     inits_requires_cleanup=$((inits_requires_cleanup + 1))
-    if [[ $has_cleanup -eq 0 ]]; then
+    if [[ -z "${files_with_cleanup[$f]+x}" ]]; then
       inits_unpaired=$((inits_unpaired + 1))
       reason=""
       [[ $heap -eq 1 ]] && reason="heap-return"
@@ -142,17 +159,21 @@ for f in "${FILES[@]}"; do
       fail "$f:$ln — \`pub fn init\` requires cleanup ($reason) but no cleanup method in file"
       printf "        > %s\n" "$(echo "$sig" | sed 's/^[[:space:]]*//')" >&2
     fi
-  done < <(grep -nE 'pub fn init\(' "$f")
-done
+  done <<< "$inits_list"
+fi
 
 # ---------------------------------------------------------------------------
 # 3. Detect defer/errdefer conflicts on the same allocation target.
 #    Skip trivial optional-binding names (1-2 char like `v`, `it`) which
 #    are local to each `if (x) |v|` scope and not actual conflicts.
 # ---------------------------------------------------------------------------
-for f in "${FILES[@]}"; do
-  [[ -f "$f" ]] || continue
-  awk -v F="$f" '
+# M70 perf: single awk across every file. File-local state (defers[]
+# and errdefers[] arrays) resets on FNR == 1 via process_file() flush.
+if [[ ${#present_files[@]} -gt 0 ]]; then
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    fail "defer/errdefer conflict (same target, ≤4 line window): $line"
+  done < <(awk '
     function extract_target(line,    s, p, q) {
       p = index(line, ".free(");
       if (p == 0) p = index(line, ".destroy(");
@@ -164,32 +185,32 @@ for f in "${FILES[@]}"; do
       return substr(s, p + 1, q - p - 1);
     }
     function is_optional_binding(line) {
-      # Pattern: `if (X) |Y| ... free(Y)` — Y is a local capture, not a real shared target.
       return (line ~ /\|[a-z_]+\|/);
     }
-    /^[[:space:]]*defer[[:space:]].*\.(free|destroy)\(/ {
-      tgt = extract_target($0);
-      if (tgt != "" && length(tgt) > 2 && !is_optional_binding($0)) defers[NR] = tgt;
-    }
-    /^[[:space:]]*errdefer[[:space:]].*\.(free|destroy)\(/ {
-      tgt = extract_target($0);
-      if (tgt != "" && length(tgt) > 2 && !is_optional_binding($0)) errdefers[NR] = tgt;
-    }
-    END {
+    function flush() {
       for (d in defers) {
         for (e in errdefers) {
           gap = d - e; if (gap < 0) gap = -gap;
           if (defers[d] == errdefers[e] && gap <= 4) {
-            printf "%s:%d:%d: defer/errdefer conflict on %s\n", F, d, e, defers[d];
+            printf "%s:%d:%d: defer/errdefer conflict on %s\n", current_file, d, e, defers[d];
           }
         }
       }
+      delete defers; delete errdefers
     }
-  ' "$f" | while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    fail "defer/errdefer conflict (same target, ≤4 line window): $line"
-  done
-done
+    FNR == 1 && current_file != "" { flush() }
+    FNR == 1 { current_file = FILENAME }
+    /^[[:space:]]*defer[[:space:]].*\.(free|destroy)\(/ {
+      tgt = extract_target($0);
+      if (tgt != "" && length(tgt) > 2 && !is_optional_binding($0)) defers[FNR] = tgt;
+    }
+    /^[[:space:]]*errdefer[[:space:]].*\.(free|destroy)\(/ {
+      tgt = extract_target($0);
+      if (tgt != "" && length(tgt) > 2 && !is_optional_binding($0)) errdefers[FNR] = tgt;
+    }
+    END { if (current_file != "") flush() }
+  ' "${present_files[@]}")
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Verdict.

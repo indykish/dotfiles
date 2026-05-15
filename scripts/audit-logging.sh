@@ -101,43 +101,58 @@ if [[ ${#FILES[@]} -eq 0 ]]; then
   exit 0
 fi
 
+# Build the in-scope file subsets once. The per-section loops below
+# previously ran 3–4 forks × N files; M70 perf pass batches them into
+# single awk/grep passes.
+zig_nontest=()
+js_nontest=()
+for f in "${FILES[@]}"; do
+  if [[ "$f" == *.zig ]] && ! is_test_zig "$f"; then
+    zig_nontest+=("$f")
+  fi
+  case "$f" in
+    zombiectl/src/*.test.*|zombiectl/src/*.spec.*|zombiectl/src/tests/*) ;;
+    zombiectl/src/*.js|zombiectl/src/*.jsx|zombiectl/src/*.ts|zombiectl/src/*.tsx)
+      js_nontest+=("$f")
+      ;;
+  esac
+done
+
 # ---------------------------------------------------------------------------
 # 2. BLOCKING: std.debug.print in non-test Zig source.
 # ---------------------------------------------------------------------------
 debug_print_hits=0
-for f in "${FILES[@]}"; do
-  [[ "$f" == *.zig ]] || continue
-  is_test_zig "$f" && continue
-
-  # Scan with awk so we can skip lines inside `test "..."` blocks
-  # (inline tests in non-_test.zig files — common in some modules).
+if [[ ${#zig_nontest[@]} -gt 0 ]]; then
+  # Single awk across every non-test .zig file; FNR == 1 resets the
+  # `test "..."` block tracker per file. Skips lines inside inline tests.
   while IFS= read -r match; do
     [[ -z "$match" ]] && continue
-    fail "$f:$match — \`std.debug.print\` in non-test source (LOGGING_STANDARD §10A.L1)"
+    f="${match%%:*}"
+    ln="${match#*:}"
+    fail "$f:$ln — \`std.debug.print\` in non-test source (LOGGING_STANDARD §10A.L1)"
     debug_print_hits=$((debug_print_hits + 1))
   done < <(awk '
+    FNR == 1 { in_test = 0 }
     /^test "/ { in_test = 1; next }
     /^}/ { in_test = 0; next }
-    /\bstd\.debug\.print\(/ { if (!in_test) print NR }
-  ' "$f")
-done
+    /\bstd\.debug\.print\(/ { if (!in_test) printf "%s:%d\n", FILENAME, FNR }
+  ' "${zig_nontest[@]}")
+fi
 
 # ---------------------------------------------------------------------------
 # 3. BLOCKING: console.log/debug/info/warn/error in zombiectl/src non-test.
 # ---------------------------------------------------------------------------
 console_hits=0
-for f in "${FILES[@]}"; do
-  case "$f" in
-    zombiectl/src/*.test.*|zombiectl/src/*.spec.*|zombiectl/src/tests/*) continue ;;
-    zombiectl/src/*.js|zombiectl/src/*.jsx|zombiectl/src/*.ts|zombiectl/src/*.tsx) ;;
-    *) continue ;;
-  esac
+if [[ ${#js_nontest[@]} -gt 0 ]]; then
   while IFS= read -r match; do
     [[ -z "$match" ]] && continue
-    fail "$f:$match — \`console.*\` in non-test source (BUN_RULES §10, LOGGING_STANDARD §8)"
+    f="${match%%:*}"
+    rest="${match#*:}"
+    ln="${rest%%:*}"
+    fail "$f:$ln — \`console.*\` in non-test source (BUN_RULES §10, LOGGING_STANDARD §8)"
     console_hits=$((console_hits + 1))
-  done < <(grep -nE '\bconsole\.(log|debug|info|warn|error)\(' "$f" | cut -d: -f1)
-done
+  done < <(grep -nHE '\bconsole\.(log|debug|info|warn|error)\(' "${js_nontest[@]}" 2>/dev/null || true)
+fi
 
 # ---------------------------------------------------------------------------
 # 4. INFO: std.log.scoped outside src/logging/ (pre-migration to the named
@@ -146,18 +161,23 @@ done
 #    portability exception is gone.
 # ---------------------------------------------------------------------------
 scoped_hits=0
-for f in "${FILES[@]}"; do
-  [[ "$f" == *.zig ]] || continue
-  is_test_zig "$f" && continue
+scoped_eligible=()
+for f in "${zig_nontest[@]}"; do
   case "$f" in
     src/logging/*) continue ;;
   esac
-  count=$(grep -cE '\bstd\.log\.scoped\(' "$f" 2>/dev/null) || count=0
-  if [[ "$count" -gt 0 ]]; then
+  scoped_eligible+=("$f")
+done
+if [[ ${#scoped_eligible[@]} -gt 0 ]]; then
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    count="${line%% *}"
+    f="${line#* }"
     note "$f — $count call(s) to \`std.log.scoped\` (migrate to \`logging.scoped\` per LOGGING_STANDARD §7)"
     scoped_hits=$((scoped_hits + count))
-  fi
-done
+  done < <(grep -cHE '\bstd\.log\.scoped\(' "${scoped_eligible[@]}" 2>/dev/null \
+    | awk -F: '$2 > 0 { print $2, $1 }')
+fi
 
 # ---------------------------------------------------------------------------
 # 5. INFO: err/warn logs without `error_code=` substring on the same line.
@@ -165,19 +185,17 @@ done
 #    embed UZ-XXX-NNN per LOGGING_STANDARD §5.
 # ---------------------------------------------------------------------------
 missing_code_hits=0
-for f in "${FILES[@]}"; do
-  [[ "$f" == *.zig ]] || continue
-  is_test_zig "$f" && continue
+if [[ ${#zig_nontest[@]} -gt 0 ]]; then
   while IFS= read -r line; do
     [[ -z "$line" ]] && continue
-    ln="${line%%:*}"
+    [[ "$line" == *error_code=* ]] && continue
+    f="${line%%:*}"
     rest="${line#*:}"
-    if ! grep -q 'error_code=' <<<"$rest"; then
-      note "$f:$ln — \`std.log.{err,warn}\` without \`error_code=\` (LOGGING_STANDARD §5)"
-      missing_code_hits=$((missing_code_hits + 1))
-    fi
-  done < <(grep -nE '\bstd\.log\.(err|warn)\b' "$f")
-done
+    ln="${rest%%:*}"
+    note "$f:$ln — \`std.log.{err,warn}\` without \`error_code=\` (LOGGING_STANDARD §5)"
+    missing_code_hits=$((missing_code_hits + 1))
+  done < <(grep -nHE '\bstd\.log\.(err|warn)\b' "${zig_nontest[@]}" 2>/dev/null || true)
+fi
 
 # ---------------------------------------------------------------------------
 # 6. Promote INFO to BLOCK in --strict mode.
