@@ -92,6 +92,12 @@ done < <(awk '
     is_test = (FILENAME ~ /(_test\.zig|\.test\.|\.spec\.|\.unit\.test|\.integration\.test|\/test\/|\/tests\/)/)
   }
   is_test { next }
+  # ui/ files: extracting class-strings or short literals to file-local
+  # consts is fragile in TypeScript (type-position uses widen string|
+  # literal types, and the cleanup belongs in a UI-aware spec). Skip
+  # string-dup-file for ui/packages/*/src; cross-runtime-orphan still
+  # runs against ui/ to catch ERR_* parity drift.
+  FILENAME ~ /^ui\/packages\/[^/]+\/(src|app|tests|components|lib|hooks)\// { next }
   FNR == 1 { in_test_block = 0; test_depth = 0; in_block_comment = 0 }
   {
     line = $0
