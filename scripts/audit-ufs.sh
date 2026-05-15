@@ -78,24 +78,69 @@ done)
 # (was 5 forks × ~760 files = ~20s). Group counts by FILENAME so the
 # "≥2 occurrences in one file" semantic is preserved.
 #
-# NOTE: there is a long-standing latent bug where the `while record`
-# subshell does not propagate FAIL / violations back to the parent —
-# so the string-dup audit silently passes even when violations exist.
-# That deserves its own dedicated cleanup pass (≈3019 pre-existing
-# violations would surface — much higher than the ≈275 estimate written
-# when the bug was discovered, because the per-file loop was masking
-# even more than the author knew). Fixing it together with M70 would
-# expand this script's blast radius mid-flight; the subshell shape is
-# preserved deliberately.
-awk '
-  FNR == 1 { prev_file = FILENAME }
+# Subshell-propagation fix (M70): the loop reads from a process
+# substitution (not a pipe) so `record` mutates FAIL / violations in
+# the parent shell. The previous pipe-into-while form ran the loop in
+# a subshell and silently dropped violations.
+while IFS= read -r row; do
+  record "$row"
+done < <(awk '
+  FNR == 1 {
+    prev_file = FILENAME
+    # Test files: repetition is fixture data, not magic strings.
+    # Skip string-dup-file for tests; other checks still apply.
+    is_test = (FILENAME ~ /(_test\.zig|\.test\.|\.spec\.|\.unit\.test|\.integration\.test|\/test\/|\/tests\/)/)
+  }
+  is_test { next }
+  FNR == 1 { in_test_block = 0; test_depth = 0; in_block_comment = 0 }
   {
     line = $0
+    # Block-comment exclusion (TS/JS/Zig non-applicable): skip lines inside /* ... */
+    if (in_block_comment) {
+      if (line ~ /\*\//) in_block_comment = 0
+      next
+    }
+    if (line ~ /\/\*/ && line !~ /\*\//) {
+      in_block_comment = 1
+      next
+    }
+    # Zig multi-line string literal — lines start with `\\` after whitespace.
+    if (FILENAME ~ /\.zig$/ && line ~ /^[[:space:]]*\\\\/) next
+    # Inline-test exclusion (Zig): track depth across `test "..." {` blocks.
+    if (FILENAME ~ /\.zig$/) {
+      if (in_test_block) {
+        test_depth += gsub(/\{/, "{", line) - gsub(/\}/, "}", line)
+        if (test_depth <= 0) in_test_block = 0
+        line = $0  # restore
+        next
+      }
+      if (line ~ /^test[[:space:]]+"/) {
+        in_test_block = 1
+        tmp = line
+        test_depth = gsub(/\{/, "{", tmp) - gsub(/\}/, "}", tmp)
+        if (test_depth <= 0) in_test_block = 0
+        next
+      }
+    }
     sub(/\/\/.*$/, "", line)
+    # Strip single-line /* ... */ inline block comments (jsdoc/etc) so
+    # literals inside them are not counted.
+    gsub(/\/\*[^*]*\*+([^\/*][^*]*\*+)*\//, "", line)
     rest = line
-    while (match(rest, /"[^"]{2,}"/)) {
+    # Strip Zig identifier-escape syntax @"name" — body is an identifier,
+    # not a string literal, but the regex below would otherwise match it.
+    gsub(/@"[^"]*"/, "", rest)
+    # Strip empty string literals so the regex below cannot fuse
+    # two adjacent Zig literals through their inner gap.
+    gsub(/""/, "", rest)
+    # Match a quoted string literal honouring \" escapes: open quote,
+    # then runs of (backslash+any-char) | (non-backslash-non-quote),
+    # then close quote. Min 3 chars total ensures literal body ≥1 char
+    # (back-compat with the {2,} body-min from the prior regex).
+    while (match(rest, /"((\\.)|[^\\"])+"/)) {
       lit = substr(rest, RSTART, RLENGTH)
       rest = substr(rest, RSTART + RLENGTH)
+      if (length(lit) < 4) continue
       if (lit ~ /^"(http|https|file|\/|\\\\|\\\\n)/) continue
       key = FILENAME "\034" lit
       count[key]++
@@ -110,9 +155,7 @@ awk '
       }
     }
   }
-' "${FILES[@]}" | while IFS= read -r row; do
-  record "$row"
-done
+' "${FILES[@]}")
 
 # ── 2. numeric-suspect ──────────────────────────────────────────────────────
 # Flag bare power-of-ten and unit-factor numerics in expressions.
@@ -127,10 +170,11 @@ done
 NUMERIC_RE='(\b1[_e]?0{3,12}\b|\b1_000(_000)*\b|\b10_000_000\b|\b100_000\b|\b1024\b|\b1048576\b|\b3600\b|\b86400\b)'
 
 # Perf (M70): single awk across all files; FNR == 1 detects file boundary
-# so the "prev line carve-out" stays per-file. Subshell-pipe shape
-# preserved deliberately (see string-dup-file NOTE above — the latent
-# violations-propagation bug is out of scope for M70).
-awk -v re="$NUMERIC_RE" '
+# so the "prev line carve-out" stays per-file. Process substitution keeps
+# the while loop in the parent shell so record() mutates FAIL.
+while IFS= read -r row; do
+  record "$row"
+done < <(awk -v re="$NUMERIC_RE" '
   FNR == 1 { prev = "" }
   {
     line = $0
@@ -145,9 +189,7 @@ awk -v re="$NUMERIC_RE" '
     }
     prev = line
   }
-' "${FILES[@]}" | while IFS= read -r row; do
-  record "$row"
-done
+' "${FILES[@]}")
 
 # ── 3. cross-runtime-orphan ─────────────────────────────────────────────────
 # Full-codebase ERR_* parity check. Scoped to ERR_* prefix because that's
