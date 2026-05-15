@@ -1,16 +1,34 @@
 #!/usr/bin/env bash
-# audit-combined.sh — single awk pass over the diff, replaces 4 separate
+# audit-combined.sh — single awk pass over the diff, replaces 2 separate
 # self-audits per AGENTS.md "HARNESS VERIFY → Combined end-of-turn audit".
 #
 # Emits per-line hits for:
 #   * MS-ID — milestone-id leak in source/config (M{N}_{NNN}, §X.Y, T{N},
 #             dim {N}.{N}) outside docs/ + node_modules/ + vendor/.
 #             Test files are NOT exempt (RULE TST-NAM).
-#   * PUB   — unannounced `pub` declaration in *.zig (struct field or fn).
 #   * UI    — raw HTML element in ui/packages/app/*.{tsx,jsx} where a
 #             design-system primitive exists (UI Component Substitution Gate).
 #
 # Non-empty hit list → exit 1. Otherwise exit 0 + one OK line.
+#
+# Note on PUB:
+#   This script no longer flags `pub` declarations. The PUB GATE
+#   (docs/gates/pub-surface.md) has two mechanical enforcers and one
+#   human one; this script was a fourth, redundant layer:
+#     * Orphan check ("is anyone using this pub?") → zlint's
+#       `unused-decls: error` rule, run by `make lint` later in the
+#       same pre-commit pass. A `pub` with no in-tree consumer fails
+#       there. The audit's regex was duplicating this signal with
+#       false positives (e.g. variant lines inside private blocks)
+#       and no way to distinguish necessary pubs from gratuitous ones.
+#     * Design call ("is this pub shape right?") → the agent's
+#       chat-printed PUB GATE verdict block, which the script cannot
+#       see by construction. A regex on `^pub ` was approximating
+#       this as friction, but produced unfixable false positives on
+#       every legitimate new public surface and had no override path.
+#   Removing the PUB clause aligns with the gate body's own design
+#   (which already delegates mechanical work to zlint and design work
+#   to the agent's chat output).
 #
 # Per-check scope (M70):
 #   Unlike the rest of the audit-*.sh family, this script stays
@@ -22,9 +40,6 @@
 #               Historical docs in `done/` legitimately contain them,
 #               and code comments may reference them in old commits.
 #               Only newly-added M{N}_{NNN} citations should fail.
-#     * PUB   — flags unannounced `pub` declarations introduced now.
-#               Pre-existing pub surface is owned by the architecture
-#               doc; only *new* unannounced pub is a violation.
 #     * UI    — flags raw HTML primitives added now where a design-system
 #               component exists. Legacy raw-HTML in unrelated files is
 #               cleaned by the touch-it-fix-it rule (RULE NLR), not by
@@ -43,8 +58,8 @@
 #
 # Gate bodies:
 #   docs/gates/milestone-id.md
-#   docs/gates/pub-surface.md
 #   docs/gates/ui-substitution.md
+#   docs/gates/pub-surface.md  (handled by zlint + agent chat output, not this script)
 
 set -euo pipefail
 
@@ -74,40 +89,15 @@ case "$MODE" in
 esac
 
 # Single awk pass; reads stdin (the unified diff).
-#
-# Block-scope tracking for the variant-line clause: a line like `BrokenPipe,`
-# looks identical whether its enclosing `enum|struct|error{` is `pub` or not.
-# `private_block` tracks whether we're inside an explicitly-private block
-# within this diff so clause 3 fires only on variants in pub blocks.
-# Conservative default (unknown scope → flag) preserves prior behavior when
-# the block opening is outside the staged diff.
 hits=$($DIFF_CMD | awk '
-  /^\+\+\+ b\// { f=$2; sub("^b/","",f); private_block=0; next }
-  /^@@/ { private_block=0; next }
-  /^-/ { next }
+  /^\+\+\+ b\// { f=$2; sub("^b/","",f); next }
   /^\+/ {
     line=$0
     sub(/^\+/,"",line)
-
-    if (line ~ /^pub const [A-Za-z_][A-Za-z0-9_]* *= *(enum|struct|error)/) {
-      private_block = 0
-    } else if (line ~ /^const [A-Za-z_][A-Za-z0-9_]* *= *(enum|struct|error)/) {
-      private_block = 1
-    } else if (line ~ /^\}/) {
-      private_block = 0
-    }
-
     if (f ~ /\.(zig|sql|ts|tsx|js|jsx|py|rs|go|sh|toml|yaml|json)$/ &&
         f !~ /^(docs|node_modules|vendor|third_party)\//) {
       if (match(line, /M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b/)) {
         print "MS-ID  " f ": " line
-      }
-    }
-    if (f ~ /\.zig$/) {
-      if (line ~ /^(pub | *pub fn )/) {
-        print "PUB    " f ": " line
-      } else if (line ~ /^ *[A-Z][a-zA-Z]+,$/ && !private_block) {
-        print "PUB    " f ": " line
       }
     }
     if (f ~ /^ui\/packages\/app\/.*\.(tsx|jsx)$/ &&
@@ -118,12 +108,11 @@ hits=$($DIFF_CMD | awk '
 ')
 
 if [ -n "$hits" ]; then
-  echo "FAIL: combined audit ($LABEL) — MS-ID / PUB / UI hits below"
+  echo "FAIL: combined audit ($LABEL) — MS-ID / UI hits below"
   printf '%s\n' "$hits"
   echo
   echo "Resolve each hit OR carve out via the relevant gate's override comment."
   echo "  MS-ID — strip the marker; production code must be milestone-free (RULE TST-NAM)"
-  echo "  PUB   — print PUB GATE block before commit; verify external consumer grep"
   echo "  UI    — use the design-system primitive; carve out with 'UI GATE: SKIPPED'"
   exit 1
 fi
