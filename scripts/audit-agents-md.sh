@@ -362,7 +362,7 @@ fi
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
-LIMIT=${AGENTS_MD_SIZE_LIMIT:-26624}  # 26 KB — bumped 2026-05-14 by 1024 B for the Gate-flag triage discipline block (4-row table seated alongside Rule-extension protocol in Action-Triggered Guards)
+LIMIT=${AGENTS_MD_SIZE_LIMIT:-28672}  # 28 KB — bumped 2026-05-16 by 2048 B for the Routine choice points discipline block (third bullet in Confusion Management) + Orly casual-alias addition in Owner & Style
 if [[ $SIZE -le $LIMIT ]]; then
   pass "size $SIZE bytes (limit $LIMIT)"
 else
