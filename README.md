@@ -25,6 +25,37 @@ The instructions below assume you are in the `~/Projects/dotfiles` directory.
 cp .zshrc ~/.zshrc
 ```
 
+### macOS process limits (concurrent agents / heavy dev loops)
+
+Two simultaneous coding agents running `zig build` + docker + lint chains
+will exhaust the default per-user process cap (`kern.maxprocperuid=2666`)
+and trip `fork: resource temporarily unavailable`. Bump the kernel
+tunables so multi-agent / multi-worktree workflows have headroom. Survives
+reboot via `/etc/sysctl.conf` (read by `com.apple.sysctl.plist` at boot
+on macOS 10.13+).
+
+```bash
+# Persistent (survives reboot)
+echo "kern.maxproc=16384" | sudo tee -a /etc/sysctl.conf
+echo "kern.maxprocperuid=8192" | sudo tee -a /etc/sysctl.conf
+
+# Apply now without rebooting
+sudo sysctl -w kern.maxproc=16384 kern.maxprocperuid=8192
+
+# Verify
+sysctl kern.maxproc kern.maxprocperuid
+```
+
+Optional — bump the shell ulimit too so new shells inherit higher caps
+without waiting for re-login from a sysctl-only change:
+
+```bash
+echo 'ulimit -u 8192'   >> ~/.zshenv
+echo 'ulimit -n 65536'  >> ~/.zshenv  # bonus — bumps fd limit (useful for zig/postgres)
+```
+
+Existing shells need `exec zsh` (or a new tab) to pick this up.
+
 ### Agent profiles
 ```bash
 # Claude
