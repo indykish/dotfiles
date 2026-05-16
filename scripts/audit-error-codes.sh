@@ -193,7 +193,7 @@ raw_leaks=$(awk '
     print FILENAME ":" FNR ":" $0;
   }
 ' $(printf '%s\n' "${USED_PATHS[@]}" | grep -vE \
-    '^src/errors/|/_?test_harness\.zig$|_test\.zig$|^src/executor/client_errors\.zig$|^src/zbench_fixtures\.zig$|^zombiectl/src/constants/error-codes\.js$' \
+    '^src/errors/|/_?test_harness\.zig$|_test\.zig$|^src/executor/client_errors\.zig$|^src/zbench_fixtures\.zig$|^zombiectl/src/constants/error-codes\.(js|ts)$' \
     || true) 2>/dev/null || true)
 
 if [[ -n "$raw_leaks" ]]; then
