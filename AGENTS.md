@@ -82,7 +82,7 @@ Default gates commit/push/PR on explicit ask. **Auto mode + forward-looking star
 
 ## Worktrees
 
-One per active stream. Stay inside; no edits outside, no reads from siblings. Merge only after VERIFY. `git checkout main && git branch feat/mNN-name && git worktree add ../usezombie-mNN-name feat/mNN-name && cd ../usezombie-mNN-name && bun install && (cd zombiectl && bun install)`. The two `bun install` calls hydrate the root workspace (`ui/packages/*`) and `zombiectl/` (its own bun project) — without them, `lint-app` / `lint-zombiectl` fail with `tsc: command not found` and missing `@assistant-ui/react`-style errors on the first commit. Post-merge: `git worktree remove ../usezombie-mNN-name`.
+One per active stream. Stay inside; no edits outside, no reads from siblings. Merge only after VERIFY. `git checkout main && git branch feat/mNN-name && git worktree add ../usezombie-mNN-name feat/mNN-name && cd ../usezombie-mNN-name && bun install && (cd zombiectl && bun install && bun run build)`. The root `bun install` hydrates the workspace (`ui/packages/*`); `zombiectl/` is its own bun project — install + build (build is mandatory because `test-unit-zombiectl` spawns `dist/bin/zombiectl.js` for `--help` / flag / validator assertions). Without these, `lint-app` / `lint-zombiectl` / `test-unit-zombiectl` fail on the first commit with `tsc: command not found`, missing `@assistant-ui/react`, or missing-binary symptoms. Post-merge: `git worktree remove ../usezombie-mNN-name`.
 
 ---
 
