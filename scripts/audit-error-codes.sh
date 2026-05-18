@@ -20,7 +20,10 @@
 # Definitions:
 #   - DECLARED  — every UZ-<CAT>-<NNN> string literal in error_registry.zig
 #   - USED      — every UZ-<CAT>-<NNN> reference in src/**/*.zig (excluding
-#                  the registry itself) plus zombiectl/src/** (any extension)
+#                  the registry itself). zombiectl/src/** is intentionally
+#                  out of scope — the CLI consumes server-emitted UZ-* codes
+#                  as opaque strings from API responses; the dispatcher's
+#                  typed CliError variants are the CLI's named surface.
 #   - ORPHAN    — USED but not DECLARED  (BLOCKING)
 #   - DEAD      — DECLARED but not USED  (INFORMATIONAL)
 #   - RAW LEAK  — UZ-<CAT>-<NNN> string literal in a source file outside
@@ -87,15 +90,12 @@ gather_used_paths() {
   case "$MODE" in
     --staged|staged)
       git diff --cached --name-only --diff-filter=ACMRT \
-        | grep -E '^(src/|zombiectl/src/)' \
+        | grep -E '^src/' \
         | grep -vE '^src/errors/error_registry\.zig$' || true
       ;;
     --all|all)
-      {
-        find src -type f -name '*.zig' 2>/dev/null \
-          | grep -vE '^src/errors/error_registry\.zig$'
-        find zombiectl/src -type f 2>/dev/null
-      }
+      find src -type f -name '*.zig' 2>/dev/null \
+        | grep -vE '^src/errors/error_registry\.zig$'
       ;;
     *)
       printf "usage: %s [--staged|--all]\n" "$0" >&2
@@ -193,7 +193,7 @@ raw_leaks=$(awk '
     print FILENAME ":" FNR ":" $0;
   }
 ' $(printf '%s\n' "${USED_PATHS[@]}" | grep -vE \
-    '^src/errors/|/_?test_harness\.zig$|_test\.zig$|^src/executor/client_errors\.zig$|^src/zbench_fixtures\.zig$|^zombiectl/src/constants/error-codes\.(js|ts)$' \
+    '^src/errors/|/_?test_harness\.zig$|_test\.zig$|^src/executor/client_errors\.zig$|^src/zbench_fixtures\.zig$' \
     || true) 2>/dev/null || true)
 
 if [[ -n "$raw_leaks" ]]; then
