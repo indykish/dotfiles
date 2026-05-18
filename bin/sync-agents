@@ -97,6 +97,28 @@ RETARGETED=0
 SKIPPED=0
 FAILED=0
 
+# Resolve a path without requiring GNU readlink. Used only for comparing
+# symlink destinations, so relative links that point at the right dotfiles
+# source are left alone instead of being churned into absolute links.
+canonical_path() {
+  local path="$1"
+  local dir base
+  dir="$(dirname "$path")"
+  base="$(basename "$path")"
+  (cd -P "$dir" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$base")
+}
+
+link_target_path() {
+  local link_path="$1"
+  local target="$2"
+
+  if [[ "$target" = /* ]]; then
+    canonical_path "$target"
+  else
+    canonical_path "$(dirname "$link_path")/$target"
+  fi
+}
+
 # Helper: idempotently create one symlink, updating counters.
 make_link() {
   local src_full="$1"
@@ -112,9 +134,11 @@ make_link() {
   mkdir -p "$(dirname "$dst_full")"
 
   if [[ -L "$dst_full" ]]; then
-    local cur
+    local cur cur_resolved src_resolved
     cur=$(readlink "$dst_full")
-    if [[ "$cur" = "$src_full" ]]; then
+    cur_resolved=$(link_target_path "$dst_full" "$cur" || true)
+    src_resolved=$(canonical_path "$src_full")
+    if [[ "$cur_resolved" = "$src_resolved" ]]; then
       return  # already correct, silent
     fi
     warn "  retarget: $label was → $cur"
