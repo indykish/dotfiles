@@ -1,26 +1,80 @@
 #!/usr/bin/env bash
-# sync-skills — Install gstack properly via ./setup, then overlay custom skills and symlink
-set -e
+# sync-skills — install gstack, then generate one symlink overlay for all agents.
+set -euo pipefail
 
 DOTFILES="$HOME/Projects/dotfiles"
 DOTFILES_SKILLS="$DOTFILES/skills"
+UNIFIED_SKILLS="$DOTFILES/.unified-skills"
 GSTACK_DIR="$HOME/.local/share/gstack"
 GSTACK_REPO="git@github.com:garrytan/gstack.git"
 
 # Agent configurations: "host_flag:config_dir:skills_subdir"
-# skills_subdir is relative to config_dir (e.g., "skills" or "skills")
+# skills_subdir is relative to config_dir.
 AGENTS=(
     "claude:$HOME/.claude:skills"
     "codex:$HOME/.codex:skills"
-    "opencode:$HOME/.opencode:skills"
+    "opencode:$HOME/.config/opencode:skills"
     "amp:$HOME/.amp:skills"
 )
 
 ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
 info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
 warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
+fail() { printf '\033[31m✖\033[0m %s\n' "$1"; exit 1; }
 
-# 1. Clone/update gstack to proper XDG location
+link_skill_dir() {
+    local source_dir="$1"
+    local skill_name
+    skill_name="$(basename "$source_dir")"
+
+    [ "$skill_name" != "gstack" ] || return 0
+    [ -f "$source_dir/SKILL.md" ] || return 0
+
+    rm -f "$OVERLAY_TMP/$skill_name"
+    ln -snf "$source_dir" "$OVERLAY_TMP/$skill_name"
+    ok "Skill link: $skill_name → $source_dir"
+}
+
+doctor_file() {
+    local path="$1"
+    [ -f "$path" ] || fail "Missing required file: $path"
+    ok "Found $path"
+}
+
+doctor_executable() {
+    local path="$1"
+    [ -x "$path" ] || fail "Missing executable helper: $path"
+    ok "Executable $path"
+}
+
+doctor_overlay() {
+    local target stale_entry
+
+    target="$(readlink "$UNIFIED_SKILLS/gstack" 2>/dev/null || true)"
+    [ "$target" = "$GSTACK_DIR" ] || fail "$UNIFIED_SKILLS/gstack must link to $GSTACK_DIR (got: ${target:-missing})"
+    ok "$UNIFIED_SKILLS/gstack → $GSTACK_DIR"
+
+    for agent_config in "${AGENTS[@]}"; do
+        IFS=':' read -r _host_flag config_dir skills_subdir <<< "$agent_config"
+        [ -d "$config_dir" ] || continue
+
+        target="$(readlink "$config_dir/$skills_subdir" 2>/dev/null || true)"
+        [ "$target" = "$UNIFIED_SKILLS" ] || fail "$config_dir/$skills_subdir must link to $UNIFIED_SKILLS (got: ${target:-missing})"
+        ok "$config_dir/$skills_subdir → $UNIFIED_SKILLS"
+    done
+
+    doctor_executable "$HOME/.claude/skills/gstack/browse/dist/browse"
+    doctor_executable "$HOME/.claude/skills/gstack/design/dist/design"
+    doctor_executable "$HOME/.claude/skills/gstack/make-pdf/dist/pdf"
+    doctor_file "$HOME/.claude/skills/design-shotgun/SKILL.md"
+    doctor_file "$HOME/.claude/skills/kishore-spec-new/SKILL.md"
+
+    stale_entry="$(find "$UNIFIED_SKILLS" -mindepth 1 -maxdepth 1 ! -type l -print -quit)"
+    [ -z "$stale_entry" ] || fail "Unexpected non-symlink entry in generated overlay: $stale_entry"
+    ok "No copied GStack tree remains in $UNIFIED_SKILLS"
+}
+
+# 1. Clone/update gstack to proper XDG Base Directory location.
 info "Installing gstack to $GSTACK_DIR..."
 if [ -d "$GSTACK_DIR/.git" ]; then
     cd "$GSTACK_DIR" && git pull --ff-only
@@ -43,37 +97,57 @@ for agent_config in "${AGENTS[@]}"; do
         info "Skipping $host_flag (not installed)"
         continue
     fi
+
+    if [ "$host_flag" = "amp" ]; then
+        info "Skipping gstack setup for amp (upstream setup has no amp host; unified overlay handles skills)"
+        continue
+    fi
     
     # Run gstack's proper setup for this agent
     info "Setting up gstack for $host_flag..."
-    ./setup --host "$host_flag" || warn "gstack setup failed for $host_flag"
-    ok "gstack setup complete for $host_flag"
+    if ./setup --host "$host_flag"; then
+        ok "gstack setup complete for $host_flag"
+    else
+        warn "gstack setup failed for $host_flag"
+    fi
 done
 
-# 3. Create unified skills directory with gstack + custom dotfiles skills
-info "Creating unified skills directory..."
-UNIFIED_SKILLS="$DOTFILES/.unified-skills"
-rm -rf "$UNIFIED_SKILLS"
-mkdir -p "$UNIFIED_SKILLS"
+# 3. Create unified skills directory with gstack + custom dotfiles skills.
+info "Creating unified skills symlink overlay..."
+OVERLAY_TMP="$(mktemp -d "$DOTFILES/.unified-skills.tmp.XXXXXX")"
+cleanup() {
+    if [ -n "${OVERLAY_TMP:-}" ] && [ -d "$OVERLAY_TMP" ]; then
+        rm -rf "$OVERLAY_TMP"
+    fi
+}
+trap cleanup EXIT
 
-# Copy gstack skills first
-if [ -d "$GSTACK_DIR" ]; then
-    cp -r "$GSTACK_DIR/"* "$UNIFIED_SKILLS/"
-    ok "Copied gstack skills to unified directory"
-fi
+ln -snf "$GSTACK_DIR" "$OVERLAY_TMP/gstack"
+ok "Helper root link: gstack → $GSTACK_DIR"
 
-# Overlay dotfiles custom skills (they take precedence)
+# Expose every upstream GStack skill as a flat symlink for agent discovery.
+for skill_dir in "$GSTACK_DIR"/*/; do
+    [ -d "$skill_dir" ] || continue
+    link_skill_dir "${skill_dir%/}"
+done
+for skill_dir in "$GSTACK_DIR"/browser-skills/*/ "$GSTACK_DIR"/openclaw/skills/*/; do
+    [ -d "$skill_dir" ] || continue
+    link_skill_dir "${skill_dir%/}"
+done
+
+# Overlay dotfiles custom skills last; they take precedence on name collisions.
 for skill_dir in "$DOTFILES_SKILLS"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name="$(basename "$skill_dir")"
-    
-    # Remove gstack version if exists (dotfiles version wins)
-    rm -rf "$UNIFIED_SKILLS/$skill_name"
-    
-    # Copy dotfiles version
-    cp -r "$skill_dir" "$UNIFIED_SKILLS/$skill_name"
-    ok "Dotfiles skill overlay: $skill_name"
+
+    rm -f "$OVERLAY_TMP/$skill_name"
+    ln -snf "$skill_dir" "$OVERLAY_TMP/$skill_name"
+    ok "Dotfiles skill overlay: $skill_name → $skill_dir"
 done
+
+rm -rf "$UNIFIED_SKILLS"
+mv "$OVERLAY_TMP" "$UNIFIED_SKILLS"
+OVERLAY_TMP=""
 
 # 4. Symlink all agents to unified skills directory
 info "Symlinking agent skills to unified directory..."
@@ -92,7 +166,7 @@ for agent_config in "${AGENTS[@]}"; do
         warn "Backed up existing skills to $backup_dir"
     fi
     
-    # Remove existing (symlink or dir) and create new symlink
+    # Remove existing symlink or backed-up directory and create the unified symlink.
     rm -rf "$agent_skills_dir"
     ln -snf "$UNIFIED_SKILLS" "$agent_skills_dir"
     ok "Linked $agent_skills_dir → $UNIFIED_SKILLS"
@@ -110,7 +184,7 @@ for agent_config in "${AGENTS[@]}"; do
     fi
 done
 
-# 5. Sync opencode.json config (XDG location)
+# 5. Sync opencode.json config (XDG Base Directory location)
 info "Syncing opencode.json..."
 OPENCODE_CONFIG_SRC="$DOTFILES/.config/opencode/opencode.json"
 OPENCODE_CONFIG_DST="$HOME/.config/opencode/opencode.json"
@@ -126,6 +200,9 @@ if [ -f "$OPENCODE_CONFIG_SRC" ]; then
 else
     warn "Source opencode.json not found at $OPENCODE_CONFIG_SRC"
 fi
+
+info "Running skills doctor..."
+doctor_overlay
 
 ok "Skills synced! All agents now use unified skills from $UNIFIED_SKILLS"
 info "Gstack installed at: $GSTACK_DIR"
