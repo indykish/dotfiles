@@ -1,19 +1,31 @@
 #!/usr/bin/env bash
-# audit-spec-template.sh — enforce docs/TEMPLATE.md "Prohibited" section
-# across every spec under docs/v*/{pending,active,done}/.
+# audit-spec-template.sh — enforce docs/TEMPLATE.md across every spec under
+# docs/v*/{pending,active,done}/. Two check families:
+#
+#   1. PROHIBITED patterns (negative space) — TEMPLATE.md "Prohibited" section:
+#      time/effort estimates, effort/complexity columns, %-complete, owners, dates.
+#      Always BLOCK.
+#   2. REQUIRED-PRESENT + NO-PLACEHOLDER (positive space) — the determinism
+#      sections the agent-facing template mandates (PR Intent, Applicable Gates,
+#      Prior-Art, Decomposition, tiered Test Spec, Discovery, …) must EXIST and be
+#      FILLED. A spec that omits them forces the executing agent to guess intent.
+#      This is the half that makes a spec "built for the agent".
 #
 # Gate body: docs/gates/spec-template.md
 # Fires in: make lint (after audit-logging, before audit-error-codes).
 #
 # Modes:
-#   --staged         diff-scope: only files in `git diff --cached`
+#   --staged         diff-scope: only specs in `git diff --cached`
 #   --all            (default) pending+active specs only — current/in-flight work
 #   --include-done   adds done/ specs to the scan (one-time sweep tool)
 #
-# Done specs are excluded by default: they're historical artifacts, not work
-# product. Rewriting them risks losing context. The gate prevents new drift;
-# existing done specs are tolerated.
+# Family 2 runs ONLY in --staged scope — the spec being authored/edited right
+# now, which is exactly the agent's own output. The bulk scans (--all /
+# --include-done) run Family 1 only, so they behave identically over the whole
+# corpus and never break an existing spec. No legacy carve-out, no heuristics:
+# author a spec → full template required; scan the tree → prohibited-only.
 #
+# Done specs are excluded by default: historical artifacts, not work product.
 # Exits 0 clean, 1 on any blocking finding.
 
 set -euo pipefail
@@ -50,10 +62,9 @@ if [[ ${#SPECS[@]} -eq 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Prohibited patterns from docs/TEMPLATE.md "Prohibited" section.
+# Family 1 — Prohibited patterns from docs/TEMPLATE.md "Prohibited" section.
 # Each pattern: <regex>:<one-line description>:<severity>
-# Severity: BLOCK = exit 1; INFO = stdout note only.
-# Patterns use ERE (egrep -E).
+# Severity: BLOCK = exit 1; INFO = stdout note only. Patterns use ERE (egrep -E).
 #
 # DESIGN NOTE — patterns are deliberately structural, not prose-level.
 # Bare regex like `\b\d+\s*days?\b` false-positives on legitimate prose
@@ -62,10 +73,9 @@ fi
 #   - Section headings: `## Estimated effort`, `## Effort`, `## Sizing`
 #   - Label rows:       `**Effort:** medium`, `**Owner:** alice`
 #   - Tilde-bulleted:   `- ~2 h survey`, `* ~5 days OAuth setup`
-#                       (the `~` prefix is the Captain's idiom for
-#                       effort estimates; legitimate prose doesn't use it)
+#                       (the `~` prefix is Indy's idiom for effort estimates;
+#                       legitimate prose doesn't use it)
 # This catches the actual drift class without churning real content.
-# Lines with explicit "effort"/"estimate" context still get flagged.
 # ---------------------------------------------------------------------------
 PATTERNS=(
   '^#+ .*Estimated [Ee]ffort:Estimated effort section heading:BLOCK'
@@ -82,11 +92,40 @@ PATTERNS=(
   '\b(?:low|medium|high|small|large)\s*[/|-]\s*(?:effort|complexity)\b:Effort/complexity rating:BLOCK'
 )
 
-# ---------------------------------------------------------------------------
-# Carve-outs — patterns that look prohibited but are legitimate. Skip
-# any line matching one of these.
-# ---------------------------------------------------------------------------
+# Carve-outs — lines that look prohibited but are legitimate. Skip any match.
 SAFE_LINES_RE='^\*\*Date:\*\*|^\s*```|<!--|^\s*//|"[0-9]+\s*(h|hour|day|min)"'
+
+# ---------------------------------------------------------------------------
+# Family 2 — Required determinism sections (agent-facing docs/TEMPLATE.md).
+# Each entry: <heading ERE>:<human description>
+# ---------------------------------------------------------------------------
+REQUIRED_SECTIONS=(
+  '^#+ .*PR Intent:PR Intent & comprehension handshake'
+  '^#+ .*Applicable Rules:Applicable Rules'
+  '^#+ .*Applicable Gates:Applicable Gates'
+  '^#+ .*Overview:Overview'
+  '^#+ .*(Prior-Art|Reference Implementation):Prior-Art / Reference Implementations'
+  '^#+ .*Files Changed:Files Changed (blast radius)'
+  '^#+ .*(Decomposition|Alternatives):Decomposition & alternatives (patch vs refactor)'
+  '^#+ .*Sections:Sections (implementation slices)'
+  '^#+ .*Interfaces:Interfaces'
+  '^#+ .*Failure Modes:Failure Modes'
+  '^#+ .*Invariants:Invariants'
+  '^#+ .*Test Specification:Test Specification'
+  '^#+ .*Acceptance Criteria:Acceptance Criteria'
+  '^#+ .*Discovery:Discovery (consult log)'
+)
+
+# Template residue — strings that exist ONLY in the unfilled template. Their
+# survival in a pending/active spec means the section was never filled.
+PLACEHOLDER_SENTINELS=(
+  'Title — testable, not vague'
+  'one-line reason}'
+  'Slice title}'
+  'path/to/file.ext'
+  'test_<short_name>'
+  'why this is the right pattern to mirror'
+)
 
 scan_spec() {
   local spec="$1"
@@ -95,7 +134,6 @@ scan_spec() {
   while IFS=: read -r pattern desc severity; do
     while IFS= read -r match; do
       [[ -z "$match" ]] && continue
-      # Skip carve-out lines.
       if grep -qE "$SAFE_LINES_RE" <<<"$match"; then
         continue
       fi
@@ -111,12 +149,34 @@ scan_spec() {
       hits=$((hits + 1))
     done < <(grep -nE "$pattern" "$spec" 2>/dev/null || true)
   done < <(printf '%s\n' "${PATTERNS[@]}")
-  [[ $hits -eq 0 ]] && ok "$spec — no prohibited patterns"
+  if [[ $hits -eq 0 ]]; then ok "$spec — no prohibited patterns"; fi
+  return 0
+}
+
+# Family 2 — required determinism sections present + no template residue.
+# BLOCK only; called solely in --staged scope (a spec being authored now).
+scan_required() {
+  local spec="$1"
+  local miss=0 entry sec desc sentinel
+  for entry in "${REQUIRED_SECTIONS[@]}"; do
+    sec="${entry%%:*}"; desc="${entry#*:}"
+    grep -qE "$sec" "$spec" && continue
+    fail "$spec — missing required section: $desc"
+    miss=$((miss + 1))
+  done
+  for sentinel in "${PLACEHOLDER_SENTINELS[@]}"; do
+    grep -qF "$sentinel" "$spec" || continue
+    fail "$spec — unfilled template placeholder: \"$sentinel\""
+    miss=$((miss + 1))
+  done
+  if [[ $miss -eq 0 ]]; then ok "$spec — required sections present, no placeholders"; fi
+  return 0
 }
 
 for spec in "${SPECS[@]}"; do
   [[ -f "$spec" ]] || continue
   scan_spec "$spec"
+  case "$MODE" in --staged|staged) scan_required "$spec" ;; esac
 done
 
 if [[ $FAIL -ne 0 ]]; then

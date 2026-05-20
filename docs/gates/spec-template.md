@@ -1,6 +1,6 @@
 # 🚧 SPEC TEMPLATE GATE
 
-**Family:** Spec authoring discipline. **Source:** `docs/TEMPLATE.md` "Prohibited" section.
+**Family:** Spec authoring discipline. **Source:** `docs/TEMPLATE.md` — the "Prohibited" section (negative space) **and** the agent-facing required sections (positive space).
 
 **Triggers** — every `Edit`/`Write` to:
 
@@ -12,7 +12,11 @@
 
 ## What this gate covers
 
-`docs/TEMPLATE.md` "Prohibited" section forbids: time/effort estimates, effort columns, complexity ratings, percentage-complete fields, assigned owners, implementation dates. Specs created from the template don't carry the Prohibited section forward — only the body below the divider gets copied. Without enforcement, prohibited sections drift back into specs (the original M62_001 spec carried an "Estimated effort" section in violation; this gate prevents recurrence).
+**Family 1 — prohibited patterns (negative space).** `docs/TEMPLATE.md` "Prohibited" section forbids: time/effort estimates, effort columns, complexity ratings, percentage-complete fields, assigned owners, implementation dates. Specs created from the template don't carry the Prohibited section forward — only the body below the divider gets copied. Without enforcement, prohibited sections drift back into specs (the original M62_001 spec carried an "Estimated effort" section in violation; this gate prevents recurrence).
+
+**Family 2 — required-present + no-placeholder (positive space).** The agent-facing template mandates the determinism sections the executing agent reads to emit invariant output: PR Intent & comprehension handshake, Applicable Rules, Applicable Gates, Overview, Prior-Art / Reference Implementations, Files Changed, Decomposition & alternatives, Sections, Interfaces, Failure Modes, Invariants, Test Specification, Acceptance Criteria, Discovery. A spec missing one — or leaving template residue (`path/to/file.ext`, `test_<short_name>`, `{one-line reason}`) — forces the agent to guess intent.
+
+**Scope (no legacy carve-out).** Family 2 fires in `--staged` only — the spec being authored/edited now (the agent's own output): BLOCK. The bulk scans (`--all`/`--include-done`, which `make harness-verify` runs) execute Family 1 only, so they behave identically over the whole corpus and never break an existing spec. Existing `usezombie` specs adopt the new sections when migrated later; until a spec is touched (staged), it is not retroactively failed.
 
 ## Pre-edit check
 
@@ -26,12 +30,14 @@
 | `\d+%\s*complete` / `\b\d+/\d+\b\s*tasks` (percentage / fraction complete) | Forbidden — use binary PENDING/IN_PROGRESS/DONE. |
 | `**Owner:**` / `**Assigned to:**` | Forbidden — use git history. |
 | `**Due:**` / `**Deadline:**` (with date) | Forbidden — use Priority. |
+| Missing a required determinism section in a **staged** spec | BLOCK — add it (PR Intent / Applicable Gates / Prior-Art / Decomposition / …). |
+| Unfilled template residue (`path/to/file.ext`, `test_<short_name>`) in a **staged** spec | BLOCK — fill the section. |
 | Spec without the SPEC AUTHORING RULES banner (post-template-update) | Informational — banner reminds future edits of the rule. |
 
 ## Required output (default — one line)
 
 ```
-SPEC TEMPLATE GATE: <file> | prohibited-sections:<0|list> time-estimates:<0|list> effort-fields:<0|list> banner-present:<yes|no>
+SPEC TEMPLATE GATE: <file> | prohibited:<0|list> required-sections:<all-present|missing-list — staged only> placeholders:<0|list> banner:<yes|no>
 ```
 
 Full multi-line block fires on violation:
