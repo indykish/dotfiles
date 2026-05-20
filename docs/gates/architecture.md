@@ -33,7 +33,7 @@ An architecture decision lands its `docs/architecture/` edit either:
 
 **Never** (c) follow-up commit AFTER the code.
 
-**Chat brainstorming counts as "describing a flow."** A multi-turn chat designing a new pattern (naming a channel, asserting cardinality, tracing a flow, defining an invariant) HAS fired the gate even if no code touched yet. Acceptable resolutions: (a) doc-only commit BEFORE the next agent action, or (b) Captain-acked deferral quote (per CHORE(close) deferral discipline) routing the capture into same-commit-with-code. The failure mode this clause names explicitly: encoding the brainstorm as a "punchlist task to land after the code ships" — that's exactly (c) and is forbidden. Pickup agents reading a task whose description says "capture architecture in docs/architecture/ AFTER <slice> lands" must rewrite it to same-commit OR doc-only-now before continuing.
+**Chat brainstorming counts as "describing a flow."** A multi-turn chat designing a new pattern (naming a channel, asserting cardinality, tracing a flow, defining an invariant) HAS fired the gate even if no code touched yet. Acceptable resolutions: (a) doc-only commit BEFORE the next agent action, or (b) Indy-acked deferral quote (per CHORE(close) deferral discipline) routing the capture into same-commit-with-code. The failure mode this clause names explicitly: encoding the brainstorm as a "punchlist task to land after the code ships" — that's exactly (c) and is forbidden. Pickup agents reading a task whose description says "capture architecture in docs/architecture/ AFTER <slice> lands" must rewrite it to same-commit OR doc-only-now before continuing.
 
 ## Required output (only when doc conflicts or is silent)
 

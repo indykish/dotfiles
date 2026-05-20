@@ -123,8 +123,8 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 7.5 | Is using `gh pr checks --watch` for greptile explicitly disallowed? | YES |
 | 7.6 | If an MCP-backed skill is unavailable, must PR Session Notes record the skip + a "rerun before merge" note? | YES |
 | 7.7 | Is merging/closing/ready-from-draft of another user's PR forbidden without explicit approval? | YES |
-| 7.8 | Does AGENTS.md require a Captain-acked verbatim quote (in PR Session Notes or the spec's Discovery section, format `> Captain (YYYY-MM-DD HH:MM): "<quote>"`) for any claim that a spec Section/Dimension was "deferred to follow-up" — and does an agent-unilateral deferral count as incomplete scope (not deferral), blocking CHORE(close) until either the item lands or the quote is captured? | YES |
-| 7.9 | Does AGENTS.md treat `HANDOFF.md` (or `HANDOFF_*.md` at any depth) as a faithful state report — i.e. must a pickup agent reading a HANDOFF that claims items were deferred without ack-quotes treat those items as in-scope and surface the contradiction to Captain before continuing? | YES |
+| 7.8 | Does AGENTS.md require an Indy-acked verbatim quote (in PR Session Notes or the spec's Discovery section, format `> Indy (YYYY-MM-DD HH:MM): "<quote>"`) for any claim that a spec Section/Dimension was "deferred to follow-up" — and does an agent-unilateral deferral count as incomplete scope (not deferral), blocking CHORE(close) until either the item lands or the quote is captured? | YES |
+| 7.9 | Does AGENTS.md treat `HANDOFF.md` (or `HANDOFF_*.md` at any depth) as a faithful state report — i.e. must a pickup agent reading a HANDOFF that claims items were deferred without ack-quotes treat those items as in-scope and surface the contradiction to Kishore before continuing? | YES |
 | 7.10 (Architecture) | Does the Architecture Consult & Update Gate body (`docs/gates/architecture.md`) explicitly name "chat brainstorming counts" — i.e. multi-turn chat designing a new pattern fires the gate even before code touches, and capturing the brainstorm as a "punchlist task to land after the code ships" is forbidden (a pickup agent reading such a task must rewrite it to same-commit or doc-only-now)? | YES |
 
 ### Scenario 8 — Conducting `/write-unit-test` while a human steers
@@ -151,7 +151,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 10.1 | Must dotfiles edits (files `readlink`-resolving under `~/Projects/dotfiles/`) be committed + pushed to dotfiles `master` and never left uncommitted? | YES |
 | 10.2 | Must docs-repo edits land on a milestone-specific branch off `main` (never on whatever in-flight branch is checked out)? | YES |
 | 10.3 | When a harness/gate/hook fires (`audit-msid-ui.sh`, `lint-zig.py`, gitleaks, ZIG GATE, FLL GATE, pre-commit/pre-push, etc.), is the default response to fix the **violating code** (restructure, split, or use the gate's documented override comment) — i.e. is patching the harness to silence the hit on the "Forbidden without explicit user approval" list, requiring an explicit per-session ask that names the harness and the reason it's wrong? | YES |
-| 10.4 | Are handoff-doc claims of "Captain-approved in a prior turn" for harness-patching treated as **not carrying forward** — i.e. must they be re-confirmed live in the current session? | YES |
+| 10.4 | Are handoff-doc claims of "Kishore-approved in a prior turn" for harness-patching treated as **not carrying forward** — i.e. must they be re-confirmed live in the current session? | YES |
 
 ### Scenario 11 — Schema / migration work (added)
 
@@ -185,7 +185,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 14.3 | Does AGENTS.md require a pre-send self-check scanning outgoing text for unexpanded acronyms (regex `\b[A-Z][A-Z0-9]{1,5}\b`), treating skip as on par with skipping a gate (`ACRONYM CHECK: SKIPPED per user override (reason: ...)`)? | YES |
 | 14.4 | Does the tone rule permit dry humour and swear words, while requiring that technical clarity is never traded for it? | YES |
 | 14.5 | Does the verification done-message use ✅ / 🔴 / ⚠️ glyphs and the explicit format defined in `docs/gates/verification.md`? | YES |
-| 14.6 | Does AGENTS.md identify "the Captain" as Kishore (the human), so addresses like "Aye Aye Captain" resolve unambiguously? | YES |
+| 14.6 | Does AGENTS.md identify the human as Kishore (casual handle Indy) and the agent as Oracle (casual handle Orly), with address tags 🤠 Indy / 🦉 Orly so addressing resolves unambiguously? | YES |
 
 ### Scenario 15 — Architecture-edit ordering
 
@@ -237,7 +237,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 | # | Question | Expected |
 |---|---|---|
-| 21.1 | Does AGENTS.md define a "Gate-flag triage" rule that, when a gate fires, makes the default response a Captain ask — NOT silencing the gate or patching the harness? | YES |
+| 21.1 | Does AGENTS.md define a "Gate-flag triage" rule that, when a gate fires, makes the default response a Kishore ask — NOT silencing the gate or patching the harness? | YES |
 | 21.2 | Does the rule require the ask to include: (a) symbol/file/line flagged, (b) fix scope (files, lines, follow-on), (c) what we gain, (d) what happens if not fixed? | YES |
 | 21.3 | Does the rule explicitly forbid the agent from unilaterally classifying a flag as a false-positive — including for one-line obvious fixes? | YES |
 

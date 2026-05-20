@@ -2,7 +2,7 @@
 # audit-deinit-pairs.sh — verify init/deinit pairing for Zig structs.
 #
 # Gate body: docs/gates/lifecycle.md
-# Standalone tool — not wired into make lint or pre-commit (per Captain's
+# Standalone tool — not wired into make lint or pre-commit (per Indy's
 # direction, gates fire pre-emptively via printed proof-blocks during
 # agent work; lint integration is intentionally absent).
 #

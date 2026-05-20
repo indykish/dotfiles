@@ -33,7 +33,7 @@ EXPECTED_LABELS=(
   "named scenarios"
   "hook triggers"
   "rule extension protocol"
-  "Captain identifier"
+  "identity handles"
   "size"
 )
 SEEN_LABELS=()
@@ -348,13 +348,13 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 15. Captain identifier — AGENTS.md MUST identify the human user as
-#     "Captain" = Kishore so nautical/affirmation phrasing resolves.
+# 15. Identity handles — AGENTS.md MUST identify the human (Kishore / Indy)
+#     and the agent (Oracle / Orly) so addressing resolves unambiguously.
 # ---------------------------------------------------------------------------
-if grep -qF "Captain is Kishore" "$AGENTS"; then
-  pass "Captain identifier present (the Captain is Kishore)"
+if grep -qF "human is Kishore" "$AGENTS" && grep -qF "Orly" "$AGENTS"; then
+  pass "identity handles (Kishore/Indy ↔ Oracle/Orly present)"
 else
-  fail "AGENTS.md missing 'Captain is Kishore' identifier"
+  fail "identity handles: AGENTS.md missing 'human is Kishore' or 'Orly'"
 fi
 
 # ---------------------------------------------------------------------------
@@ -362,7 +362,7 @@ fi
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
-LIMIT=${AGENTS_MD_SIZE_LIMIT:-28672}  # 28 KB — bumped 2026-05-16 by 2048 B for the Routine choice points discipline block (third bullet in Confusion Management) + Orly casual-alias addition in Owner & Style
+LIMIT=${AGENTS_MD_SIZE_LIMIT:-29696}  # 29 KB — bumped 2026-05-20 by 1024 B for the Address tags (🤠 Indy / 🦉 Orly) + `usezombie` project-name vocabulary rule in Owner & Style
 if [[ $SIZE -le $LIMIT ]]; then
   pass "size $SIZE bytes (limit $LIMIT)"
 else

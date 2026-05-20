@@ -85,4 +85,4 @@ Violations resolve by either (1) extracting to a named const + replacing all sit
 
 ## Failure mode this gate exists to prevent
 
-Captain's M66_001 §3 tail surfaced the failure clearly: `RULE UFS` lived as a single bullet in `BUN_RULES.md §2` with no audit, no HARNESS VERIFY row, and no per-edit ceremony. Across an 800-LOC session the agent introduced ~20 inline literals (`"platform"`, `"self_managed"`, `"receive"`, `"stage"`, `mode: "byok"`, `1e9`, `1_000_000_000`, etc.) that the rule already covered but no mechanism caught. The rule is fine; the enforcement was missing. This gate adds the enforcement.
+Indy's M66_001 §3 tail surfaced the failure clearly: `RULE UFS` lived as a single bullet in `BUN_RULES.md §2` with no audit, no HARNESS VERIFY row, and no per-edit ceremony. Across an 800-LOC session the agent introduced ~20 inline literals (`"platform"`, `"self_managed"`, `"receive"`, `"stage"`, `mode: "byok"`, `1e9`, `1_000_000_000`, etc.) that the rule already covered but no mechanism caught. The rule is fine; the enforcement was missing. This gate adds the enforcement.
