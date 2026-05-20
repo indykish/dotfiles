@@ -38,7 +38,7 @@ If a test answers (1) but mocks the dep, demote it to a unit test.
 
 ## What belongs here
 
-A test belongs in the integration suite (`make test-integration` / `pytest -m integration` / `cargo test --test 'integration_*'` / `go test -tags integration`) if **any** of:
+A test belongs in the integration suite (`make test-integration` / `pytest -m integration` / `cargo test --test 'integration_*'`) if **any** of:
 
 - **Real Postgres** — schema applied, real connection pool, real extensions if used
 - **Real Redis** — actual pub/sub, streams, KV, lease semantics
@@ -165,8 +165,8 @@ every request; this is the regression that proof exists to catch.
 - **Parallelism assertion (counter, deterministic):** peak simultaneous in-flight ≥ a
   threshold, or pool lock-wait ≈ 0. Wall-clock fallback: 100 concurrent ops finish in
   **< R×** a single op (R≈10 with margin — a global lock blows past ~100×), median-of-K.
-- **Verdict invariance:** pass K consecutive runs under randomised order; `-race`/`loom`
-  clean where the stack supports it.
+- **Verdict invariance:** pass K consecutive runs under randomised order; race detector /
+  `loom` (Rust) clean where the stack supports it.
 - **A serialization bottleneck is a *structural* finding** — propose the concurrent
   redesign (shard the lock · per-key/per-shard locks · lock-free CAS), surface it; the
   ≥100-connection parallelism counter is the acceptance proof of the redesign. Don't hack
@@ -177,7 +177,7 @@ every request; this is the regression that proof exists to catch.
 Proofs the system doesn't bleed:
 - **Drain audit** — `make check-pg-drain` (or equivalent) green after suite. Every `conn.query()` paired with `.drain()` before `deinit()`.
 - **Connection leak** — open count before == after across N requests
-- **Memory leak** — Zig: `std.testing.allocator` over full request lifecycle. Rust: `dhat`/`heaptrack` over N iters. Go: `runtime.NumGoroutine()` before==after; `pprof` heap delta.
+- **Memory leak** — Zig: `std.testing.allocator` over full request lifecycle. Rust: `dhat`/`heaptrack` over N iters. Python: `objgraph`/`gc` over N iters.
 - **FD leak** — `lsof -p $$ | wc -l` before/after holds
 - **Pool sizing** — load N>pool_size concurrent → backpressure works, no crash
 - **Graceful shutdown** — SIGTERM mid-request → in-flight completes, new requests rejected with 503
@@ -295,7 +295,6 @@ Every claim → ≥1 test. Untestable claims → flag `needs infra`, never silen
 | Zig (usezombie) | `make test-integration` | `make up` container | `make up` container | `std.testing.allocator` + `make check-pg-drain` | `std.Thread.spawn` |
 | Python | `pytest -m integration` | `testcontainers-python` | `testcontainers-python` | `gc` + `objgraph` over N iters | `asyncio.gather` / `ThreadPoolExecutor` |
 | Rust | `cargo test --test 'integration_*'` | `testcontainers-rs` / `sqlx::test` | `testcontainers-rs` | `dhat-rs`; `Drop` checks | `tokio::spawn` + `loom` for races |
-| Go | `go test -tags integration ./...` | `testcontainers-go` | `testcontainers-go` | `runtime.NumGoroutine`; `pprof` heap delta | goroutines + `-race` |
 | Node/Bun | `bun test --integration` | `testcontainers-node` | `testcontainers-node` | manual handle counting | `Promise.all` |
 
 Cross-stack failure-injection tools:
@@ -315,7 +314,6 @@ Stack-specific must-knows:
 - **Zig** — `conn.query()` paired with `.drain()` in the same fn before `deinit()`; verify with the project's drain-audit target. Per-request arena, not per-app. `std.testing.allocator` over the full request lifecycle, not just handler unit, to catch cross-thread leaks. If integration tests share the binary with unit tests, an env var / build flag should gate live-deps mode — assert that gate is set in CI, not assumed. Cross-compile (`x86_64-linux`, `aarch64-linux`) before declaring done.
 - **Python** — `pytest-asyncio` event loop scope = `function`, not `session` (avoid leakage). `respx`/`responses` for external HTTP only.
 - **Rust** — `#[sqlx::test]` for per-test schema; `tokio::test(flavor = "multi_thread")` for real concurrency. `loom` for races, not raw threads.
-- **Go** — `t.Parallel()` only after isolation proven; `httptest.NewServer` over a real listener.
 - **Node** — `--isolate` per test if framework supports; otherwise reset module registry.
 
 ---
@@ -364,7 +362,7 @@ Block the change if any are missing on touched surface:
 - [ ] Every `catch`/`orelse`/`except`/`Err` in the request path has a T4 injection test
 - [ ] Every concurrent-write or idempotency claim has a T5 test
 - [ ] Drain audit (`make check-pg-drain`) clean post-suite
-- [ ] Leak audit clean post-suite (Zig: `std.testing.allocator`; Rust: `dhat`; Go: `runtime.NumGoroutine`; Python: `objgraph`)
+- [ ] Leak audit clean post-suite (Zig: `std.testing.allocator`; Rust: `dhat`; Python: `objgraph`)
 - [ ] Suite passes under randomised execution order
 - [ ] Suite passes from clean state (`make down && make up && make test-integration`)
 - [ ] No mocking of DB, Redis, or internal modules

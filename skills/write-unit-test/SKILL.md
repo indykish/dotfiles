@@ -1,8 +1,8 @@
 ---
 name: write-unit-test
 description: >
-  Generates risk-weighted, failure-injecting tests across 9 stacks (Python, Python SDK,
-  OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Go, Shell). Enforces behaviour + failure +
+  Generates risk-weighted, failure-injecting tests across 8 stacks (Python, Python SDK,
+  OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Shell). Enforces behaviour + failure +
   invariant + integration + regression coverage with explicit anti-patterns and a
   Definition-of-Done gate. Adds deterministic production-safety proofs: Zig zero-leak
   (error paths included), concurrency proven at >=100 connections (no hidden global
@@ -47,9 +47,35 @@ Spec contradicts runtime → surface the conflict before testing. Code contradic
 
 1. **Read the spec, then the code** — spec defines what to test; code is what gets tested. Don't let code shape expectations.
 2. **Read `docs/greptile-learnings/RULES.md`** — every rule is a regression test.
-3. **Detect the stack** from project files (`pyproject.toml`, `Cargo.toml`, `go.mod`, `build.zig`, `package.json` + `react`/`bin`, `*.sh`, `openapi.yaml`).
+3. **Detect the stack** from project files (`pyproject.toml`, `Cargo.toml`, `build.zig`, `package.json` + `react`/`bin`, `*.sh`, `openapi.yaml`).
 4. **Run the existing suite first** — establish the green baseline before adding tests.
 5. **Follow existing naming and fixture conventions.**
+
+## Step 0 — the diff is the spec: build the required-test ledger first
+
+Before writing a single test, compute what *must* be tested **from the diff** — not from
+re-reading whole files. This is the optimised review: bounded by the change, not the
+codebase, and it's the artifact that makes "is the skill applied?" auditable.
+
+1. `git diff origin/main...HEAD` (or the PR base). Enumerate, per changed file:
+   - every changed/added **public function or method**
+   - every new or modified **branch** (`if`/`switch`/`match`/`?`/ternary)
+   - every new **error construction** (`catch`/`orelse`/`try`/`Err`/`raise`/`throw`)
+   - every new **public symbol** (export, `pub`, `__all__`, header signature)
+2. Each row gets a required test type and a status:
+
+```
+| Changed unit              | Test type     | Exists? | Note                       |
+|---------------------------|---------------|---------|----------------------------|
+| parseLease() new branch   | Failure       | ❌      | empty-input path           |
+| revokeKey() orelse        | Failure (inj) | ❌      | DB-down → 503              |
+| computeTotals() n² scan   | Performance   | ❌      | counter ladder + refactor? |
+```
+
+3. The ledger is **done only when every row is ✅ or carries an explicit
+   `won't-test: <reason>` / `needs-infra`**. A bare gap is a defect, not a deferral.
+4. **Paste the resolved ledger into PR Session Notes** so `/review`, `kishore-babysit-prs`,
+   and a human can audit it — the check becomes reviewable, not merely claimed.
 
 ## Three execution modes
 
@@ -90,7 +116,7 @@ Input → exact output shape AND side effects. Assert *both*. Asserting only the
 - **Downstream errors** — 4xx, 5xx, timeout, DNS, TLS, partial UTF-8, broken pipe.
 
 ### 3. Invariant
-Properties that must hold across all valid inputs. Use property-based testing (`hypothesis`/`proptest`/`fast-check`/`gopter`) when input domain is large.
+Properties that must hold across all valid inputs. Use property-based testing (`hypothesis`/`proptest`/`fast-check`) when input domain is large.
 
 - **Idempotency** — N calls = 1 effect. Required for webhooks, retries, distributed ops, PUT semantics.
 - **Monotonic state** — RUNNING never goes back to PENDING.
@@ -159,7 +185,7 @@ Vague claim: "handles connection reset". Real test: deterministic injection. If 
 | Clock skew | freeze/advance fake clock; `chrono` mock; `mock-time` |
 | Disk full / EIO | `tmpfs` size limit; mock filesystem |
 | OOM | `FixedBufferAllocator` (Zig), small heap caps |
-| Concurrency races | `loom` (Rust), `-race` (Go), `std.Thread` + barrier |
+| Concurrency races | `loom` (Rust), `std.Thread` + barrier (Zig) |
 | Network partition | `iptables`/`pfctl` block, `toxiproxy` down |
 
 Every failure mode named in the spec or code (`catch`, `orelse`, retry loop) needs at least one injection-driven test.
@@ -175,6 +201,41 @@ Line coverage is noise. Track and report:
 - **Input-class coverage** — empty / single / many / unicode / malformed each appear at least once per public input
 
 Targets on touched code: branch ≥80%, error-path 100%, negative-path ratio ≥50%.
+
+## Mutation testing — coverage proves *ran*, mutation proves *caught*
+
+Branch coverage says a line executed; it can't tell a real assertion from
+`expect(true).toBe(true)`. Mutation testing flips operators and deletes statements in the
+**changed** code and checks your tests **fail** (kill the mutant). A *surviving* mutant on
+a changed line = a test that asserts nothing meaningful. Required in **Hardening** mode;
+recommended on any changed logic with branching.
+
+- **Scope to the diff** — mutate only files changed vs the PR base; full-repo mutation is
+  too slow to gate on.
+- **Determinism:** prefer **rule-based** mutators (same mutants every run) over LLM-based
+  ones (nondeterministic — fights the invariance spine).
+- **Gate:** **0 surviving mutants on changed lines** (or each survivor justified as an
+  equivalent mutant). Paste the kill ratio.
+
+| Stack | Tool | Diff-scoping |
+|---|---|---|
+| TypeScript / Next.js / React | **Stryker** (`@stryker-mutator/core` + `vitest-runner`/`jest-runner` + `typescript-checker`) | `--since=<base>` / `--incremental`; scope to `lib/`, server actions, reducers, validators — **not** render-heavy `.tsx` |
+| Python | `mutmut` or `cosmic-ray` | mutate changed modules only |
+| Rust | `cargo-mutants` | `--in-diff <patch>` (native git-diff scoping) |
+| Zig | no dedicated tool — **`universalmutator`** (regex/Comby, language-agnostic; offloads non-compiling mutants to the strict compiler), or a homegrown operator-swap harness (`==`↔`!=`, `<`↔`<=`, `+`↔`-`, `and`↔`or`, drop `orelse`/`errdefer`) driving `zig build test` | restrict the mutate target to changed files |
+
+## Red-green proof (every bug-fix / regression PR)
+
+A regression test that passes on the *buggy* code proves nothing. Prove the red:
+
+1. Check out the parent commit (`git worktree add ../pre <parent>`) or stash the fix.
+2. Run the new test there — it **must FAIL** (the bug reproduces).
+3. Restore HEAD — the test **must PASS**.
+4. Paste both results. A test green on the pre-fix code is a false test — fix it until it
+   reproduces the bug, or it doesn't ship.
+
+This is the only proof the test actually pins the bug. Mandatory whenever the PR references
+a bug, incident, or "fix"; recommended for any behaviour-correcting change.
 
 ## Spec integration
 
@@ -220,6 +281,9 @@ Reject the change if any are missing on touched code:
 - [ ] **Zig zero-leak:** `make memleak` 0 leaks; every alloc-with-error-path proven by `std.testing.checkAllAllocationFailures`; no cross-request high-water growth over N iters
 - [ ] **Concurrency:** ≥100-connection barrier-started test proves exactly-once + parallelism (peak-concurrency/lock-wait counter, or wall-time < R×); passes K runs + race detector clean
 - [ ] **Refactor escalation:** any super-linear or serialization finding on touched code carries a refactor proposal (root cause + target design + patch alternative + recommendation) surfaced for decision — not silently band-aided
+- [ ] **Diff ledger** resolved 100% — every changed unit has a test or an explicit `won't-test`/`needs-infra`; ledger pasted into PR Session Notes
+- [ ] **Mutation** (Hardening / changed logic): 0 surviving mutants on changed lines (diff-scoped), or each survivor justified; kill ratio pasted
+- [ ] **Red-green** (fix PRs): the new test fails on the parent commit and passes on HEAD — both pasted
 
 100% required before declaring done.
 
@@ -288,7 +352,7 @@ request — exactly the regression this proof exists to catch.
   concurrent ops finish in **< R×** a single op (R with margin: a global lock blows past
   ~100×, so R≈10 catches it without flaking), median-of-K.
 - **Flush ordering bugs:** run K× under randomised order. `loom` (Rust) enumerates
-  interleavings exhaustively — use it where supported; `-race` (Go); for Zig, barrier +
+  interleavings exhaustively — use it where the stack supports it; for Zig, barrier +
   repeat + invariant assertions.
 - **Gate:** the ≥100-connection test passes K consecutive runs; race detector clean where
   available; counters/timing pasted.
@@ -357,12 +421,11 @@ Tooling per stack:
 | React | `vitest` + `testing-library` | `c8` branch | `fast-check` | n/a | `userEvent` rapid |
 | Zig | `zig build test` | manual | manual | manual mutation | `std.Thread.spawn` |
 | Rust | `cargo test` | `cargo-llvm-cov` | `proptest` | `cargo-fuzz` | `loom`, `tokio::spawn` |
-| Go | `go test` | `-cover -covermode=count` | `gopter` | `go test -fuzz` | `-race`, goroutines |
 | Shell | `bats` | `bashcov` | n/a | n/a | `&` + `wait`, `flock` |
 
 Naming convention by stack:
 
-- Python/Go: `test_should_<behaviour>_when_<condition>`
+- Python: `test_should_<behaviour>_when_<condition>`
 - Rust: `fn should_<behaviour>_when_<condition>()` in `mod tests`
 - Zig: `test "should <behaviour> when <condition>"`
 - React/TS: `it("should <behaviour> when <condition>")`
@@ -414,7 +477,10 @@ After the suite produce:
 Categories: Behaviour ✅ · Failure ✅ · Invariant ✅ · Integration ✅ · Regression ✅
 Production-safety: Zig-leak ✅ 0 (incl. checkAllAllocationFailures) · Concurrency ✅ 100-conn exactly-once + parallel · Perf ✅ O(n) counter + p95 vs baseline
 Refactor proposals surfaced: <n> (or "none — no structural finding")
-DoD checklist: 16/16
+Diff ledger: 7/7 rows resolved (5 tested · 2 won't-test w/ reason)
+Mutation (changed lines): 18/19 killed · 1 justified equivalent
+Red-green (fix PRs): ✅ fails on parent, passes on HEAD
+DoD checklist: 19/19
 Mode: Change-set | Hardening | Deep audit
 ```
 
