@@ -1,13 +1,12 @@
 ---
 name: kishore-spec-new
 description: |
-  Create a new project specification under docs/v{N}/pending/ using the
-  canonical TEMPLATE.md, the project's terminology hierarchy
-  (Prototype → Milestone → Workstream → Section → Dimension → Batch),
-  and the priority/category file-naming convention. Use when the user says
-  "create a spec", "new milestone", "start M{N}_{NNN}", "spec out X", or
-  attempts to write a TODO.md (TODO files are forbidden in this project —
-  every non-trivial intent becomes a spec instead).
+  Author a milestone/workstream specification the executing agent (Orly) can
+  ship into a deterministic, review-clean (no greptile findings), and reported
+  Pull Request. Leads with intent capture and review-readiness — not file
+  mechanics. Use when the user says "create a spec", "new milestone",
+  "start M{N}_{NNN}", "spec out X", or attempts a TODO.md (forbidden in this
+  project — every non-trivial intent becomes a spec instead).
 
   Cross-agent: works for Claude, Codex, OpenCode, Amp. Self-contained
   markdown — no agent-specific tool invocations.
@@ -15,205 +14,138 @@ description: |
 
 # kishore-spec-new
 
-Create a new milestone/workstream specification end-to-end. The skill
-covers the four steps that make spec creation deterministic:
+A spec is the **contract** the executing agent (Orly) plans and ships from. This
+skill makes me author one whose PR lands **deterministic, review-clean, and
+reported** — without a 20-questions loop. It is written for my reasoning, not as
+a file-naming guide: the mechanics (naming, layout) are demoted to the end
+because they are the easy part.
 
-1. **Pick the right ID and category set.**
-2. **Copy `docs/TEMPLATE.md` into `docs/v{N}/pending/`.**
-3. **Fill every section using project terminology.**
-4. **Commit on `main` with `Status: PENDING`.**
+> **The trio stays coherent.** This skill (*how to author*) ← `docs/TEMPLATE.md`
+> (*the section shape*) → `scripts/audit-spec-template.sh` (*the enforcer*). If a
+> step here demands something, the template carries the section and the audit
+> asserts it. Drift between the three is a bug.
 
-A spec is an *instance*; the rules under `AGENTS.md` and
-`docs/greptile-learnings/RULES.md` are the *constants*. When the spec
-contradicts the rules, amend the spec — never weaken the rules.
+A spec is an *instance*; `AGENTS.md` and `docs/greptile-learnings/RULES.md` are
+the *constants*. When the spec contradicts a rule, amend the spec — never weaken
+the rule.
+
+## What a good spec guarantees
+
+The three outcomes every step below serves:
+
+- **Deterministic / invariant** — the agent plans and builds with no `[?]`; every claim is a test; every invariant is enforced by code, not review discipline.
+- **Review-clean** — the code it produces trips no greptile finding, because the spec pre-commits to the exact `RULES.md` rule IDs and gates the diff touches.
+- **Reported** — Discovery (consult log), Verification Evidence, and skill-chain outcomes are populated as the work proceeds.
 
 ## Triggers
 
-- User says: "create a spec", "spec this out", "new milestone",
-  "draft M{N}_{NNN}", "start on M{N}", "track this as a milestone".
-- The user attempts to create a `TODO.md` or any ad-hoc
-  task list — convert it into a spec instead. **`TODO.md` is forbidden.**
-- A `plan-eng-review` / `plan-ceo-review` / `plan-design-review` produced
-  a plan that should be tracked durably.
+- User says: "create a spec", "spec this out", "new milestone", "draft M{N}_{NNN}", "start on M{N}", "track this as a milestone".
+- The user attempts a `TODO.md` or any ad-hoc task list — convert it into a spec. **`TODO.md` is forbidden.**
+- A `plan-eng-review` / `plan-ceo-review` / `plan-design-review` produced a plan that should be tracked durably.
 
-## Inputs to gather first
+---
 
-Before writing the spec, surface and confirm:
+## Step 1 — Capture intent (the hard part — do it before any file)
 
-1. **Milestone number `M{N}`** — sortable; check `docs/v{N}/{pending,active,done}/`
-   for the highest existing number and pick the next one. If the user
-   provides one, use that.
-2. **Workstream `{WS}`** — zero-padded (`001`, `002`, …). New initiative
-   under a milestone starts at `001`.
-3. **Priority `P{0..3}`** —
-   - **P0** critical / blocking
-   - **P1** customer- or operator-facing
-   - **P2** secondary / tooling
-   - **P3** deferrable
-4. **Category set `{CATEGORIES}`** — alphabetical, `≥1`:
-   - `UI` Next.js dashboard
-   - `API` Zig / Go handlers
-   - `CLI` zombiectl / Node CLIs
-   - `OBS` Grafana / metrics
-   - `SKILL` SKILL.md / YAML policy
-   - `INFRA` Terraform / deploy
-5. **Descriptive name `{NAME}`** — UPPER_SNAKE_CASE, ≤6 words, describes
-   the outcome not the action. `BUN_VENDOR_UTILITIES`, not
-   `BUMP_BUN_DEPS`.
-6. **Prototype tag** — `v1.0.0`, `v2.0.0`, … Drives directory choice
-   (`docs/v1/` vs `docs/v2/`).
+Determinism starts here. Before copying the template:
 
-## File naming
+- **Testable goal** — one sentence that could be a test name. "Implement streaming" is not a goal; "SSE handler streams pubsub as `text/event-stream`, p95 < 200ms" is.
+- **PR title + intent** — what the merged PR is called (imperative, ≤72 chars) and the one-sentence user-facing *why*.
+- **Comprehension handshake** — restate the intent in my own words and list `ASSUMPTIONS I'M MAKING: …`. If my restatement and the requester's ask diverge, STOP and reconcile before drafting.
+- **Golden-path walk** — trace the concrete end-to-end (every lookup, data source, secret store). Any `[?]` left in the walk blocks the spec from leaving `pending/`.
 
+→ Fills the template's **PR Intent & comprehension handshake** and **Overview**.
+
+## Step 2 — Lock review-readiness (so the PR ships clean)
+
+This is the step that prevents greptile findings — the spec becomes a pre-commitment to the rules its code must obey:
+
+- **Applicable Rules** — name the *specific* `docs/greptile-learnings/RULES.md` rule IDs the diff will trip (e.g. NDC, NLR, NLG, UFS), plus the per-surface rule files: `ZIG_RULES.md` (`*.zig`), `REST_API_DESIGN_GUIDELINES.md` (`src/http/handlers/**`), `SCHEMA_CONVENTIONS.md` (`schema/*`), `BUN_RULES.md`, `LOGGING_STANDARD.md`, `LIFECYCLE_PATTERNS.md`. Generic "follow RULES.md" earns a greptile finding; named IDs the implementer obeys by construction do not.
+- **Applicable Gates** — which Action-Triggered Guards fire (ZIG, PUB, LENGTH, UFS, UI, DESIGN TOKEN, LOGGING, LIFECYCLE, SCHEMA, ERROR REGISTRY) and the satisfaction strategy for each. Rules ≠ gates: rules are knowledge to read; gates fire on edits.
+- **Prior-Art / Reference Implementations** — the reference codebase to mirror (CLI → the supabase effects pillars at `docs/CLI_DX_PILLARS.md`; API → REST guide + nearest handler). No reinventing what a known-good pattern already solves.
+
+→ Fills **Applicable Rules**, **Applicable Gates**, **Prior-Art / Reference Implementations**.
+
+## Step 3 — Make it provable & reported
+
+- Decompose **Sections** into numbered **Dimensions** (3.1, 3.2 …) — the unit of DONE. **Every Dimension → one Test** (tiered: unit/integration/e2e per `/write-unit-test`; any user-facing Category gets a user-centric `test-e2e*` scenario).
+- **Every Failure Mode → a negative test.** **Every Invariant → enforced by code** (compiler, lint, comptime assertion, runtime check) — never by review discipline.
+- **Reporting spine** — **Discovery (consult log)** carries consults, skill-chain outcomes, and Indy-acked deferral quotes; **Verification Evidence** carries the VERIFY paste-outs. Both empty at creation, populated as work proceeds.
+
+→ Fills **Sections (+ Dimensions)**, **Failure Modes**, **Invariants**, **Test Specification (tiered)**, **Acceptance Criteria**, **Discovery**, **Verification Evidence**.
+
+## Step 4 — Mechanics (the easy part)
+
+Now the file. Pick the ID and copy the template:
+
+```bash
+# next free M{N}_{WS}
+ls docs/v*/pending/ docs/v*/active/ docs/v*/done/ 2>/dev/null \
+  | grep -oE 'M[0-9]+_[0-9]+' | sort -u | tail -5
+cp docs/TEMPLATE.md docs/v{N}/pending/M{N}_{WS}_P{P}_{CATEGORIES}_{NAME}.md
 ```
-docs/v{N}/{pending|active|done}/M{Milestone}_{Workstream}_P{Priority}_{CATEGORIES}_{NAME}.md
-```
 
-- Example: `docs/v2/pending/M52_001_P2_API_BUN_VENDOR_UTILITIES.md`.
-- Categories are alphabetised: `API_CLI_UI`, never `UI_API_CLI`.
-- Legacy forms (`M{N}_{WS}_{NAME}.md`, priority-first
-  `P{Priority}_{CATEGORIES}_M{N}_{WS}_{NAME}.md`) exist under `docs/v1/`
-  and `docs/v2/done/`. New specs use the form above. Do NOT rename
-  existing legacy files.
+If `docs/TEMPLATE.md` is missing in this repo, fall back to `~/Projects/dotfiles/docs/TEMPLATE.md`.
 
-## Terminology — forbidden substitutes
+**Inputs** — Milestone `M{N}` (next free, sortable) · Workstream `{WS}` zero-padded (`001`…) · Priority (**P0** blocking · **P1** customer/operator-facing · **P2** tooling · **P3** deferrable) · Category set alphabetised (`API` Zig/Go · `CLI` zombiectl/Node · `UI` Next.js · `OBS` Grafana · `SKILL` SKILL.md · `INFRA` Terraform) · Name UPPER_SNAKE_CASE ≤6 words describing the outcome (`BUN_VENDOR_UTILITIES`, not `BUMP_BUN_DEPS`) · Prototype tag (`v1.0.0`, `v2.0.0` — drives `docs/v1/` vs `docs/v2/`).
 
-The vocabulary table is binding for everything that lands in a file
-(specs, commits, PRs, handoffs, code comments). Conversational replies
-where the user used an industry term are exempt; the moment content
-lands in a file, project vocabulary wins.
+**File naming:** `docs/v{N}/{pending|active|done}/M{Milestone}_{Workstream}_P{Priority}_{CATEGORIES}_{NAME}.md` (e.g. `docs/v2/pending/M52_001_P2_API_BUN_VENDOR_UTILITIES.md`). Do NOT rename existing legacy-form files under `docs/v1/` or `docs/v2/done/`.
+
+**Terminology — binding for everything that lands in a file** (conversational replies are exempt):
 
 | Use | Do NOT use |
 |---|---|
 | Prototype (v1.0.0) | Release, Version train, Program |
-| Milestone (M{N}) | Sprint, Phase, Quarter, Release |
-| Workstream (M{N}_{WS}) | Ticket, Task, Story, Issue, Subtask |
-| Section (§3) | Phase, Step, Chapter, Stage |
-| Dimension (3.4) | Acceptance criterion, AC, Subtask, Checkbox |
-| Batch (B2) | Wave, Tranche, Iteration, Sprint |
+| Milestone (M{N}) | Sprint, Phase, Quarter |
+| Workstream (M{N}_{WS}) | Ticket, Task, Story, Issue |
+| Section (§3) | Phase, Step, Chapter |
+| Dimension (3.4) | Acceptance criterion, AC, Checkbox |
+| Batch (B2) | Wave, Tranche, Iteration |
 
-Sequential slices inside a workstream are §1, §2, §3 — never
-"Phase 1/2". Slices large enough to stand alone become their own
-workstream + Batch designation.
+**Directory movement** is lifecycle-driven: created → `pending/` (`Status: PENDING`); begin implementation → `active/` (CHORE(open)); all Dimensions DONE + PR opened → `done/`; parked → stay in `active/`.
 
-## Directory layout
+## Step 5 — Self-review gate, then commit
 
-```
-docs/v{N}/
-  pending/   created, not started
-  active/    agent working (one worktree per spec)
-  done/      all dimensions DONE, PR merged
-```
+Before the spec leaves `pending/`, it must pass this checklist — the deterministic/invariant guarantee:
 
-A spec only ever lives in one of these three directories. Movement
-is always lifecycle-driven:
+- [ ] intent handshake done; golden-path walk has **no `[?]`**
+- [ ] **Applicable Rules names specific greptile rule IDs**; Applicable Gates populated with satisfaction strategy
+- [ ] **every Dimension has a Test**; **every Failure Mode has a negative test**; every Invariant is code-enforceable
+- [ ] Prior-Art reference named (or "greenfield — shape in `docs/architecture/`")
+- [ ] reporting sections present (Discovery, Verification Evidence)
+- [ ] `bash scripts/audit-spec-template.sh --staged` is clean (it BLOCKs missing required sections and unfilled `{placeholders}`)
 
-| Event | Movement |
-|---|---|
-| New spec created via this skill | Land in `pending/` with `Status: PENDING` |
-| Begin implementation | `pending/` → `active/`, `Status: IN_PROGRESS`, set `Branch:` |
-| All dimensions DONE, PR opened | `active/` → `done/`, `Status: DONE` |
-| Parked midway | Stay in `active/`, mark complete dimensions DONE, leave the rest IN_PROGRESS |
-
-## Step-by-step
-
-### 1. Confirm inputs and pick the path
-
-Run:
-
-```bash
-ls docs/v*/pending/ docs/v*/active/ docs/v*/done/ 2>/dev/null \
-  | grep -oE 'M[0-9]+_[0-9]+' | sort -u | tail -5
-```
-
-Pick the next free `M{N}_{WS}` from the trailing list. Confirm with the
-user if there's any ambiguity (e.g., new milestone vs. extending an
-existing one with `_002`).
-
-### 2. Copy the template
-
-```bash
-cp docs/TEMPLATE.md docs/v{N}/pending/M{N}_{WS}_P{P}_{CATEGORIES}_{NAME}.md
-```
-
-If `docs/TEMPLATE.md` is missing in this repo, fall back to
-`~/Projects/dotfiles/docs/TEMPLATE.md`.
-
-### 3. Fill every section
-
-Open the new file and fill **every** section. Empty sections block the
-spec from leaving `pending/`. Use the terminology table above.
-
-Required header block:
-
-```markdown
-**Prototype:** v{N}.0.0
-**Milestone:** M{N}
-**Workstream:** {WS}
-**Date:** {MMM DD, YYYY}
-**Status:** PENDING
-**Priority:** P{0..3} — {one-line justification}
-**Categories:** {alphabetised list}
-**Batch:** B{N}
-**Branch:** feat/m{N}-{kebab-name} (to be created)
-**Depends on:** {list of M{N}_{WS} this requires DONE first}
-**Canonical architecture:** docs/architecture/{relevant-doc}.md §{N}
-```
-
-Required body sections — `scripts/audit-spec-template.sh --staged` BLOCKs a new
-spec missing any of these, or one still carrying template `{placeholders}`:
-
-- `## Implementing agent — read these first` — 3–5 pointers to existing code/docs to mirror before any edit.
-- `## PR Intent & comprehension handshake` — eventual PR title, one-sentence intent, and the PLAN-stage restatement the agent produces before EXECUTE.
-- `## Applicable Rules` — rule files (RULES.md, ZIG_RULES.md, REST_API_DESIGN_GUIDELINES.md, AUTH.md, SCHEMA_CONVENTIONS.md, …) to read before code. Missing → standard floor + surface the omission.
-- `## Applicable Gates` — which Action-Triggered Guards fire + the satisfaction strategy (rules ≠ gates).
-- `## Overview` — problem, goal (testable), solution summary.
-- `## Prior-Art / Reference Implementations` — the reference codebase to mirror (CLI → supabase effects pillars; API → REST guide; …) + alignment/divergence note.
-- `## Files Changed (blast radius)` — every file + action + reason. The EXECUTE scope contract; the agent edits only these without explicit override.
-- `## Decomposition & alternatives (patch vs refactor)` — chosen shape, ≥1 alternative, and the patch-vs-refactor verdict surfaced to Indy.
-- `## Sections (implementation slices)` — `§1`, `§2`, … each with numbered **Dimensions** (3.1, 3.2 …) mapping 1:1 to a Test + Acceptance Criterion — the unit of DONE.
-- `## Interfaces` — exact HTTP/CLI/RPC signatures the spec adds or changes.
-- `## Failure Modes` — table of failure → cause → handling.
-- `## Invariants` — code-enforceable properties that stay true.
-- `## Test Specification (tiered)` — one row per Dimension; tier (unit/integration/e2e) bound to `/write-unit-test`; user-facing categories get a user-centric `test-e2e*` scenario.
-- `## Acceptance Criteria` — every line a verifiable command.
-- `## Discovery (consult log)` — empty at creation; consults, skill outcomes, and Indy-acked deferral quotes land here.
-
-### 4. Commit on main
+Then commit on `main`:
 
 ```bash
 git add docs/v{N}/pending/M{N}_{WS}_*_{NAME}.md
 git commit -m "docs(m{N}): add spec — {short title}"
 ```
 
-The spec lands on `main` in `pending/`. The CHORE(open) lifecycle step
-moves it to `active/` and creates the worktree — handled separately by
-the lifecycle, not by this skill.
+The spec lands on `main` in `pending/`. CHORE(open) moves it to `active/` and creates the worktree — handled by the lifecycle, not this skill.
+
+---
 
 ## What this skill does NOT do
 
-- It does **not** start coding, create a worktree, or move the spec to
-  `active/`. That's CHORE(open), which fires when implementation
-  begins.
-- It does **not** modify any rule file, ARCHITECTURE doc, or
-  changelog.
+- It does **not** start coding, create a worktree, or move the spec to `active/`. That's CHORE(open), when implementation begins.
+- It does **not** modify any rule file, ARCHITECTURE doc, or changelog.
 - It does **not** branch off main. Spec creation is a `main` commit.
 
 ## Failure modes
 
 | Surface | What you do |
 |---|---|
-| User insists on writing `TODO.md` | Decline. Convert the intent into a spec via this skill. |
+| User insists on `TODO.md` | Decline. Convert the intent into a spec via this skill. |
 | Spec name collides with a `done/` entry | Pick the next workstream number; never reuse. |
-| Spec depends on something still in `pending/` | Allowed, but list the dependency in `Depends on:` and surface to the user. |
-| Spec proposes work that violates a rule | Amend the spec text (or scope) before committing. The rules are the constants. |
+| Spec depends on something still in `pending/` | Allowed — list it in `Depends on:` and surface it. |
+| Spec proposes work that violates a rule | Amend the spec text or scope before committing. Rules are the constants. |
+| Can't write the goal as a test name | Intent is not understood yet — go back to Step 1; do not draft sections. |
 
 ## References
 
-- `docs/TEMPLATE.md` — canonical spec template (per-repo copy).
-- `~/Projects/dotfiles/docs/TEMPLATE.md` — fallback if the repo lacks
-  one.
-- `~/Projects/dotfiles/AGENTS.md` — lifecycle phases, action-triggered
-  guards, deterministic VERIFY/CHORE sequencing.
-- `docs/greptile-learnings/RULES.md` — universal coding rules cited in
-  every spec's "Applicable Rules" section.
+- `docs/TEMPLATE.md` — the section shape this skill fills (per-repo copy; fallback `~/Projects/dotfiles/docs/TEMPLATE.md`).
+- `scripts/audit-spec-template.sh` — the enforcer (`--staged` BLOCKs an incomplete spec).
+- `docs/greptile-learnings/RULES.md` — the rule IDs Step 2 pins for review-cleanliness.
+- `docs/CLI_DX_PILLARS.md` — the CLI prior-art reference.
+- `~/Projects/dotfiles/AGENTS.md` — lifecycle stages, action-triggered guards, deterministic VERIFY/CHORE sequencing.

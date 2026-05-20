@@ -133,7 +133,7 @@ Greenfield (no existing pattern)? Say so explicitly and point at the `docs/archi
 
 ## Applicable Rules
 
-> The rule files the agent re-reads BEFORE EXECUTE and re-checks during VERIFY. Without this list the agent has no anchored prompt to consult them at the right moment. Add specific rule IDs where scope is narrow.
+> The rule files the agent re-reads BEFORE EXECUTE and re-checks during VERIFY. Without this list the agent has no anchored prompt to consult them at the right moment. Add specific rule IDs where scope is narrow — naming the exact greptile rule IDs the diff trips is what makes the resulting PR review-clean by construction.
 
 - **`docs/greptile-learnings/RULES.md`** — universal repo discipline (always applies).
 - **`docs/ZIG_RULES.md`** — when the diff touches `*.zig` (name sections: pg-drain lifecycle, tagged-union results, multi-step `errdefer`, cross-compile).
@@ -176,7 +176,7 @@ Touch nothing a gate watches → "N/A — docs/markdown only."
 
 > **SOUL.md rule: before proposing architecture, find the reference codebase — there almost always is one.** Name it so the agent mirrors a known-good pattern instead of inventing. State the alignment, or justify the divergence.
 
-- **CLI** → `~/Projects/oss/cli/apps/cli/docs/adr/0001-cli-dx-architecture-pillars.md` — the pillars: command → handler → errors split; **handler purity** (no `console.log` / `process.exit` in handlers); **output as a service** (human vs JSON vs env rendering chosen by the renderer, not the handler); **structured JSON errors** with `suggestion`/`retry` fields; **3-tier test pyramid** (handler unit / in-process integration / subprocess e2e); **auto-JSON when stdout is piped** (LLM-native). State per CLI spec: which pillars this aligns with, and the reason for any divergence.
+- **CLI** → `docs/CLI_DX_PILLARS.md` (the "7 Pillars" ADR, vendored from the supabase-style `oss/cli`) — the pillars: command → handler → errors split; **handler purity** (no `console.log` / `process.exit` in handlers); **output as a service** (human vs JSON vs env rendering chosen by the renderer, not the handler); **structured JSON errors** with `suggestion`/`retry` fields; **3-tier test pyramid** (handler unit / in-process integration / subprocess e2e); **auto-JSON when stdout is piped** (LLM-native). State per CLI spec: which pillars this aligns with, and the reason for any divergence.
 - **API** → `docs/REST_API_DESIGN_GUIDELINES.md` + the closest existing handler under `src/http/handlers/`.
 - **Schema** → the nearest existing migration + `docs/SCHEMA_CONVENTIONS.md`.
 - **UI** → design-system primitives + `theme.css` tokens.
