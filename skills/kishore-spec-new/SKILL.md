@@ -157,31 +157,27 @@ Required header block:
 **Batch:** B{N}
 **Branch:** feat/m{N}-{kebab-name} (to be created)
 **Depends on:** {list of M{N}_{WS} this requires DONE first}
-**Canonical architecture:** docs/ARCHITECHTURE.md §{N}
+**Canonical architecture:** docs/architecture/{relevant-doc}.md §{N}
 ```
 
-Required body sections (template enforces):
+Required body sections — `scripts/audit-spec-template.sh --staged` BLOCKs a new
+spec missing any of these, or one still carrying template `{placeholders}`:
 
-- `## Implementing agent — read these first` — list the docs the
-  implementing agent must read before code.
+- `## Implementing agent — read these first` — 3–5 pointers to existing code/docs to mirror before any edit.
+- `## PR Intent & comprehension handshake` — eventual PR title, one-sentence intent, and the PLAN-stage restatement the agent produces before EXECUTE.
+- `## Applicable Rules` — rule files (RULES.md, ZIG_RULES.md, REST_API_DESIGN_GUIDELINES.md, AUTH.md, SCHEMA_CONVENTIONS.md, …) to read before code. Missing → standard floor + surface the omission.
+- `## Applicable Gates` — which Action-Triggered Guards fire + the satisfaction strategy (rules ≠ gates).
 - `## Overview` — problem, goal (testable), solution summary.
-- `## Files Changed (blast radius)` — table of every file with action +
-  reason. Drives the EXECUTE scope contract; agents may only edit
-  files in this table without explicit user override.
-- `## Sections (implementation slices)` — `§1`, `§2`, … each
-  self-contained.
-- `## Interfaces` — exact HTTP/CLI/RPC signatures the spec adds or
-  changes.
+- `## Prior-Art / Reference Implementations` — the reference codebase to mirror (CLI → supabase effects pillars; API → REST guide; …) + alignment/divergence note.
+- `## Files Changed (blast radius)` — every file + action + reason. The EXECUTE scope contract; the agent edits only these without explicit override.
+- `## Decomposition & alternatives (patch vs refactor)` — chosen shape, ≥1 alternative, and the patch-vs-refactor verdict surfaced to Indy.
+- `## Sections (implementation slices)` — `§1`, `§2`, … each with numbered **Dimensions** (3.1, 3.2 …) mapping 1:1 to a Test + Acceptance Criterion — the unit of DONE.
+- `## Interfaces` — exact HTTP/CLI/RPC signatures the spec adds or changes.
 - `## Failure Modes` — table of failure → cause → handling.
-- `## Invariants` — what stays true after this spec lands.
-- `## Test Specification` — table of test name → asserts.
+- `## Invariants` — code-enforceable properties that stay true.
+- `## Test Specification (tiered)` — one row per Dimension; tier (unit/integration/e2e) bound to `/write-unit-test`; user-facing categories get a user-centric `test-e2e*` scenario.
 - `## Acceptance Criteria` — every line a verifiable command.
-- `## Discovery (consult log)` — empty at creation; populated as
-  Legacy-Design / Architecture consults fire.
-- `## Applicable Rules` — list the rule files (RULES.md, ZIG_RULES.md,
-  REST_API_DESIGN_GUIDELINES.md, AUTH.md, SCHEMA_CONVENTIONS.md, …)
-  the implementer must read before coding. Missing list → use the
-  standard floor and surface the omission to the spec author.
+- `## Discovery (consult log)` — empty at creation; consults, skill outcomes, and Indy-acked deferral quotes land here.
 
 ### 4. Commit on main
 
