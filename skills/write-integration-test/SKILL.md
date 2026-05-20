@@ -3,7 +3,10 @@ name: write-integration-test
 description: >
   Generates service-layer integration tests that exercise real dependencies (Postgres,
   Redis, full HTTP router + middleware chain) with deterministic failure injection,
-  per-test state isolation, drain audits, and leak audits. Sister skill to
+  per-test state isolation, drain audits, and leak audits. Proves zero leaks over the
+  real request lifecycle (error paths included), correctness + parallelism at >=100
+  connections (no hidden global lock), and a complexity/latency budget under load that
+  escalates serialization findings to a refactor proposal. Sister skill to
   write-unit-test. Use when adding/changing handlers, repos, services, or any code
   crossing module boundaries with real I/O. Not for browser E2E (use gstack /qa)
   and not for pure logic (use write-unit-test).
@@ -12,6 +15,16 @@ description: >
 # Write Integration Test
 
 Service-layer tests that prove real wiring works under real failure modes. Sits between unit tests (`make test`) and browser E2E (gstack `/qa`, `/e2e-qa-playwright`).
+
+> **What this guarantees / what it doesn't.** Integration tests don't prove "zero bugs
+> in production" — they prove the *seams* hold under *real* deps and *named* failure
+> modes. Three production-safety proofs are gated on **deterministic** evidence
+> (counters over clocks · exhaustive injection · barrier-synced contention · pinned
+> baselines): **zero leaks over the real request lifecycle (T6), correctness *and*
+> parallelism at ≥100 connections (T5), and a complexity/latency budget under load**.
+> When a super-linear term or a serialization point (one global lock) shows up, the
+> rule is **propose the structural refactor, surface it for decision — never silently
+> band-aid** (`AGENTS.md` Decomposition).
 
 ## Test quality bar
 
@@ -142,6 +155,23 @@ Vague claim "503 on Redis failure" → real test with deterministic injection. E
 - **Randomised execution order** — suite passes under `--shuffle` / `pytest -p randomly` / equivalent. Ordered-only pass = hidden coupling, fix isolation.
 - **Per-test isolation is the test's responsibility** — txn rollback, unique IDs, namespaced keys, `TRUNCATE`, or Redis `FLUSHDB` scoped to the test. Suite-level resets (drop+migrate between full runs, schema teardown scripts) are setup hygiene, **not** a substitute for per-test isolation: they only make the *first* run from clean state correct. Tests run inside one process must not see each other's rows.
 
+**Parallelism at scale (≥100 connections) — proves there's no hidden global lock.**
+A single global `Thread.Mutex` keeps every correctness test green while serialising
+every request; this is the regression that proof exists to catch.
+- **≥100 concurrent connections** against real PG + Redis, released together off a
+  **barrier** so contention is real and reproducible (not staggered by spawn latency).
+- **Correctness invariant (deterministic hard gate):** same row / idempotency key / lease
+  under the 100-way race → **exactly one effect**, no lost update.
+- **Parallelism assertion (counter, deterministic):** peak simultaneous in-flight ≥ a
+  threshold, or pool lock-wait ≈ 0. Wall-clock fallback: 100 concurrent ops finish in
+  **< R×** a single op (R≈10 with margin — a global lock blows past ~100×), median-of-K.
+- **Verdict invariance:** pass K consecutive runs under randomised order; `-race`/`loom`
+  clean where the stack supports it.
+- **A serialization bottleneck is a *structural* finding** — propose the concurrent
+  redesign (shard the lock · per-key/per-shard locks · lock-free CAS), surface it; the
+  ≥100-connection parallelism counter is the acceptance proof of the redesign. Don't hack
+  around the lock.
+
 ### T6 — Resource lifecycle
 
 Proofs the system doesn't bleed:
@@ -151,6 +181,31 @@ Proofs the system doesn't bleed:
 - **FD leak** — `lsof -p $$ | wc -l` before/after holds
 - **Pool sizing** — load N>pool_size concurrent → backpressure works, no crash
 - **Graceful shutdown** — SIGTERM mid-request → in-flight completes, new requests rejected with 503
+
+**Zero leaks over the *real* request lifecycle, error paths included (deterministic).**
+"0 leaks" means every path frees — including the ones that only run on failure.
+- Run the leak audit over the **full** request lifecycle (init → route → middleware →
+  handler → deinit / arena reset), not a handler unit, so cross-thread and cross-request
+  leaks surface.
+- **Zig error-path proof:** wrap allocating handlers/repos under
+  `std.testing.checkAllAllocationFailures` (or a `FailingAllocator` loop) — it fails each
+  allocation site in turn and asserts no leak on the resulting error return. This is the
+  deterministic proof every `errdefer` is correct; exhaustive over alloc sites ⇒ invariant.
+- **No cross-request growth:** drive N requests and assert outstanding-bytes / high-water
+  does not grow monotonically (a slow leak shows as linear growth).
+- **Gate:** `make memleak` → **0 leaks** + `make check-pg-drain` clean, both pasted into PR
+  Session Notes; cross-compile both targets before declaring done.
+
+**Complexity / latency budget under load (counters over clocks).**
+- **N+1 detector:** assert DB/Redis round-trip count per request is **constant or linear**
+  in payload size n — count at n and 10n; multiplicative growth = an N+1 to fix.
+- **Complexity ladder:** measure a work counter (round-trips, rows scanned, allocations)
+  at n, 2n, 4n, 8n; assert the growth matches the claimed O-bound (noise-free verdict).
+- **Latency under the ≥100-conn load:** p95/p99 within budget vs a **pinned baseline file**,
+  median-of-K — single samples banned.
+- **Super-linear or serialization finding ⇒ propose the structural refactor**, surface it
+  for decision (root cause + target design + patch alternative + recommendation); the test
+  pins the **target** bound so the refactor is provably met. Don't band-aid.
 
 ### T7 — Streaming / transport (only if SSE / chunked / WebSocket / gRPC streaming present)
 
@@ -294,6 +349,9 @@ Drain audit: ✅ make check-pg-drain clean
 Leak audit:  🔴 std.testing.allocator reported 2 leaks across 100 requests
 Shuffle:     ✅ pass under --shuffle
 Clean run:   ✅ pass after make down && make up
+100-conn:    ✅ exactly-once + parallel (peak in-flight 64/100, lock-wait 3ms)
+Complexity:  ✅ round-trips constant n→10n; p95 42ms < 50ms budget vs baseline
+Refactor proposals surfaced: none (or "1 — <one-line summary>")
 ```
 
 Legend: `✅` met · `🟡` partially met (specify gaps) · `🔴` missing required (block) · `⚪` not applicable (state why)
@@ -315,6 +373,10 @@ Block the change if any are missing on touched surface:
 - [ ] If streaming touched: T7 incremental-delivery test present
 - [ ] Failure-injection mechanism named for every T4/T7 test (no fiction)
 - [ ] PR Session Notes paste final `make test-integration` + `make memleak` lines
+- [ ] **≥100-connection** test proves exactly-once + parallelism (peak-concurrency/lock-wait counter, or wall-time < R×), passes K runs
+- [ ] **Zig error-path leak:** allocating handlers/repos proven by `std.testing.checkAllAllocationFailures`; no cross-request high-water growth over N requests
+- [ ] **Complexity under load:** N+1 round-trips ruled out (count at n vs 10n); work-counter ladder asserts the O-bound; p95 within budget vs pinned baseline
+- [ ] **Refactor escalation:** any super-linear or serialization finding carries a refactor proposal (root cause + target design + patch alternative + recommendation) surfaced for decision — not silently band-aided
 
 100% required before declaring `make test-integration` done.
 

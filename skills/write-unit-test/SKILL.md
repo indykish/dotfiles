@@ -4,12 +4,24 @@ description: >
   Generates risk-weighted, failure-injecting tests across 9 stacks (Python, Python SDK,
   OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Go, Shell). Enforces behaviour + failure +
   invariant + integration + regression coverage with explicit anti-patterns and a
-  Definition-of-Done gate. Use during implementation, not after.
+  Definition-of-Done gate. Adds deterministic production-safety proofs: Zig zero-leak
+  (error paths included), concurrency proven at >=100 connections (no hidden global
+  lock), and a counter-based complexity/latency budget that escalates O(n) and
+  serialization findings to a refactor proposal. Use during implementation, not after.
 ---
 
 # Write Unit Test
 
 Generate tests that catch bugs before they ship. Tests run *during* implementation, not after.
+
+> **What this guarantees / what it doesn't.** No test suite proves "zero bugs in
+> production" — nothing does. This skill guarantees something *checkable*: **no
+> changed behaviour, branch, or named failure-mode ships untested, and the tests
+> provably *assert* rather than merely *execute*.** Three production-safety proofs
+> (Zig zero-leak · concurrency-at-scale · performance/complexity budget) are gated
+> on **deterministic** evidence — counters, exhaustive injection, pinned baselines —
+> not wall-clock vibes. Coverage proves a line *ran*; these proofs prove a test
+> would *scream* when the behaviour breaks.
 
 ## Test quality bar
 
@@ -204,7 +216,10 @@ Reject the change if any are missing on touched code:
 - [ ] No mocking of internal modules
 - [ ] Golden-file drift, if any, has a written explanation
 - [ ] Branch coverage ≥80%, error-path 100% on touched code
-- [ ] Performance assertions concrete (fixed input + time budget + threshold)
+- [ ] **Performance:** counter-based complexity proof on the n-ladder (O-bound asserted) + median-of-K latency vs pinned baseline; N+1 round-trips ruled out
+- [ ] **Zig zero-leak:** `make memleak` 0 leaks; every alloc-with-error-path proven by `std.testing.checkAllAllocationFailures`; no cross-request high-water growth over N iters
+- [ ] **Concurrency:** ≥100-connection barrier-started test proves exactly-once + parallelism (peak-concurrency/lock-wait counter, or wall-time < R×); passes K runs + race detector clean
+- [ ] **Refactor escalation:** any super-linear or serialization finding on touched code carries a refactor proposal (root cause + target design + patch alternative + recommendation) surfaced for decision — not silently band-aided
 
 100% required before declaring done.
 
@@ -219,15 +234,113 @@ Reject the change if any are missing on touched code:
 
 A test in the wrong stage either delays PRs or never runs. Place deliberately.
 
-## Performance assertions
+## Production-safety proofs (deterministic & invariant)
 
-Hand-wavy "no O(n²)" doesn't test anything. Make it concrete:
+These three catch bugs that reach production silently and cost the most to remove.
+Each is written to be **deterministic** (same verdict every run) and **invariant**
+(independent of machine, load noise, and execution order).
 
-- **Fixed input size** (e.g. 10k rows)
-- **Time budget** (e.g. p95 < 50ms)
-- **Regression threshold** (fails if 1.5× slower than recorded baseline)
-- **Allocation count** (`testing.allocator` leak detection; Go `-benchmem`)
-- **Connection / FD leak check** — open count before == after
+**The rule that governs all three: prefer counters over clocks.** An allocation
+count, a query/round-trip count, a lock-wait tally, a peak-concurrency count is
+noise-free and reproducible; wall-clock time is not. Where wall-clock is unavoidable
+(latency budgets), use **median-of-K runs + a margin** against a **pinned baseline
+file**, never a single sample. Where an input space must be covered, prefer
+**exhaustive injection** (every allocation site, every interleaving the tool can
+enumerate) over sampling.
+
+### Proof 1 — Zig: zero leaks in production, error paths included
+
+"0 leaks" means *every* path frees, including the ones that only run on failure — not
+"the happy path didn't leak."
+
+- **Every test allocates via `std.testing.allocator`.** It fails the test on any leak
+  or double-free, deterministically. Gate: no test uses `std.heap.page_allocator` or a
+  long-lived General Purpose Allocator (GPA); `grep -rn "page_allocator" '**/test*.zig'`
+  in test code is empty (or justified per line).
+- **Exhaustive error-path proof — `std.testing.checkAllAllocationFailures`.** For every
+  function that allocates *and* can return an error, run it under
+  `checkAllAllocationFailures` (or a `FailingAllocator` loop): it fails each allocation
+  site in turn and asserts the function leaks nothing on the resulting error return.
+  This is the *only* acceptable proof that every `errdefer` is correct — "looks right"
+  is not. Exhaustive over allocation sites ⇒ deterministic.
+- **No cross-request growth.** Drive the full lifecycle (init → handle → deinit, or
+  arena acquire → use → reset) for N iterations and assert outstanding-bytes /
+  high-water does **not** grow monotonically. A slow leak the single-shot test misses
+  shows up here as linear growth.
+- **Gate:** `make memleak` → **0 leaks**, output pasted into PR Session Notes; cross-compile
+  both targets first (`x86_64-linux`, `aarch64-linux`) — stdlib alloc paths differ from macOS.
+
+### Proof 2 — Concurrency proven at ≥100 connections (no hidden global lock)
+
+The code must be correct **and actually parallel** under real contention. A single
+global `Thread.Mutex` makes correctness tests pass while quietly serialising every
+request — exactly the regression this proof exists to catch.
+
+- **Real contention, deterministic start.** ≥100 concurrent clients/connections,
+  released together off a **barrier** so contention is real and reproducible (not
+  staggered by spawn latency).
+- **Correctness invariant (the hard gate, fully deterministic):** same row / same
+  idempotency key / same lease under the 100-way race → **exactly one effect**, no lost
+  update, no corruption. Assert the invariant, not "no crash."
+- **Parallelism assertion (catches the global-lock regression):** prove work runs in
+  parallel. Cheapest deterministic form is a **counter** — assert peak simultaneous
+  in-flight ≥ a threshold, or lock-wait ≈ 0. Where only wall-clock exists, assert 100
+  concurrent ops finish in **< R×** a single op (R with margin: a global lock blows past
+  ~100×, so R≈10 catches it without flaking), median-of-K.
+- **Flush ordering bugs:** run K× under randomised order. `loom` (Rust) enumerates
+  interleavings exhaustively — use it where supported; `-race` (Go); for Zig, barrier +
+  repeat + invariant assertions.
+- **Gate:** the ≥100-connection test passes K consecutive runs; race detector clean where
+  available; counters/timing pasted.
+- **A serialization bottleneck is a *structural* finding, not a patch target.** If the
+  parallelism counter shows one global lock serialising requests, propose the concurrent
+  redesign (shard the lock · per-key/per-shard locks · lock-free CAS · read-copy-update),
+  not a hack around it — and let the ≥100-connection parallelism counter be the acceptance
+  proof of the redesign (Proof 3 optimisation loop, step 3).
+
+### Proof 3 — Performance & complexity budget (and how I optimise to meet it)
+
+A changed hot path declares a latency budget **and** a proven complexity bound — and
+when it misses, I optimise deterministically rather than hand-wave "no O(n²)".
+
+- **Complexity by counters (deterministic).** Measure a **work counter** (allocations,
+  DB/Redis round-trips, comparisons, bytes scanned) at n, 2n, 4n, 8n and assert the
+  growth matches the claim: O(n) → ~doubles per doubling; O(1) → flat; O(n²) → ~4×.
+  Counters are noise-free, so the verdict is invariant across machines.
+- **N+1 detector (the most common super-linear surprise):** assert round-trip count is
+  constant or linear in n, never multiplicative — count at n and 10n.
+- **Latency budget (when wall-clock is required):** fixed input + warmup + **median-of-K**
+  + p95/p99 threshold + regression threshold vs a **pinned baseline file** (fail at 1.5×
+  baseline). Single samples banned — they flake.
+- **Conservation:** allocation count bounded; connection / file-descriptor (FD) open-count
+  before == after.
+
+**The optimisation loop I run when a budget is missed** (deterministic, repeatable).
+Default bias for the perf/concurrency class: **propose the structural refactor, not the
+band-aid** — a patched O(n²) or a hacked-around global lock still ships a fragile design.
+
+1. **Measure with counters first**, not a profiler guess — find the term that grows
+   super-linearly (the N+1, the O(n²) nested scan, the per-iteration allocation) or the
+   **serialization point** (one lock every request waits on).
+2. **Classify the fix — local vs structural.** *Local* = a genuine one-liner: add an
+   index, hoist one allocation, collapse one N+1 into a join. *Structural* = the data
+   structure, locking model, or call graph is wrong: an O(n²) algorithm, a global
+   `Thread.Mutex` serialising all requests, per-request work that belongs in a shared
+   cache, a layer doing I/O in a loop.
+3. **Structural ⇒ analyse and propose the large refactor — surface it, don't silently
+   band-aid.** Write: the **root cause**, the **target design** that is deterministic +
+   performant + concurrent (e.g. shard the lock / per-key or per-shard locks / lock-free
+   CAS instead of one mutex; one batched query instead of N+1 scattered across layers;
+   an index or precompute instead of repeated scans; streaming instead of full-buffer),
+   the **throwaway-patch alternative and why it's worse**, and the **blast radius**.
+   This follows the patch-vs-refactor discipline (`AGENTS.md` Decomposition) — the call
+   is surfaced to Indy, not made unilaterally. The test then pins the **target** bound,
+   so the refactor is provably met and can't regress.
+4. **Local ⇒ apply**, then re-measure the same counter on the same n-ladder and assert
+   the growth ratio dropped to target. The before/after counter delta *is* the proof —
+   pin it in the baseline file so a future regression fails the gate.
+5. If the budget still can't be met after the agreed change, that's a **design finding** —
+   surface it; never loosen the threshold silently.
 
 ---
 
@@ -299,7 +412,9 @@ After the suite produce:
 | Error-path          | 60%    | 100%  | 100%   |
 | Negative-path ratio | 20%    | 55%   | ≥50%   |
 Categories: Behaviour ✅ · Failure ✅ · Invariant ✅ · Integration ✅ · Regression ✅
-DoD checklist: 12/12
+Production-safety: Zig-leak ✅ 0 (incl. checkAllAllocationFailures) · Concurrency ✅ 100-conn exactly-once + parallel · Perf ✅ O(n) counter + p95 vs baseline
+Refactor proposals surfaced: <n> (or "none — no structural finding")
+DoD checklist: 16/16
 Mode: Change-set | Hardening | Deep audit
 ```
 
