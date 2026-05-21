@@ -116,7 +116,14 @@ hits=$($DIFF_CMD | awk '
     # rule leaves the RHF <form> as the correct raw element. Exempt exactly that
     # shape; a bare <form> or <form action=...> with no handleSubmit still trips.
     rhf_form = (line ~ /<form[ \t]/ && line ~ /handleSubmit/)
-    if (!ui_override && !rhf_form &&
+    # <section> landmark caveat: a semantic <section aria-label> region has no DS
+    # primitive (Section renders a <div>; role="region" trips oxlint
+    # jsx-a11y/prefer-tag-over-role, which mandates the raw tag). The DS pattern
+    # is <Section asChild><section …>, so exempt a <section> whose immediately
+    # preceding added line opens <Section asChild>. A bare/unwrapped <section>
+    # still trips.
+    ds_section = (line ~ /<section[ \t]/ && prev_added ~ /<Section asChild>/)
+    if (!ui_override && !rhf_form && !ds_section &&
         f ~ /^ui\/packages\/app\/.*\.(tsx|jsx)$/ &&
         line ~ /<(section|button|input|dialog|article|nav|header|form)[ \t>\/]/) {
       print "UI     " f ": " line
