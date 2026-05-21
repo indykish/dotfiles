@@ -109,7 +109,14 @@ hits=$($DIFF_CMD | awk '
         print "MS-ID  " f ": " line
       }
     }
-    if (!ui_override &&
+    # react-hook-form caveat: its prescribed shape is a raw
+    # <form onSubmit={form.handleSubmit(...)}> inside the design-system <Form>
+    # provider (see design-system Form.tsx docstring). No DS form-element
+    # primitive exists to substitute to, so the substitute-if-a-primitive-exists
+    # rule leaves the RHF <form> as the correct raw element. Exempt exactly that
+    # shape; a bare <form> or <form action=...> with no handleSubmit still trips.
+    rhf_form = (line ~ /<form[ \t]/ && line ~ /handleSubmit/)
+    if (!ui_override && !rhf_form &&
         f ~ /^ui\/packages\/app\/.*\.(tsx|jsx)$/ &&
         line ~ /<(section|button|input|dialog|article|nav|header|form)[ \t>\/]/) {
       print "UI     " f ": " line
