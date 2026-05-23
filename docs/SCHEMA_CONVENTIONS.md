@@ -4,9 +4,9 @@ Canonical reference for UseZombie database schema patterns. All new tables **mus
 
 ## Migration Model
 
-**Until v0.5.0:** Full teardown-rebuild. Tables are dropped and recreated from scratch on every deploy. No `ALTER TABLE` migrations. Schema changes are made inline in the DDL files.
+**Until v2.0.0:** Full teardown-rebuild. Tables are dropped and recreated from scratch on every deploy. No `ALTER TABLE` migrations. Schema changes are made inline in the DDL files. **Enforced by `check-schema-gate`** (`_schema_gate_check` in `make/quality.mk`): `ALTER TABLE` / `DROP TABLE` / `DROP COLUMN` in `schema/*.sql` fail while the major version is `< 2`. To remove a table pre-v2.0.0, delete its slot file + the `embed.zig` entry + the `canonicalMigrations()` array entry.
 
-**After v0.5.0:** ALTER migrations required. Schema changes must be backward-compatible and additive. This document will be updated with migration rules when that transition happens.
+**After v2.0.0:** ALTER migrations required. Schema changes must be backward-compatible and additive. This document will be updated with migration rules when that transition happens.
 
 ## Schema File Organization
 
