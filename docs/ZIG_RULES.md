@@ -383,3 +383,23 @@ These are recommended patterns surfaced from the Bun Zig codebase audit. They im
 - **`inline fn` for ≤3-line getters and trivial conversions.** Field extractors, enum-to-string converters, comptime-evaluable switches — these benefit from inlining and the compiler does the right thing. Reserve uninlined `fn` for multi-line algorithms or anything with a loop body. (Bun example: `sys/Error.zig:62-68`.)
 - **`@This()` in nested or self-referential contexts.** Inside a struct definition, prefer `pub fn save(self: *@This())` over `pub fn save(self: *MyStruct)` — easier to refactor (struct rename doesn't cascade) and clearer in nested types.
 - **Free functions before structs that use them.** Within a file, top-level constants → free helper functions → primary struct(s) that consume them → tests. Reading top-down then matches data flow. Section comments (`// === Section ===`) demarcate when a file has more than one logical region.
+
+## Module Boundaries & Shared Modules (`src/lib`)
+
+**The boundary rule (Zig-enforced):** a module's relative `@import("…")` may only reach files **within the directory subtree of that module's root source file**. Reaching across with `../..` into a sibling tree fails to compile — `error: import of file outside module path`. A binary's module root is the directory of its `root_source_file` in `build.zig` (a binary rooted at `src/main.zig` can reach all of `src/`; one rooted at `src/runner/main.zig` is confined to `src/runner/`).
+
+**Why it exists — and why it is a feature, not friction:**
+
+1. **One file = one module = one type identity.** A file reached by relative path belongs to the importing module. If the *same* file were reachable from two modules by path, it would compile twice into two distinct types that look identical but never compare equal (the "expected `Foo`, found `Foo`" split). Confining relative imports to a module's own tree forces a shared file to be reached as a **named module**, which the build dedups to one instance — the type is defined exactly once.
+2. **`build.zig` is the single source of truth for the dependency graph.** Every cross-module edge is a declared `.imports` entry, never a smuggled `../..`. Incremental compilation, implementation-swapping (e.g. a stub dependency in tests), and dependency analysis all depend on this.
+3. **Auditable, minimal surface per binary.** A binary's *entire* external dependency surface is its module's `.imports` list. "This binary cannot link X" becomes structural — read the `.imports` and you see everything it can touch. A binary cannot reach a dependency that is not declared there, no matter what sits elsewhere in `src/`.
+4. **Relocatable / cacheable / sandboxed modules.** A module confined to its tree (plus declared deps) can be moved, vendored, or published; a dependency you pull cannot reach up into your files.
+
+**`src/lib/` — the home for our own shared modules.** Code reused across **≥2 build graphs** (separate `build*.zig` files producing separate binaries) lives under `src/lib/<name>/` and is consumed as a **named module**, never by relative `../` reach-across:
+
+- Declare it in every `build*.zig` that needs it (`b.createModule({ .root_source_file = b.path("src/lib/<name>/<name>.zig") })`), reusing the *same* module object across the `.imports` within one build graph so type identity holds.
+- Import it by name everywhere: `const x = @import("<name>");` — never `@import("../../lib/<name>/…")`.
+- External packages (those from `build.zig.zon`) are **not** `src/lib/` — they are already named modules; do not relocate them into `src/`.
+- A wire contract shared between a server binary and a client/daemon binary is the canonical inhabitant: putting it in `src/lib/` lets both build graphs compile it without either reaching into the other's tree.
+
+**Adding to `src/lib/` is gated (reason-then-approval).** Promoting a module into `src/lib/` widens the shared surface, so it is not an agent-unilateral move. Before creating a new `src/lib/<name>/`: (1) state the reason — which ≥2 build graphs consume it, and why it must be shared rather than duplicated or kept domain-local; (2) propose it to the owner with that reason; (3) create it only on approval. Helpers shared *within a single binary* stay under that domain's `common/` (e.g. `src/<domain>/common/`), not `src/lib/`.
