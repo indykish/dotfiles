@@ -79,7 +79,9 @@ Spec asserts "503 on Redis down", code returns 200 → test the spec, flag the c
 | **Standard** | New service method, new Redis stream/key, schema change with logic | + T4 + T5 + T6 |
 | **Hardening** | Auth / payment / lease / migration / streaming / anything in the data-loss radius | + T7 (if applicable) + T8 + chaos pass |
 
-Auto-detect from diff: `src/auth/**`, `src/zombie/leases/**`, schema migrations, streaming handlers → Hardening. CRUD-only against existing schema → Smoke. Default → Standard.
+Auto-detect from diff: `src/auth/**`, `src/zombie/leases/**`, `src/runner/**` + `src/zombied/fleet/**` (the lease/reclaim/fence + client-daemon surface → T9), schema migrations, streaming handlers → Hardening. CRUD-only against existing schema → Smoke. Default → Standard.
+
+**A client daemon (no router, no datastore — e.g. `zombie-runner`) is always Hardening + T9**, regardless of diff size: its contract *is* the process lifecycle (kill / restart / reclaim / fence), and that is exactly the surface a happy-path loop test misses.
 
 ## Risk-weighted priority
 
@@ -93,7 +95,7 @@ Within a mode, write tests in this order. Stop when the surface is covered.
 
 ---
 
-## Eight integration tiers
+## Nine integration tiers
 
 ### T1 — Real-dependency wiring
 
@@ -226,6 +228,29 @@ Spec claim "real-time" → assert *bytes arrive incrementally*, not just that th
 - Deprecation headers present for deprecated fields/endpoints
 - Versioning: API path/header version matches handler
 
+### T9 — Client-daemon & process supervision (split-architecture services)
+
+For a service that is **not** an HTTP server but a **client daemon** holding no datastore — e.g. the `zombie-runner`: register → heartbeat → long-poll lease → fork a sandboxed child → report — the router/request tiers don't map. Integration testing it means driving its protocol loop against a real (or harness) control plane and exercising the process lifecycle that *is* its contract.
+
+- **Protocol loop against a real control plane** — stand up the control-plane HTTP server (real handlers, real PG/Redis behind it); the daemon registers, leases a seeded event, executes, reports; assert the durable rows the report writes (T3 state assertions), not just that the loop ran.
+- **Sudden kill (SIGKILL, not SIGTERM) mid-lease** — the cattle-not-pets case, distinct from graceful drain (T6). Kill the daemon while a lease is in flight; assert the lease expires at its deadline, the reclaim sweep re-issues it with a higher fencing token to another holder, the event is processed **exactly once**, and the dead holder's late report is **fenced** (stale-token reject), never a double-write.
+- **Restart / re-register** — bring the daemon back; assert it re-registers and resumes leasing with no duplicate processing of in-flight work and no orphan lease left held.
+- **Flaky control-plane link (client side)** — the daemon is an HTTP *client* over an unreliable link: lease long-poll drops, heartbeat fails, report fails *after* the child already ran. Assert backoff-without-crash, the un-acked lease redelivers, and report retry is idempotent (a second delivery of the same outcome is fenced/deduped, not double-applied).
+- **Forked-child lifecycle** — the child is always reaped (no zombies/orphans) and the sandbox/cgroup scope always destroyed (idempotent) on every exit path including timeout and crash; a child past its deadline is killed and the outcome **classified** (timeout vs OOM vs crash), not hung.
+
+Injection: `kill -9 <pid>` / `docker kill` for sudden death; `toxiproxy` or a pause on the control-plane endpoint for the flaky link; a fake clock past the lease TTL for reclaim.
+
+---
+
+## Determinism & harness hygiene (the test infra is a test too)
+
+A flaky harness fails good code and trains the team to re-run until green — the opposite of what integration tests are for. The harness gets the same rigor as the system. Two failure classes, **both observed in this repo**, are suite-blocking and non-negotiable:
+
+- **Port binding: bind-and-hold, never alloc-then-rebind.** A harness that asks the OS for a free port, closes the socket, then has the server re-`bind()` that number races every other test doing the same — the port is grabbed in the gap and the server's `listen()` aborts (`EADDRINUSE`). **Rule:** the harness binds the listener **once** and hands the *already-bound* socket/fd to the server (no close-reopen window); if a number must be pre-allocated, bind with `SO_REUSEADDR` + retry on conflict and treat a bind failure as **retryable, never a panic**. A harness `listen()` that can `panic` on a bind race is a defect in the harness, not a flaky test.
+- **Reset/teardown must be catalog-derived, never a hand-maintained list.** A teardown that drops a hardcoded set of schemas/tables silently rots the moment a migration adds a schema — the new schema survives teardown, the "0 objects remain" assertion trips, and the *whole suite can't start* (observed: a `fleet` schema added by a migration, absent from the static drop list). **Rule:** derive the drop/truncate set from the live catalog (`information_schema.schemata` / `pg_tables`) or from the migration set; OR add a test that fails when a schema the migrations create is missing from the teardown. The teardown is **verified against** the schema, not assumed to match it.
+
+Both make every downstream test a lie — fix them before adding coverage. A green suite on a stale teardown or a racy harness is worth less than no suite.
+
 ---
 
 ## Hard rules
@@ -239,6 +264,8 @@ Spec claim "real-time" → assert *bytes arrive incrementally*, not just that th
 - **Drain + leak proofs are required, not optional.** Once per suite, recorded in PR Session Notes.
 - **No hitting deployed environments.** Integration tests run against `make up` containers, never `api-dev`/`api`.
 - **Test names read as documentation.** `should_503_when_redis_down`, `should_release_lease_on_handler_panic`, `should_not_double_charge_on_idempotency_replay`.
+- **Cover the scenario axis per surface.** Each surface gets, explicitly: a **positive** path, a **negative** path (rejected input → specific error contract), an **invalid** case (oversized / wrong-typed / unknown-enum / bad-token / malformed payload), a **flaky-connection** case (T4 for a server, T9 for a client daemon), a **kill-and-restart** case wherever a process holds state (T9), and a **concurrency** case (T5). A surface missing one axis is under-covered, not done — name the missing axis in the coverage report rather than declaring green.
+- **Guard the harness as a test (Determinism & harness hygiene).** Server binds-and-holds its port; teardown/reset is catalog-derived. A suite on a racy harness or a stale teardown is a false signal — fix it before trusting any result.
 
 ## Anti-patterns (reject in review)
 
@@ -275,6 +302,7 @@ When the spec has these tables, treat them as authoritative test sources:
 | Concurrency Contracts | T5 tests for stated isolation level + idempotency keys |
 | Resource Limits | T6 tests for pool size, timeout, rate-limit |
 | Streaming Contracts | T7 tests for incremental delivery + reconnect |
+| Recovery / Failover (lease, daemon) | T9 sudden-kill → reclaim + re-fence + exactly-once; restart → resume |
 
 If no such tables, build a claim-tracing table from spec prose / OpenAPI:
 
@@ -293,6 +321,7 @@ Every claim → ≥1 test. Untestable claims → flag `needs infra`, never silen
 | Stack | Suite runner | Real PG | Real Redis | Drain/leak | Concurrency |
 |---|---|---|---|---|---|
 | Zig (usezombie) | `make test-integration` | `make up` container | `make up` container | `std.testing.allocator` + `make check-pg-drain` | `std.Thread.spawn` |
+| Zig runner (client daemon) | `make test-integration` (protocol loop vs a harness/real control plane) | via the control plane (runner holds none) | via the control plane | `std.testing.allocator` over parent + forked child | `fork` + `kill -9` / fake-clock past lease TTL for reclaim |
 | Python | `pytest -m integration` | `testcontainers-python` | `testcontainers-python` | `gc` + `objgraph` over N iters | `asyncio.gather` / `ThreadPoolExecutor` |
 | Rust | `cargo test --test 'integration_*'` | `testcontainers-rs` / `sqlx::test` | `testcontainers-rs` | `dhat-rs`; `Drop` checks | `tokio::spawn` + `loom` for races |
 | Node/Bun | `bun test --integration` | `testcontainers-node` | `testcontainers-node` | manual handle counting | `Promise.all` |
@@ -308,6 +337,8 @@ Cross-stack failure-injection tools:
 | Slow / latency | `toxiproxy` latency toxic |
 | Partial read | wrapper `Reader` returning short |
 | Clock skew | fake clock injection at app boundary |
+| Sudden process death (no graceful drain) | `kill -9 <pid>` / `docker kill <ctr>` mid-lease |
+| Free-port without a rebind race | bind once + hand the bound fd to the server (`SO_REUSEADDR` + retry on conflict) |
 
 Stack-specific must-knows:
 
@@ -341,7 +372,10 @@ After the suite, produce:
 | T6 Resource lifecycle          | yes      | 1/2   | 🟡     |
 | T7 Streaming / transport       | n/a      | —     | ⚪     |
 | T8 API contract & schema       | yes      | 1/1   | ✅     |
+| T9 Client-daemon supervision   | n/a      | —     | ⚪     |
 Mode:        Smoke | Standard | Hardening
+Scenario axis: positive ✅ · negative ✅ · invalid 🟡 · flaky-conn ✅ · kill/restart ✅ · concurrency ✅
+Harness:     ✅ port bind-and-hold · ✅ teardown catalog-derived (survives a new schema)
 DoD:         9/12  — return to EXECUTE before declaring done
 Drain audit: ✅ make check-pg-drain clean
 Leak audit:  🔴 std.testing.allocator reported 2 leaks across 100 requests
@@ -375,6 +409,9 @@ Block the change if any are missing on touched surface:
 - [ ] **Zig error-path leak:** allocating handlers/repos proven by `std.testing.checkAllAllocationFailures`; no cross-request high-water growth over N requests
 - [ ] **Complexity under load:** N+1 round-trips ruled out (count at n vs 10n); work-counter ladder asserts the O-bound; p95 within budget vs pinned baseline
 - [ ] **Refactor escalation:** any super-linear or serialization finding carries a refactor proposal (root cause + target design + patch alternative + recommendation) surfaced for decision — not silently band-aided
+- [ ] **Scenario axis** covered per surface: positive · negative · invalid · flaky-connection · kill/restart (stateful processes) · concurrency — gaps named in the coverage report
+- [ ] **Harness hygiene:** server binds-and-holds its port (no rebind race, no `listen()` panic); teardown/reset is catalog-derived (proven by adding a throwaway schema and re-running teardown — it must still reach zero)
+- [ ] **Client daemon (if present, T9):** sudden SIGKILL mid-lease → reclaim + re-fence + exactly-once + stale report fenced; restart → re-register + resume, no duplicate, no orphan lease; flaky control-plane link → backoff without crash + un-acked redelivery + idempotent report retry; forked child always reaped + scope always destroyed on every exit path
 
 100% required before declaring `make test-integration` done.
 
