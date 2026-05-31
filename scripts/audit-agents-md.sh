@@ -14,28 +14,15 @@ FIXTURES="$ROOT/scripts/fixtures"
 GATES_DIR="$ROOT/docs/gates"
 FAIL=0
 
-# Self-fingerprint — every label here MUST appear in a `pass`/`fail` call
-# below. If a check is removed without updating this list, the final
-# self-fingerprint check will fail. This is the script auditing itself.
-EXPECTED_LABELS=(
-  "gate inventory"
-  "trigger surface"
-  "override syntax"
-  "always-forbidden list"
-  "skill-chain ordering"
-  "HARNESS VERIFY coverage"
-  "cross-references"
-  "audit fixture: dirty diff"
-  "audit fixture: clean diff"
-  "gate bodies complete"
-  "AGENTS_INVARIANCE.md present"
-  "lifecycle stages"
-  "named scenarios"
-  "hook triggers"
-  "rule extension protocol"
-  "identity handles"
-  "size"
-)
+# Expectation tables (EXPECTED_LABELS, REQUIRED_GATES, EXTS, FORBIDDEN_KEYS,
+# HARNESS_KEYS, DOTFILES_RESIDENT, LIFECYCLE_HEADERS, NAMED_SCENARIOS,
+# RULE_EXTENSION_STEPS, AWK_PROG) live in the sibling data file — split out
+# to keep this audit under the LENGTH GATE cap. Data drift is itself caught
+# by the gate-parity + named-scenario-parity checks below.
+DATA="$ROOT/scripts/lib/audit-data.sh"
+[[ -f "$DATA" ]] || { echo "FAIL: $DATA missing (audit data tables)" >&2; exit 2; }
+# shellcheck source=scripts/lib/audit-data.sh
+. "$DATA"
 SEEN_LABELS=()
 
 # Colours — disable when stdout is not a TTY (e.g. piped, hook).
@@ -56,28 +43,30 @@ info "Auditing $AGENTS"
 [[ -f "$AGENTS" ]] || { echo "FAIL: $AGENTS missing" >&2; exit 2; }
 
 # ---------------------------------------------------------------------------
-# 1. Gate inventory — every named gate still exists.
+# 1. Gate inventory — every named gate still exists (REQUIRED_GATES in data).
 # ---------------------------------------------------------------------------
-REQUIRED_GATES=(
-  "Invariance Suite Gate"
-  "RULE NLR" "RULE NLG" "Legacy-Design Consult Guard"
-  "Schema Table Removal Guard" "File & Function Length Gate"
-  "Milestone-ID Gate" "Architecture Consult & Update Gate"
-  "ZIG GATE" "Pub Surface & Struct-Shape Gate"
-  "UI Component Substitution Gate" "GREPTILE GATE" "Verification Gate"
-  "LOGGING GATE" "LIFECYCLE GATE" "ERROR REGISTRY GATE"
-  "SPEC TEMPLATE GATE" "DOC READ GATE"
-)
 missing_gates=0
 for g in "${REQUIRED_GATES[@]}"; do
-  grep -qF "$g" "$AGENTS" || { fail "gate missing: $g"; missing_gates=1; }
+  # The name must appear as the Gate COLUMN value of an index row — i.e.
+  # right after a "| " cell delimiter ("| <name>") — on a line that ALSO
+  # carries a docs/gates/ body reference. Rationale for each part:
+  #   * A file-wide substring match was too loose: the same row's override
+  #     text repeats the name (·`$g: SKIPPED…`) on the very line holding the
+  #     docs/gates/ path, so renaming the Gate column kept the check green.
+  #   * The "| " prefix anchors to the column cell; the override repetition
+  #     is preceded by a backtick, not "| ", so it no longer satisfies it.
+  #   * We do NOT require a trailing " |": row 1's cell carries a "(meta)"
+  #     suffix, and REQUIRED_GATES stores the bare name.
+  # (Both failure shapes are pinned by the negative harness; see
+  #  scripts/test-audit-agents-md.sh.)
+  grep -F "| $g" "$AGENTS" | grep -q 'docs/gates/' \
+    || { fail "gate missing from index: $g"; missing_gates=1; }
 done
-[[ $missing_gates -eq 0 ]] && pass "gate inventory (${#REQUIRED_GATES[@]} gates present)"
+[[ $missing_gates -eq 0 ]] && pass "gate inventory (${#REQUIRED_GATES[@]} gates present in index)"
 
 # ---------------------------------------------------------------------------
-# 2. Trigger surface — every source/config language has at least one mention.
+# 2. Trigger surface — every source/config language has a mention (EXTS in data).
 # ---------------------------------------------------------------------------
-EXTS=( ".zig" ".ts" ".tsx" ".js" ".jsx" ".py" ".rs" ".go" ".sh" ".sql" )
 missing_exts=0
 for ext in "${EXTS[@]}"; do
   grep -qF "$ext" "$AGENTS" || { fail "trigger surface missing extension: $ext"; missing_exts=1; }
@@ -96,16 +85,8 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Always-forbidden invariance — the six hard bans must remain.
+# 4. Always-forbidden invariance — six hard bans (FORBIDDEN_KEYS in data).
 # ---------------------------------------------------------------------------
-FORBIDDEN_KEYS=(
-  "no-verify"               # hooks/signing
-  "Plaintext secrets"       # entity tables
-  "Static strings in SQL"   # schema literals
-  "Resolving/printing credentials"
-  "Force-push default"
-  "core paths"              # install-process launches in core paths
-)
 missing_bans=0
 for k in "${FORBIDDEN_KEYS[@]}"; do
   grep -qF "$k" "$AGENTS" || { fail "always-forbidden item missing: $k"; missing_bans=1; }
@@ -130,14 +111,8 @@ awk '
   || fail "skill chain not in order within CHORE(close): /write-unit-test → /review → /review-pr → kishore-babysit-prs"
 
 # ---------------------------------------------------------------------------
-# 6. HARNESS VERIFY rows — every gate's keyword appears in the verdict block.
+# 6. HARNESS VERIFY rows — every gate keyword in the verdict block (HARNESS_KEYS).
 # ---------------------------------------------------------------------------
-HARNESS_KEYS=(
-  "FILE SHAPE" "PUB GATE" "LENGTH GATE" "MILESTONE-ID GATE"
-  "ZIG GATE" "UI GATE" "DESIGN TOKEN GATE"
-  "SCHEMA GUARD" "GREPTILE GATE"
-  "Architecture consult"
-)
 missing_rows=0
 for kw in "${HARNESS_KEYS[@]}"; do
   grep -qF "$kw" "$AGENTS" || { fail "HARNESS VERIFY row missing: $kw"; missing_rows=1; }
@@ -145,19 +120,10 @@ done
 [[ $missing_rows -eq 0 ]] && pass "HARNESS VERIFY coverage (${#HARNESS_KEYS[@]} rows present)"
 
 # ---------------------------------------------------------------------------
-# 7. Cross-references — dotfiles-resident docs must exist.
-#    Project-side docs (AUTH.md, architecture/, changelog.mdx, etc.) live
+# 7. Cross-references — dotfiles-resident docs must exist (DOTFILES_RESIDENT
+#    in data). Project-side docs (AUTH.md, architecture/, changelog.mdx) live
 #    in each project repo, not here, so they're excluded from this check.
 # ---------------------------------------------------------------------------
-DOTFILES_RESIDENT=(
-  "docs/TEMPLATE.md"
-  "docs/REST_API_DESIGN_GUIDELINES.md"
-  "docs/ZIG_RULES.md"
-  "docs/BUN_RULES.md"
-  "docs/LOGGING_STANDARD.md"
-  "docs/LIFECYCLE_PATTERNS.md"
-  "docs/greptile-learnings/RULES.md"
-)
 broken_refs=0
 for doc in "${DOTFILES_RESIDENT[@]}"; do
   if grep -qF "$doc" "$AGENTS"; then
@@ -167,20 +133,9 @@ done
 [[ $broken_refs -eq 0 ]] && pass "cross-references (dotfiles-resident docs exist)"
 
 # ---------------------------------------------------------------------------
-# 8. Combined-audit smoke — the awk pass flags real violations and ignores
-#    clean diffs. Fixtures live in scripts/fixtures/.
+# 8. Combined-audit smoke — the awk pass (AWK_PROG in data) flags real
+#    violations and ignores clean diffs. Fixtures live in scripts/fixtures/.
 # ---------------------------------------------------------------------------
-read -r -d '' AWK_PROG <<'AWKEOF' || true
-/^\+\+\+ b\// { f=$2; sub("^b/","",f); next }
-/^\+/ {
-  if (f ~ /\.(zig|sql|ts|tsx|js|jsx|py|rs|go|sh|toml|yaml|json)$/ && f !~ /^(docs|node_modules|vendor|third_party)\//) {
-    if (match($0, /M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b/)) print "MS-ID:" f
-  }
-  if (f ~ /\.zig$/ && $0 ~ /^\+(pub | *pub fn | *[A-Z][a-zA-Z]+,$)/) print "PUB:" f
-  if (f ~ /^ui\/packages\/app\/.*\.(tsx|jsx)$/ && $0 ~ /<(section|button|input|dialog|article|nav|header|form)\b/) print "UI:" f
-}
-AWKEOF
-
 if [[ -f "$FIXTURES/dirty.diff" && -f "$FIXTURES/clean.diff" ]]; then
   # Fixture content fingerprint — guards against well-meaning rewrites
   # that "fix" dirty.diff to be clean (which would silently break the smoke).
@@ -209,43 +164,51 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 9. Gate-body completeness — every gate referenced by AGENTS.md has a
-#    body file under docs/gates/<slug>.md, and that body carries the
-#    three required structural markers (Triggers, Override, body content).
+# 9. Gate-body completeness — DERIVED, not hand-listed. The set of gate
+#    bodies is computed from disk; each must carry the three structural
+#    markers (Triggers, Override, 🚧 H1) AND be referenced by AGENTS.md.
+#    A hand-maintained array was the root cause of UFS/DESIGN-TOKEN drift
+#    (bodies on disk + in the AGENTS.md index, but absent from the array,
+#    so the audit silently skipped them). Deriving removes that failure mode.
 # ---------------------------------------------------------------------------
-GATE_FILES=(
-  "docs/gates/invariance-suite.md"
-  "docs/gates/nlr.md"
-  "docs/gates/nlg.md"
-  "docs/gates/legacy-design.md"
-  "docs/gates/schema-removal.md"
-  "docs/gates/file-length.md"
-  "docs/gates/milestone-id.md"
-  "docs/gates/architecture.md"
-  "docs/gates/zig.md"
-  "docs/gates/pub-surface.md"
-  "docs/gates/ui-substitution.md"
-  "docs/gates/greptile.md"
-  "docs/gates/verification.md"
-  "docs/gates/logging.md"
-  "docs/gates/lifecycle.md"
-  "docs/gates/error-registry.md"
-  "docs/gates/spec-template.md"
-  "docs/gates/doc-read.md"
-)
+mapfile -t GATE_FILES < <(cd "$ROOT" && ls docs/gates/*.md 2>/dev/null | sort)
 gate_body_fail=0
+if [[ ${#GATE_FILES[@]} -eq 0 ]]; then
+  fail "no gate bodies found under docs/gates/"; gate_body_fail=1
+fi
 for gf in "${GATE_FILES[@]}"; do
   full="$ROOT/$gf"
-  if [[ ! -f "$full" ]]; then
-    fail "gate body missing: $gf"; gate_body_fail=1; continue
-  fi
   grep -qE '^\*\*Triggers' "$full"   || { fail "$gf missing **Triggers** marker"; gate_body_fail=1; }
   grep -qE '^\*\*Override' "$full"   || { fail "$gf missing **Override** marker"; gate_body_fail=1; }
   grep -qE '^# 🚧 '          "$full" || { fail "$gf missing 🚧 shield in H1";    gate_body_fail=1; }
-  # AGENTS.md must point at this gate body
-  grep -qF "$gf" "$AGENTS"           || { fail "AGENTS.md does not reference $gf"; gate_body_fail=1; }
+  # AGENTS.md must point at this gate body (no orphan body on disk).
+  grep -qF "$gf" "$AGENTS"           || { fail "AGENTS.md does not reference $gf (orphan gate body)"; gate_body_fail=1; }
 done
-[[ $gate_body_fail -eq 0 ]] && pass "gate bodies complete (${#GATE_FILES[@]} files, each with Triggers + Override + 🚧 + AGENTS.md ref)"
+[[ $gate_body_fail -eq 0 ]] && pass "gate bodies complete (${#GATE_FILES[@]} files derived from disk, each with Triggers + Override + 🚧 + AGENTS.md ref)"
+
+# ---------------------------------------------------------------------------
+# 9b. Gate parity — the three sources of truth must agree in size, so adding
+#     a gate to one place but forgetting another is a hard FAIL:
+#       (a) gate-index rows in AGENTS.md (lines carrying a docs/gates/ ref),
+#       (b) gate bodies on disk,
+#       (c) the REQUIRED_GATES name array (check #1).
+#     Also: every docs/gates/ path the AGENTS.md index names must exist on
+#     disk (no dangling pointer). This is the structural backstop that the
+#     hand-list let slip — it makes "wire it everywhere or fail" mechanical.
+# ---------------------------------------------------------------------------
+parity_fail=0
+index_rows=$(grep -cE '^\| *[0-9]+ .*docs/gates/[a-z0-9-]+\.md' "$AGENTS")
+disk_count=${#GATE_FILES[@]}
+required_count=${#REQUIRED_GATES[@]}
+if [[ "$index_rows" -ne "$disk_count" || "$disk_count" -ne "$required_count" ]]; then
+  fail "gate parity mismatch: AGENTS.md index rows=$index_rows, disk bodies=$disk_count, REQUIRED_GATES=$required_count (all three must match)"
+  parity_fail=1
+fi
+# Every index-named body path resolves to a real file.
+while IFS= read -r ref; do
+  [[ -f "$ROOT/$ref" ]] || { fail "AGENTS.md gate index references missing body: $ref"; parity_fail=1; }
+done < <(grep -oE 'docs/gates/[a-z0-9-]+\.md' "$AGENTS" | sort -u)
+[[ $parity_fail -eq 0 ]] && pass "gate parity (index=$index_rows ↔ disk=$disk_count ↔ REQUIRED_GATES=$required_count, all index refs resolve)"
 
 # ---------------------------------------------------------------------------
 # 10. AGENTS_INVARIANCE.md presence + basic shape (questionnaire layer).
@@ -263,18 +226,8 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 11. Lifecycle stage headers — every stage header is present in AGENTS.md.
+# 11. Lifecycle stage headers — all present in AGENTS.md (LIFECYCLE_HEADERS).
 # ---------------------------------------------------------------------------
-LIFECYCLE_HEADERS=(
-  "### CHORE (open)"
-  "### PLAN"
-  "### EXECUTE"
-  "### HARNESS VERIFY"
-  "### VERIFY"
-  "### DOCUMENT"
-  "### COMMIT"
-  "### CHORE (close)"
-)
 missing_stages=0
 for h in "${LIFECYCLE_HEADERS[@]}"; do
   grep -qF "$h" "$AGENTS" || { fail "lifecycle stage missing: $h"; missing_stages=1; }
@@ -282,38 +235,25 @@ done
 [[ $missing_stages -eq 0 ]] && pass "lifecycle stages (${#LIFECYCLE_HEADERS[@]} headers present)"
 
 # ---------------------------------------------------------------------------
-# 12. AGENTS_INVARIANCE.md — named scenarios must exist by title.
-#     Catches the case where a scenario count stays ≥ threshold but a
-#     specific high-value scenario is silently renamed/removed.
+# 12. AGENTS_INVARIANCE.md — named scenarios must exist by title
+#     (NAMED_SCENARIOS in data). Catches the case where a scenario count
+#     stays ≥ threshold but a specific high-value scenario is renamed/removed.
 # ---------------------------------------------------------------------------
 INV="$ROOT/AGENTS_INVARIANCE.md"
-NAMED_SCENARIOS=(
-  "New spec"                 # Scenario 1
-  "Brainstorming"            # Scenario 2
-  "human spots and steers"   # Scenario 3
-  "UI"                       # Scenario 4 (covers UI/Zig/TS/JS/shell/CI)
-  "Handover"                 # Scenario 5
-  "Verification lifecycle"   # Scenario 6
-  "/review-pr"               # Scenario 7
-  "/write-unit-test"         # Scenario 8
-  "Hot-fix"                  # Scenario 9
-  "Dotfiles"                 # Scenario 10
-  "Schema"                   # Scenario 11
-  "Auto-mode boundary"       # Scenario 12
-  "Invariance Suite"         # Scenario 13
-  "Communication"            # Scenario 14
-  "Architecture-edit"        # Scenario 15
-  "Credentials"              # Scenario 16
-  "DB discipline"            # Scenario 17
-  "worktree isolation"       # Scenario 18
-  "combined audit"           # Scenario 19
-)
 missing_scenarios=0
 if [[ -f "$INV" ]]; then
   for s in "${NAMED_SCENARIOS[@]}"; do
     grep -qF "$s" "$INV" || { fail "AGENTS_INVARIANCE.md missing scenario keyword: $s"; missing_scenarios=1; }
   done
-  [[ $missing_scenarios -eq 0 ]] && pass "named scenarios (${#NAMED_SCENARIOS[@]} keywords found in AGENTS_INVARIANCE.md)"
+  # Parity — the keyword array must keep pace with the actual scenario count,
+  # so a newly-added scenario can't sit unguarded (this is exactly how
+  # scenarios 20-22 slipped past the keyword list before this check existed).
+  actual_scenarios=$(grep -cE '^### Scenario [0-9]+' "$INV")
+  if [[ "${#NAMED_SCENARIOS[@]}" -ne "$actual_scenarios" ]]; then
+    fail "named-scenario parity: array has ${#NAMED_SCENARIOS[@]} keywords but AGENTS_INVARIANCE.md has $actual_scenarios scenarios (every scenario needs a keyword guard)"
+    missing_scenarios=1
+  fi
+  [[ $missing_scenarios -eq 0 ]] && pass "named scenarios (${#NAMED_SCENARIOS[@]} keywords ↔ $actual_scenarios scenarios, parity holds)"
 else
   fail "AGENTS_INVARIANCE.md missing"
 fi
@@ -338,11 +278,20 @@ done
 
 # ---------------------------------------------------------------------------
 # 14. Rule extension protocol — AGENTS.md MUST document the 4-step recipe
-#     for landing a new rules file or gate body. Without this, the ruleset
-#     can grow rules that the questionnaire & audit don't enforce.
+#     for landing a new rules file or gate body, AND that recipe must still
+#     enumerate all four wiring steps. Mere section-presence is not enough:
+#     the protocol is the only thing tying a new gate to the doc-reads table,
+#     the questionnaire, the DOTFILES_RESIDENT audit list, and `make audit`.
+#     If a step silently drops out of the recipe, gates can be added without
+#     that linkage — the same class of drift that hid UFS/DESIGN-TOKEN.
 # ---------------------------------------------------------------------------
 if grep -qF "Rule extension protocol" "$AGENTS"; then
-  pass "rule extension protocol section present"
+  protocol_line=$(grep -F "Rule extension protocol" "$AGENTS" | head -1)
+  rep_fail=0
+  for step in "${RULE_EXTENSION_STEPS[@]}"; do
+    grep -qF "$step" <<<"$protocol_line" || { fail "rule extension protocol missing step keyword: $step"; rep_fail=1; }
+  done
+  [[ $rep_fail -eq 0 ]] && pass "rule extension protocol section present (all 4 wiring steps enumerated)"
 else
   fail "AGENTS.md missing 'Rule extension protocol' section"
 fi

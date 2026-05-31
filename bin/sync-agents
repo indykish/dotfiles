@@ -43,7 +43,26 @@ PROJECT_LINKS=(
   "docs/HARNESS_VERIFY_OUTPUT.md:docs/HARNESS_VERIFY_OUTPUT.md"
   "docs/greptile-learnings:docs/greptile-learnings"
   "docs/gates:docs/gates"
+  # Project-consumed audit scripts (invoked by each repo's Makefile / hooks).
+  # Previously hand-symlinked into repos out-of-band; listed here so a single
+  # `sync-agents` run is the source of truth and new repos/worktrees pick them
+  # up automatically.
   "scripts/audit-spec-template.sh:scripts/audit-spec-template.sh"
+  "scripts/audit-ufs.sh:scripts/audit-ufs.sh"
+  "scripts/audit-logging.sh:scripts/audit-logging.sh"
+  "scripts/audit-design-tokens.sh:scripts/audit-design-tokens.sh"
+  "scripts/audit-deinit-pairs.sh:scripts/audit-deinit-pairs.sh"
+  "scripts/audit-error-codes.sh:scripts/audit-error-codes.sh"
+  "scripts/audit-cross-tier-rates.sh:scripts/audit-cross-tier-rates.sh"
+  "scripts/audit-msid-ui.sh:scripts/audit-msid-ui.sh"
+  # AGENTS.md invariance suite + cross-agent comprehension. The audit derives
+  # its ROOT from its own location, so a repo running it against its symlinked
+  # AGENTS.md / docs/gates verifies the same ruleset locally. lib/ + the
+  # comprehension dir are dependencies (data tables, fixtures, runner).
+  "scripts/audit-agents-md.sh:scripts/audit-agents-md.sh"
+  "scripts/test-audit-agents-md.sh:scripts/test-audit-agents-md.sh"
+  "scripts/lib:scripts/lib"
+  "scripts/comprehension:scripts/comprehension"
 )
 
 # Project repos. Override per-invocation via:

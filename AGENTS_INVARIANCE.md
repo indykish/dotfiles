@@ -250,6 +250,46 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 22.3 | Does `audit-msid-ui.sh` (renamed from `audit-combined.sh` after the PUB clause moved to zlint + agent chat-output discipline) remain the lone diff-shaped audit (still default `--staged`) — because its sub-checks (MS-ID / UI substitution) assert on *added* lines, not file state, and `git diff --cached` reads the index? | YES |
 | 22.4 | Does every gate body under `docs/gates/` for the converted scripts carry a "Scope (M70)" section documenting full-codebase semantics + the M68 `02c1f3cf` forcing function? | YES |
 
+### Scenario 23 — Agent comprehension robustness (anti-hallucination)
+
+This scenario exists because the most likely failure of the operating model is
+not a missing rule — it's the *agent misreading a rule that is present*.
+AGENTS.md is ~28 KB of table-dense, exception-laden prose; the conditions
+below are where an LLM reading it tends to drift, conflate, or confabulate.
+The questions force *proof of reading* over *recall*.
+
+| # | Question | Expected |
+|---|---|---|
+| 23.1 | When answering a gate-specific question, must the agent quote the gate **body** (`docs/gates/<slug>.md`), not the one-line index summary — because the index is explicitly "a floor, not a ceiling" and paraphrasing the body is a hallucination risk? | YES |
+| 23.2 | When a recalled memory, `CLAUDE.md` snippet, or prior-session note conflicts with the current `AGENTS.md`/gate body, must the agent defer to the file-on-disk and surface the conflict (recall is stale-by-default)? | YES |
+| 23.3 | Must override strings be reproduced **verbatim** (`<GATE>: SKIPPED per user override (reason: ...)`) and never paraphrased, since the harness matches the literal string? | YES |
+| 23.4 | When two rules fire on the same edit (e.g. PUB + LIFECYCLE on `pub fn init`, or a spec that contradicts a rule), must the agent apply **both**/escalate rather than silently picking one? | YES |
+| 23.5 | For an auto-mode / override question, must the agent trace the full conditional chain (auto-mode AND (active-spec OR start-instruction); action-triggered guards still block) rather than collapsing it to "auto mode = yes"? | YES |
+| 23.6 | Is the negative-test harness (`scripts/test-audit-agents-md.sh`) required to pass — proving each deterministic check still *bites* — whenever `scripts/audit-agents-md.sh` itself changes? | YES |
+| 23.7 | Is Scenario 23 enforced by a live, cross-agent comprehension runner (`scripts/comprehension/run-comprehension.sh`, `make comprehension`) that feeds the frozen golden-set (`scripts/comprehension/fixtures.jsonl`) to EVERY installed agent (claude, codex, amp, opencode) and grades each `VERDICT:` by exact match — with a per-agent threshold and absent agents logged, never silently skipped? | YES |
+| 23.8 | When the comprehension runner is unavailable (no agent CLIs) or the golden-set changes, is the dry validator `make comprehension-check` (fixtures well-formed + availability, no live calls) the minimum that must still pass? | YES |
+
+## Comprehension layer (Scenario 23 enforcement)
+
+The deterministic audit proves the rules are *present*; it cannot prove an
+agent *reading* them complies — the hallucination / won't-follow class. The
+comprehension layer closes that gap:
+
+- **Golden-set** — `scripts/comprehension/fixtures.jsonl`: frozen
+  question → expected `YES`/`NO` verdict + the justifying rule, each targeting
+  a known drift mode (index-vs-body paraphrase, override-string drift,
+  conditional collapse, co-firing rules, negation blindness, stale recall,
+  investigate-vs-authorize, no-override bans). YES/NO is balanced so a
+  constant-answer strategy fails the threshold.
+- **Runner** — `scripts/comprehension/run-comprehension.sh` embeds AGENTS.md +
+  all gate bodies in every prompt (no tool use, no file-read variance), asks
+  each installed agent, and grades the single `VERDICT:` line by exact match.
+- **Cross-agent** — claude, codex, amp, opencode all run the same set;
+  divergence between models flags an *ambiguous rule* (a doc bug) as much as a
+  non-compliant model. Absent agents are logged, never silently dropped.
+- **Signoff** — `.agents-comprehension-signoff` (gitignored) is written only
+  when every available agent clears the threshold.
+
 ---
 
 ## Step 3 — Write the sign-off file
