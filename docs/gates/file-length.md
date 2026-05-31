@@ -7,7 +7,7 @@
 **Triggers** — every Write/Edit that net-adds lines to a source file:
 `.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml`/`.toml` (when carrying code). If the file extension is ambiguous, the gate FIRES by default — opt-out requires the user override below.
 
-**Exempt:** `vendor/`, `node_modules/`, `third_party/` (upstream); `.md` files; published API artefacts under `public/` (loose ≤ 400-line advisory on path YAMLs); per-repo extensions in `docs/greptile-learnings/RULES.md`.
+**Exempt:** `vendor/`, `node_modules/`, `third_party/` (upstream); `.md` files; **everything under `docs/**`** (documentation tree — any extension); published API artefacts under `public/` (loose ≤ 400-line advisory on path YAMLs); per-repo extensions in `docs/greptile-learnings/RULES.md`.
 
 **Override:** `LENGTH GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
@@ -36,7 +36,7 @@ LENGTH GATE: <file> N+Δ=<N+Δ> (cap 350, headroom <H>) | fn:<name> <F> lines (c
 
 ```bash
 git diff --name-only origin/main \
-  | grep -v -E '\.md$|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' \
+  | grep -v -E '\.md$|^docs/|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' \
   | xargs -I{} sh -c 'wc -l "{}"' \
   | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
 ```
