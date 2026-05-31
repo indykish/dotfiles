@@ -61,13 +61,19 @@ invoke_agent() {
     #   opencode : prompt as a positional ARG to `run` (default format; its
     #              `--format` only accepts default|json). ~100 KB << ARG_MAX.
     # amp/opencode stdout carries ANSI/control bytes — extract_verdict strips
-    # them before matching.
-    claude)   ( timeout "$secs" claude -p < "$prompt" >"$out" 2>/dev/null ) ;;
-    codex)    ( timeout "$secs" codex exec - --skip-git-repo-check \
-                  --output-last-message "$out" < "$prompt" >/dev/null 2>&1 ) ;;
-    amp)      ( timeout "$secs" amp --execute < "$prompt" >"$out" 2>/dev/null ) ;;
-    opencode) ( timeout "$secs" opencode run "$(cat "$prompt")" \
-                  >"$out" 2>/dev/null ) ;;
+    # them before matching. stderr is captured INTO $out (2>>) so credit/auth
+    # errors (e.g. amp's 402) are visible to is_unavailable — otherwise a
+    # blocked agent looks like a wrong "?" answer instead of unavailable.
+    claude)   ( timeout "$secs" claude -p < "$prompt" >"$out" 2>>"$out" ) ;;
+    amp)      ( timeout "$secs" amp --execute < "$prompt" >"$out" 2>>"$out" ) ;;
+    opencode) ( timeout "$secs" opencode run "$(cat "$prompt")" >"$out" 2>>"$out" ) ;;
+    # codex: answer lands in $msg via --output-last-message; event noise + any
+    # error text go to $out so is_unavailable can see them; then the clean
+    # answer is appended (extract_verdict takes the LAST VERDICT line).
+    codex)    local msg="$out.msg"
+              ( timeout "$secs" codex exec - --skip-git-repo-check \
+                  --output-last-message "$msg" < "$prompt" >"$out" 2>>"$out" )
+              [[ -f "$msg" ]] && { cat "$msg" >>"$out"; rm -f "$msg"; } ;;
     *) return 127 ;;
   esac
 }
@@ -194,19 +200,25 @@ while IFS=$'\t' read -r id v; do QTEXT["$id"]="$v";  done < <(fixtures_field q)
 
 [[ "$MODE" == "smoke" ]] && IDS=("${IDS[0]}")
 
-OVERALL_OK=1
-declare -A AGENT_SCORE AGENT_TOTAL
-REPORT=""
+OVERALL_OK=1; GRADED=0
+REPORT=""; UNAVAIL=""
 
 for agent in "${TARGETS[@]}"; do
   have "$agent" || { echo "${R}requested agent absent: $agent${X}"; OVERALL_OK=0; continue; }
   echo; echo "${BO}── $agent ──${X}"
-  correct=0; total=0; fails=""
+  correct=0; total=0; fails=""; unavailable=0
   for id in "${IDS[@]}"; do
-    total=$((total+1))
     pf="$(mktemp)"; out="$(mktemp)"
     build_prompt "${QTEXT[$id]}" > "$pf"
     invoke_agent "$agent" "$pf" "$out"
+    # An availability/credit/auth error means this agent can't run headless —
+    # log + exclude from the gate (don't score it 0 and sink the suite).
+    if is_unavailable "$out"; then
+      unavailable=1; rm -f "$pf" "$out"
+      printf '  %s⚠ unavailable%s: %s emitted a credit/auth/quota error — excluded from gate\n' "$Y" "$X" "$agent"
+      break
+    fi
+    total=$((total+1))
     got="$(extract_verdict "$out")"; got="${got:-?}"; rm -f "$pf" "$out"
     want="${EXPECT[$id]}"
     if [[ "$got" == "$want" ]]; then
@@ -216,7 +228,10 @@ for agent in "${TARGETS[@]}"; do
       fails="$fails ${id}(${got}-vs-${want})"
     fi
   done
-  AGENT_SCORE["$agent"]=$correct; AGENT_TOTAL["$agent"]=$total
+  if [[ $unavailable -eq 1 ]]; then
+    UNAVAIL="$UNAVAIL $agent"; REPORT="$REPORT$agent=UNAVAIL "
+    continue
+  fi
   GRADED=$((GRADED + 1))
   pct=$(( correct * 100 / total ))
   if [[ $pct -ge $THRESHOLD ]]; then
@@ -228,6 +243,7 @@ for agent in "${TARGETS[@]}"; do
   fi
   REPORT="$REPORT$agent=$correct/$total "
 done
+[[ -n "$UNAVAIL" ]] && echo && echo "${Y}Unavailable (excluded from gate):${X}$UNAVAIL"
 
 echo; echo "${BO}Summary:${X} $REPORT"
 
