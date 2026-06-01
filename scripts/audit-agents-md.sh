@@ -19,9 +19,9 @@ FAIL=0
 # RULE_EXTENSION_STEPS, AWK_PROG) live in the sibling data file — split out
 # to keep this audit under the LENGTH GATE cap. Data drift is itself caught
 # by the gate-parity + named-scenario-parity checks below.
-DATA="$ROOT/scripts/lib/audit-data.sh"
+DATA="$ROOT/scripts/audit-data.sh"
 [[ -f "$DATA" ]] || { echo "FAIL: $DATA missing (audit data tables)" >&2; exit 2; }
-# shellcheck source=scripts/lib/audit-data.sh
+# shellcheck source=scripts/audit-data.sh
 . "$DATA"
 SEEN_LABELS=()
 

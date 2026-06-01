@@ -39,8 +39,7 @@ make_sandbox() {
   mkdir -p "$sb/scripts/fixtures" "$sb/docs/gates" \
            "$sb/docs/greptile-learnings" "$sb/.githooks"
   cp "$SRC_ROOT/scripts/audit-agents-md.sh" "$sb/scripts/"
-  mkdir -p "$sb/scripts/lib"
-  cp "$SRC_ROOT/scripts/lib/audit-data.sh" "$sb/scripts/lib/"
+  cp "$SRC_ROOT/scripts/audit-data.sh" "$sb/scripts/"
   cp "$SRC_ROOT"/scripts/fixtures/*.diff "$sb/scripts/fixtures/"
   cp "$SRC_ROOT"/docs/gates/*.md "$sb/docs/gates/"
   local d
