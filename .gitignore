@@ -13,5 +13,6 @@ gstack/
 .gstack/
 .agents-invariance-signoff
 .agents-llmevals-signoff
+.agents-comprehension-signoff
 .llmevals-journal/
 .claude/scheduled_tasks.lock
