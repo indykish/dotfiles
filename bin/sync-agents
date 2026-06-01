@@ -62,7 +62,7 @@ PROJECT_LINKS=(
   "scripts/audit-agents-md.sh:scripts/audit-agents-md.sh"
   "scripts/test-audit-agents-md.sh:scripts/test-audit-agents-md.sh"
   "scripts/lib:scripts/lib"
-  "scripts/comprehension:scripts/comprehension"
+  "scripts/llmevals:scripts/llmevals"
 )
 
 # Project repos. Override per-invocation via:

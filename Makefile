@@ -1,4 +1,4 @@
-.PHONY: audit test-audit comprehension comprehension-check signoff
+.PHONY: audit test-audit llmevals llmevals-check signoff
 
 # Run the deterministic audit (script layer of the invariance suite).
 audit:
@@ -9,16 +9,17 @@ audit:
 test-audit:
 	@bash scripts/test-audit-agents-md.sh
 
-# Cross-agent comprehension signoff (AGENTS_INVARIANCE.md Scenario 23): each
+# Cross-agent LLM eval signoff (AGENTS_INVARIANCE.md Scenario 23): each
 # installed agent (claude/codex/amp/opencode) answers the frozen golden-set;
 # verdicts graded by exact match. Live LLM calls — costs tokens on every
-# agent. Writes .agents-comprehension-signoff on all-agents-pass.
-comprehension:
-	@bash scripts/comprehension/run-comprehension.sh
+# agent. Resumable (journalled); writes .agents-llmevals-signoff on
+# all-gradable-agents-pass.
+llmevals:
+	@bash scripts/llmevals/run-llmevals.sh
 
 # Dry validation — fixtures well-formed + agent availability. No live calls.
-comprehension-check:
-	@bash scripts/comprehension/run-comprehension.sh --check
+llmevals-check:
+	@bash scripts/llmevals/run-llmevals.sh --check
 
 # Write the AGENTS_INVARIANCE sign-off file against current HEAD.
 # Only run this AFTER answering every AGENTS_INVARIANCE.md question with YES.

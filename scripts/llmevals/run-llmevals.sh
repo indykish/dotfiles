@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Cross-agent comprehension signoff for AGENTS.md (AGENTS_INVARIANCE.md
-# Scenario 23). The deterministic audit proves the rules are PRESENT; it
-# can't prove an agent READING them complies — the hallucination class. This
-# closes that gap: a frozen golden-set of question→expected-verdict fixtures
-# is answered by EACH installed agent (claude, codex, amp, opencode), graded
-# by exact match. Disagreement = an ambiguous rule (doc bug) or a model that
-# won't comply. The full ruleset (AGENTS.md + gate bodies) is embedded in
-# every prompt — no tool use, no file-read variance — and only the single
-# `VERDICT: YES|NO` line is graded.
+# Cross-agent LLM-eval signoff for AGENTS.md (AGENTS_INVARIANCE.md Scenario
+# 23). This is an LLM evaluation harness: the deterministic audit proves the
+# rules are PRESENT; it can't prove an agent READING them complies — the
+# hallucination class. This closes that gap: a frozen golden-set of
+# question→expected-verdict fixtures is answered by EACH installed agent
+# (claude, codex, amp, opencode), graded by exact match. Disagreement = an
+# ambiguous rule (doc bug) or a model that won't comply. The full ruleset
+# (AGENTS.md + gate bodies) is embedded in every prompt — no tool use, no
+# file-read variance — and only the single `VERDICT: YES|NO` line is graded.
 #
 # Modes: --check (validate fixtures + availability, no live calls) · --smoke
 # (one fixture/agent) · --agent <name> · --threshold <N> (default 100) ·
-# (default) full set × every agent. Signoff written to
-# .agents-comprehension-signoff (gitignored) when every gradable agent meets
+# --fresh (ignore journal) · (default) full set × every agent. Signoff written
+# to .agents-llmevals-signoff (gitignored) when every gradable agent meets
 # threshold; absent/credit-blocked agents are logged, never silently skipped.
 
 set -uo pipefail
@@ -20,10 +20,10 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 AGENTS="$ROOT/AGENTS.md"
 GATES_DIR="$ROOT/docs/gates"
-FIXTURES="$ROOT/scripts/comprehension/fixtures.jsonl"
-SIGNOFF="$ROOT/.agents-comprehension-signoff"
-JOURNAL_DIR="$ROOT/.comprehension-journal"
-CALL_TIMEOUT="${COMPREHENSION_TIMEOUT:-180}"
+FIXTURES="$ROOT/scripts/llmevals/fixtures.jsonl"
+SIGNOFF="$ROOT/.agents-llmevals-signoff"
+JOURNAL_DIR="$ROOT/.llmevals-journal"
+CALL_TIMEOUT="${LLMEVALS_TIMEOUT:-${COMPREHENSION_TIMEOUT:-180}}"
 
 MODE="full"; ONLY_AGENT=""; THRESHOLD=100; FRESH=0
 while [[ $# -gt 0 ]]; do
@@ -169,7 +169,7 @@ list_available() {
 }
 
 # ---------------------------------------------------------------------------
-printf '%s🧠 AGENTS.md cross-agent comprehension%s  (mode=%s threshold=%s%%)\n\n' "$B$BO" "$X" "$MODE" "$THRESHOLD"
+printf '%s🧠 AGENTS.md cross-agent LLM eval%s  (mode=%s threshold=%s%%)\n\n' "$B$BO" "$X" "$MODE" "$THRESHOLD"
 
 [[ -f "$FIXTURES" ]] || { echo "${R}FAIL${X}: fixtures missing: $FIXTURES" >&2; exit 2; }
 validate_fixtures || { echo "${R}FAIL${X}: fixture validation failed" >&2; exit 2; }
@@ -295,10 +295,10 @@ if [[ "$MODE" == "full" && -z "$ONLY_AGENT" && $OVERALL_OK -eq 1 ]]; then
   sha="$(cd "$ROOT" && git rev-parse --short HEAD 2>/dev/null || echo nogit)"
   printf '%s  %s  PASS  graded=%d  %s%s\n' "$sha" "$ts" "$GRADED" "$REPORT" \
     "${UNAVAIL:+ unavailable:$UNAVAIL}" > "$SIGNOFF"
-  echo "${G}✅ comprehension signoff written${X}: $SIGNOFF"
+  echo "${G}✅ LLM-eval signoff written${X}: $SIGNOFF"
   cat "$SIGNOFF"
   [[ -n "$RUN_JDIR" ]] && rm -rf "$RUN_JDIR"   # run complete — clear its journal
   exit 0
 fi
 
-[[ $OVERALL_OK -eq 1 ]] && exit 0 || { echo "${R}🔴 comprehension below threshold — see misses${X}"; exit 1; }
+[[ $OVERALL_OK -eq 1 ]] && exit 0 || { echo "${R}🔴 LLM-eval below threshold — see misses${X}"; exit 1; }

@@ -12,6 +12,6 @@ gstack/
 .unified-skills/
 .gstack/
 .agents-invariance-signoff
-.agents-comprehension-signoff
-.comprehension-journal/
+.agents-llmevals-signoff
+.llmevals-journal/
 .claude/scheduled_tasks.lock
