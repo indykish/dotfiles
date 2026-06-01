@@ -147,7 +147,7 @@ for l in open(sys.argv[1]):
 
 validate_fixtures() {
   python3 -c '
-import json,sys
+import json,sys,re
 ids=set(); n=0; bad=0
 for i,l in enumerate(open(sys.argv[1]),1):
     l=l.strip()
@@ -158,6 +158,15 @@ for i,l in enumerate(open(sys.argv[1]),1):
         if k not in d: print("line",i,"missing",k); bad+=1
     if d.get("expect") not in ("YES","NO"): print("line",i,"bad expect"); bad+=1
     if d.get("id") in ids: print("dup id",d.get("id")); bad+=1
+    # Prompt-answerability: the prompt embeds AGENTS.md + gate bodies ONLY, not
+    # AGENTS_INVARIANCE.md. A QUESTION that cites the invariance doc / a Scenario
+    # number asks for an answer not in the prompt — the agent can only guess, so
+    # it grades as "?" and silently drags the score. Enforce that every question
+    # is answerable from the embedded ruleset. (The "why" field is provenance for
+    # humans and is never sent to the agent, so it may cite Scenario N freely.)
+    q = d.get("q","")
+    if "AGENTS_INVARIANCE" in q or re.search(r"\bScenario\s+\d", q):
+        print("line",i,"question cites AGENTS_INVARIANCE/Scenario (not in prompt):",d.get("id")); bad+=1
     ids.add(d.get("id")); n+=1
 print("fixtures:",n)
 sys.exit(1 if bad else 0)
