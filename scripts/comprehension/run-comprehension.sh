@@ -22,15 +22,17 @@ AGENTS="$ROOT/AGENTS.md"
 GATES_DIR="$ROOT/docs/gates"
 FIXTURES="$ROOT/scripts/comprehension/fixtures.jsonl"
 SIGNOFF="$ROOT/.agents-comprehension-signoff"
+JOURNAL_DIR="$ROOT/.comprehension-journal"
 CALL_TIMEOUT="${COMPREHENSION_TIMEOUT:-180}"
 
-MODE="full"; ONLY_AGENT=""; THRESHOLD=100
+MODE="full"; ONLY_AGENT=""; THRESHOLD=100; FRESH=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --check)     MODE="check" ;;
     --smoke)     MODE="smoke" ;;
     --agent)     ONLY_AGENT="${2:-}"; shift ;;
     --threshold) THRESHOLD="${2:-100}"; shift ;;
+    --fresh)     FRESH=1 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
   shift
@@ -200,11 +202,38 @@ while IFS=$'\t' read -r id v; do QTEXT["$id"]="$v";  done < <(fixtures_field q)
 
 [[ "$MODE" == "smoke" ]] && IDS=("${IDS[0]}")
 
+# Resumability — a long live run can be killed (session restart, Ctrl-C). Each
+# agent's verdict is journalled the moment it completes, keyed to HEAD + the
+# fixtures hash, so a re-run skips finished agents instead of re-spending tokens.
+# A drifted ruleset/fixtures changes RUNKEY → stale journal is ignored. --fresh
+# forces a clean run. Journal is gitignored (per-machine, like the signoff).
+HEAD_SHA="$(cd "$ROOT" && git rev-parse --short HEAD 2>/dev/null || echo nogit)"
+FIX_HASH="$( (md5 -q "$FIXTURES" 2>/dev/null || md5sum "$FIXTURES" 2>/dev/null | cut -d' ' -f1) )"
+RUNKEY="${HEAD_SHA}-${FIX_HASH}-t${THRESHOLD}"
+RUN_JDIR="$JOURNAL_DIR/$RUNKEY"
+[[ "$MODE" == "full" ]] || RUN_JDIR=""          # journal only for full graded runs
+[[ $FRESH -eq 1 && -n "$RUN_JDIR" ]] && rm -rf "$RUN_JDIR"
+[[ -n "$RUN_JDIR" ]] && mkdir -p "$RUN_JDIR"
+
 OVERALL_OK=1; GRADED=0
 REPORT=""; UNAVAIL=""
 
 for agent in "${TARGETS[@]}"; do
   have "$agent" || { echo "${R}requested agent absent: $agent${X}"; OVERALL_OK=0; continue; }
+  # Resume: a journalled result for this agent at this RUNKEY is replayed.
+  jf="${RUN_JDIR:+$RUN_JDIR/$agent}"
+  if [[ -n "$jf" && -f "$jf" ]]; then
+    read -r jstatus jcorrect jtotal < "$jf"
+    echo; echo "${BO}── $agent ──${X} ${B}(resumed from journal)${X}"
+    case "$jstatus" in
+      UNAVAIL) UNAVAIL="$UNAVAIL $agent"; REPORT="$REPORT$agent=UNAVAIL "
+               echo "  ${Y}⚠ unavailable${X} (journalled)" ;;
+      *) GRADED=$((GRADED + 1)); REPORT="$REPORT$agent=$jcorrect/$jtotal "
+         [[ "$jstatus" == PASS ]] && echo "  ${G}→ $jcorrect/$jtotal PASS (journalled)${X}" \
+           || { echo "  ${R}→ $jcorrect/$jtotal FAIL (journalled)${X}"; OVERALL_OK=0; } ;;
+    esac
+    continue
+  fi
   echo; echo "${BO}── $agent ──${X}"
   correct=0; total=0; fails=""; unavailable=0
   for id in "${IDS[@]}"; do
@@ -230,16 +259,19 @@ for agent in "${TARGETS[@]}"; do
   done
   if [[ $unavailable -eq 1 ]]; then
     UNAVAIL="$UNAVAIL $agent"; REPORT="$REPORT$agent=UNAVAIL "
+    [[ -n "$jf" ]] && echo "UNAVAIL 0 0" > "$jf"
     continue
   fi
   GRADED=$((GRADED + 1))
   pct=$(( correct * 100 / total ))
   if [[ $pct -ge $THRESHOLD ]]; then
     printf '  %s→ %d/%d = %d%% PASS%s\n' "$G" "$correct" "$total" "$pct" "$X"
+    [[ -n "$jf" ]] && echo "PASS $correct $total" > "$jf"
   else
     printf '  %s→ %d/%d = %d%% FAIL (below %d%%)%s\n' "$R" "$correct" "$total" "$pct" "$THRESHOLD" "$X"
     [[ -n "$fails" ]] && echo "    misses:$fails"
     OVERALL_OK=0
+    [[ -n "$jf" ]] && echo "FAIL $correct $total" > "$jf"
   fi
   REPORT="$REPORT$agent=$correct/$total "
 done
@@ -265,6 +297,7 @@ if [[ "$MODE" == "full" && -z "$ONLY_AGENT" && $OVERALL_OK -eq 1 ]]; then
     "${UNAVAIL:+ unavailable:$UNAVAIL}" > "$SIGNOFF"
   echo "${G}✅ comprehension signoff written${X}: $SIGNOFF"
   cat "$SIGNOFF"
+  [[ -n "$RUN_JDIR" ]] && rm -rf "$RUN_JDIR"   # run complete — clear its journal
   exit 0
 fi
 

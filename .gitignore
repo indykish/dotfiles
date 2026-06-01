@@ -13,4 +13,5 @@ gstack/
 .gstack/
 .agents-invariance-signoff
 .agents-comprehension-signoff
+.comprehension-journal/
 .claude/scheduled_tasks.lock
