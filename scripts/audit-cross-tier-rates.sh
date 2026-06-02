@@ -2,11 +2,10 @@
 # audit-cross-tier-rates.sh — pin numeric parity of the four rate constants
 # across Zig + three TypeScript surfaces.
 #
-# RULE UFS extension. The shipped billing surface depends on four constants
+# RULE UFS extension. The shipped billing surface depends on three constants
 # having identical numeric values everywhere they appear:
 #
-#   STAGE_PLATFORM_NANOS      — per-stage platform-posture charge in nanos
-#   STAGE_SELF_MANAGED_NANOS  — per-stage self-managed posture charge in nanos
+#   RUN_NANOS_PER_SEC         — per-second run rate (both postures) in nanos
 #   FREE_TRIAL_END_MS         — UTC ms after which the free trial expires
 #   FREE_TRIAL_STAGE_NANOS    — per-stage charge during the trial window
 #
@@ -29,8 +28,7 @@ ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
 readonly NAMES=(
-  STAGE_PLATFORM_NANOS
-  STAGE_SELF_MANAGED_NANOS
+  RUN_NANOS_PER_SEC
   FREE_TRIAL_END_MS
   FREE_TRIAL_STAGE_NANOS
 )
