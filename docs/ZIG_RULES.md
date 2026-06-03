@@ -19,6 +19,9 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
     - New structs that own heap memory — confirm `alloc:` field OR doc-comment naming the caller-owned-allocator pattern.
     - Mutex `\.lock\(\)` calls — confirm immediately followed by `defer .*\.unlock\(\)`.
     - New `pub` types/functions — confirm `///` doc-comment present.
+    - New hot-path loops, buffers, threads, queues, or per-request work — confirm a `RESOURCE BUDGET:` line was printed before the edit.
+    - New allocator choice (`ArenaAllocator`, fixed buffer, page allocator, caller allocator, stored allocator) — confirm an `ALLOCATOR CHOICE:` line was printed before the edit.
+    - New long-running worker, child process, socket/read loop, or blocking wait — confirm timeout, cancellation, and join/cleanup paths are named in the diff or adjacent comments.
 
 4. **After ZIG_RULES.md edits land:** every active branch with uncommitted Zig work must rerun steps 1–3 against the updated rules. Do not assume yesterday's audit covers today's rules. The agent is responsible for re-checking; the user is not the gate.
 
@@ -77,6 +80,76 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
 - For child process timeout enforcement, use a timer thread + `child.kill()`, not a poll loop around `child.wait()`. `child.wait()` blocks the calling thread — the timeout check after it is dead code.
 - Always free heap-allocated return values (`formatX`, `buildX`, `getToken`) with `defer alloc.free(result)` immediately after the call. Do not rely on arena allocators to mask leaks — arena-freed code may later be called outside an arena.
 - Test allocation-heavy functions with `std.testing.allocator` (not an arena) so the leak detector fires on missed frees.
+
+## Deterministic Resource Budget Gate
+
+Every hot path needs a visible budget before code is written. This turns "optimize memory and Central Processing Unit (CPU)" into a reviewable shape instead of taste.
+
+**Triggers** — every Edit/Write to a `*.zig` file that net-adds any of these:
+
+- A request/message/row-processing loop.
+- A byte buffer, response builder, serializer, parser, or formatter used outside a one-off test.
+- A thread, worker, child process, queue, mutex, atomic coordination flag, or blocking wait.
+- Per-request or per-event heap allocation.
+- Whole-body reads of network, file, or database data.
+
+**Required output before the edit:**
+
+```text
+RESOURCE BUDGET: <function/type>
+  Heap allocations: <0 | N | per item | per request>
+  Max retained bytes: <bound or reason unbounded is impossible>
+  Max loop cardinality: <bound or streaming>
+  Concurrency: <single-thread | bounded N | thread-pool N | none>
+  Timeout/cancel path: <how it stops and who joins/cleans it>
+```
+
+Rules:
+
+- No unbounded thread spawn, queue growth, retry loop, body read, or result accumulation. If the input is unbounded, stream it or reject it at a named limit.
+- No per-item allocation in hot loops unless the returned ownership requires it. Prefer stack/fixed buffers, caller-provided scratch, or one outer allocation.
+- Long-running work must name a stop path: timeout, close signal, cancellation flag, queue close, child kill, and final `join`/`wait` cleanup as applicable.
+- CPU-heavy work must not block an Input/Output (I/O) coordination thread. Move it to bounded workers or make the caller pay an explicit synchronous cost.
+- Tests for hot-path helpers should assert the behavior and the ownership path; allocation-heavy helpers use `std.testing.allocator` so leaks fail deterministically.
+
+**Self-audit at end of turn:** run `git diff -U0 HEAD -- '*.zig' | grep -E '^\+.*(while |for \(|Thread|spawn|Mutex|atomic|ArrayList|alloc\.|readAll|readToEnd|wait\(|sleep\()' | head`. Non-empty means the edit likely touched a budgeted surface; verify a `RESOURCE BUDGET:` line was printed before the edit or document why the grep hit is a false positive.
+
+## Allocator Choice Gate
+
+Allocator choice is part of the API shape. Pick it before writing the allocation.
+
+**Required output before net-adding allocator-sensitive code:**
+
+```text
+ALLOCATOR CHOICE: <function/type> uses <caller | stored | arena | fixed-buffer | page | testing>
+Reason: <lifetime, ownership, failure mode>
+```
+
+Rules:
+
+- Default production functions accept a caller allocator. Do not hide allocation behind a global allocator.
+- Structs that own heap memory store `alloc: std.mem.Allocator` unless they are short-lived values with a documented caller-owned `deinit(self, alloc)` pattern.
+- Use arenas only when every allocation dies together and the arena lifetime is shorter than the request/job. Arena use must not mask missing frees in reusable helpers.
+- Prefer stack or fixed buffers for bounded scratch data. If bounded scratch can overflow to heap, name the threshold and test both paths.
+- Use `std.testing.allocator` in tests that are meant to prove leak freedom. Do not use an arena in a leak-safety test.
+- Use the page allocator only for process-lifetime allocations or low-level primitives where page granularity is the point; document that lifetime.
+
+## Out of Memory and Partial-Init Rules
+
+Out of Memory (OOM) is a normal failure path, not a cleanup surprise.
+
+- Every init/build function that allocates more than one resource uses the sequential `errdefer` chain pattern: allocate one resource, attach one adjacent `errdefer`, then continue.
+- Do not put multiple `try alloc.*` or `try dupe*` calls inside one struct literal, array literal, function argument list, or `return` expression. If a later allocation fails, earlier ownership is invisible and easy to leak.
+- A function returning owned memory must have an obvious caller free path in the same test or call site. Tests should cover success cleanup and at least one allocation-failure or parse-failure branch when practical.
+- Fallible cleanup should not hide OOM. Cleanup may ignore best-effort drain errors only where this file explicitly allows it; allocator frees are not fallible and must run.
+
+## Panic, Hang, and Shutdown Policy
+
+- Library, handler, worker, parser, and service code returns errors for user data, network failures, environment failures, and OOM. It does not `@panic` for recoverable failures.
+- `unreachable` is allowed only after a compiler-exhaustive switch or with an adjacent invariant comment explaining why runtime input cannot reach it.
+- `std.debug.assert` is for programmer bugs and invariants that should disappear in release builds. Never use it to validate external input.
+- Thread entrypoints and worker loops catch/report errors through their owner-visible channel. They do not silently die, spin forever, or leave ownership half-cleaned.
+- Every blocking wait introduced by a diff names its shutdown path. A wait without timeout is allowed only when another owner-controlled signal can always wake it and the owning code joins it.
 
 ## Type Design Rules
 

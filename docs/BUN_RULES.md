@@ -160,7 +160,53 @@ In a Result-style module, **never throw**. In a throw-style module, **never retu
 | Top-level `console.log` left in source | Use a real logger, or remove before commit. Audit catches this in pre-commit if a logger gate exists. |
 | `process.env.X` reads scattered through code | Read once at module init, freeze, export typed. Scattered reads make config opaque. |
 
-## §11 · Override syntax
+## §11 · Runtime resource discipline
+
+TypeScript makes unbounded work look cheap. Bun will still allocate, queue, block, and leak process handles if the code shape is sloppy.
+
+### Promise concurrency
+
+- **No unbounded `Promise.all(items.map(...))`** on data from users, files, network, databases, or command output. Use a concurrency limiter, chunked loop, or streaming transform.
+- **Every fan-out declares its bound** near the call site: `MAX_CONCURRENT_FETCHES`, `MAX_PARALLEL_FILES`, etc. Numeric literals follow RULE UFS in §2.
+- **Retry loops are bounded**: max attempts, delay/backoff, jitter when multiple clients may retry, and an abort path.
+- **Long-running async work accepts an `AbortSignal`** or has an equivalent owner-controlled cancellation path.
+
+### Memory shape
+
+- **Do not materialize unknown-size input.** Avoid `await Bun.file(path).text()`, `response.text()`, `response.json()`, or `Array.from(...)` when size is not bounded. Stream, chunk, or reject at a named limit.
+- **Do not accumulate transform results by default.** Prefer `for await` streaming or chunked processing for large file, HTTP, or command-output flows.
+- **Large JSON parse/stringify is both memory and Central Processing Unit (CPU) work.** Put it behind a size limit or move it out of request-critical code.
+- **Clear resource handles in `finally`.** Timers, intervals, subprocesses, file handles, and temporary listeners must be cleaned even on thrown errors.
+
+### Timeout and cancellation
+
+Every network request, subprocess wrapper, file watcher, long poll, or task queue wait added by a diff needs a timeout or cancellation owner.
+
+```ts
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MILLISECONDS);
+try {
+  return await fetch(url, { signal: controller.signal });
+} finally {
+  clearTimeout(timeout);
+}
+```
+
+Use a local helper only when it preserves the same visible ownership: who starts the timer, who aborts, and who clears it.
+
+### Bun subprocess cleanup
+
+- `Bun.spawn` callers must consume, redirect, or intentionally ignore stdout/stderr. Do not leave pipes unread.
+- Every spawned process is awaited, killed on timeout, or tied to an owner cleanup path.
+- Wrapper tests cover the timeout/kill path, not just the success exit code.
+
+### CPU-bound work
+
+- CPU-heavy synchronous work does not live directly in request handlers without a named bound. Examples: large JSON serialization, hashing loops, compression, directory walks, and bulk formatting.
+- Worker usage declares input size, concurrency, termination, and error propagation. A worker that can fail silently is a hidden hang.
+- Prefer one parse/config load at module startup over repeated parse inside handlers or command loops.
+
+## §12 · Override syntax
 
 Per-rule override:
 
@@ -170,7 +216,7 @@ BUN RULE <§N>: SKIPPED per user override (reason: ...)
 
 immediately preceding the edit. **User-invokable only.** Generic "scope creep" / "save for later" not valid — name a concrete external constraint (third-party-API shape, framework requirement, dependency mismatch).
 
-## §12 · Family
+## §13 · Family
 
 - Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `docs/greptile-learnings/RULES.md` and apply to TypeScript via the **GREPTILE GATE**.
 - Frontend visual primitives live in `docs/gates/ui-substitution.md` (UI GATE).
