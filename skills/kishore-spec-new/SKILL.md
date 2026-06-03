@@ -115,14 +115,17 @@ Before the spec leaves `pending/`, it must pass this checklist — the determini
 - [ ] reporting sections present (Discovery, Verification Evidence)
 - [ ] `bash scripts/audit-spec-template.sh --staged` is clean (it BLOCKs missing required sections and unfilled `{placeholders}`)
 
-Then commit on `main`:
+Then commit in the current authoring context:
+
+- If the skill is running inside an existing branch/worktree, author and commit the spec there.
+- If there is no branch/worktree context, use the repo's `main` branch as the fallback.
 
 ```bash
 git add docs/v{N}/pending/M{N}_{WS}_*_{NAME}.md
 git commit -m "docs(m{N}): add spec — {short title}"
 ```
 
-The spec lands on `main` in `pending/`. CHORE(open) moves it to `active/` and creates the worktree — handled by the lifecycle, not this skill.
+The spec lands in `pending/` on the branch/worktree where the skill was invoked. CHORE(open) moves it to `active/` and creates any needed worktree — handled by the lifecycle, not this skill.
 
 ---
 
@@ -130,7 +133,7 @@ The spec lands on `main` in `pending/`. CHORE(open) moves it to `active/` and cr
 
 - It does **not** start coding, create a worktree, or move the spec to `active/`. That's CHORE(open), when implementation begins.
 - It does **not** modify any rule file, ARCHITECTURE doc, or changelog.
-- It does **not** branch off main. Spec creation is a `main` commit.
+- It does **not** create a branch just to author a spec. Spec creation uses the current branch/worktree, falling back to `main` only when no branch/worktree exists.
 
 ## Failure modes
 
