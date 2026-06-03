@@ -65,7 +65,7 @@ TS FILE SHAPE DECISION: <intended-path>
 | Task | Use | Avoid (unless explicit reason) |
 |---|---|---|
 | HTTP server | `Bun.serve({ fetch, port })` | `express`, `fastify`, `hono` (unless a specific middleware is needed) |
-| Filesystem read | `await Bun.file(path).text()` / `.json()` / `.bytes()` | `fs.promises.readFile` |
+| Filesystem read | `Bun.file(path).stream()` for unknown-size input; `.text()` / `.json()` / `.bytes()` only after size is bounded per §11 | `fs.promises.readFile` |
 | Filesystem write | `await Bun.write(path, data)` | `fs.promises.writeFile` |
 | SQLite | `import { Database } from "bun:sqlite"` | `better-sqlite3`, `sqlite3` |
 | Test runner | `import { test, expect } from "bun:test"` | `vitest`, `jest`, `mocha` |
@@ -170,6 +170,7 @@ TypeScript makes unbounded work look cheap. Bun will still allocate, queue, bloc
 - **Every fan-out declares its bound** near the call site: `MAX_CONCURRENT_FETCHES`, `MAX_PARALLEL_FILES`, etc. Numeric literals follow RULE UFS in §2.
 - **Retry loops are bounded**: max attempts, delay/backoff, jitter when multiple clients may retry, and an abort path.
 - **Long-running async work accepts an `AbortSignal`** or has an equivalent owner-controlled cancellation path.
+- **`Promise.race` timeouts cancel the loser.** A timer-only race that leaves work running is a leak.
 
 ### Memory shape
 
@@ -193,6 +194,7 @@ try {
 ```
 
 Use a local helper only when it preserves the same visible ownership: who starts the timer, who aborts, and who clears it.
+Returning a `Response` from a helper transfers body consumption outside this timeout; only do that when the caller owns a second timeout.
 
 ### Bun subprocess cleanup
 

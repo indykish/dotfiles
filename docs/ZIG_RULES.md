@@ -88,7 +88,7 @@ Every hot path needs a visible budget before code is written. This turns "optimi
 **Triggers** — every Edit/Write to a `*.zig` file that net-adds any of these:
 
 - A request/message/row-processing loop.
-- A byte buffer, response builder, serializer, parser, or formatter used outside a one-off test.
+- A byte buffer, response builder, serializer, parser, or formatter whose retained size depends on external input or runs in a request/worker loop.
 - A thread, worker, child process, queue, mutex, atomic coordination flag, or blocking wait.
 - Per-request or per-event heap allocation.
 - Whole-body reads of network, file, or database data.
@@ -138,7 +138,7 @@ Rules:
 
 Out of Memory (OOM) is a normal failure path, not a cleanup surprise.
 
-- Every init/build function that allocates more than one resource uses the sequential `errdefer` chain pattern: allocate one resource, attach one adjacent `errdefer`, then continue.
+- Every init/build function that allocates more than one resource uses the lifecycle-approved partial-init pattern: either attach an adjacent `errdefer` per owned resource, or attach one adjacent wrapper `errdefer` that frees all fields already transferred into the wrapper.
 - Do not put multiple `try alloc.*` or `try dupe*` calls inside one struct literal, array literal, function argument list, or `return` expression. If a later allocation fails, earlier ownership is invisible and easy to leak.
 - A function returning owned memory must have an obvious caller free path in the same test or call site. Tests should cover success cleanup and at least one allocation-failure or parse-failure branch when practical.
 - Fallible cleanup should not hide OOM. Cleanup may ignore best-effort drain errors only where this file explicitly allows it; allocator frees are not fallible and must run.
