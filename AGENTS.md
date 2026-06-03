@@ -80,7 +80,7 @@ Default gates commit/push/PR on explicit ask. **Auto mode + forward-looking star
 
 ## Bootstrap & milestone gates
 
-- **Priming:** (1) Human runs `playbooks/001_bootstrap/001_playbook.md`. (2) Agent runs `./playbooks/002_preflight/00_gate.sh` (green before next). (3) Agent runs `playbooks/003_priming_infra/001_playbook.md`. Milestones only after PRIMING_INFRA verified.
+- **Priming:** (1) Human runs `playbooks/founding/01_bootstrap/001_playbook.md`. (2) Agent runs `./playbooks/founding/02_preflight/00_gate.sh` (green before next). (3) Agent runs `playbooks/founding/03_priming_infra/001_playbook.md`. Milestones only after PRIMING_INFRA verified.
 - **Credential gate** — milestones needing external creds start `M{N}_001` enumerating every downstream credential (name + fetch location). Fail loud listing all missing before any `M{N}_002+`.
 - **Agent-first sequencing** — minimize human steps; post-handoff steps retryable + idempotent. Vault is the inter-step interface; never pass creds by argument/env.
 
