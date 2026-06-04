@@ -71,6 +71,8 @@ TS FILE SHAPE DECISION: <intended-path>
 
 > [DETERMINISTIC → UFS]
 
+_`UFS` is a universal rule **enforced once by `write_any`** (which fires for every source file); this façade carries its prose for the author but does not re-run `audit-ufs` — no redundant full-tree scan (`RESOLVER_ARCHITECTURE.md` §16, Decision 6)._
+
 - **`const` by default. `let` only when the variable is reassigned in the same scope.** Never `let` "because I might change it later". A future-tense `let` is dead-on-arrival.
 - **No `var`. Ever.** Hoisting is a bug nursery; the lint rule should be a hard error in `tsconfig`/`eslint.config.ts`.
 - **Module-level constants are `SCREAMING_SNAKE_CASE`** when they're tunables (timeouts, limits, magic numbers). `camelCase` when they're configuration values composed at runtime (`const config = {...}`).

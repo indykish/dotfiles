@@ -22,7 +22,7 @@ resolver_header
 
 # ── deterministic gates ────────────────────────────────────────────
 resolver_length_gate 350                                       # FLL — write_ts_adhere_bun.md §13 (file ≤ 350)
-resolver_run_helper "UFS" "audit-ufs.sh" "--all"               # UFS — write_ts_adhere_bun.md §2
+# UFS — universal rule enforced once by write_any (see write_any.sh); not re-run here
 
 # ── delegations (checker lives in the product repo, not dotfiles) ───
 resolver_delegate "TSC" "make lint (oxlint + tsc — const/import/ordering/naming/anti-patterns)"

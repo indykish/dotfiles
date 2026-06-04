@@ -249,7 +249,7 @@ grader, **not an adherence judge** over free-form code. v2 is honest about that:
 ### 6.3 Coherence audit — `scripts/audit-resolver-coverage.sh` (honest scope)
 Proves **completeness and symbol-presence** — NOT prose semantics (that's §6.1's
 fixtures). Fails if any of:
-- a `[DETERMINISTIC → CODE]` tag has no row for `CODE` in the `.sh`;
+- a `[DETERMINISTIC → CODE]` tag has no row for `CODE` in **any** resolver `.sh` (a *universal* code like `UFS` is wired once in its home façade — `write_any` — and satisfies the tag wherever the rule's prose appears; only a code wired in NO resolver fails — §16 Decision 6);
 - a DETERMINISTIC rule has no pass+fail fixture (and, where the prose states a bound, no boundary pair that pins it — §6.1);
 - a `[JUDGMENT]` rule has no comprehension probe (§6.2);
 - a `.sh` CODE row has no tag in the `.md` (orphan check);
@@ -588,3 +588,11 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
    exempt from the length gate (status quo). The long merged façades (`write_zig.md`
    654L, `write_ts_adhere_bun.md` 486L) are therefore legal. Tiered doc/spec caps
    (e.g. docs 350 / specs 400) are a possible post-Stage-2 task, not v2 scope.
+6. **UFS enforcement consolidated to `write_any`** (Indy, Jun 04, 2026): `UFS` is a
+   universal rule, so it is run-wired ONCE in `write_any.sh` (which fires for every
+   source file). The `resolver_run_helper "UFS"` rows were removed from
+   `write_zig.sh` + `write_ts_adhere_bun.sh`; their verbatim UFS prose stays, tagged
+   `[DETERMINISTIC → UFS]` but annotated as enforced-by-`write_any`. This restores
+   §5's "none double-homed" (enforcement is single-homed) and kills the redundant
+   full-tree `audit-ufs` scan on multi-language touches. `audit-resolver-coverage.sh`
+   (§6.3) accepts a universal code wired in any one resolver.

@@ -22,7 +22,7 @@ resolver_header
 
 # ── deterministic gates ────────────────────────────────────────────
 resolver_length_gate 350                                       # FLL — write_zig.md §Length
-resolver_run_helper "UFS"    "audit-ufs.sh"          "--all"   # write_zig.md §RULE UFS
+# UFS — universal rule enforced once by write_any (see write_any.sh); not re-run here
 resolver_run_helper "DEINIT" "audit-deinit-pairs.sh" "--staged" # write_zig.md §Multi-Step Init
 
 # ── delegations (checker lives in the product repo, not dotfiles) ───

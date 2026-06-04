@@ -505,6 +505,8 @@ Extends "Type Design Rules". Two patterns, both legitimate; pick deliberately an
 
 > [DETERMINISTIC → UFS]
 
+_`UFS` is a universal rule **enforced once by `write_any`** (which fires for every source file); this façade carries its prose for the author but does not re-run `audit-ufs` — no redundant full-tree scan (`RESOLVER_ARCHITECTURE.md` §16, Decision 6)._
+
 Mirrors the write_ts_adhere_bun.md §2 clause; both runtimes follow the same rule.
 
 - **String literals used in ≥2 sites become a named const or an enum.** Wire-format values (mode strings, charge types, posture labels) MUST live in an enum (`pub const Mode = enum { platform, self_managed }`) or a `pub const X: []const u8 = "…";` and be referenced by name everywhere else — including test fixtures and `std.mem.eql` arguments at parse boundaries.
