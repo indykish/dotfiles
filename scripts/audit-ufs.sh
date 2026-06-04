@@ -97,7 +97,10 @@ done < <(awk '
   # literal types, and the cleanup belongs in a UI-aware spec). Skip
   # string-dup-file for ui/packages/*/src; cross-runtime-orphan still
   # runs against ui/ to catch ERR_* parity drift.
-  FILENAME ~ /^ui\/packages\/[^/]+\/(src|app|tests|components|lib|hooks)\// { next }
+  # macOS/BSD awk aborts on a `/` inside a `[...]` class in a regex *literal*
+  # ("nonterminated character class"); use a dynamic-regex STRING — identical
+  # match on gawk, portable on BWK awk (the macOS default). Do not re-inline.
+  FILENAME ~ "^ui/packages/[^/]+/(src|app|tests|components|lib|hooks)/" { next }
   FNR == 1 { in_test_block = 0; test_depth = 0; in_block_comment = 0 }
   {
     line = $0
