@@ -74,6 +74,8 @@ declare -A RESOLVER_GLOSS=(
   [TSJ]="TypeScript/Bun judgment conventions (Bun-native, file ordering, error style)"
   [UIS]="UI Substitution (design-system primitive over raw HTML)"
   [DTK]="Design ToKens (named token utility over arbitrary value)"
+  [SCH]="SCHema teardown (pre-2.0 full removal; no ALTER/DROP/marker)"
+  [ITF]="Integration Test Fixtures (real schema, not TEMP-table mock)"
 )
 
 # Look up a gloss; empty string if the code is unknown (audit will catch it).
