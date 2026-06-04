@@ -290,7 +290,7 @@ A card is not deleted until its delta-landed assertion is green. Preserve any
 |---|---|---|
 | Latent | EXECUTE, about to write | agent reads `write_zig.md`; runs `write_zig.sh <file>` (scoped to the touched file, NOT `--all`) |
 | Anchor | HARNESS VERIFY (end-of-turn) | `write_zig.sh --staged`; 🔴 → back to EXECUTE; 🔵 → state verdict |
-| Backstop | COMMIT | **`.githooks/pre-commit`** (core.hooksPath, confirmed) runs `resolvers/*.sh --staged` |
+| Backstop | COMMIT | **`.githooks/pre-commit`** (core.hooksPath, confirmed) runs `resolvers/*.sh --staged` — **dotfiles repo only;** product repos keep the 8 leaf audits (Reading A, §10.7) |
 | Audit | pre-push + `make audit` | `audit-resolver-coverage.sh` + `audit-merge-coverage.sh` wired into the SAME chain as `audit-agents-md.sh` |
 | Evals | pre-push + `make` | `resolver-evals/run.sh` + (opt-in) `make llmevals` |
 
@@ -341,6 +341,15 @@ work v1 never scoped — it is the dominant cost, not a footnote.
 across the tree (minus this doc, git history, and the 5 retained process cards)
 must return **zero** hits. The table above is the human map; the grep is the gate
 — it catches any ref site (like `audit-logging.sh` / `SKILL.md`) the table missed.
+
+**Product-repo files are out of scope (Reading A — Indy, confirmed).** This
+inventory is dotfiles-only: no product repo's `make/harness.mk` or
+`.githooks/pre-commit` is edited by the migration. The 8 leaf audits remain each
+repo's commit-plane + harness enforcement and reach it as `sync-agents`
+**symlinks**, so the one in-scope leaf edit (`audit-logging.sh:152`, fail-message
+repoint) propagates with **zero product-repo commit**. Resolvers ship to product
+repos as **agent-facing files only** (§10.7) — never wired into a product Makefile
+or hook.
 
 ## 9 · Migration plan — staged, non-destructive (the keystone fix)
 
@@ -420,6 +429,16 @@ tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
    current; a product-repo *real-file* override triggers sync-agents' existing
    warn-and-skip (`:171`) — flagged, not silent. Add `resolvers/*.md` to
    `DOTFILES_RESIDENT`.
+7. **Product repos are NOT rewired (Reading A — Indy, confirmed).** `sync-agents`
+   ships `resolvers/{*.md,*.sh}` into each product repo as **agent-facing files**
+   (read at EXECUTE; runnable on a touched file) — but **no product repo's
+   `make/harness.mk` or `.githooks/pre-commit` is edited.** The 8 leaf audits
+   (`audit-ufs` … `audit-msid-ui`, symlinked in) stay each repo's codebase-wide
+   mechanical net; resolvers are the per-file authoring lens + the dotfiles-side
+   coherence/merge audits (§6.3/§6.5). The §7 Backstop plane is therefore
+   **dotfiles-only** — it fires against `scripts/resolver-evals/` fixtures (dotfiles
+   has no real `*.zig`/`*.ts`), which keeps the §8 zero-dangling-ref grep and the
+   Stage-2 sign-off scoped to dotfiles.
 
 ## 11 · JUDGMENT enforcement — honest, and made auditable
 
