@@ -33,5 +33,7 @@ resolver_delegate "XCOMPILE" "zig build -Dtarget=x86_64-linux && aarch64-linux"
 # ── judgment gates (no script can decide; agent states verdict in chat) ──
 resolver_judgment "TGU"  "result type with distinct failure modes? union(enum) with payload, not optional-field struct"
 resolver_judgment "ARCH" "naming a stream/queue/schema? grep docs/architecture/ first"
+resolver_judgment "FSD"  "new/reshaped *.zig file? file-as-struct vs operations-over-value — decide at PLAN, one-sentence why-not"
+resolver_judgment "DIDEM" "type with a cleanup contract? a test proving deinit is idempotent (or single-shot ownership asserted)"
 
 resolver_verdict

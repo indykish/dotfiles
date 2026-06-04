@@ -68,6 +68,8 @@ declare -A RESOLVER_GLOSS=(
   [DEINIT]="init/deinit lifecycle pairing"
   [ARCH]="Architecture consult before naming"
   [XCOMPILE]="Cross-compile both linux targets"
+  [FSD]="File Shape Decision (file-as-struct vs operations-over-value)"
+  [DIDEM]="Deinit IDEMpotency (cleanup double-call safe / single-shot asserted)"
 )
 
 # Look up a gloss; empty string if the code is unknown (audit will catch it).
