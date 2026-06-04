@@ -113,10 +113,13 @@ are dropped):
 |---|---|---|---|
 | `[DETERMINISTIC → CODE]` | machine can pass/fail it | the `.sh` row for `CODE` (e.g. `FLL`, `UFS`) | prose-pinned fixture (pass + fail) |
 | `[JUDGMENT → CODE]` | no script can decide; agent decides at write time | agent reading the prose | LLM-judge scenario |
+| `[container]` | structural wrapper heading, not a rule | nothing — its tagged subsections carry the real codes | skipped (coherence audit §6.3) |
 
 Walk all ~40 ZIG sections + merged gate deltas; tag each. A DETERMINISTIC tag
 whose CODE has no `.sh` row is a *build-the-check* TODO; a section that genuinely
-can't be checked is honestly `[JUDGMENT]`.
+can't be checked is honestly `[JUDGMENT]`. Structural wrapper headings (e.g.
+"Merged from dissolved gate cards") carry `[container]` — the sole non-rule tag —
+and the coherence audit skips them; their tagged subsections carry the real codes.
 
 **The semantic anchor (the v2 fix for "false determinism"):**
 1. **Single source.** The numeric/threshold lives ONLY in the `.sh`

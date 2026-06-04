@@ -13,6 +13,7 @@ This is the prose the AGENT reads before writing any `*.zig` file. It pairs with
 
 - `> [DETERMINISTIC → <CODE>]` — a machine can pass/fail it; the `.sh` row for `<CODE>` (e.g. `UFS`, `DEINIT`, `DRAIN`, `XCOMPILE`, `PUB`) enforces it. `TODO-CHECK` marks a mechanizable rule with no helper wired yet (build-the-check). `NEW:<name>` marks a proposed-but-not-yet-existing code.
 - `> [JUDGMENT → <CODE>]` — no script can decide; the agent decides at write time against the prose.
+- `> [container]` — a non-enforcement wrapper heading (e.g. "Merged from dissolved gate cards"); its tagged subsections carry the real codes, and the coherence audit (§6.3) skips it.
 
 See [`docs/RESOLVER_ARCHITECTURE.md`](../docs/RESOLVER_ARCHITECTURE.md) §3 for the tag grammar and semantic-anchor model.
 
