@@ -70,6 +70,10 @@ declare -A RESOLVER_GLOSS=(
   [XCOMPILE]="Cross-compile both linux targets"
   [FSD]="File Shape Decision (file-as-struct vs operations-over-value)"
   [DIDEM]="Deinit IDEMpotency (cleanup double-call safe / single-shot asserted)"
+  [TSC]="TypeScript/Bun lint conventions (const, import, naming, anti-patterns)"
+  [TSJ]="TypeScript/Bun judgment conventions (Bun-native, file ordering, error style)"
+  [UIS]="UI Substitution (design-system primitive over raw HTML)"
+  [DTK]="Design ToKens (named token utility over arbitrary value)"
 )
 
 # Look up a gloss; empty string if the code is unknown (audit will catch it).
