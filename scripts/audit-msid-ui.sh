@@ -105,7 +105,7 @@ hits=$($DIFF_CMD | awk '
     if (!ms_id_override &&
         f ~ /\.(zig|sql|ts|tsx|js|jsx|py|rs|go|sh|toml|yaml|json)$/ &&
         f !~ /^(docs|node_modules|vendor|third_party)\//) {
-      if (match(line, /M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|\bT[0-9]+\b|\bdim [0-9]+\.[0-9]+\b/)) {
+      if (match(line, /M[0-9]+_[0-9]+|§[0-9]+(\.[0-9]+)+|(^|[^A-Za-z0-9_])T[0-9]+([^A-Za-z0-9_]|$)|(^|[^A-Za-z0-9_])dim [0-9]+\.[0-9]+([^A-Za-z0-9_]|$)/)) {
         print "MS-ID  " f ": " line
       }
     }

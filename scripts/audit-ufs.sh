@@ -176,7 +176,10 @@ done < <(awk '
 #  - the line is NOT marked `// pin test: literal is the contract`
 #  - the line above is NOT marked `// pin test: literal is the contract`
 
-NUMERIC_RE='(\b1[_e]?0{3,12}\b|\b1_000(_000)*\b|\b10_000_000\b|\b100_000\b|\b1024\b|\b1048576\b|\b3600\b|\b86400\b)'
+# Boundaries are capturing groups, not \b: macOS/BSD awk treats \b as a backspace,
+# so word-boundary anchors silently match nothing. The leading/trailing boundary
+# chars are trimmed back off the extracted token below (see RSTART/RLENGTH use).
+NUMERIC_RE='(^|[^0-9A-Za-z_])(1[_e]?0{3,12}|1_000(_000)*|10_000_000|100_000|1024|1048576|3600|86400)([^0-9A-Za-z_]|$)'
 
 # Perf (M70): single awk across all files; FNR == 1 detects file boundary
 # so the "prev line carve-out" stays per-file. Process substitution keeps
@@ -194,7 +197,9 @@ done < <(awk -v re="$NUMERIC_RE" '
     sub(/\/\/.*$/, "", stripped)
     sub(/#.*$/, "", stripped)
     if (!is_pin_now && !is_pin_above && !is_const_decl && match(stripped, re)) {
-      printf "numeric-suspect %s:%d %s\n", FILENAME, FNR, substr(stripped, RSTART, RLENGTH)
+      tok = substr(stripped, RSTART, RLENGTH)
+      gsub(/^[^0-9]+|[^0-9_e]+$/, "", tok)   # trim the captured boundary chars
+      printf "numeric-suspect %s:%d %s\n", FILENAME, FNR, tok
     }
     prev = line
   }

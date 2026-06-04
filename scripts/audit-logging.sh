@@ -135,7 +135,7 @@ if [[ ${#zig_nontest[@]} -gt 0 ]]; then
     FNR == 1 { in_test = 0 }
     /^test "/ { in_test = 1; next }
     /^}/ { in_test = 0; next }
-    /\bstd\.debug\.print\(/ { if (!in_test) printf "%s:%d\n", FILENAME, FNR }
+    /(^|[^A-Za-z0-9_])std\.debug\.print\(/ { if (!in_test) printf "%s:%d\n", FILENAME, FNR }
   ' "${zig_nontest[@]}")
 fi
 
