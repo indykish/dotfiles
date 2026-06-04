@@ -16,6 +16,13 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 **Tags:** zig, js, all
 **Ref:** M1_001 unused deps in zombie.js; dead currentObj branch in simpleYamlParse. M30_002 dead CLI variables.
 
+## RULE NRC — No redundant comments
+
+**Rule:** Skip the comment when a well-named identifier, type, or signature already carries the intent. Add a comment only when removing it would leave a future agent (Orly included) genuinely confused — i.e. it explains a *why* the code itself cannot: a non-obvious constraint, an ordering dependency, the reason a workaround exists, or an invariant the types don't encode. Never write a comment that just restates the next line. Subtractive test: delete the comment; if nothing is lost, it was redundant.
+**Why:** Redundant comments drift out of sync with the code they narrate and train readers to skim past comments entirely — so the one load-bearing comment gets skipped too. A precise name is a comment that cannot drift; spend the words on the name, not the narration.
+**Tags:** all, zig, js, ts, py, sh, go, rs, style
+**Ref:** User directive (Indy, Jun 04, 2026) — a well-named identifier beats a comment; a comment earns its place only by preventing future-agent confusion.
+
 ## RULE NLR — No legacy retained (touch-it-fix-it)
 
 **Rule:** Any edit to a file that contains pre-existing legacy framing or dead code MUST remove the legacy/dead code in the same diff. Patterns: `?*T = null` fields with no real null caller, `legacy_*` symbol names, `V2`-twin types, `if (legacy_caller)` branches, `// legacy` / `// bootstrap` / `// pre-M*` comments, runtime warn logs saying "legacy path" / "deprecated", pub symbols with no in-tree consumer, defensive `?T` patterns compensating for what should be `T`. Verify "no caller" with `grep -rn`. The "pre-existing violations are not the agent's responsibility" carve-out does NOT apply when the agent is already opening the file. If cleanup > ~200 net lines, abort and file a cleanup spec first; do not commit a partial cleanup.
