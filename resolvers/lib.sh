@@ -76,6 +76,11 @@ declare -A RESOLVER_GLOSS=(
   [DTK]="Design ToKens (named token utility over arbitrary value)"
   [SCH]="SCHema teardown (pre-2.0 full removal; no ALTER/DROP/marker)"
   [ITF]="Integration Test Fixtures (real schema, not TEMP-table mock)"
+  [LOG]="LOGging discipline (scoped event, error_code, severity, redaction)"
+  [MSID]="Milestone-ID ban in source (M{N}_{NNN} / §x.y / T{N} / dim)"
+  [ERR]="ERror Registry (UZ-XXX-NNN declared + referenced)"
+  [GRP]="GREptile rule audit (diff vs greptile-learnings/RULES.md codes)"
+  [LDC]="Legacy-Design Consult (A remove / B patch / C keep)"
 )
 
 # Look up a gloss; empty string if the code is unknown (audit will catch it).
