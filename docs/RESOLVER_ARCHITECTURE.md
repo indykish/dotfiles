@@ -93,7 +93,7 @@ SPACE      │     owns the threshold values; runs the checkable       │
   rename. It gains per-section enforcement tags; mechanical content moves to the
   `.sh`; teaching prose stays.
 - **`write_zig.sh`** = the deterministic façade. **It owns every threshold value
-  verbatim** (`resolver_length_gate 300`); the `.md` *references* the value
+  verbatim** (`resolver_length_gate 350`); the `.md` *references* the value
   ("see `write_zig.sh::length`"), never restates the number. This is the v2
   anti-drift mechanism — one source, not two copies bridged by a tag.
 
@@ -120,11 +120,11 @@ can't be checked is honestly `[JUDGMENT]`.
 
 **The semantic anchor (the v2 fix for "false determinism"):**
 1. **Single source.** The numeric/threshold lives ONLY in the `.sh`
-   (`resolver_length_gate 300`). The `.md` says "≤ the cap in
+   (`resolver_length_gate 350`). The `.md` says "≤ the cap in
    `write_zig.sh::length`" — it carries no competing number to drift.
 2. **Prose-pinned fixture.** For any rule whose prose states a bound, a fixture
-   pins it: `length_301_fail.zig` MUST exit 1. If someone edits the `.sh` cap to
-   500, the 301 fixture flips to pass and `resolver-evals` goes red. The
+   pins it: `length_351_fail.zig` MUST exit 1. If someone edits the `.sh` cap to
+   500, the 351 fixture flips to pass and `resolver-evals` goes red. The
    **fixture**, not the tag, is the drift detector.
 
 ### 3.1 · Signal semantics (🟢 / 🔴 / 🔵) — and the glyph-collision fix
@@ -158,9 +158,9 @@ rather than honor-only.
 write_zig.md §Length:
   - `.zig` ≤ the cap in write_zig.sh::length; split by concern when over.
     [DETERMINISTIC → FLL]   (the number lives in the .sh, not here)
-write_zig.sh:  resolver_length_gate 300
-fixture:  length_301_fail.zig → exit 1   (pins the prose bound; flips if cap moves)
-run:  FLL 🔴 File & Function Length Limits — foo.zig: 340 (cap 300) — split
+write_zig.sh:  resolver_length_gate 350
+fixture:  length_351_fail.zig → exit 1   (pins the prose bound; flips if cap moves)
+run:  FLL 🔴 File & Function Length Limits — foo.zig: 360 (cap 350) — split
 → machine decides. pass/fail. prose carries no drift-able number.
 ```
 
@@ -216,8 +216,8 @@ homeless, none double-homed, and the audit counts a well-defined mixed end-state
 ### 6.1 Deterministic façade evals — prose-pinned fixtures
 ```
 scripts/resolver-evals/fixtures/
-  length_300_pass.zig    → write_zig.sh expects exit 0
-  length_301_fail.zig    → expects exit 1   (PINS the prose bound)
+  length_350_pass.zig    → write_zig.sh expects exit 0
+  length_351_fail.zig    → expects exit 1   (PINS the prose bound)
   ufs_dup_string.zig     → expects exit 1
   deinit_missing.zig     → expects exit 1
 scripts/resolver-evals/run.sh  → runs each fixture, diffs actual vs expected exit
@@ -576,3 +576,12 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 3. **Stage-2 sign-off — GRANTED** (Indy, Jun 04, 2026, §15): the Stage-2 atomic
    switchover may edit `audit-*.sh` + `.githooks` per the Hard-Safety harness-patch
    rule.
+4. **Code length cap = 350 — RECONCILED** (Indy, Jun 04, 2026): the file-length
+   gate card's `350` is canonical for all code (`.zig`/`.ts`/`.tsx`/`.js`/`.py`/
+   `.rs`/`.go`/`.sql`). `write_zig.sh`'s stray `300` corrected to `350`; the §3/§4/
+   §6.1 examples regenerated at `350`/`351`. Every resolver's `resolver_length_gate`
+   equals the gate's `350`, so the early-warning never diverges from enforcement.
+5. **`.md` doc/spec length caps — DEFERRED** (Indy, Jun 04, 2026): `.md` stays
+   exempt from the length gate (status quo). The long merged façades (`write_zig.md`
+   654L, `write_ts_adhere_bun.md` 486L) are therefore legal. Tiered doc/spec caps
+   (e.g. docs 350 / specs 400) are a possible post-Stage-2 task, not v2 scope.

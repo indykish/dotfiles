@@ -21,7 +21,7 @@ resolver_resolve_files "$@"
 resolver_header
 
 # ── deterministic gates ────────────────────────────────────────────
-resolver_length_gate 300                                       # FLL — write_zig.md §Length
+resolver_length_gate 350                                       # FLL — write_zig.md §Length
 resolver_run_helper "UFS"    "audit-ufs.sh"          "--all"   # write_zig.md §RULE UFS
 resolver_run_helper "DEINIT" "audit-deinit-pairs.sh" "--staged" # write_zig.md §Multi-Step Init
 
