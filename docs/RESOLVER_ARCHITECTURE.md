@@ -13,6 +13,8 @@ Scope: `~/Projects/dotfiles` operating model + cross-repo rule-doc references
 > core and rewrites the migration, the blast-radius accounting, and the claims to
 > match what the mechanisms actually deliver. Every change below is grounded in a
 > grep of the branch, not the review prose — file:line citations are real.
+> **Per-finding disposition (all 38 + resolved/partial status) is tracked in
+> [`RESOLVER_REVIEW_DISPOSITION.md`](./RESOLVER_REVIEW_DISPOSITION.md).**
 
 ---
 
@@ -544,12 +546,14 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
   harness/gate), satisfying the Hard-Safety harness-patch rule. The `🔵` glyph and
   the JUDGMENT ledger remain open (§16, Q1/Q2).
 
-## 16 · Open questions for Indy (before execution)
+## 16 · Decisions (was: open questions)
 
-1. **JUDGMENT hardening:** ship the verdict-ledger `pre-commit` backstop now (§11),
-   or accept attested + eval-sampled for v2 and defer the ledger?
-2. **`🔵` glyph:** accept the new glyph, or prefer re-glyphing `🟡` in
-   `HARNESS_VERIFY_OUTPUT.md` instead?
-3. **Stage-2 sign-off:** confirm you'll sign off on the harness edits
-   (`audit-*.sh` + hooks) when Stage 2 is ready — that commit cannot proceed
-   without your explicit ack per Hard-Safety.
+1. **JUDGMENT hardening — DEFERRED** (Indy, Jun 04, 2026: *"I defer the ledger,
+   its complicated"*). v2 ships judgment as **attested + comprehension-probed**
+   (§11); the turn-scoped verdict ledger is a possible later hardening, not v2 scope.
+2. **`🔵` glyph — pending confirm** (default: accept `🔵 DECIDE`, leaving `🟡` as
+   "violations addressed"; alternative is re-glyphing `🟡` in
+   `HARNESS_VERIFY_OUTPUT.md`). Cosmetic/semantic only — a colored-circle swap.
+3. **Stage-2 sign-off — GRANTED** (Indy, Jun 04, 2026, §15): the Stage-2 atomic
+   switchover may edit `audit-*.sh` + `.githooks` per the Hard-Safety harness-patch
+   rule.
