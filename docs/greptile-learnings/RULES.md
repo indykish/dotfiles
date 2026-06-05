@@ -11,11 +11,11 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 
 ## Rule-code gloss legend (canonical)
 
-The single source of truth for every rule-code gloss. `resolvers/lib.sh`
-(`RESOLVER_GLOSS`) mirrors this table verbatim, and
-`scripts/audit-resolver-coverage.sh` fails on any divergence — a code present in
+The single source of truth for every rule-code gloss. `dispatch/lib.sh`
+(`DISPATCH_GLOSS`) mirrors this table verbatim, and
+`evals/dispatch/coverage.sh` fails on any divergence — a code present in
 one but not the other, or a gloss whose text differs by a byte. No naked codes:
-every code a resolver `.sh` emits resolves to exactly one row here.
+every code a dispatch `.sh` emits resolves to exactly one row here.
 
 | CODE | Gloss |
 |---|---|
@@ -498,7 +498,7 @@ This is intentionally manual — the structural diversity of "function body" acr
 **Rule:** Never use `@embedFile` to reach files outside `src/`. For external files (OpenAPI specs, config fixtures), write a Python/shell validator and wire it into a `make` target under `lint-zig`.
 **Why:** Zig's embed security model restricts `@embedFile` to the package directory. `@embedFile("../../public/openapi.json")` is a hard compile error, not a runtime failure. There is no workaround except an external script.
 **Tags:** zig, comptime, testing
-**Ref:** M11_001 §3.1 — OpenAPI ErrorBody validation moved to scripts/check_openapi_errors.py + make check-openapi-errors.
+**Ref:** M11_001 §3.1 — OpenAPI ErrorBody validation moved to audits/check_openapi_errors.py + make check-openapi-errors.
 
 ## RULE SNT — ~~Registry sentinels must be distinct from real entries~~ ELIMINATED (M16_001)
 
@@ -868,7 +868,7 @@ const handleConfirm = useCallback(async () => {
 ## RULE MKP — Make recipes must not pipe into `tail`, `head`, `grep` without `set -o pipefail`
 
 **Rule:** Inside a Make recipe, do NOT pipe a command whose exit code matters into `tail`, `head`, `grep`, `cat`, or any other filter — Make's default shell (`/bin/sh`) evaluates pipelines with the exit code of the LAST command. A failing test/script piped through `| tail -3` returns 0 because `tail` always succeeds, and the recipe (and the enclosing `make lint` / `make openapi`) falsely succeeds. Either (a) drop the pipe, (b) run the command standalone and let Make's line-level exit-on-error abort on failure, or (c) if a filter is genuinely needed, use `bash -c 'set -o pipefail; cmd | filter'`.
-**Why:** Silent test swallow is a class-C outage — the gate claims green while regressions ship. Observed on M28_003 §2 where `@python3 scripts/test_check_openapi_sync.py 2>&1 | tail -3` in `make openapi` passed a failing-test injection without aborting. Greptile P1 caught it before merge; the root cause (Make + default `sh` POSIX pipefail semantics) is the same bug anywhere a recipe uses `|` to tidy long output.
+**Why:** Silent test swallow is a class-C outage — the gate claims green while regressions ship. Observed on M28_003 §2 where `@python3 audits/test_check_openapi_sync.py 2>&1 | tail -3` in `make openapi` passed a failing-test injection without aborting. Greptile P1 caught it before merge; the root cause (Make + default `sh` POSIX pipefail semantics) is the same bug anywhere a recipe uses `|` to tidy long output.
 **Tags:** make, ci, testing
 **Ref:** usezombie P2_INFRA_M28_003 §2 — `make/quality.mk:161` before fix piped the test runner through `tail -3`; fix in commit 66556e99 dropped the pipe, confirmed with injected `self.fail()` that `make: *** [openapi] Error 1` now fires correctly.
 

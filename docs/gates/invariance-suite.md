@@ -8,7 +8,7 @@
 - `AGENTS.md`
 - `AGENTS_INVARIANCE.md`
 - any file under `docs/gates/`
-- `scripts/audit-agents-md.sh` or `scripts/fixtures/*.diff`
+- `audits/agents-md.sh` or `audits/fixtures/*.diff`
 
 The trigger is **agent-self-edit**: the moment the agent *itself* modifies one of these files in the current session, this gate fires. (User-only edits do not fire it from the LLM's perspective — but the pre-push hook still gates them.)
 
@@ -18,7 +18,7 @@ The trigger is **agent-self-edit**: the moment the agent *itself* modifies one o
 
 The agent runs these steps in order. Each step's output appears in the user-facing message.
 
-1. **Script layer** — run `bash scripts/audit-agents-md.sh`. If exit ≠ 0, STOP, fix the FAIL lines, retry. Do NOT proceed to step 2 with a failing script.
+1. **Script layer** — run `bash audits/agents-md.sh`. If exit ≠ 0, STOP, fix the FAIL lines, retry. Do NOT proceed to step 2 with a failing script.
 
 2. **Questionnaire layer** — read `AGENTS_INVARIANCE.md` and answer every question against the *current* `AGENTS.md` (and gate bodies). Each answer is YES or NO with the justifying line(s).
 

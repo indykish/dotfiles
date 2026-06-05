@@ -254,7 +254,7 @@ Anything else is a smell:
 
 The struct's `deinit` method is the single source of truth for cleanup. Call sites use `defer self.deinit()` (or `errdefer` if ownership might transfer mid-function) and never reach inside the struct.
 
-## §10 · Anti-patterns flagged by `audit-deinit-pairs.sh`
+## §10 · Anti-patterns flagged by `deinit-pairs.sh`
 
 | Pattern | Severity | Fix |
 |---|---|---|
@@ -283,7 +283,7 @@ Failure modes the audit script and reviewer must close. These are **not aspirati
 | LC9 | "Renamed-only file (no content change), gate doesn't fire" | Rename without content change does **not** fire LIFECYCLE GATE. Rename + content change does. Pure rename is a no-op for the gate. |
 | LC10 | "Two docs disagree (e.g. ZIG_RULES says X, LIFECYCLE_PATTERNS says Y)" | Precedence: gate body file > standards doc > spec. The gate body (`docs/gates/lifecycle.md`) is the canonical enforcement layer. |
 
-These are enforced by `audit-deinit-pairs.sh` (mechanical) and the gate body file (`docs/gates/lifecycle.md`, output discipline). When in conflict, the gate body file wins.
+These are enforced by `deinit-pairs.sh` (mechanical) and the gate body file (`docs/gates/lifecycle.md`, output discipline). When in conflict, the gate body file wins.
 
 ## §11 · Carve-out: PUB GATE vs LIFECYCLE GATE
 

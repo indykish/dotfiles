@@ -21,7 +21,7 @@ a file-naming guide: the mechanics (naming, layout) are demoted to the end
 because they are the easy part.
 
 > **The trio stays coherent.** This skill (*how to author*) ← `docs/TEMPLATE.md`
-> (*the section shape*) → `scripts/audit-spec-template.sh` (*the enforcer*). If a
+> (*the section shape*) → `audits/spec-template.sh` (*the enforcer*). If a
 > step here demands something, the template carries the section and the audit
 > asserts it. Drift between the three is a bug.
 
@@ -113,7 +113,7 @@ Before the spec leaves `pending/`, it must pass this checklist — the determini
 - [ ] **every Dimension has a Test**; **every Failure Mode has a negative test**; every Invariant is code-enforceable
 - [ ] Prior-Art reference named (or "greenfield — shape in `docs/architecture/`")
 - [ ] reporting sections present (Discovery, Verification Evidence)
-- [ ] `bash scripts/audit-spec-template.sh --staged` is clean (it BLOCKs missing required sections and unfilled `{placeholders}`)
+- [ ] `bash audits/spec-template.sh --staged` is clean (it BLOCKs missing required sections and unfilled `{placeholders}`)
 
 Then commit in the current authoring context:
 
@@ -148,7 +148,7 @@ The spec lands in `pending/` on the branch/worktree where the skill was invoked.
 ## References
 
 - `docs/TEMPLATE.md` — the section shape this skill fills (per-repo copy; fallback `~/Projects/dotfiles/docs/TEMPLATE.md`).
-- `scripts/audit-spec-template.sh` — the enforcer (`--staged` BLOCKs an incomplete spec).
+- `audits/spec-template.sh` — the enforcer (`--staged` BLOCKs an incomplete spec).
 - `docs/greptile-learnings/RULES.md` — the rule IDs Step 2 pins for review-cleanliness.
 - `docs/CLI_DX_PILLARS.md` — the CLI prior-art reference.
 - `~/Projects/dotfiles/AGENTS.md` — lifecycle stages, action-triggered guards, deterministic VERIFY/CHORE sequencing.

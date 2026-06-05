@@ -48,16 +48,16 @@ ERROR REGISTRY GATE: <file>
   Orphan codes (used but not declared): <list — BLOCKING>
   Dead codes (declared but unreferenced): <list — informational>
   Hint/docs populated: <ok ✓ | missing for <code>>
-  Audit script: <audit-error-codes.sh on staged diff: 0 findings ✓ | N findings>
+  Audit script: <error-codes.sh on staged diff: 0 findings ✓ | N findings>
 ```
 
 ## Scope (M70)
 
-`audit-error-codes.sh` walks the **full `src/` + `zombiectl/` working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
+`error-codes.sh` walks the **full `src/` + `zombiectl/` working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
 
 ## End-of-turn audit
 
-`scripts/audit-error-codes.sh` runs as part of `make lint`. Greps `src/errors/error_registry.zig` for declared codes, then greps `src/**` and `zombiectl/**` for any `UZ-[A-Z]+-[0-9]+` literal that isn't in the registry. Reports orphans (blocking) and dead codes (informational).
+`audits/error-codes.sh` runs as part of `make lint`. Greps `src/errors/error_registry.zig` for declared codes, then greps `src/**` and `zombiectl/**` for any `UZ-[A-Z]+-[0-9]+` literal that isn't in the registry. Reports orphans (blocking) and dead codes (informational).
 
 ## Family
 

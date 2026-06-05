@@ -414,7 +414,7 @@ public/openapi/
 3. Run `make openapi` — bundles YAML → JSON, runs Redocly lint, runs `check_openapi_errors.py`, runs `check_openapi_url_shape.py` (REST §1).
 4. Commit YAML + bundled JSON + `router.zig` together. Splitting these across commits leaves CI red.
 
-**Router ↔ openapi.json parity is reviewer-enforced.** There is no mechanical gate cross-checking that every `router.match()` arm has a documented openapi path or vice versa. When you add, rename, or remove a route, both surfaces must move in the same diff and the reviewer must verify it. The previous Python parity gate (`scripts/check_openapi_sync.py`) and its data file (`src/http/route_manifest.zig`) were retired in M61_002.
+**Router ↔ openapi.json parity is reviewer-enforced.** There is no mechanical gate cross-checking that every `router.match()` arm has a documented openapi path or vice versa. When you add, rename, or remove a route, both surfaces must move in the same diff and the reviewer must verify it. The previous Python parity gate (`audits/check_openapi_sync.py`) and its data file (`src/http/route_manifest.zig`) were retired in M61_002.
 
 **Agent-edit recipe:** see `public/openapi/AGENTS.md` for copy-paste-ready rename / append / remove / update-description workflows.
 

@@ -1,0 +1,68 @@
+# evals/dispatch/merge-coverage-drops.tsv — acked merge-loss drops ledger (6.5 guard 2)
+#
+# When a dissolving card's non-boilerplate token is reworded away by the merge
+# (a faithful synonym swap, not a lost rule), it shows as uncovered in
+# merge-coverage.sh. Such a token may be CLEARED here.
+#
+# Format (TAB-separated, 3 columns):
+#   <card-basename><TAB><token><TAB>Indy (YYYY-MM-DD): "<verbatim ack>" — <context>
+#
+# Drops are PER-CARD: a token is cleared only for the card named in column 1
+# (a word reworded away in pub-surface.md is NOT assumed harmless in some other
+# card that uses it as a rule word). One single [a-z0-9]+ token per line — a
+# multi-word or punctuated token is rejected as a dead drop.
+#
+# HONEST SCOPE of guard 2: this is a FORMAT check, not an authenticity check.
+# The audit rejects a line that is malformed, carries a non-single token, or
+# lacks an Indy ack-quote (`Indy (YYYY-MM-DD): "<quote>"`) — i.e. it stops a
+# bare/lazy agent self-cert. It CANNOT verify Indy actually authored the quote
+# (a plaintext ledger the agent also writes has no cryptographic anchor);
+# ack authenticity is enforced socially at PR review, not by this script.
+#
+# ---- Stage-2-prep drops (Indy adjudication, 2026-06-05) --------------------
+# Indy reviewed the explicit uncovered-token list (zig 2, pub-surface 22,
+# lifecycle 16), confirmed all 40 are reworded prose/examples — not rules — and
+# chose to keep the ledger. Orly verified each underlying rule survives in
+# write_zig.md: use-after-free -> :112, allocator-ownership -> :42/:46, PUB
+# surface -> :70/:103, deinit/drain -> :61/:62.
+
+zig.md	broader	Indy (2026-06-05): "keep it" — reviewed list; broader-context adjective, no rule lost
+zig.md	uaf	Indy (2026-06-05): "keep it" — abbrev; "use-after-free" rule present verbatim in write_zig.md:112
+pub-surface.md	cheaply	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	checklist	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	choose	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	constructors	Indy (2026-06-05): "keep it" — reviewed list; example; struct-shape rule retained
+pub-surface.md	crossing	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	dispatch	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	dominant	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	dsls	Indy (2026-06-05): "keep it" — reviewed list; example, no rule lost
+pub-surface.md	enabled	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	enough	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	filter	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	forget	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	isready	Indy (2026-06-05): "keep it" — reviewed list; example method name, no rule lost
+pub-surface.md	justified	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	loud	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	modeling	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	mutators	Indy (2026-06-05): "keep it" — reviewed list; example; struct-shape rule retained
+pub-surface.md	proof	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	stripping	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	sym	Indy (2026-06-05): "keep it" — reviewed list; abbrev (symbol), no rule lost
+pub-surface.md	testability	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+pub-surface.md	yours	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	acknowledgements	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	batched	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	gpa	Indy (2026-06-05): "keep it" — reviewed list; example (GeneralPurposeAllocator); allocator-lifecycle rule retained
+lifecycle.md	holding	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	immediate	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	incl	Indy (2026-06-05): "keep it" — reviewed list; abbrev (including), no rule lost
+lifecycle.md	lexically	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	listed	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	placement	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	precede	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	protected	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	protects	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	question	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	reshapes	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost
+lifecycle.md	sister	Indy (2026-06-05): "keep it" — reviewed list; prose (sister skill), no rule lost
+lifecycle.md	unneeded	Indy (2026-06-05): "keep it" — reviewed list; prose, no rule lost

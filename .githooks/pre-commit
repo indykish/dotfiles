@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Pre-commit hook for dotfiles.
-# - When AGENTS.md is staged, runs scripts/audit-agents-md.sh and blocks
+# - When AGENTS.md is staged, runs audits/agents-md.sh and blocks
 #   the commit if any invariant regressed.
 # - For all other commits, this hook is a no-op (fast path).
 #
@@ -16,12 +16,12 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
-if git diff --cached --name-only | grep -qE '^(AGENTS\.md|AGENTS_INVARIANCE\.md|docs/gates/.*\.md|scripts/audit-agents-md\.sh|scripts/fixtures/.*\.diff)$'; then
+if git diff --cached --name-only | grep -qE '^(AGENTS\.md|AGENTS_INVARIANCE\.md|docs/gates/.*\.md|audits/agents-md\.sh|audits/fixtures/.*\.diff)$'; then
   if [[ "${SKIP_AGENTS_AUDIT:-0}" = "1" ]]; then
     echo "pre-commit: SKIP_AGENTS_AUDIT=1 — bypassing AGENTS.md audit (one-off)" >&2
   else
-    echo "pre-commit: AGENTS.md or its audit changed — running scripts/audit-agents-md.sh" >&2
-    if ! bash "$ROOT/scripts/audit-agents-md.sh"; then
+    echo "pre-commit: AGENTS.md or its audit changed — running audits/agents-md.sh" >&2
+    if ! bash "$ROOT/audits/agents-md.sh"; then
       cat >&2 <<'MSG'
 
 pre-commit: AGENTS.md invariance regressed.

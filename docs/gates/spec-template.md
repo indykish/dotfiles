@@ -50,16 +50,16 @@ SPEC TEMPLATE GATE: <file>
   Effort/complexity fields found: <e.g. "**Effort:** medium" at line N>
   Percentage-complete fields found: <e.g. "60% complete" at line N>
   Owner/date fields found: <list>
-  Audit script: <audit-spec-template.sh on staged diff: 0 findings ✓ | N findings>
+  Audit script: <spec-template.sh on staged diff: 0 findings ✓ | N findings>
 ```
 
 ## Scope (M70)
 
-`audit-spec-template.sh` walks the **full pending+active spec set** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
+`spec-template.sh` walks the **full pending+active spec set** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
 
 ## End-of-turn audit
 
-`scripts/audit-spec-template.sh` runs as part of `make lint`. Mechanical regex enforcement against the patterns listed above. Failures block `make lint`.
+`audits/spec-template.sh` runs as part of `make lint`. Mechanical regex enforcement against the patterns listed above. Failures block `make lint`.
 
 ## Family
 

@@ -47,18 +47,18 @@ PROJECT_LINKS=(
   # Previously hand-symlinked into repos out-of-band; listed here so a single
   # `sync-agents` run is the source of truth and new repos/worktrees pick them
   # up automatically.
-  "scripts/audit-spec-template.sh:scripts/audit-spec-template.sh"
-  "scripts/audit-ufs.sh:scripts/audit-ufs.sh"
-  "scripts/audit-logging.sh:scripts/audit-logging.sh"
-  "scripts/audit-design-tokens.sh:scripts/audit-design-tokens.sh"
-  "scripts/audit-deinit-pairs.sh:scripts/audit-deinit-pairs.sh"
-  "scripts/audit-error-codes.sh:scripts/audit-error-codes.sh"
-  "scripts/audit-cross-tier-rates.sh:scripts/audit-cross-tier-rates.sh"
-  "scripts/audit-msid-ui.sh:scripts/audit-msid-ui.sh"
-  # audit-agents-md.sh, audit-data.sh, test-audit-agents-md.sh,
-  # audit-resolver-coverage.sh, audit-merge-coverage.sh, and evals/ (llmevals +
-  # resolver-evals) are dotfiles-internal — they validate AGENTS.md + the
-  # resolver façades themselves. Not propagated; downstream repos don't audit
+  "audits/spec-template.sh:audits/spec-template.sh"
+  "audits/ufs.sh:audits/ufs.sh"
+  "audits/logging.sh:audits/logging.sh"
+  "audits/design-tokens.sh:audits/design-tokens.sh"
+  "audits/deinit-pairs.sh:audits/deinit-pairs.sh"
+  "audits/error-codes.sh:audits/error-codes.sh"
+  "audits/cross-tier-rates.sh:audits/cross-tier-rates.sh"
+  "audits/msid-ui.sh:audits/msid-ui.sh"
+  # agents-md.sh, data.sh, test-agents-md.sh,
+  # dispatch-coverage.sh, merge-coverage.sh, and evals/ (llmevals +
+  # dispatch-evals) are dotfiles-internal — they validate AGENTS.md + the
+  # dispatch façades themselves. Not propagated; downstream repos don't audit
   # the ruleset.
 )
 

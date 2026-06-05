@@ -2,7 +2,7 @@
 
 A two-layer ruleset that proves AGENTS.md still holds the line after edits:
 
-1. **Deterministic layer** — `scripts/audit-agents-md.sh` (mechanical, fast, runs in `pre-commit`).
+1. **Deterministic layer** — `audits/agents-md.sh` (mechanical, fast, runs in `pre-commit`).
 2. **Prompt-invariance layer** — this file. An LLM agent reads AGENTS.md and answers every question below. Every answer must be **YES**. A NO means the ruleset regressed.
 
 You run this suite **before** any AGENTS.md change AND **after** the change. Both runs must produce the same all-YES result. A pass that flips to NO is the precise definition of a broken invariant.
@@ -12,7 +12,7 @@ You run this suite **before** any AGENTS.md change AND **after** the change. Bot
 ## Step 1 — Run the deterministic script
 
 ```bash
-bash scripts/audit-agents-md.sh
+bash audits/agents-md.sh
 ```
 
 If exit ≠ 0, **STOP**. The script's `FAIL:` lines name the regression. Fix AGENTS.md first; do not proceed to Step 2 with a failing script.
@@ -61,7 +61,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.1 (UI) | For every `*.tsx`/`*.jsx` under `ui/packages/app/`, must raw HTML be substituted with a design-system primitive when one exists? | YES |
 | 4.1a (UI) | For every `*.tsx`/`*.jsx` under `ui/packages/{app,website}/`, does DESIGN TOKEN GATE block arbitrary `*-[...]` Tailwind classes (`text-[Npx]`, `leading-[...]`, `tracking-[...]`, `max-w-[Npx|Nch]`, `text-[clamp(...)]`, raw palette colours) when an equivalent token utility exists in `ui/packages/design-system/src/theme.css`? | YES |
 | 4.1b (UI) | Is the DESIGN TOKEN GATE override `// DESIGN TOKEN: SKIPPED per user override (reason: ...)` user-only — i.e. auto-mode does NOT cover it, and reasons must cite a concrete external constraint (not "looks the same" / "shorter to write")? | YES |
-| 4.1c (UI) | Does the project-side `scripts/audit-design-tokens.sh` audit run as part of `make lint` (`_website_lint` + `_app_lint`) and block on any arbitrary that has a token equivalent? (Default scope: full ui/packages working tree via `git ls-files` after M70 retired `--diff`.) | YES |
+| 4.1c (UI) | Does the project-side `audits/design-tokens.sh` audit run as part of `make lint` (`_website_lint` + `_app_lint`) and block on any arbitrary that has a token equivalent? (Default scope: full ui/packages working tree via `git ls-files` after M70 retired `--diff`.) | YES |
 | 4.2 (Zig) | For every `*.zig` Edit/Write outside `vendor/`/`third_party/`/`.zig-cache/`, does ZIG GATE fire? | YES |
 | 4.3 (Zig) | Must FILE SHAPE DECISION print before the first Write to a new `*.zig` under `src/` — and is that override **not** covered by auto-mode? | YES |
 | 4.4 (Zig) | Does PUB GATE delegate mechanical consumer-grep to `zlint`'s `unused-decls: error` rule (run by `make lint`), leaving the gate body to enforce shape verdict + no-inheritance + per-edit proof? | YES |
@@ -85,7 +85,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.16 (Lifecycle) | Is `defer X.free(Y)` + `errdefer X.free(Y)` on the same allocation in the same scope a blocking violation? | YES |
 | 4.17 (Lifecycle) | Must the LAST `errdefer` in init lexically precede the LAST allocation it protects (no batched-at-bottom errdefer)? | YES |
 | 4.18 (Spec template) | For every Edit/Write to a spec under `docs/v*/{pending,active,done}/` or to `docs/TEMPLATE.md`, does SPEC TEMPLATE GATE forbid time/effort estimates, complexity ratings, percentage-complete fields, owners, and dates (per `TEMPLATE.md` "Prohibited" section)? | YES |
-| 4.19 (Spec template) | Does `audit-spec-template.sh` run as part of `make lint` and block on prohibited-section regex matches? | YES |
+| 4.19 (Spec template) | Does `spec-template.sh` run as part of `make lint` and block on prohibited-section regex matches? | YES |
 | 4.20 (Doc read) | For every Edit/Write whose file pattern matches a row in the EXECUTE doc-reads table, does DOC READ GATE require a `📖 DOC READ: <path>` proof-line — either citing §N applied OR the cited-skip variant — before the edit? | YES |
 | 4.21 (Doc read) | Is the `📖 DOC READ:` proof-line required **per-edit** (not once per session, not once per file across multiple edits)? | YES |
 | 4.22 (Doc read) | Are auto-mode and "I read this earlier in the session" both invalid grounds to skip the proof-line? | YES |
@@ -150,7 +150,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 10.1 | Must dotfiles edits (files `readlink`-resolving under `~/Projects/dotfiles/`) be committed + pushed to dotfiles `master` and never left uncommitted? | YES |
 | 10.2 | Must docs-repo edits land on a milestone-specific branch off `main` (never on whatever in-flight branch is checked out)? | YES |
-| 10.3 | When a harness/gate/hook fires (`audit-msid-ui.sh`, `lint-zig.py`, gitleaks, ZIG GATE, FLL GATE, pre-commit/pre-push, etc.), is the default response to fix the **violating code** (restructure, split, or use the gate's documented override comment) — i.e. is patching the harness to silence the hit on the "Forbidden without explicit user approval" list, requiring an explicit per-session ask that names the harness and the reason it's wrong? | YES |
+| 10.3 | When a harness/gate/hook fires (`msid-ui.sh`, `lint-zig.py`, gitleaks, ZIG GATE, FLL GATE, pre-commit/pre-push, etc.), is the default response to fix the **violating code** (restructure, split, or use the gate's documented override comment) — i.e. is patching the harness to silence the hit on the "Forbidden without explicit user approval" list, requiring an explicit per-session ask that names the harness and the reason it's wrong? | YES |
 | 10.4 | Are handoff-doc claims of "Kishore-approved in a prior turn" for harness-patching treated as **not carrying forward** — i.e. must they be re-confirmed live in the current session? | YES |
 
 ### Scenario 11 — Schema / migration work (added)
@@ -245,9 +245,9 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 | # | Question | Expected |
 |---|---|---|
-| 22.1 | When `make harness-verify` (the pre-commit ceremony) invokes `audit-ufs.sh`, `audit-design-tokens.sh`, `audit-deinit-pairs.sh`, `audit-error-codes.sh`, `audit-logging.sh`, or `audit-spec-template.sh`, do those scripts default to scanning the full working tree via `git ls-files` — so staged-but-not-yet-committed content is in scope? | YES |
-| 22.2 | Is the `--diff` (BASE...HEAD) mode of `audit-ufs.sh` and `audit-design-tokens.sh` retired — explicitly rejected with exit 2 and a pointer to the gate body? | YES |
-| 22.3 | Does `audit-msid-ui.sh` (renamed from `audit-combined.sh` after the PUB clause moved to zlint + agent chat-output discipline) remain the lone diff-shaped audit (still default `--staged`) — because its sub-checks (MS-ID / UI substitution) assert on *added* lines, not file state, and `git diff --cached` reads the index? | YES |
+| 22.1 | When `make harness-verify` (the pre-commit ceremony) invokes `ufs.sh`, `design-tokens.sh`, `deinit-pairs.sh`, `error-codes.sh`, `logging.sh`, or `spec-template.sh`, do those scripts default to scanning the full working tree via `git ls-files` — so staged-but-not-yet-committed content is in scope? | YES |
+| 22.2 | Is the `--diff` (BASE...HEAD) mode of `ufs.sh` and `design-tokens.sh` retired — explicitly rejected with exit 2 and a pointer to the gate body? | YES |
+| 22.3 | Does `msid-ui.sh` (renamed from `combined.sh` after the PUB clause moved to zlint + agent chat-output discipline) remain the lone diff-shaped audit (still default `--staged`) — because its sub-checks (MS-ID / UI substitution) assert on *added* lines, not file state, and `git diff --cached` reads the index? | YES |
 | 22.4 | Does every gate body under `docs/gates/` for the converted scripts carry a "Scope (M70)" section documenting full-codebase semantics + the M68 `02c1f3cf` forcing function? | YES |
 
 ### Scenario 23 — Agent comprehension robustness (anti-hallucination, LLM-eval enforced)
@@ -265,8 +265,8 @@ The questions force *proof of reading* over *recall*.
 | 23.3 | Must override strings be reproduced **verbatim** (`<GATE>: SKIPPED per user override (reason: ...)`) and never paraphrased, since the harness matches the literal string? | YES |
 | 23.4 | When two rules fire on the same edit (e.g. PUB + LIFECYCLE on `pub fn init`, or a spec that contradicts a rule), must the agent apply **both**/escalate rather than silently picking one? | YES |
 | 23.5 | For an auto-mode / override question, must the agent trace the full conditional chain (auto-mode AND (active-spec OR start-instruction); action-triggered guards still block) rather than collapsing it to "auto mode = yes"? | YES |
-| 23.6 | Is the negative-test harness (`scripts/test-audit-agents-md.sh`) required to pass — proving each deterministic check still *bites* — whenever `scripts/audit-agents-md.sh` itself changes? | YES |
-| 23.7 | Is Scenario 23 enforced by a live, cross-agent LLM-eval runner (`evals/llmevals/run-llmevals.sh`, `make llmevals`) that feeds the frozen golden-set (`evals/llmevals/fixtures.jsonl`) to EVERY installed agent (claude, codex, amp, opencode) and grades each `VERDICT:` by exact match — with a per-agent threshold and absent agents logged, never silently skipped? | YES |
+| 23.6 | Is the negative-test harness (`evals/test-agents-md.sh`) required to pass — proving each deterministic check still *bites* — whenever `audits/agents-md.sh` itself changes? | YES |
+| 23.7 | Is Scenario 23 enforced by a live, cross-agent LLM-eval runner (`evals/llms/run.sh`, `make llmevals`) that feeds the frozen golden-set (`evals/llms/fixtures.jsonl`) to EVERY installed agent (claude, codex, amp, opencode) and grades each `VERDICT:` by exact match — with a per-agent threshold and absent agents logged, never silently skipped? | YES |
 | 23.8 | When the LLM-eval runner is unavailable (no agent CLIs) or the golden-set changes, is the dry validator `make llmevals CHECK=1` (fixtures well-formed + availability, no live calls) the minimum that must still pass? | YES |
 
 ## LLM-eval layer (Scenario 23 enforcement)
@@ -275,14 +275,14 @@ The deterministic audit proves the rules are *present*; it cannot prove an
 agent *reading* them complies — the hallucination / won't-follow class. The
 LLM-eval layer closes that gap:
 
-- **Golden-set** — `evals/llmevals/fixtures.jsonl`: frozen
+- **Golden-set** — `evals/llms/fixtures.jsonl`: frozen
   question → expected `YES`/`NO` verdict + the justifying rule, each targeting
   a known drift mode (index-vs-body paraphrase, override-string drift,
   conditional collapse, co-firing rules, negation blindness, stale recall,
   investigate-vs-authorize, no-override bans). YES/NO is balanced so a
   constant-answer strategy fails the threshold.
-- **Runner** — `evals/llmevals/run-llmevals.sh` embeds AGENTS.md +
-  all gate bodies + the resolver façades (`resolvers/*.md`) in every prompt (no
+- **Runner** — `evals/llms/run.sh` embeds AGENTS.md +
+  all gate bodies + the dispatch façades (`dispatch/*.md`) in every prompt (no
   tool use, no file-read variance), asks
   each installed agent, and grades the single `VERDICT:` line by exact match.
   Resumable — each agent's verdict is journalled, so a re-run after an
@@ -351,7 +351,7 @@ OVERALL: PASS | FAIL — <reason if fail>
 
 ## Wiring it into `pre-commit`
 
-The dotfiles `.githooks/pre-commit` calls `scripts/audit-agents-md.sh` directly when AGENTS.md is in the staged set. This is fast, deterministic, and needs no LLM.
+The dotfiles `.githooks/pre-commit` calls `audits/agents-md.sh` directly when AGENTS.md is in the staged set. This is fast, deterministic, and needs no LLM.
 
 The Step-2 prompt-invariance run is **agent-invoked**, not hooked, because:
 
@@ -361,7 +361,7 @@ The Step-2 prompt-invariance run is **agent-invoked**, not hooked, because:
 
 Recommended workflow when you edit AGENTS.md:
 
-1. Run Step 1 (`bash scripts/audit-agents-md.sh`).
+1. Run Step 1 (`bash audits/agents-md.sh`).
 2. Open this file in a Claude Code / Oracle / Codex session and instruct: *"Read AGENTS.md and answer every question in AGENTS_INVARIANCE.md."*
 3. The agent emits the Step-3 report. All-YES → commit. Any NO → fix AGENTS.md first.
 
@@ -373,7 +373,7 @@ If you want Step 2 enforced in `pre-push` rather than ad-hoc, see `.githooks/pre
 
 When the operating model grows (new gate, new rule, new lifecycle wrinkle):
 
-1. Add to `scripts/audit-agents-md.sh` if the invariant is mechanically checkable.
+1. Add to `audits/agents-md.sh` if the invariant is mechanically checkable.
 2. Add to this file as a new question if the invariant needs reading comprehension.
 3. Update `REQUIRED_GATES` / `HARNESS_KEYS` / `FORBIDDEN_KEYS` arrays in the script as appropriate.
 4. Run both layers and check in the new baseline.

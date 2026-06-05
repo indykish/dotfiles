@@ -85,7 +85,7 @@ SPEC AUTHORING RULES (load-bearing — do not delete):
   percentage-complete, implementation dates, assigned owners.
 - Priority (P0/P1/P2/P3) is the only sizing signal; Dependencies are the only sequencing signal.
 - If a section below contradicts these rules, the rule wins — delete the section.
-- Enforced by SPEC TEMPLATE GATE (docs/gates/spec-template.md) and scripts/audit-spec-template.sh,
+- Enforced by SPEC TEMPLATE GATE (docs/gates/spec-template.md) and audits/spec-template.sh,
   which also assert the determinism-critical sections below are present and filled (not left as {placeholders}).
 -->
 

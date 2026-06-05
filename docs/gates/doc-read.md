@@ -52,7 +52,7 @@ Promotes the EXECUTE doc-reads table from advisory to enforced. Without this gat
 
 ## End-of-turn audit
 
-`scripts/audit-doc-reads.sh` runs as part of `make lint`:
+`audits/doc-reads.sh` runs as part of `make lint`:
 
 1. Read `git diff --name-only origin/main..HEAD`.
 2. For each file, look up which doc-read triggers fire.

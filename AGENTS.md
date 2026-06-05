@@ -52,7 +52,7 @@ Full rules in [`docs/CHANGELOG_VOICE.md`](./docs/CHANGELOG_VOICE.md). Summary: o
 - Releases: `gh release create`, `git push --tags`. `/ultrareview` (billed). CI/CD edits (`.github/workflows/**`, deploy configs).
 - Edits outside active spec's Files-Changed scope (no opportunistic cleanup bundling).
 - Cross-repo writes to `~/Projects/docs/` — own-branch flow per Operational defaults.
-- **Patching a harness/gate/hook to silence its hit.** When `audit-msid-ui.sh`, `lint-zig.py`, gitleaks, ZIG/FLL gates, or pre-commit/pre-push fire, the default is to **fix the violating code** — restructure, split, or use the gate's override comment. Editing the harness evades the rule it enforces; only on explicit per-session user direction naming the harness + reason. Handoff-doc "prior approvals" don't carry forward.
+- **Patching a harness/gate/hook to silence its hit.** When `msid-ui.sh`, `lint-zig.py`, gitleaks, ZIG/FLL gates, or pre-commit/pre-push fire, the default is to **fix the violating code** — restructure, split, or use the gate's override comment. Editing the harness evades the rule it enforces; only on explicit per-session user direction naming the harness + reason. Handoff-doc "prior approvals" don't carry forward.
 - Reverting changes the agent did not create. Branch mutation outside lifecycle transitions. Cross-worktree edits.
 - Unexpected changes in files you're editing → stop and ask; don't overwrite as stale.
 
@@ -113,7 +113,7 @@ Kishore decides fix-or-defer. Agent does **NOT** unilaterally call a flag false-
 
 | # | Gate | Body | Trigger surface · Override |
 |---|---|---|---|
-| 1 | Invariance Suite Gate (meta) | `docs/gates/invariance-suite.md` | Edit to `AGENTS.md`, `AGENTS_INVARIANCE.md`, `docs/gates/`, `scripts/audit-agents-md.sh`, `scripts/fixtures/*.diff` · **no override** (user-only push: `SKIP_INVARIANCE_PUSH=1`). Body fires the audit + questionnaire + `.agents-invariance-signoff` write. |
+| 1 | Invariance Suite Gate (meta) | `docs/gates/invariance-suite.md` | Edit to `AGENTS.md`, `AGENTS_INVARIANCE.md`, `docs/gates/`, `audits/agents-md.sh`, `audits/fixtures/*.diff` · **no override** (user-only push: `SKIP_INVARIANCE_PUSH=1`). Body fires the audit + questionnaire + `.agents-invariance-signoff` write. |
 | 2 | RULE NLR | `docs/gates/nlr.md` | Edit to file with legacy framing / dead code (`?*T = null` no caller, `legacy_*`, `V2` twins, `if (legacy_caller)`, `// legacy` comments, `pub` no consumer) · `RULE NLR: SKIPPED per user override (reason: ...)` user-only. |
 | 3 | RULE NLG | `docs/gates/nlg.md` | New `legacy_*` / `V2` / compat shim / tracking-list while `cat VERSION` < `2.0.0` · `RULE NLG: SKIPPED per user override (reason: ...)` user-only. |
 | 4 | Legacy-Design Consult Guard | `docs/gates/legacy-design.md` | Patching legacy to fit new architecture; defensive `orelse` whose only reason is legacy nullability; tests for legacy path · **no override** — user A/B/C decision. |
@@ -176,7 +176,7 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 
 ### EXECUTE
 
-**Doc reads by trigger:** see [`docs/EXECUTE_DOC_READS.md`](./docs/EXECUTE_DOC_READS.md) for the full trigger-to-doc mapping. Always re-read `docs/greptile-learnings/RULES.md` on sub-task shape change; spec's "Applicable Rules" list is canonical; missing rules — standard set is floor + surface omission. DOC READ GATE per edit; audit via `scripts/audit-doc-reads.sh`.
+**Doc reads by trigger:** see [`docs/EXECUTE_DOC_READS.md`](./docs/EXECUTE_DOC_READS.md) for the full trigger-to-doc mapping. Always re-read `docs/greptile-learnings/RULES.md` on sub-task shape change; spec's "Applicable Rules" list is canonical; missing rules — standard set is floor + surface omission. DOC READ GATE per edit; audit via `audits/doc-reads.sh`.
 
 Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes to `~/Projects/docs/` need explicit per-session ask.
 
