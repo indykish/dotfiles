@@ -64,5 +64,5 @@ The audit script does not validate citation correctness — that's reviewer resp
 ## Family
 
 - `AGENTS.md` — canonical EXECUTE doc-reads table (this gate enforces).
-- `AGENTS_INVARIANCE.md` — invariance question pairs with this gate.
+- `audits/agents-md.md` — invariance question pairs with this gate.
 - All listed standards docs (`ZIG_RULES.md`, `BUN_RULES.md`, `LOGGING_STANDARD.md`, `LIFECYCLE_PATTERNS.md`, `REST_API_DESIGN_GUIDELINES.md`, `AUTH.md`, `TEMPLATE.md`, `greptile-learnings/RULES.md`).

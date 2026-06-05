@@ -13,7 +13,7 @@ git config core.hooksPath .githooks    # arms pre-commit + pre-push (one-time, p
 The `core.hooksPath` line wires the AGENTS.md invariance suite into every
 commit and push from this clone. Without it, `.githooks/` is just files —
 git keeps using `.git/hooks/` (sample stubs only). Re-run on every fresh
-clone or worktree. See [AGENTS_INVARIANCE.md](AGENTS_INVARIANCE.md) for the
+clone or worktree. See [audits/agents-md.md](audits/agents-md.md) for the
 contract; run `make audit` any time to verify it by hand.
 
 ## Agent dispatch model
@@ -35,7 +35,7 @@ is no separate "gates" directory: the table below **is** the router.
 | writes auth-flow / token-minting files | `write_auth` | auth invariants | ⚪ delegated (product repo) |
 | claims "tests pass / ready / shipping" | `verify` | verification tiers (`make` is canonical) | 🔵 judgment-only |
 | names a stream / channel / schema, or describes a flow | `name_architecture` | architecture-consult discipline | 🔵 judgment-only |
-| edits the governance (AGENTS.md, `dispatch/`, `audits/agents-md.sh`, the questionnaire) | `edit_rules` | invariance suite → [`AGENTS_INVARIANCE.md`](AGENTS_INVARIANCE.md) | `audits/agents-md.sh` + cross-agent `make llmevals` |
+| edits the governance (AGENTS.md, `dispatch/`, `audits/agents-md.sh`, the questionnaire) | `edit_rules` | invariance suite → [`audits/agents-md.md`](audits/agents-md.md) | `audits/agents-md.sh` + cross-agent `make llmevals` |
 
 **Signal tags** (printed by the `.sh` halves): 🟢 pass · 🔴 fail · 🔵 judgment-only
 (no script can decide — the agent reads the prose and calls it) · ⚪ delegated

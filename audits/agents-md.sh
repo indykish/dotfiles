@@ -211,18 +211,18 @@ done < <(grep -oE 'docs/gates/[a-z0-9-]+\.md' "$AGENTS" | sort -u)
 [[ $parity_fail -eq 0 ]] && pass "gate parity (index=$index_rows ↔ disk=$disk_count ↔ REQUIRED_GATES=$required_count, all index refs resolve)"
 
 # ---------------------------------------------------------------------------
-# 10. AGENTS_INVARIANCE.md presence + basic shape (questionnaire layer).
+# 10. audits/agents-md.md presence + basic shape (questionnaire layer).
 # ---------------------------------------------------------------------------
-INV="$ROOT/AGENTS_INVARIANCE.md"
+INV="$ROOT/audits/agents-md.md"
 if [[ -f "$INV" ]]; then
   inv_scenarios=$(grep -cE '^### Scenario [0-9]+' "$INV")
   if [[ $inv_scenarios -ge 8 ]]; then
-    pass "AGENTS_INVARIANCE.md present ($inv_scenarios scenarios)"
+    pass "audits/agents-md.md present ($inv_scenarios scenarios)"
   else
-    fail "AGENTS_INVARIANCE.md only $inv_scenarios scenarios — expected ≥ 8"
+    fail "audits/agents-md.md only $inv_scenarios scenarios — expected ≥ 8"
   fi
 else
-  fail "AGENTS_INVARIANCE.md missing"
+  fail "audits/agents-md.md missing"
 fi
 
 # ---------------------------------------------------------------------------
@@ -235,27 +235,27 @@ done
 [[ $missing_stages -eq 0 ]] && pass "lifecycle stages (${#LIFECYCLE_HEADERS[@]} headers present)"
 
 # ---------------------------------------------------------------------------
-# 12. AGENTS_INVARIANCE.md — named scenarios must exist by title
+# 12. audits/agents-md.md — named scenarios must exist by title
 #     (NAMED_SCENARIOS in data). Catches the case where a scenario count
 #     stays ≥ threshold but a specific high-value scenario is renamed/removed.
 # ---------------------------------------------------------------------------
-INV="$ROOT/AGENTS_INVARIANCE.md"
+INV="$ROOT/audits/agents-md.md"
 missing_scenarios=0
 if [[ -f "$INV" ]]; then
   for s in "${NAMED_SCENARIOS[@]}"; do
-    grep -qF "$s" "$INV" || { fail "AGENTS_INVARIANCE.md missing scenario keyword: $s"; missing_scenarios=1; }
+    grep -qF "$s" "$INV" || { fail "audits/agents-md.md missing scenario keyword: $s"; missing_scenarios=1; }
   done
   # Parity — the keyword array must keep pace with the actual scenario count,
   # so a newly-added scenario can't sit unguarded (this is exactly how
   # scenarios 20-22 slipped past the keyword list before this check existed).
   actual_scenarios=$(grep -cE '^### Scenario [0-9]+' "$INV")
   if [[ "${#NAMED_SCENARIOS[@]}" -ne "$actual_scenarios" ]]; then
-    fail "named-scenario parity: array has ${#NAMED_SCENARIOS[@]} keywords but AGENTS_INVARIANCE.md has $actual_scenarios scenarios (every scenario needs a keyword guard)"
+    fail "named-scenario parity: array has ${#NAMED_SCENARIOS[@]} keywords but audits/agents-md.md has $actual_scenarios scenarios (every scenario needs a keyword guard)"
     missing_scenarios=1
   fi
   [[ $missing_scenarios -eq 0 ]] && pass "named scenarios (${#NAMED_SCENARIOS[@]} keywords ↔ $actual_scenarios scenarios, parity holds)"
 else
-  fail "AGENTS_INVARIANCE.md missing"
+  fail "audits/agents-md.md missing"
 fi
 
 # ---------------------------------------------------------------------------

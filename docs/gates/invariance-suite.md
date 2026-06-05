@@ -1,12 +1,12 @@
 # 🚧 Invariance Suite Gate (meta-gate)
 
 **Family:** Meta-gate — protects the gate ruleset itself. Sibling: none (this gate has no peer; it watches every other gate's source-of-truth files).
-**Source:** `AGENTS.md` (project-side guard). Questionnaire body: `AGENTS_INVARIANCE.md` at repo root.
+**Source:** `AGENTS.md` (project-side guard). Questionnaire body: `audits/agents-md.md` at repo root.
 
 **Triggers:** any Edit/Write in this session to **any one of**:
 
 - `AGENTS.md`
-- `AGENTS_INVARIANCE.md`
+- `audits/agents-md.md`
 - any file under `docs/gates/`
 - `audits/agents-md.sh` or `audits/fixtures/*.diff`
 
@@ -20,9 +20,9 @@ The agent runs these steps in order. Each step's output appears in the user-faci
 
 1. **Script layer** — run `bash audits/agents-md.sh`. If exit ≠ 0, STOP, fix the FAIL lines, retry. Do NOT proceed to step 2 with a failing script.
 
-2. **Questionnaire layer** — read `AGENTS_INVARIANCE.md` and answer every question against the *current* `AGENTS.md` (and gate bodies). Each answer is YES or NO with the justifying line(s).
+2. **Questionnaire layer** — read `audits/agents-md.md` and answer every question against the *current* `AGENTS.md` (and gate bodies). Each answer is YES or NO with the justifying line(s).
 
-3. **Tabulated report** — emit the Step-4 report from `AGENTS_INVARIANCE.md` (gates, rules, lifecycle, scenario verdicts, OVERALL).
+3. **Tabulated report** — emit the Step-4 report from `audits/agents-md.md` (gates, rules, lifecycle, scenario verdicts, OVERALL).
 
 4. **Sign-off** — only when **all questions answered YES** AND the report's OVERALL row is `PASS`. After the commit lands, write:
 
@@ -58,7 +58,7 @@ The sign-off must be tied to the **post-commit HEAD SHA**, so the order is:
 - The always-forbidden list shrinks (e.g. someone removes `gitleaks` enforcement).
 - The skill-chain order shuffles (`/review-pr` runs before `/review`).
 - The HARNESS VERIFY block stops listing a gate row.
-- `AGENTS_INVARIANCE.md` itself loses scenarios.
+- `audits/agents-md.md` itself loses scenarios.
 
 ## Required output (in-session)
 

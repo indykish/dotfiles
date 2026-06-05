@@ -41,7 +41,7 @@ Severity: P0 9R/10P · P1 10R/6P · P2 2R/1P.
 | 19 | P0 | yellow-mechanism | DOTFILES_RESIDENT + cross-reference + cross-agent-eval all pin docs/ZIG_RULES.md & BUN_RULES | resolved | §8, §9 |
 | 20 | P1 | cross-repo | §11 cross-repo blast-radius enumeration is materially incomplete — it omits the audit/eval/s | resolved | §0, §10, §11, §13, §6.3, §8 |
 | 21 | P1 | cross-repo | The negative-test harness (test-audit) copies and asserts on specific gate bodies that the d | resolved | §13, §8, §9 |
-| 22 | P1 | cross-repo | AGENTS_INVARIANCE.md hardcodes docs/gates/ paths and a 'Scope (M70)' per-body requirement; d | partial | §6.5, §8 |
+| 22 | P1 | cross-repo | audits/agents-md.md hardcodes docs/gates/ paths and a 'Scope (M70)' per-body requirement; d | partial | §6.5, §8 |
 | 23 | P1 | cross-repo | The dispatch absorbs the FILE cap but silently drops the function/method length sub-gate the | resolved | §0, §13, §5 |
 | 24 | P1 | determinism-feasibility | 🟡 'blocks the turn not the script' has no machine enforcement — the determinism anchor canno | partial | §0, §11, §3.1, §6.2 |
 | 25 | P1 | determinism-feasibility | Merge-then-delete of 20 gate cards into prose will silently drop machine-relevant trigger de | partial | §0, §13, §5, §6.3, §6.5, §9 |

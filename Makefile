@@ -32,7 +32,7 @@ merge-coverage:
 test-audit:
 	@bash evals/test-agents-md.sh
 
-# Cross-agent LLM eval signoff (AGENTS_INVARIANCE.md Scenario 23): each
+# Cross-agent LLM eval signoff (audits/agents-md.md Scenario 23): each
 # installed agent (claude/codex/amp/opencode) answers the frozen golden-set;
 # verdicts graded by exact match. Live LLM calls — costs tokens on every
 # agent. Resumable (journalled); writes .agents-llmevals-signoff on
@@ -47,7 +47,7 @@ llmevals:
 	@bash evals/llms/run.sh $(if $(CHECK),--check)
 
 # Write the AGENTS_INVARIANCE sign-off file against current HEAD.
-# Only run this AFTER answering every AGENTS_INVARIANCE.md question with YES.
+# Only run this AFTER answering every audits/agents-md.md question with YES.
 # The pre-push hook reads .agents-invariance-signoff to allow contract pushes.
 signoff:
 	@printf '%s  %s  PASS\n' \

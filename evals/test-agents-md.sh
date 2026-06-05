@@ -35,10 +35,11 @@ bad() { printf '%s✗ %s%s\n' "$R" "$*" "$X" >&2; BAD=$((BAD + 1)); }
 # the sandbox treats the sandbox as ROOT — no env override needed.
 make_sandbox() {
   local sb; sb="$(mktemp -d)"
-  cp "$SRC_ROOT/AGENTS.md" "$SRC_ROOT/AGENTS_INVARIANCE.md" "$sb/"
+  cp "$SRC_ROOT/AGENTS.md" "$sb/"
   mkdir -p "$sb/audits/fixtures" "$sb/docs/gates" \
            "$sb/docs/greptile-learnings" "$sb/.githooks"
   cp "$SRC_ROOT/audits/agents-md.sh" "$sb/audits/"
+  cp "$SRC_ROOT/audits/agents-md.md" "$sb/audits/"
   cp "$SRC_ROOT/audits/data.sh" "$sb/audits/"
   cp "$SRC_ROOT"/audits/fixtures/*.diff "$sb/audits/fixtures/"
   cp "$SRC_ROOT"/docs/gates/*.md "$sb/docs/gates/"
@@ -132,11 +133,11 @@ expect_fail "HARNESS VERIFY bites when a verdict row keyword is removed" \
 # scenario would conflate parity with the keyword-missing check below).
 expect_fail "scenario parity bites when a scenario is added without a keyword" \
   "named-scenario parity" \
-  "printf '\n### Scenario 24 — Untracked extra\n' >> AGENTS_INVARIANCE.md"
+  "printf '\n### Scenario 24 — Untracked extra\n' >> audits/agents-md.md"
 
 expect_fail "named-scenario bites when a keyword vanishes" \
   "missing scenario keyword: combined audit" \
-  "perl -pi -e 's/combined audit/XXX/g' AGENTS_INVARIANCE.md"
+  "perl -pi -e 's/combined audit/XXX/g' audits/agents-md.md"
 
 expect_fail "rule-extension bites when a wiring step drops from the recipe" \
   "rule extension protocol missing step keyword: make audit" \

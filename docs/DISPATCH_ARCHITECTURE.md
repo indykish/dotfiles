@@ -149,7 +149,7 @@ meanings:
 "violations addressed" cells touches an audited doc and retrains every agent on a
 symbol they already know. `🔵` is additive — a new concept gets a new glyph. The
 fix still requires a one-line `HARNESS_VERIFY_OUTPUT.md` legend update and an
-`AGENTS_INVARIANCE.md` question pinning `🔵` (§8, §13).
+`audits/agents-md.md` question pinning `🔵` (§8, §13).
 
 **🔵 blocks the TURN, not the script** — see §11 for how that is made auditable
 rather than honor-only.
@@ -285,7 +285,7 @@ adversarial pass flagged:
   wiring — token-coverage alone does not prove the trigger still fires.
 
 A card is not deleted until its delta-landed assertion is green. Preserve any
-`AGENTS_INVARIANCE.md` scenario that quotes a deleted body verbatim (§11).
+`audits/agents-md.md` scenario that quotes a deleted body verbatim (§11).
 
 ## 7 · Firing planes (corrected wiring + latency)
 
@@ -472,7 +472,7 @@ makes the *attestation* auditable rather than pure honor-system:
   signal for them. The turn-verdict ritual is interactive-Orly best-effort.
 
 **Invariance-questionnaire migration (part of Stage 2).** Dissolving the 15
-authoring cards can strand `AGENTS_INVARIANCE.md` scenarios that assert facts about
+authoring cards can strand `audits/agents-md.md` scenarios that assert facts about
 those bodies. Before deletion: `grep` the questionnaire for every scenario that
 (a) quotes a dissolved body verbatim, (b) requires a per-body structural section
 (the review flagged a `Scope (M70)` requirement), or (c) triggers on "edits any
@@ -521,7 +521,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 - [ ] `agents-md.sh`: checks #1/#8/#9b derive the mixed end-state; parity `index == 5 process bodies + 4 dispatch`; empty-set guard → "exactly the 5 process cards present"; hook-trigger check greps `dispatch/` + `docs/gates/`
 - [ ] `.githooks/pre-commit` + `pre-push` repointed (NOT `.git/hooks/`)
 - [ ] `evals/test-agents-md.sh` rewritten: sandbox + negative cases prove the NEW coherence audit bites
-- [ ] `HARNESS_VERIFY_OUTPUT.md` JUDGMENT row + `🔵` legend; `AGENTS_INVARIANCE.md` question pinning `🔵` and the dispatch model
+- [ ] `HARNESS_VERIFY_OUTPUT.md` JUDGMENT row + `🔵` legend; `audits/agents-md.md` question pinning `🔵` and the dispatch model
 - [ ] `bin/sync-agents` repointed + `dispatch:dispatch` added + propagation test
 
 **Migration & references**

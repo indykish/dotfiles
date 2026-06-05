@@ -94,7 +94,7 @@ One per active stream. Stay inside; no edits outside, no reads from siblings. Me
 
 Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED per user override (reason: ...)` immediately preceding the edit — **user-invokable only** unless noted. Per-edit output is **one-line by default**; full block fires only on violation or new file. **HARNESS VERIFY is the determinism anchor** — pre-edit lines are early-warning ceremony.
 
-**Rule extension protocol** — when adding a new rules file (`docs/<TOPIC>_RULES.md`) or gate body (`docs/gates/<slug>.md`), all four steps land in the same diff: (1) row in EXECUTE doc-reads table; (2) ≥1 question in `AGENTS_INVARIANCE.md`; (3) path in `DOTFILES_RESIDENT` (audit script); (4) `make audit` ALL CHECKS PASSED. The Invariance Suite Gate fires; questionnaire all-YES + sign-off are mandatory before push.
+**Rule extension protocol** — when adding a new rules file (`docs/<TOPIC>_RULES.md`) or gate body (`docs/gates/<slug>.md`), all four steps land in the same diff: (1) row in EXECUTE doc-reads table; (2) ≥1 question in `audits/agents-md.md`; (3) path in `DOTFILES_RESIDENT` (audit script); (4) `make audit` ALL CHECKS PASSED. The Invariance Suite Gate fires; questionnaire all-YES + sign-off are mandatory before push.
 
 **🚨 Gate-flag triage** — gate fires → **STOP, surface to Kishore.** NOT silence. NOT harness-patch. The gate exists to make the code better; silencing it forfeits the gain. The ask is structured:
 
@@ -113,7 +113,7 @@ Kishore decides fix-or-defer. Agent does **NOT** unilaterally call a flag false-
 
 | # | Gate | Body | Trigger surface · Override |
 |---|---|---|---|
-| 1 | Invariance Suite Gate (meta) | `docs/gates/invariance-suite.md` | Edit to `AGENTS.md`, `AGENTS_INVARIANCE.md`, `docs/gates/`, `audits/agents-md.sh`, `audits/fixtures/*.diff` · **no override** (user-only push: `SKIP_INVARIANCE_PUSH=1`). Body fires the audit + questionnaire + `.agents-invariance-signoff` write. |
+| 1 | Invariance Suite Gate (meta) | `docs/gates/invariance-suite.md` | Edit to `AGENTS.md`, `audits/agents-md.md`, `docs/gates/`, `audits/agents-md.sh`, `audits/fixtures/*.diff` · **no override** (user-only push: `SKIP_INVARIANCE_PUSH=1`). Body fires the audit + questionnaire + `.agents-invariance-signoff` write. |
 | 2 | RULE NLR | `docs/gates/nlr.md` | Edit to file with legacy framing / dead code (`?*T = null` no caller, `legacy_*`, `V2` twins, `if (legacy_caller)`, `// legacy` comments, `pub` no consumer) · `RULE NLR: SKIPPED per user override (reason: ...)` user-only. |
 | 3 | RULE NLG | `docs/gates/nlg.md` | New `legacy_*` / `V2` / compat shim / tracking-list while `cat VERSION` < `2.0.0` · `RULE NLG: SKIPPED per user override (reason: ...)` user-only. |
 | 4 | Legacy-Design Consult Guard | `docs/gates/legacy-design.md` | Patching legacy to fit new architecture; defensive `orelse` whose only reason is legacy nullability; tests for legacy path · **no override** — user A/B/C decision. |

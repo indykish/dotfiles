@@ -6,7 +6,7 @@
 #
 # Adding a gate/scenario/rule? Update the matching array HERE; the audit's
 # gate-parity + named-scenario-parity checks fail loudly if a table drifts
-# out of sync with AGENTS.md / docs/gates / AGENTS_INVARIANCE.md.
+# out of sync with AGENTS.md / docs/gates / audits/agents-md.md.
 
 # Self-fingerprint — every label here MUST be emitted by a pass/fail call in
 # the audit. Deleting a check without updating this list trips the final
@@ -23,7 +23,7 @@ EXPECTED_LABELS=(
   "audit fixture: clean diff"
   "gate bodies complete"
   "gate parity"
-  "AGENTS_INVARIANCE.md present"
+  "audits/agents-md.md present"
   "lifecycle stages"
   "named scenarios"
   "hook triggers"
@@ -90,7 +90,7 @@ LIFECYCLE_HEADERS=(
 )
 
 # Check 12 — each scenario must exist by keyword; array size must equal the
-# actual scenario count (parity). Keep this list 1:1 with AGENTS_INVARIANCE.md.
+# actual scenario count (parity). Keep this list 1:1 with audits/agents-md.md.
 NAMED_SCENARIOS=(
   "New spec"                 # Scenario 1
   "Brainstorming"            # Scenario 2
@@ -118,7 +118,7 @@ NAMED_SCENARIOS=(
 )
 
 # Check 14 — the Rule-extension protocol must enumerate all four wiring steps.
-RULE_EXTENSION_STEPS=( "doc-reads" "AGENTS_INVARIANCE.md" "DOTFILES_RESIDENT" "make audit" )
+RULE_EXTENSION_STEPS=( "doc-reads" "audits/agents-md.md" "DOTFILES_RESIDENT" "make audit" )
 
 # Check 8 — combined-audit smoke: flags MS-ID / PUB / UI violations in a diff.
 read -r -d '' AWK_PROG <<'AWKEOF' || true

@@ -3,9 +3,9 @@
 #
 # Behaviour:
 # - Runs audits/agents-md.sh always (script layer; deterministic).
-# - When the push includes commits that touched AGENTS.md, AGENTS_INVARIANCE.md,
+# - When the push includes commits that touched AGENTS.md, audits/agents-md.md,
 #   or any docs/gates/*.md, ALSO requires a fresh sign-off file written by an
-#   LLM agent that ran the AGENTS_INVARIANCE.md questionnaire.
+#   LLM agent that ran the audits/agents-md.md questionnaire.
 #
 # Sign-off file: .agents-invariance-signoff (gitignored — it's a machine-local
 # attestation, not a tracked artifact). Format:
@@ -15,8 +15,8 @@
 # A sign-off is "fresh" if its <commit-sha-short> matches HEAD and the file was
 # written within the last 24 hours.
 #
-# To produce the sign-off: open AGENTS_INVARIANCE.md in an LLM session and
-# instruct: "Read AGENTS.md and answer every question in AGENTS_INVARIANCE.md.
+# To produce the sign-off: open audits/agents-md.md in an LLM session and
+# instruct: "Read AGENTS.md and answer every question in audits/agents-md.md.
 # When all-YES, write the sign-off line to .agents-invariance-signoff."
 #
 # One-off bypass:  SKIP_INVARIANCE_PUSH=1 git push ...
@@ -69,11 +69,11 @@ fi
 if [[ ! -f "$SIGNOFF" ]]; then
   cat >&2 <<MSG
 
-pre-push: 🔴 BLOCKED — AGENTS.md / docs/gates / AGENTS_INVARIANCE.md changed in
+pre-push: 🔴 BLOCKED — AGENTS.md / docs/gates / audits/agents-md.md changed in
           this push, but no .agents-invariance-signoff file exists.
 
 To proceed:
-  1. Open AGENTS_INVARIANCE.md in an LLM agent session.
+  1. Open audits/agents-md.md in an LLM agent session.
   2. Instruct: "Read AGENTS.md and answer every question. When all-YES, write
      a sign-off line to .agents-invariance-signoff in this format:
          <commit-sha-short>  <UTC-timestamp>  PASS"

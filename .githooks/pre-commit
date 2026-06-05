@@ -28,7 +28,7 @@ pre-commit: AGENTS.md invariance regressed.
 
 Fix the FAIL: lines above, then re-stage and re-commit.
 
-If you also changed AGENTS.md semantics, run AGENTS_INVARIANCE.md
+If you also changed AGENTS.md semantics, run audits/agents-md.md
 through an LLM agent before merging — the script catches mechanical
 regressions; the questionnaire catches reading-comprehension ones.
 

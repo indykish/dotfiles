@@ -8,7 +8,7 @@
 - Any config file (`*.toml`, `*.yaml`, `*.json`) outside `docs/`
 - Test files (the `_test.` / `.test.` / `.spec.` naming doesn't exempt — tests are code).
 
-**Exempt paths** (IDs allowed): `docs/`, `**/*.md` outside `node_modules/`/`vendor/`, `CLAUDE.md`/`AGENTS.md`/`AGENTS_INVARIANCE.md`.
+**Exempt paths** (IDs allowed): `docs/`, `**/*.md` outside `node_modules/`/`vendor/`, `CLAUDE.md`/`AGENTS.md`/`audits/agents-md.md`.
 
 **Override:** `MILESTONE ID ALLOWED per user override (reason: ...)` in the immediately-preceding comment line.
 

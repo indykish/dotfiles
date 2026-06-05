@@ -171,7 +171,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 | # | Question | Expected |
 |---|---|---|
-| 13.1 | When the agent itself edits `AGENTS.md`, `AGENTS_INVARIANCE.md`, or any `docs/gates/*.md` in this session, does the Invariance Suite Gate fire and require running the questionnaire before declaring done? | YES |
+| 13.1 | When the agent itself edits `AGENTS.md`, `audits/agents-md.md`, or any `docs/gates/*.md` in this session, does the Invariance Suite Gate fire and require running the questionnaire before declaring done? | YES |
 | 13.2 | Is the agent forbidden from self-overriding the Invariance Suite Gate? (Only the user may bypass at push time via `SKIP_INVARIANCE_PUSH=1`.) | YES |
 | 13.3 | Does the sign-off line format `<short-sha>  <UTC-timestamp>  PASS` tie to the post-commit HEAD SHA? | YES |
 | 13.4 | Does the pre-push hook block when sign-off SHA ≠ HEAD, result ≠ `PASS`, or mtime > 24 h? | YES |
@@ -230,7 +230,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | # | Question | Expected |
 |---|---|---|
 | 20.1 | Does AGENTS.md document a "Rule extension protocol" requiring 4 same-diff steps when introducing a new rules file (`docs/<TOPIC>_RULES.md`) or gate body (`docs/gates/<slug>.md`)? | YES |
-| 20.2 | Does the protocol require: (a) doc-reads table row, (b) AGENTS_INVARIANCE.md question, (c) `DOTFILES_RESIDENT` audit entry, (d) `make audit` passing before commit? | YES |
+| 20.2 | Does the protocol require: (a) doc-reads table row, (b) audits/agents-md.md question, (c) `DOTFILES_RESIDENT` audit entry, (d) `make audit` passing before commit? | YES |
 | 20.3 | Does the Invariance Suite Gate fire on any commit landing the protocol's edits, with sign-off mandatory before push? | YES |
 
 ### Scenario 21 — Gate-flag triage discipline
@@ -362,7 +362,7 @@ The Step-2 prompt-invariance run is **agent-invoked**, not hooked, because:
 Recommended workflow when you edit AGENTS.md:
 
 1. Run Step 1 (`bash audits/agents-md.sh`).
-2. Open this file in a Claude Code / Oracle / Codex session and instruct: *"Read AGENTS.md and answer every question in AGENTS_INVARIANCE.md."*
+2. Open this file in a Claude Code / Oracle / Codex session and instruct: *"Read AGENTS.md and answer every question in audits/agents-md.md."*
 3. The agent emits the Step-3 report. All-YES → commit. Any NO → fix AGENTS.md first.
 
 If you want Step 2 enforced in `pre-push` rather than ad-hoc, see `.githooks/pre-push.example`.

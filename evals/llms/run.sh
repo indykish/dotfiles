@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cross-agent LLM-eval signoff for AGENTS.md (AGENTS_INVARIANCE.md Scenario
+# Cross-agent LLM-eval signoff for AGENTS.md (audits/agents-md.md Scenario
 # 23). This is an LLM evaluation harness: the deterministic audit proves the
 # rules are PRESENT; it can't prove an agent READING them complies — the
 # hallucination class. This closes that gap: a frozen golden-set of
@@ -163,7 +163,7 @@ for i,l in enumerate(open(sys.argv[1]),1):
     if d.get("expect") not in ("YES","NO"): print("line",i,"bad expect"); bad+=1
     if d.get("id") in ids: print("dup id",d.get("id")); bad+=1
     # Prompt-answerability: the prompt embeds AGENTS.md + gate bodies ONLY, not
-    # AGENTS_INVARIANCE.md. A QUESTION that cites the invariance doc / a Scenario
+    # audits/agents-md.md. A QUESTION that cites the invariance doc / a Scenario
     # number asks for an answer not in the prompt — the agent can only guess, so
     # it grades as "?" and silently drags the score. Enforce that every question
     # is answerable from the embedded ruleset. (The "why" field is provenance for

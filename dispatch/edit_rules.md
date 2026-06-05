@@ -2,7 +2,7 @@
 
 This is the prose the AGENT reads **the moment it edits the governance itself**.
 It is the meta-dispatch: it watches every other dispatch entry's source-of-truth.
-Its **latent half is the questionnaire at [`AGENTS_INVARIANCE.md`](../AGENTS_INVARIANCE.md)**;
+Its **latent half is the questionnaire at [`audits/agents-md.md`](../audits/agents-md.md)**;
 its **deterministic half is [`audits/agents-md.sh`](../audits/agents-md.sh)** (run by
 the git hooks), and `make llmevals` proves a live agent still complies. (This is
 `docs/gates/invariance-suite.md` absorbed into the dispatch model — the only
@@ -12,12 +12,12 @@ dispatch entry whose `.sh` half is the system's own self-checker.)
 
 - 🟢 / 🔴 — `audits/agents-md.sh` mechanically passes/fails (parity, structure).
 - 🔵 DECIDE — the questionnaire's reading-comprehension layer; the agent answers
-  every `AGENTS_INVARIANCE.md` question against the *current* AGENTS.md.
+  every `audits/agents-md.md` question against the *current* AGENTS.md.
 
 ## Trigger — any Edit/Write in this session to
 
 - `AGENTS.md`
-- `AGENTS_INVARIANCE.md`
+- `audits/agents-md.md`
 - any dispatch entry under `dispatch/` (the rule prose) — *replaces the old
   `docs/gates/` trigger now that gates have dissolved into dispatch*
 - `audits/agents-md.sh` or `audits/fixtures/*.diff`
@@ -34,7 +34,7 @@ commit message. The agent MUST NOT self-bypass.
 
 1. **Script layer** — run `bash audits/agents-md.sh`. If exit ≠ 0, STOP, fix the
    FAIL lines, retry. Do NOT proceed with a failing script.
-2. **Questionnaire layer** — read `AGENTS_INVARIANCE.md` and answer every question
+2. **Questionnaire layer** — read `audits/agents-md.md` and answer every question
    against the current AGENTS.md (and dispatch prose). Each answer is YES or NO
    with the justifying line(s).
 3. **Tabulated report** — emit the report (gates, rules, lifecycle, scenario
@@ -77,7 +77,7 @@ that need reading comprehension. Together they prove the ruleset still holds
 - The always-forbidden list shrinks (e.g. someone removes `gitleaks` enforcement).
 - The skill-chain order shuffles (`/review-pr` before `/review`).
 - The HARNESS VERIFY block stops listing a dispatch row.
-- `AGENTS_INVARIANCE.md` itself loses scenarios.
+- `audits/agents-md.md` itself loses scenarios.
 
 ## Required output (in-session)
 
