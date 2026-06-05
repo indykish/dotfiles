@@ -167,7 +167,7 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 
 ### EXECUTE
 
-**Doc reads by trigger:** see [`docs/EXECUTE_DOC_READS.md`](./docs/EXECUTE_DOC_READS.md) for the full trigger-to-doc mapping. Always re-read `docs/greptile-learnings/RULES.md` on sub-task shape change; spec's "Applicable Rules" list is canonical; missing rules — standard set is floor + surface omission. DOC READ GATE per edit; audit via `audits/doc-reads.sh`.
+**Doc reads by trigger:** see [`docs/EXECUTE_DOC_READS.md`](./docs/EXECUTE_DOC_READS.md) for the full trigger-to-doc mapping. Always re-read `docs/greptile-learnings/RULES.md` on sub-task shape change; spec's "Applicable Rules" list is canonical; missing rules — standard set is floor + surface omission. DOC READ GATE per edit — emit a `📖 DOC READ: <path>` proof-line per triggered doc, citing §N applied or skip-with-reason.
 
 Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes to `~/Projects/docs/` need explicit per-session ask.
 
