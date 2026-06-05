@@ -4,7 +4,7 @@
 # (~/.claude, ~/.codex, ~/.opencode, ~/.amp).
 #
 # Run after pulling new dotfiles changes that add or rename a rules file
-# (gate body, *_RULES.md, questionnaire). Idempotent — re-running is safe.
+# (dispatch entry, *_RULES.md, questionnaire). Idempotent — re-running is safe.
 #
 # Manifests below name every file/dir to propagate. Adding a new entry
 # is the only edit required when a new rules file lands.
@@ -28,13 +28,10 @@ fail() { printf '\033[31m✘\033[0m %s\n' "$1" >&2; }
 # ---------------------------------------------------------------------------
 PROJECT_LINKS=(
   "AGENTS.md:AGENTS.md"
-  "AGENTS_INVARIANCE.md:AGENTS_INVARIANCE.md"
+  "audits/agents-md.md:audits/agents-md.md"
   "docs/TEMPLATE.md:docs/TEMPLATE.md"
   "docs/REST_API_DESIGN_GUIDELINES.md:docs/REST_API_DESIGN_GUIDELINES.md"
   "docs/SCHEMA_CONVENTIONS.md:docs/SCHEMA_CONVENTIONS.md"
-  "docs/ZIG_RULES.md:docs/ZIG_RULES.md"
-  "docs/ZIG_STATIC_OPENSSL.md:docs/ZIG_STATIC_OPENSSL.md"
-  "docs/BUN_RULES.md:docs/BUN_RULES.md"
   "docs/LOGGING_STANDARD.md:docs/LOGGING_STANDARD.md"
   "docs/LIFECYCLE_PATTERNS.md:docs/LIFECYCLE_PATTERNS.md"
   "docs/CHANGELOG_VOICE.md:docs/CHANGELOG_VOICE.md"
@@ -42,22 +39,29 @@ PROJECT_LINKS=(
   "docs/VERIFY_TIERS.md:docs/VERIFY_TIERS.md"
   "docs/HARNESS_VERIFY_OUTPUT.md:docs/HARNESS_VERIFY_OUTPUT.md"
   "docs/greptile-learnings:docs/greptile-learnings"
-  "docs/gates:docs/gates"
+  # Dispatch façades — the dissolved gate cards + the per-language Zig/Bun
+  # standards docs, now a single per-surface façade-pair dir. Shipped as
+  # agent-facing files (read at EXECUTE; runnable on a touched file) — NOT wired
+  # into any product repo Makefile/hook (Reading A). The legacy per-language
+  # standards docs + the gate-card dir are no longer propagated.
+  "dispatch:dispatch"
   # Project-consumed audit scripts (invoked by each repo's Makefile / hooks).
   # Previously hand-symlinked into repos out-of-band; listed here so a single
   # `sync-agents` run is the source of truth and new repos/worktrees pick them
   # up automatically.
-  "scripts/audit-spec-template.sh:scripts/audit-spec-template.sh"
-  "scripts/audit-ufs.sh:scripts/audit-ufs.sh"
-  "scripts/audit-logging.sh:scripts/audit-logging.sh"
-  "scripts/audit-design-tokens.sh:scripts/audit-design-tokens.sh"
-  "scripts/audit-deinit-pairs.sh:scripts/audit-deinit-pairs.sh"
-  "scripts/audit-error-codes.sh:scripts/audit-error-codes.sh"
-  "scripts/audit-cross-tier-rates.sh:scripts/audit-cross-tier-rates.sh"
-  "scripts/audit-msid-ui.sh:scripts/audit-msid-ui.sh"
-  # audit-agents-md.sh, audit-data.sh, test-audit-agents-md.sh, and
-  # llmevals/ are dotfiles-internal — they validate AGENTS.md itself.
-  # Not propagated; downstream repos don't audit the ruleset.
+  "audits/spec-template.sh:audits/spec-template.sh"
+  "audits/ufs.sh:audits/ufs.sh"
+  "audits/logging.sh:audits/logging.sh"
+  "audits/design-tokens.sh:audits/design-tokens.sh"
+  "audits/deinit-pairs.sh:audits/deinit-pairs.sh"
+  "audits/error-codes.sh:audits/error-codes.sh"
+  "audits/cross-tier-rates.sh:audits/cross-tier-rates.sh"
+  "audits/msid-ui.sh:audits/msid-ui.sh"
+  # agents-md.sh, data.sh, parity-dispatch.sh, test-agents-md.sh, and evals/
+  # (llms + dispatch) are dotfiles-internal — they validate AGENTS.md + the
+  # dispatch façades themselves. Not propagated; downstream repos don't audit
+  # the ruleset. The agents-md.md questionnaire IS propagated (above) so a
+  # product-repo agent can run the prompt-invariance layer against AGENTS.md.
 )
 
 # Project repos. Override per-invocation via:

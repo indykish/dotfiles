@@ -9,12 +9,59 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 
 ---
 
+## Rule-code gloss legend (canonical)
+
+The single source of truth for every rule-code gloss. `dispatch/lib.sh`
+(`DISPATCH_GLOSS`) mirrors this table verbatim, and
+`evals/dispatch/coverage.sh` fails on any divergence — a code present in
+one but not the other, or a gloss whose text differs by a byte. No naked codes:
+every code a dispatch `.sh` emits resolves to exactly one row here.
+
+| CODE | Gloss |
+|---|---|
+| NDC | No Dead Code |
+| NLR | No Legacy Retained (touch-it-fix-it) |
+| NLG | No Legacy compat shims (pre-v2.0.0) |
+| UFS | Unified Form for Symbols (literals → named consts) |
+| TGU | Tagged-Union over optional-field structs |
+| PRI | Prompt-injection Resistance from user Input |
+| ORP | ORPhan sweep (cross-layer on rename/delete) |
+| FLL | File & Function Length Limits |
+| TST-NAM | TeST NAMing (milestone-free) |
+| PUB | Pub Surface & Struct-Shape |
+| DRAIN | pg.Conn drain-before-deinit |
+| DEINIT | init/deinit lifecycle pairing |
+| ARCH | Architecture consult before naming |
+| XCOMPILE | Cross-compile both linux targets |
+| FSD | File Shape Decision (file-as-struct vs operations-over-value) |
+| DIDEM | Deinit IDEMpotency (cleanup double-call safe / single-shot asserted) |
+| TSC | TypeScript/Bun lint conventions (const, import, naming, anti-patterns) |
+| TSJ | TypeScript/Bun judgment conventions (Bun-native, file ordering, error style) |
+| UIS | UI Substitution (design-system primitive over raw HTML) |
+| DTK | Design ToKens (named token utility over arbitrary value) |
+| SCH | SCHema teardown (pre-2.0 full removal; no ALTER/DROP/marker) |
+| ITF | Integration Test Fixtures (real schema, not TEMP-table mock) |
+| LOG | LOGging discipline (scoped event, error_code, severity, redaction) |
+| MSID | Milestone-ID ban in source (M{N}_{NNN} / §x.y / T{N} / dim) |
+| ERR | ERror Registry (UZ-XXX-NNN declared + referenced) |
+| GRP | GREptile rule audit (diff vs greptile-learnings/RULES.md codes) |
+| LDC | Legacy-Design Consult (A remove / B patch / C keep) |
+
+---
+
 ## RULE NDC — No dead code
 
 **Rule:** Remove unused variables, imports, parameters, and unreachable branches immediately.
 **Why:** They mislead readers about real dependencies and are flagged in every review.
 **Tags:** zig, js, all
 **Ref:** M1_001 unused deps in zombie.js; dead currentObj branch in simpleYamlParse. M30_002 dead CLI variables.
+
+## RULE NRC — No redundant comments
+
+**Rule:** Skip the comment when a well-named identifier, type, or signature already carries the intent. Add a comment only when removing it would leave a future agent (Orly included) genuinely confused — i.e. it explains a *why* the code itself cannot: a non-obvious constraint, an ordering dependency, the reason a workaround exists, or an invariant the types don't encode. Never write a comment that just restates the next line. Subtractive test: delete the comment; if nothing is lost, it was redundant.
+**Why:** Redundant comments drift out of sync with the code they narrate and train readers to skim past comments entirely — so the one load-bearing comment gets skipped too. A precise name is a comment that cannot drift; spend the words on the name, not the narration.
+**Tags:** all, zig, js, ts, py, sh, go, rs, style
+**Ref:** User directive (Indy, Jun 04, 2026) — a well-named identifier beats a comment; a comment earns its place only by preventing future-agent confusion.
 
 ## RULE NLR — No legacy retained (touch-it-fix-it)
 
@@ -32,7 +79,7 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 
 ## RULE OWN — One owner per resource — no double cleanup
 
-**Rule:** Every allocation has exactly one cleanup path — errdefer OR manual free, never both on the same pointer. For multi-step init, use the sequential errdefer chain (see ZIG_RULES.md "Multi-Step Init"). For shared ownership, use `ref()`/`unref()` with an atomic refcount — `unref()` destroys when count hits zero. Raw pointer field = borrowed (caller owns); refcounted field = owned (self manages).
+**Rule:** Every allocation has exactly one cleanup path — errdefer OR manual free, never both on the same pointer. For multi-step init, use the sequential errdefer chain (see dispatch/write_zig.md "Multi-Step Init"). For shared ownership, use `ref()`/`unref()` with an atomic refcount — `unref()` destroys when count hits zero. Raw pointer field = borrowed (caller owns); refcounted field = owned (self manages).
 **Why:** Two cleanup paths = double-free on the error path. The bvisor encoding (raw ptr = borrowed, refcount = owned) makes the ownership contract readable from the type alone.
 **Tags:** zig, memory
 **Ref:** M1_001 manual alloc.free() + errdefer on same pointer = double-free. bvisor Thread.zig, ThreadGroup.zig for ref/unref pattern.
@@ -81,7 +128,7 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 
 ## RULE FLS — Flush all layers — drain all results
 
-**Rule:** After TLS flush, also flush the socket layer. Cast UUID/JSONB to ::text in SELECT. For pg results: use `PgQuery` (see ZIG_RULES.md "Pg Query Wrapper") — `defer q.deinit()` auto-drains. Manual `q.drain() catch {}; q.deinit()` on early-exit paths is eliminated by the wrapper.
+**Rule:** After TLS flush, also flush the socket layer. Cast UUID/JSONB to ::text in SELECT. For pg results: use `PgQuery` (see dispatch/write_zig.md "Pg Query Wrapper") — `defer q.deinit()` auto-drains. Manual `q.drain() catch {}; q.deinit()` on early-exit paths is eliminated by the wrapper.
 **Why:** TLS flush only encrypts into buffer; undrained slices dangle; ::text prevents binary/text divergence across OS.
 **Tags:** zig, tls, postgres
 **Ref:** M22_001 missing socket flush → infinite hang. M1_001 UUID read as binary on Linux CI, text on macOS. M10_004 PgQuery wraps drain into deinit.
@@ -451,7 +498,7 @@ This is intentionally manual — the structural diversity of "function body" acr
 **Rule:** Never use `@embedFile` to reach files outside `src/`. For external files (OpenAPI specs, config fixtures), write a Python/shell validator and wire it into a `make` target under `lint-zig`.
 **Why:** Zig's embed security model restricts `@embedFile` to the package directory. `@embedFile("../../public/openapi.json")` is a hard compile error, not a runtime failure. There is no workaround except an external script.
 **Tags:** zig, comptime, testing
-**Ref:** M11_001 §3.1 — OpenAPI ErrorBody validation moved to scripts/check_openapi_errors.py + make check-openapi-errors.
+**Ref:** M11_001 §3.1 — OpenAPI ErrorBody validation moved to audits/check_openapi_errors.py + make check-openapi-errors.
 
 ## RULE SNT — ~~Registry sentinels must be distinct from real entries~~ ELIMINATED (M16_001)
 
@@ -821,7 +868,7 @@ const handleConfirm = useCallback(async () => {
 ## RULE MKP — Make recipes must not pipe into `tail`, `head`, `grep` without `set -o pipefail`
 
 **Rule:** Inside a Make recipe, do NOT pipe a command whose exit code matters into `tail`, `head`, `grep`, `cat`, or any other filter — Make's default shell (`/bin/sh`) evaluates pipelines with the exit code of the LAST command. A failing test/script piped through `| tail -3` returns 0 because `tail` always succeeds, and the recipe (and the enclosing `make lint` / `make openapi`) falsely succeeds. Either (a) drop the pipe, (b) run the command standalone and let Make's line-level exit-on-error abort on failure, or (c) if a filter is genuinely needed, use `bash -c 'set -o pipefail; cmd | filter'`.
-**Why:** Silent test swallow is a class-C outage — the gate claims green while regressions ship. Observed on M28_003 §2 where `@python3 scripts/test_check_openapi_sync.py 2>&1 | tail -3` in `make openapi` passed a failing-test injection without aborting. Greptile P1 caught it before merge; the root cause (Make + default `sh` POSIX pipefail semantics) is the same bug anywhere a recipe uses `|` to tidy long output.
+**Why:** Silent test swallow is a class-C outage — the gate claims green while regressions ship. Observed on M28_003 §2 where `@python3 audits/test_check_openapi_sync.py 2>&1 | tail -3` in `make openapi` passed a failing-test injection without aborting. Greptile P1 caught it before merge; the root cause (Make + default `sh` POSIX pipefail semantics) is the same bug anywhere a recipe uses `|` to tidy long output.
 **Tags:** make, ci, testing
 **Ref:** usezombie P2_INFRA_M28_003 §2 — `make/quality.mk:161` before fix piped the test runner through `tail -3`; fix in commit 66556e99 dropped the pipe, confirmed with injected `self.fail()` that `make: *** [openapi] Error 1` now fires correctly.
 

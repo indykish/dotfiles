@@ -1,6 +1,6 @@
 # VERIFY — Tiers, performance, hygiene
 
-> Parent: [`../AGENTS.md`](../AGENTS.md) §VERIFY. Verification Gate (`docs/gates/verification.md`) enforces; `make` targets are canonical.
+> Parent: [`../AGENTS.md`](../AGENTS.md) §VERIFY. Verification Gate (`dispatch/verify.md`) enforces; `make` targets are canonical.
 
 **FIRST: `/write-unit-test`** — audits diff coverage vs spec's Test Specification (or changed surface when no spec). Iterate until clean. Skipping = CHORE(close) violation.
 

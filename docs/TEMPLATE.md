@@ -64,7 +64,7 @@ A milestone is not complete until evidence is captured: commands, logs, screensh
 - `PENDING` — not started. `IN_PROGRESS` — being worked. `DONE` / ✅ — complete, verified, tested.
 - `DEFERRED` — designed/attempted and explicitly not shipped; lives in `done/` as a record. The **Discovery** section MUST capture the rationale and the reactivation conditions.
 
-## Prohibited (gate-enforced — `docs/gates/spec-template.md`)
+## Prohibited (gate-enforced — `dispatch/write_spec.md`)
 
 - No time/effort estimates ("5 min", "1 hour", "2 days"). No effort columns or complexity ratings. No percentage-complete. No assigned owners. No implementation dates.
 - Sizing signal is **Priority** (P0/P1/P2/P3); sequencing is **Dependencies**.
@@ -85,7 +85,7 @@ SPEC AUTHORING RULES (load-bearing — do not delete):
   percentage-complete, implementation dates, assigned owners.
 - Priority (P0/P1/P2/P3) is the only sizing signal; Dependencies are the only sequencing signal.
 - If a section below contradicts these rules, the rule wins — delete the section.
-- Enforced by SPEC TEMPLATE GATE (docs/gates/spec-template.md) and scripts/audit-spec-template.sh,
+- Enforced by SPEC TEMPLATE GATE (dispatch/write_spec.md) and audits/spec-template.sh,
   which also assert the determinism-critical sections below are present and filled (not left as {placeholders}).
 -->
 
@@ -136,10 +136,10 @@ Greenfield (no existing pattern)? Say so explicitly and point at the `docs/archi
 > The rule files the agent re-reads BEFORE EXECUTE and re-checks during VERIFY. Without this list the agent has no anchored prompt to consult them at the right moment. Add specific rule IDs where scope is narrow — naming the exact greptile rule IDs the diff trips is what makes the resulting PR review-clean by construction.
 
 - **`docs/greptile-learnings/RULES.md`** — universal repo discipline (always applies).
-- **`docs/ZIG_RULES.md`** — when the diff touches `*.zig` (name sections: pg-drain lifecycle, tagged-union results, multi-step `errdefer`, cross-compile).
+- **`dispatch/write_zig.md`** — when the diff touches `*.zig` (name sections: pg-drain lifecycle, tagged-union results, multi-step `errdefer`, cross-compile).
 - **`docs/REST_API_DESIGN_GUIDELINES.md`** — when the diff touches `src/http/handlers/**` or `public/openapi/**` (name §: URL design, route registration, handler signature).
 - **`docs/SCHEMA_CONVENTIONS.md`** — when the diff touches `schema/*.sql` or `schema/embed.zig`.
-- **`docs/BUN_RULES.md`** / **`docs/LOGGING_STANDARD.md`** / **`docs/LIFECYCLE_PATTERNS.md`** — when the relevant surface is touched.
+- **`dispatch/write_ts_adhere_bun.md`** / **`docs/LOGGING_STANDARD.md`** / **`docs/LIFECYCLE_PATTERNS.md`** — when the relevant surface is touched.
 
 Fully greenfield with no project rules → write "Standard set only — `docs/greptile-learnings/RULES.md`; no other rule files apply."
 
@@ -147,11 +147,11 @@ Fully greenfield with no project rules → write "Standard set only — `docs/gr
 
 ## Applicable Gates
 
-> Which Action-Triggered Guards (`AGENTS.md` gate index) this PR WILL trip, and how each stays clean. Pre-declaring them means the agent plans for them — it doesn't rediscover them mid-EXECUTE and stall. Rules ≠ Gates: rules are knowledge to read; gates are guards that fire on edits.
+> Which Action-Triggered Guards (`AGENTS.md` dispatch index) this PR WILL trip, and how each stays clean. Pre-declaring them means the agent plans for them — it doesn't rediscover them mid-EXECUTE and stall. Rules ≠ Gates: rules are knowledge to read; gates are guards that fire on edits.
 
 | Gate | Fires? | Satisfaction strategy |
 |------|--------|-----------------------|
-| ZIG GATE | yes/no — {why} | {e.g. cross-compile both linux targets; read ZIG_RULES} |
+| ZIG GATE | yes/no — {why} | {e.g. cross-compile both linux targets; read dispatch/write_zig.md} |
 | PUB / Struct-Shape | yes/no | {shape verdict per new pub surface} |
 | File & Function Length (≤350/≤50/≤70) | yes/no | {split plan if a file approaches the cap} |
 | UFS (repeated/semantic literals) | yes/no | {named constants; cross-runtime identifier shared verbatim} |
@@ -176,7 +176,7 @@ Touch nothing a gate watches → "N/A — docs/markdown only."
 
 > **SOUL.md rule: before proposing architecture, find the reference codebase — there almost always is one.** Name it so the agent mirrors a known-good pattern instead of inventing. State the alignment, or justify the divergence.
 
-- **CLI** → `docs/CLI_DX_PILLARS.md` (the "7 Pillars" ADR, vendored from the supabase-style `oss/cli`) — the pillars: command → handler → errors split; **handler purity** (no `console.log` / `process.exit` in handlers); **output as a service** (human vs JSON vs env rendering chosen by the renderer, not the handler); **structured JSON errors** with `suggestion`/`retry` fields; **3-tier test pyramid** (handler unit / in-process integration / subprocess e2e); **auto-JSON when stdout is piped** (LLM-native). State per CLI spec: which pillars this aligns with, and the reason for any divergence.
+- **CLI** → the **"7 Pillars"** of CLI developer experience (vendored from the supabase-style `oss/cli`): command → handler → errors split; **handler purity** (no `console.log` / `process.exit` in handlers); **output as a service** (human vs JSON vs env rendering chosen by the renderer, not the handler); **structured JSON errors** with `suggestion`/`retry` fields; **3-tier test pyramid** (handler unit / in-process integration / subprocess e2e); **auto-JSON when stdout is piped** (LLM-native). State per CLI spec: which pillars this aligns with, and the reason for any divergence.
 - **API** → `docs/REST_API_DESIGN_GUIDELINES.md` + the closest existing handler under `src/http/handlers/`.
 - **Schema** → the nearest existing migration + `docs/SCHEMA_CONVENTIONS.md`.
 - **UI** → design-system primitives + `theme.css` tokens.
@@ -353,7 +353,7 @@ No deletions → "N/A — no files deleted."
 | When | Skill | What it does | Required output |
 |------|-------|--------------|-----------------|
 | After implementation, before CHORE(close) | `/write-unit-test` | Audits diff coverage vs this Test Specification. Catches happy-path-only, missing negatives, fixture drift. | Clean. Iteration count + final coverage in Discovery. |
-| After tests pass, before CHORE(close) | `/review` | Adversarial diff review vs this spec, `docs/architecture/`, REST guide (HTTP), `docs/ZIG_RULES.md` (Zig), Failure Modes, Invariants. | Clean OR every finding dispositioned (fixed / deferred-with-quote / rejected-with-reason). |
+| After tests pass, before CHORE(close) | `/review` | Adversarial diff review vs this spec, `docs/architecture/`, REST guide (HTTP), `dispatch/write_zig.md` (Zig), Failure Modes, Invariants. | Clean OR every finding dispositioned (fixed / deferred-with-quote / rejected-with-reason). |
 | After `gh pr create` | `/review-pr` | Review-comments the open PR against the immutable diff (squash artifacts, post-rebase races, codegen drift). | Comments addressed (fixup/amend) before human review/merge. |
 
 Skipping any one violates CHORE(close). Skill unavailable (MCP down) → document the skip in Discovery AND the PR description with a timestamp and a "rerun before merge" note.

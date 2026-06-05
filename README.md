@@ -13,8 +13,39 @@ git config core.hooksPath .githooks    # arms pre-commit + pre-push (one-time, p
 The `core.hooksPath` line wires the AGENTS.md invariance suite into every
 commit and push from this clone. Without it, `.githooks/` is just files —
 git keeps using `.git/hooks/` (sample stubs only). Re-run on every fresh
-clone or worktree. See [AGENTS_INVARIANCE.md](AGENTS_INVARIANCE.md) for the
+clone or worktree. See [audits/agents-md.md](audits/agents-md.md) for the
 contract; run `make audit` any time to verify it by hand.
+
+## How the rules work (in plain terms)
+
+[`AGENTS.md`](AGENTS.md) is the rulebook every AI agent follows. Instead of one
+giant list, the rules are split by **what you're about to do** — and the agent is
+handed only the one page that applies.
+
+Think of it like a front desk: you say "I'm about to write some Zig," and it gives
+you exactly the Zig rules — not the whole binder. Each of those pages lives in
+[`dispatch/`](dispatch/), and where a rule can be checked by a machine, a small
+script runs it automatically.
+
+| If you're about to… | The agent reads… |
+|---|---|
+| write Zig | `dispatch/write_zig.md` |
+| write TypeScript / JavaScript | `dispatch/write_ts_adhere_bun.md` |
+| write SQL or a database schema | `dispatch/write_sql.md` |
+| write *any* code at all | `dispatch/write_any.md` |
+| write a spec / changelog / API / auth code | the matching `dispatch/write_*.md` |
+| say "it's done — tests pass" | `dispatch/verify.md` |
+| name a stream or design a flow | `dispatch/name_architecture.md` |
+| change the rules themselves | `dispatch/edit_rules.md` |
+
+One command — `make audit` — keeps the rulebook honest: it fails loudly if this
+list, the files on disk, and the agent's own checklist ever fall out of sync.
+
+> **Want the full story?** The *why* behind this design — the latent/deterministic
+> "façade pair" per topic, the 🟢/🔴/🔵/⚪ signal tags, the parity guarantees, and
+> the migration that produced it — is written up in detail in
+> [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md). The exact,
+> machine-checked list of entries lives in [`audits/data.sh`](audits/data.sh).
 
 The instructions below assume you are in the `~/Projects/dotfiles` directory.
 

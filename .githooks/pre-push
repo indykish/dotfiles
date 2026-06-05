@@ -2,10 +2,10 @@
 # Pre-push hook for dotfiles.
 #
 # Behaviour:
-# - Runs scripts/audit-agents-md.sh always (script layer; deterministic).
-# - When the push includes commits that touched AGENTS.md, AGENTS_INVARIANCE.md,
-#   or any docs/gates/*.md, ALSO requires a fresh sign-off file written by an
-#   LLM agent that ran the AGENTS_INVARIANCE.md questionnaire.
+# - Runs audits/agents-md.sh always (script layer; deterministic).
+# - When the push includes commits that touched AGENTS.md, audits/agents-md.md,
+#   or any dispatch/*.md, ALSO requires a fresh sign-off file written by an
+#   LLM agent that ran the audits/agents-md.md questionnaire.
 #
 # Sign-off file: .agents-invariance-signoff (gitignored — it's a machine-local
 # attestation, not a tracked artifact). Format:
@@ -15,8 +15,8 @@
 # A sign-off is "fresh" if its <commit-sha-short> matches HEAD and the file was
 # written within the last 24 hours.
 #
-# To produce the sign-off: open AGENTS_INVARIANCE.md in an LLM session and
-# instruct: "Read AGENTS.md and answer every question in AGENTS_INVARIANCE.md.
+# To produce the sign-off: open audits/agents-md.md in an LLM session and
+# instruct: "Read AGENTS.md and answer every question in audits/agents-md.md.
 # When all-YES, write the sign-off line to .agents-invariance-signoff."
 #
 # One-off bypass:  SKIP_INVARIANCE_PUSH=1 git push ...
@@ -28,8 +28,8 @@ ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
 # 1. Always run the script layer.
-echo "pre-push: running scripts/audit-agents-md.sh" >&2
-if ! bash "$ROOT/scripts/audit-agents-md.sh"; then
+echo "pre-push: running audits/agents-md.sh" >&2
+if ! bash "$ROOT/audits/agents-md.sh"; then
   echo "pre-push: script layer failed — fix before push" >&2
   exit 1
 fi
@@ -46,7 +46,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     range="$remote_sha..$local_sha"
     files=$(git diff --name-only "$range")
   fi
-  if echo "$files" | grep -qE '^(AGENTS\.md|AGENTS_INVARIANCE\.md|docs/gates/.*\.md)$'; then
+  if echo "$files" | grep -qE '^(AGENTS\.md|audits/agents-md\.md|dispatch/.*\.md)$'; then
     contract_changed=1
   fi
 done
@@ -69,11 +69,11 @@ fi
 if [[ ! -f "$SIGNOFF" ]]; then
   cat >&2 <<MSG
 
-pre-push: 🔴 BLOCKED — AGENTS.md / docs/gates / AGENTS_INVARIANCE.md changed in
+pre-push: 🔴 BLOCKED — AGENTS.md / dispatch/ / audits/agents-md.md changed in
           this push, but no .agents-invariance-signoff file exists.
 
 To proceed:
-  1. Open AGENTS_INVARIANCE.md in an LLM agent session.
+  1. Open audits/agents-md.md in an LLM agent session.
   2. Instruct: "Read AGENTS.md and answer every question. When all-YES, write
      a sign-off line to .agents-invariance-signoff in this format:
          <commit-sha-short>  <UTC-timestamp>  PASS"
