@@ -24,20 +24,26 @@
 #   it was blind to the index at pre-commit time.
 #
 # Usage:
-#   ufs.sh           # full-codebase scan (default and only mode)
+#   ufs.sh           # full-codebase scan (default)
 #   ufs.sh --all     # alias for default
+#   ufs.sh --staged  # narrow per-file checks (string-dup, numeric) to
+#                    # `git diff --cached`; cross-runtime parity stays full-tree
 #
 # Exits 0 clean, 1 on any blocking violation.
 
 set -euo pipefail
 
-# Single mode after M70: full-codebase scan. `--all` accepted as alias
-# for back-compat with the harness-verify-all target.
-case "${1:-}" in
-  ""|--all|all) ;;
+# Default: full-codebase scan (`--all` is an explicit alias). `--staged` is the
+# pre-commit lens — it narrows the per-file checks to `git diff --cached`. The
+# retired `--diff` (BASE...HEAD) mode stays rejected; `--staged` reads the index
+# and so is not blind to staged-but-uncommitted fixes (M70's concern).
+MODE="${1:-}"
+case "$MODE" in
+  ""|--all|all)    MODE="--all" ;;
+  --staged|staged) MODE="--staged" ;;
   *)
-    printf "usage: %s [--all]\n" "$0" >&2
-    printf "note: --diff was retired in M70 — see dispatch/write_any.md (UFS Gate → Scope).\n" >&2
+    printf "usage: %s [--all|--staged]\n" "$0" >&2
+    printf "note: --diff was retired in M70 — see dispatch/write_any.md (UFS Gate → Scope). Use --staged for the pre-commit (index) lens.\n" >&2
     exit 2
     ;;
 esac
@@ -63,7 +69,14 @@ is_source() {
   esac
 }
 
-mapfile -t FILES < <(git ls-files | while read -r f; do
+# Per-file check scope (string-dup-file, numeric-suspect). --staged narrows to
+# the commit; cross-runtime-orphan (below) always scans the full tree.
+if [ "$MODE" = "--staged" ]; then
+  scope_files() { git diff --cached --name-only --diff-filter=ACMRT; }
+else
+  scope_files() { git ls-files; }
+fi
+mapfile -t FILES < <(scope_files | while read -r f; do
   is_source "$f" && echo "$f"
 done)
 
