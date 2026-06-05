@@ -325,13 +325,13 @@ against `feat/dispatch-architecture`:
 | `evals/llms/run.sh` | `:22`, `:83-90` | `build_context` cats `docs/gates/*.md` | cat `dispatch/*.md` |
 | `evals/test-agents-md.sh` | `:39,46,165-167` | sandbox builds `docs/gates`+RULES; negative case asserts hook bites on dropped `docs/gates` | rewrite sandbox + negatives for dispatch model |
 | `bin/sync-agents` | `:35,37,45` | propagates `ZIG_RULES`/`BUN_RULES`/`docs/gates` → product repos | repoint + **add `dispatch/`** |
-| `AGENTS.md` | `:66,212` | `*.zig`→ZIG_RULES; /review→ZIG_RULES | →`write_zig.md` + Dispatch Dispatch table |
+| `AGENTS.md` | `:66,212` | `*.zig`→ZIG_RULES; /review→ZIG_RULES | →`write_zig.md` + Dispatch table |
 | `docs/EXECUTE_DOC_READS.md` | `:11,12` | zig→ZIG_RULES, ts→BUN_RULES | →façades |
 | `docs/greptile-learnings/RULES.md` | `:42,91` | cross-ref ZIG_RULES sections | →`write_zig.md` |
 | `docs/LIFECYCLE_PATTERNS.md` | `:3,311` | sister-doc refs ZIG_RULES | →`write_zig.md` |
 | `docs/LOGGING_STANDARD.md` | `:193,195,263,283-285` | BUN_RULES §9/§10, ZIG_RULES | →façades |
 | `docs/TEMPLATE.md` | `:139,142,154,356` | ZIG/BUN doc-read rows | →façades |
-| `docs/ZIG_RULES.md` | `:415` | refs BUN_RULES §2 | →`write_ts_adhere_bun.md` (intra-rename) |
+| `docs/ZIG_RULES.md` | `:415` | refs BUN_RULES §2 | `git rm` (deleted; cross-ref already resolved in the merged `write_zig.md`) |
 | `audits/logging.sh` | `:152` | fail message cites `BUN_RULES §10` | →`write_ts_adhere_bun.md §logging` |
 | `skills/kishore-spec-new/SKILL.md` | `:63` | names `ZIG_RULES.md`/`BUN_RULES.md` as per-surface rule files | →façades (verify sync scope before assuming it ships to product repos) |
 | `docs/HARNESS_VERIFY_OUTPUT.md` | `:19,26-36` | `🟡 = violations addressed` | add `🔵 DECIDE` legend + JUDGMENT row (§11) |
@@ -374,10 +374,16 @@ green** (nothing removed). One or more commits.
 both present and passing. **`make audit` stays green.** Commit.
 
 **Stage 2 — Atomic switchover (the ONLY harness-editing commit → Indy sign-off).**
-In ONE commit: all §8 edits + zero-dangling-ref grep green + `git mv
-docs/ZIG_RULES.md dispatch/write_zig.md` (and BUN) + `git rm` the **15 authoring
-cards only** (the 5 process cards STAY, §5; only after §6.5 green) + AGENTS.md
-gate-index → Dispatch Dispatch (4 rows) + slimmed 5-row process-gate index +
+In ONE commit: all §8 edits + zero-dangling-ref grep green + `git rm
+docs/ZIG_RULES.md docs/BUN_RULES.md` — **deletion, not `git mv`**: the prose was
+already additively merged into `dispatch/write_zig.md` (657 lines) and
+`dispatch/write_ts_adhere_bun.md` in Stage 0, so a `git mv` would clobber the
+merged façades; `merge-coverage.sh` is the proof-of-no-loss — + `git rm` the **15
+authoring cards only** (the 5 process cards STAY, §5; only after §6.5 green) +
+`git rm` the now-spent **merge-coverage set** (`evals/dispatch/merge-coverage.sh`,
+`merge_coverage.py`, `merge-coverage-drops.tsv`, `fixtures/merge_orphan_card.md`)
+— one-shot migration scaffolding, dead once the cards are gone (RULE NDC) — +
+AGENTS.md gate-index → Dispatch table (4 rows) + slimmed 5-row process-gate index +
 `sync-agents` repoint & dispatch-add.
 
 **Why atomic IS green (the fresh-eyes "impossible" objection, resolved).** The
