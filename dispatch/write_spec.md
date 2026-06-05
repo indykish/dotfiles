@@ -2,13 +2,12 @@
 
 This is the prose the AGENT reads **before writing or editing a spec** under
 `docs/v*/{pending,active,done}/`. It pairs with the deterministic half
-`audits/spec.sh` (named `audits/spec-template.sh` until the Stage-2 rename),
-which runs in `make lint`. (This is the former Spec Template gate absorbed into
+`audits/spec-template.sh`, which runs in `make lint`. (This is the former Spec Template gate absorbed into
 the dispatch model — `docs/TEMPLATE.md` remains the canonical section source.)
 
 **Signal legend:**
 
-- 🟢 / 🔴 — `audits/spec.sh` mechanically passes/fails the prohibited-pattern and
+- 🟢 / 🔴 — `audits/spec-template.sh` mechanically passes/fails the prohibited-pattern and
   required-section checks.
 - 🔵 DECIDE — whether a required section is *meaningfully filled* (not just
   present) is the agent's judgment at author time.
@@ -70,11 +69,11 @@ SPEC TEMPLATE GATE: <file> | prohibited:<0|list> required-sections:<all-present|
 
 Full multi-line block fires on violation (prohibited sections / time estimates /
 effort fields / %-complete / owner-date fields, each with line numbers, plus the
-`audits/spec.sh` staged-diff finding count).
+`audits/spec-template.sh` staged-diff finding count).
 
 ## Scope (M70)
 
-`audits/spec.sh` walks the **full pending+active spec set** via `git ls-files`;
+`audits/spec-template.sh` walks the **full pending+active spec set** via `git ls-files`;
 the index includes staged-but-uncommitted content, so a fix staged in pre-commit
 satisfies the check on the same hook run. `--staged` is the opt-in narrowing mode.
 
@@ -82,4 +81,4 @@ satisfies the check on the same hook run. `--staged` is the opt-in narrowing mod
 
 - `docs/TEMPLATE.md` — canonical Prohibited section + required sections.
 - `kishore-spec-new` skill — creates specs from the template; inserts the banner.
-- `audits/spec.sh` — mechanical regex enforcement, runs in `make lint`.
+- `audits/spec-template.sh` — mechanical regex enforcement, runs in `make lint`.
