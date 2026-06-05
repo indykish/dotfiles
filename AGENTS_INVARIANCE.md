@@ -266,7 +266,7 @@ The questions force *proof of reading* over *recall*.
 | 23.4 | When two rules fire on the same edit (e.g. PUB + LIFECYCLE on `pub fn init`, or a spec that contradicts a rule), must the agent apply **both**/escalate rather than silently picking one? | YES |
 | 23.5 | For an auto-mode / override question, must the agent trace the full conditional chain (auto-mode AND (active-spec OR start-instruction); action-triggered guards still block) rather than collapsing it to "auto mode = yes"? | YES |
 | 23.6 | Is the negative-test harness (`scripts/test-audit-agents-md.sh`) required to pass — proving each deterministic check still *bites* — whenever `scripts/audit-agents-md.sh` itself changes? | YES |
-| 23.7 | Is Scenario 23 enforced by a live, cross-agent LLM-eval runner (`scripts/llmevals/run-llmevals.sh`, `make llmevals`) that feeds the frozen golden-set (`scripts/llmevals/fixtures.jsonl`) to EVERY installed agent (claude, codex, amp, opencode) and grades each `VERDICT:` by exact match — with a per-agent threshold and absent agents logged, never silently skipped? | YES |
+| 23.7 | Is Scenario 23 enforced by a live, cross-agent LLM-eval runner (`evals/llmevals/run-llmevals.sh`, `make llmevals`) that feeds the frozen golden-set (`evals/llmevals/fixtures.jsonl`) to EVERY installed agent (claude, codex, amp, opencode) and grades each `VERDICT:` by exact match — with a per-agent threshold and absent agents logged, never silently skipped? | YES |
 | 23.8 | When the LLM-eval runner is unavailable (no agent CLIs) or the golden-set changes, is the dry validator `make llmevals-check` (fixtures well-formed + availability, no live calls) the minimum that must still pass? | YES |
 
 ## LLM-eval layer (Scenario 23 enforcement)
@@ -275,13 +275,13 @@ The deterministic audit proves the rules are *present*; it cannot prove an
 agent *reading* them complies — the hallucination / won't-follow class. The
 LLM-eval layer closes that gap:
 
-- **Golden-set** — `scripts/llmevals/fixtures.jsonl`: frozen
+- **Golden-set** — `evals/llmevals/fixtures.jsonl`: frozen
   question → expected `YES`/`NO` verdict + the justifying rule, each targeting
   a known drift mode (index-vs-body paraphrase, override-string drift,
   conditional collapse, co-firing rules, negation blindness, stale recall,
   investigate-vs-authorize, no-override bans). YES/NO is balanced so a
   constant-answer strategy fails the threshold.
-- **Runner** — `scripts/llmevals/run-llmevals.sh` embeds AGENTS.md +
+- **Runner** — `evals/llmevals/run-llmevals.sh` embeds AGENTS.md +
   all gate bodies in every prompt (no tool use, no file-read variance), asks
   each installed agent, and grades the single `VERDICT:` line by exact match.
   Resumable — each agent's verdict is journalled, so a re-run after an

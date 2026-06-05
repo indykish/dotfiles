@@ -9,6 +9,46 @@ Reference a rule as `RULE NDC`, `RULE OWN`, etc.
 
 ---
 
+## Rule-code gloss legend (canonical)
+
+The single source of truth for every rule-code gloss. `resolvers/lib.sh`
+(`RESOLVER_GLOSS`) mirrors this table verbatim, and
+`scripts/audit-resolver-coverage.sh` fails on any divergence — a code present in
+one but not the other, or a gloss whose text differs by a byte. No naked codes:
+every code a resolver `.sh` emits resolves to exactly one row here.
+
+| CODE | Gloss |
+|---|---|
+| NDC | No Dead Code |
+| NLR | No Legacy Retained (touch-it-fix-it) |
+| NLG | No Legacy compat shims (pre-v2.0.0) |
+| UFS | Unified Form for Symbols (literals → named consts) |
+| TGU | Tagged-Union over optional-field structs |
+| PRI | Prompt-injection Resistance from user Input |
+| ORP | ORPhan sweep (cross-layer on rename/delete) |
+| FLL | File & Function Length Limits |
+| TST-NAM | TeST NAMing (milestone-free) |
+| PUB | Pub Surface & Struct-Shape |
+| DRAIN | pg.Conn drain-before-deinit |
+| DEINIT | init/deinit lifecycle pairing |
+| ARCH | Architecture consult before naming |
+| XCOMPILE | Cross-compile both linux targets |
+| FSD | File Shape Decision (file-as-struct vs operations-over-value) |
+| DIDEM | Deinit IDEMpotency (cleanup double-call safe / single-shot asserted) |
+| TSC | TypeScript/Bun lint conventions (const, import, naming, anti-patterns) |
+| TSJ | TypeScript/Bun judgment conventions (Bun-native, file ordering, error style) |
+| UIS | UI Substitution (design-system primitive over raw HTML) |
+| DTK | Design ToKens (named token utility over arbitrary value) |
+| SCH | SCHema teardown (pre-2.0 full removal; no ALTER/DROP/marker) |
+| ITF | Integration Test Fixtures (real schema, not TEMP-table mock) |
+| LOG | LOGging discipline (scoped event, error_code, severity, redaction) |
+| MSID | Milestone-ID ban in source (M{N}_{NNN} / §x.y / T{N} / dim) |
+| ERR | ERror Registry (UZ-XXX-NNN declared + referenced) |
+| GRP | GREptile rule audit (diff vs greptile-learnings/RULES.md codes) |
+| LDC | Legacy-Design Consult (A remove / B patch / C keep) |
+
+---
+
 ## RULE NDC — No dead code
 
 **Rule:** Remove unused variables, imports, parameters, and unreachable branches immediately.

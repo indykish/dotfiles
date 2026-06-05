@@ -1,0 +1,15 @@
+# evals/resolver-evals/merge-coverage-drops.tsv — acked merge-loss drops ledger (6.5 guard 2)
+#
+# When a dissolving authoring card's non-boilerplate token is reworded away by
+# the merge (a faithful synonym swap, not a lost rule), it shows as uncovered in
+# audit-merge-coverage.sh. Such a token may be CLEARED here — but ONLY with an
+# Indy ack-quote (per the deferral-discipline rule). The merging agent may NOT
+# author its own drop justification: a line whose ack field does not match the
+# Indy-ack format (`Indy (YYYY-MM-DD): "<quote>"`) is rejected and the audit
+# fails. This keeps "intentionally dropped" honest rather than agent self-served.
+#
+# Format (TAB-separated):  <token><TAB>Indy (YYYY-MM-DD): "<verbatim ack>" — <context>
+#
+# A token cleared here is treated as covered for EVERY card (the rewording is
+# global). One token per line. Empty at Stage 0 — populated at the Stage-2
+# deletion boundary once Indy adjudicates the uncovered-token report.

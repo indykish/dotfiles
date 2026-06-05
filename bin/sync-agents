@@ -55,9 +55,11 @@ PROJECT_LINKS=(
   "scripts/audit-error-codes.sh:scripts/audit-error-codes.sh"
   "scripts/audit-cross-tier-rates.sh:scripts/audit-cross-tier-rates.sh"
   "scripts/audit-msid-ui.sh:scripts/audit-msid-ui.sh"
-  # audit-agents-md.sh, audit-data.sh, test-audit-agents-md.sh, and
-  # llmevals/ are dotfiles-internal — they validate AGENTS.md itself.
-  # Not propagated; downstream repos don't audit the ruleset.
+  # audit-agents-md.sh, audit-data.sh, test-audit-agents-md.sh,
+  # audit-resolver-coverage.sh, audit-merge-coverage.sh, and evals/ (llmevals +
+  # resolver-evals) are dotfiles-internal — they validate AGENTS.md + the
+  # resolver façades themselves. Not propagated; downstream repos don't audit
+  # the ruleset.
 )
 
 # Project repos. Override per-invocation via:

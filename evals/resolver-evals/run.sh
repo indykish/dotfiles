@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/resolver-evals/run.sh — prose-pinned deterministic-façade evals (§6.1).
+# evals/resolver-evals/run.sh — prose-pinned deterministic-façade evals (§6.1).
 #
 # Each fixture is a source file crafted to trip EXACTLY ONE deterministic resolver
 # code (or none, for the *_ok pass fixtures). The runner drops it into an isolated
@@ -21,7 +21,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-FX="$ROOT/scripts/resolver-evals/fixtures"
+FX="$ROOT/evals/resolver-evals/fixtures"
 
 # fixture | resolver | sandbox-dest | expected-exit | code-under-test
 SPECS=(

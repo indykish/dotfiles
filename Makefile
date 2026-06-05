@@ -1,8 +1,31 @@
-.PHONY: audit test-audit llmevals llmevals-check signoff
+.PHONY: audit test-audit llmevals llmevals-check signoff \
+        resolver-coverage resolver-evals merge-coverage
 
-# Run the deterministic audit (script layer of the invariance suite).
+# Run the deterministic audit chain (Stage 0, additive — all green):
+#   1. audit-agents-md.sh          — AGENTS.md invariance (script layer).
+#   2. audit-resolver-coverage.sh  — resolver façade-pair coherence (6.3 + 6.4).
+#   3. evals/resolver-evals/run.sh — prose-pinned deterministic façade evals.
+# merge-coverage is NOT here: it is a Stage-2 deletion gate (see `make
+# merge-coverage`), red until the reworded-away tokens get Indy drop-acks.
 audit:
 	@bash scripts/audit-agents-md.sh
+	@bash scripts/audit-resolver-coverage.sh
+	@bash evals/resolver-evals/run.sh
+
+# Resolver façade-pair coherence in isolation (tags ↔ checks ↔ fixtures ↔
+# probes ↔ leaf-helpers ↔ canonical gloss legend).
+resolver-coverage:
+	@bash scripts/audit-resolver-coverage.sh
+
+# Deterministic resolver evals in isolation — pass+fail fixture per code.
+resolver-evals:
+	@bash evals/resolver-evals/run.sh
+
+# Merge-loss proof — Stage-2 deletion gate (RESOLVER_ARCHITECTURE.md 6.5).
+# Asserts every dissolving card's tokens landed in some resolver .md or are
+# Indy-acked drops. `--selftest` proves the orphan-sentence check still bites.
+merge-coverage:
+	@bash scripts/audit-merge-coverage.sh
 
 # Negative-test the audit itself — prove every check still FAILS on a bad
 # tree (conformance + determinism). Run whenever audit-agents-md.sh changes.
@@ -15,11 +38,11 @@ test-audit:
 # agent. Resumable (journalled); writes .agents-llmevals-signoff on
 # all-gradable-agents-pass.
 llmevals:
-	@bash scripts/llmevals/run-llmevals.sh
+	@bash evals/llmevals/run-llmevals.sh
 
 # Dry validation — fixtures well-formed + agent availability. No live calls.
 llmevals-check:
-	@bash scripts/llmevals/run-llmevals.sh --check
+	@bash evals/llmevals/run-llmevals.sh --check
 
 # Write the AGENTS_INVARIANCE sign-off file against current HEAD.
 # Only run this AFTER answering every AGENTS_INVARIANCE.md question with YES.

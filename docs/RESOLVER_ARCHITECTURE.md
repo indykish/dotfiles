@@ -174,7 +174,7 @@ write_zig.md §Tagged unions for result types:
     optional-field struct. Callers need the *reason*, not the verdict.
     [JUDGMENT → TGU]
 write_zig.sh:  resolver_judgment "TGU" "result w/ failure modes? union(enum)…"
-eval:  scripts/llmevals — scenario asserts union(enum), not optional struct
+eval:  evals/llmevals — scenario asserts union(enum), not optional struct
 run:  TGU 🔵 DECIDE — result w/ failure modes? union(enum), not optional-field
 → agent decides, states verdict in chat; HARNESS VERIFY audits the attestation.
 ```
@@ -218,18 +218,18 @@ homeless, none double-homed, and the audit counts a well-defined mixed end-state
 
 ### 6.1 Deterministic façade evals — prose-pinned fixtures
 ```
-scripts/resolver-evals/fixtures/
+evals/resolver-evals/fixtures/
   length_350_pass.zig    → write_zig.sh expects exit 0
   length_351_fail.zig    → expects exit 1   (PINS the prose bound)
   ufs_dup_string.zig     → expects exit 1
   deinit_missing.zig     → expects exit 1
-scripts/resolver-evals/run.sh  → runs each fixture, diffs actual vs expected exit
+evals/resolver-evals/run.sh  → runs each fixture, diffs actual vs expected exit
 ```
 Every `[DETERMINISTIC → CODE]` rule MUST have ≥1 pass + ≥1 fail fixture, and any
 rule whose prose states a bound MUST have a fixture that pins it (§3).
 
 ### 6.2 Latent façade evals — COMPREHENSION probes (rewire the EXISTING harness)
-`scripts/llmevals/run-llmevals.sh` is a **cross-agent comprehension runner**
+`evals/llmevals/run-llmevals.sh` is a **cross-agent comprehension runner**
 (claude/codex/amp/opencode, `:69-78`). It grades by exact match on a
 `VERDICT: YES|NO` line over `fixtures.jsonl` (`:125-174`) — it is a *comprehension*
 grader, **not an adherence judge** over free-form code. v2 is honest about that:
@@ -322,7 +322,7 @@ against `feat/resolver-architecture`:
 | ″ | `:94-118` | `NAMED_SCENARIOS` 1:1 w/ invariance | mirror scenario edits |
 | `.githooks/pre-commit` | trigger glob | gates `AGENTS.md`/`docs/gates` edits | add `resolvers/` |
 | `.githooks/pre-push` | `:72` + guard | message + `docs/gates` guard | repoint + reword |
-| `scripts/llmevals/run-llmevals.sh` | `:22`, `:83-90` | `build_context` cats `docs/gates/*.md` | cat `resolvers/*.md` |
+| `evals/llmevals/run-llmevals.sh` | `:22`, `:83-90` | `build_context` cats `docs/gates/*.md` | cat `resolvers/*.md` |
 | `scripts/test-audit-agents-md.sh` | `:39,46,165-167` | sandbox builds `docs/gates`+RULES; negative case asserts hook bites on dropped `docs/gates` | rewrite sandbox + negatives for resolver model |
 | `bin/sync-agents` | `:35,37,45` | propagates `ZIG_RULES`/`BUN_RULES`/`docs/gates` → product repos | repoint + **add `resolvers/`** |
 | `AGENTS.md` | `:66,212` | `*.zig`→ZIG_RULES; /review→ZIG_RULES | →`write_zig.md` + Resolver Dispatch table |
@@ -364,7 +364,7 @@ v2 therefore **never lets `make audit` go red mid-flight**:
 **Stage 0 — Scaffold (purely additive; gates + RULES untouched).** Create
 `resolvers/{lib,write_zig,write_ts_adhere_bun,write_sql,write_any}.{sh}` and the
 `.md` façades (merge ZIG_RULES + gate deltas) ALONGSIDE the still-present
-`docs/gates/` and `docs/ZIG_RULES.md`. Add `scripts/resolver-evals/`,
+`docs/gates/` and `docs/ZIG_RULES.md`. Add `evals/resolver-evals/`,
 `audit-resolver-coverage.sh`, `audit-merge-coverage.sh`. **`make audit` stays
 green** (nothing removed). One or more commits.
 
@@ -423,7 +423,7 @@ tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
 3. **Ship resolvers into each product repo via `bin/sync-agents`** (add a
    `resolvers:resolvers` entry to the link list). With (2), the symlink is now safe.
 4. **Dotfiles = source-of-truth + fixture/eval host**, not where Zig checks run on
-   real code. `scripts/resolver-evals/` fixtures are the only place these checks
+   real code. `evals/resolver-evals/` fixtures are the only place these checks
    are provable in dotfiles (it has no `*.zig`).
 5. **`resolver_run_helper` hard-fails (🔴, `RESOLVER_RC=1`) on an absent
    DETERMINISTIC helper** — never `⚪`/exit 0. `⚪` is reserved for
@@ -439,7 +439,7 @@ tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
    (`audit-ufs` … `audit-msid-ui`, symlinked in) stay each repo's codebase-wide
    mechanical net; resolvers are the per-file authoring lens + the dotfiles-side
    coherence/merge audits (§6.3/§6.5). The §7 Backstop plane is therefore
-   **dotfiles-only** — it fires against `scripts/resolver-evals/` fixtures (dotfiles
+   **dotfiles-only** — it fires against `evals/resolver-evals/` fixtures (dotfiles
    has no real `*.zig`/`*.ts`), which keeps the §8 zero-dangling-ref grep and the
    Stage-2 sign-off scoped to dotfiles.
 
@@ -501,8 +501,8 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 - [ ] glyph `🔵 DECIDE` defined; `🟡` left as "violations addressed"
 
 **Evals & proofs**
-- [ ] `scripts/resolver-evals/` fixtures: every DETERMINISTIC rule pass+fail; every prose bound pinned
-- [ ] `scripts/llmevals/` JUDGMENT scenario per rule; `build_context` repointed to `resolvers/`
+- [ ] `evals/resolver-evals/` fixtures: every DETERMINISTIC rule pass+fail; every prose bound pinned
+- [ ] `evals/llmevals/` JUDGMENT scenario per rule; `build_context` repointed to `resolvers/`
 - [ ] `scripts/audit-resolver-coverage.sh` clean (tags↔checks↔evals↔helper-presence↔glosses)
 - [ ] `scripts/audit-merge-coverage.sh` clean (every deleted card's delta landed)
 - [ ] one canonical gloss list (`RULES.md` ↔ `lib.sh`); `FLL`/`LENGTH` dup removed
@@ -596,3 +596,21 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
    §5's "none double-homed" (enforcement is single-homed) and kills the redundant
    full-tree `audit-ufs` scan on multi-language touches. `audit-resolver-coverage.sh`
    (§6.3) accepts a universal code wired in any one resolver.
+7. **Eval harnesses relocated to top-level `evals/`** (Indy, Jun 05, 2026): the
+   deterministic resolver fixtures + the cross-agent comprehension probes moved
+   `scripts/{resolver-evals,llmevals}/` → `evals/{resolver-evals,llmevals}/` — a
+   first-class test home, sibling of `resolvers/`. The merge-coverage drops
+   ledger moved out of `resolvers/` (the Stage-2 sync payload, where a
+   dotfiles-internal migration artifact must not ship) into
+   `evals/resolver-evals/`. `scripts/` retains the `audit-*.sh` family. All
+   functional + spec path refs repointed; `RESOLVER_REVIEW_DISPOSITION.md`'s
+   review quote of the old path is left as a historical record.
+8. **Merge-coverage is a Stage-2 deletion gate, not a Stage-0 `make audit` check**
+   (Orly, Jun 05, 2026, pick-and-proceed): `audit-merge-coverage.sh` is built +
+   self-tested (the orphan fixture bites) but NOT wired into `make audit` — at
+   Stage 0 the 15 cards still exist, and "a card is not deleted until its
+   assertion is green" (§6.5). Against the real merge it shows 13/15 cards fully
+   covered; `zig`/`pub-surface`/`lifecycle` surface ~40 reworded-away prose tokens
+   (classified — no lost rules; the PUB/DEINIT rules are tagged in `write_zig.md`).
+   These need Indy drop-acks in `evals/resolver-evals/merge-coverage-drops.tsv`
+   before the cards are deleted; wiring into `make audit` follows the acks.
