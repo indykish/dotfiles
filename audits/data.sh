@@ -4,15 +4,15 @@
 # the main audit (LENGTH GATE: keeps agents-md.sh under the 350-line
 # cap; data and logic separate cleanly). Sourced, never executed directly.
 #
-# Adding a gate/scenario/rule? Update the matching array HERE; the audit's
-# gate-parity + named-scenario-parity checks fail loudly if a table drifts
-# out of sync with AGENTS.md / docs/gates / audits/agents-md.md.
+# Adding a dispatch entry/scenario/rule? Update the matching array HERE; the
+# audit's dispatch-parity + named-scenario-parity checks fail loudly if a table
+# drifts out of sync with AGENTS.md / dispatch/ / audits/agents-md.md.
 
 # Self-fingerprint — every label here MUST be emitted by a pass/fail call in
 # the audit. Deleting a check without updating this list trips the final
 # self-fingerprint check. This is the script auditing itself.
 EXPECTED_LABELS=(
-  "gate inventory"
+  "dispatch inventory"
   "trigger surface"
   "override syntax"
   "always-forbidden list"
@@ -21,8 +21,7 @@ EXPECTED_LABELS=(
   "cross-references"
   "audit fixture: dirty diff"
   "audit fixture: clean diff"
-  "gate bodies complete"
-  "gate parity"
+  "dispatch parity"
   "audits/agents-md.md present"
   "lifecycle stages"
   "named scenarios"
@@ -32,23 +31,12 @@ EXPECTED_LABELS=(
   "size"
 )
 
-# Check 1 — every named gate must appear as an index-table row.
-REQUIRED_GATES=(
-  "Invariance Suite Gate"
-  "RULE NLR" "RULE NLG" "Legacy-Design Consult Guard"
-  "Schema Table Removal Guard" "File & Function Length Gate"
-  "Milestone-ID Gate" "Architecture Consult & Update Gate"
-  "ZIG GATE" "Pub Surface & Struct-Shape Gate"
-  "UI Component Substitution Gate" "DESIGN TOKEN GATE" "UFS GATE"
-  "GREPTILE GATE" "Verification Gate"
-  "LOGGING GATE" "LIFECYCLE GATE" "ERROR REGISTRY GATE"
-  "SPEC TEMPLATE GATE" "DOC READ GATE"
-)
-
-# Stage-2 dispatch parity — the 10 dispatch entries that replace the 20 gate
-# cards once docs/gates/ dissolves. Source of truth for check_dispatch_parity
+# Check 1 (dispatch inventory) + check 9b (dispatch parity) — the 10 dispatch
+# entries that replaced the 20 dissolved gate cards. Source of truth for both
+# the inventory loop in agents-md.sh and check_dispatch_parity
 # (audits/parity-dispatch.sh). Each name has a dispatch/<name>.md and a row in
-# the AGENTS.md dispatch table. Keep 1:1 with dispatch/*.md.
+# the AGENTS.md dispatch table (entry name in the 2nd column). Keep 1:1 with
+# dispatch/*.md.
 REQUIRED_DISPATCH=(
   "write_zig" "write_ts_adhere_bun" "write_sql" "write_any"
   "write_spec" "write_http" "write_auth"
@@ -76,15 +64,27 @@ HARNESS_KEYS=(
   "Architecture consult"
 )
 
-# Check 7 — dotfiles-resident docs referenced by AGENTS.md must exist on disk.
+# Check 7 — dotfiles-resident docs + dispatch façades referenced by AGENTS.md
+# must exist on disk. The per-language Zig/Bun standards docs were dropped —
+# dissolved into dispatch/write_zig.md and dispatch/write_ts_adhere_bun.md
+# respectively. The dispatch façades are listed so the AGENTS.md dispatch-table
+# refs are checked.
 DOTFILES_RESIDENT=(
   "docs/TEMPLATE.md"
   "docs/REST_API_DESIGN_GUIDELINES.md"
-  "docs/ZIG_RULES.md"
-  "docs/BUN_RULES.md"
   "docs/LOGGING_STANDARD.md"
   "docs/LIFECYCLE_PATTERNS.md"
   "docs/greptile-learnings/RULES.md"
+  "dispatch/write_zig.md"
+  "dispatch/write_ts_adhere_bun.md"
+  "dispatch/write_sql.md"
+  "dispatch/write_any.md"
+  "dispatch/write_spec.md"
+  "dispatch/write_http.md"
+  "dispatch/write_auth.md"
+  "dispatch/verify.md"
+  "dispatch/name_architecture.md"
+  "dispatch/edit_rules.md"
 )
 
 # Check 11 — every lifecycle stage header is present in AGENTS.md.

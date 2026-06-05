@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # logging.sh — flag log-emit drift against LOGGING_STANDARD.md.
 #
-# Gate body: docs/gates/logging.md
+# Dispatch façade: dispatch/write_any.md (Logging Gate)
 # Fires in: HARNESS VERIFY (via `make harness-verify`).
 #
 # TECHNICAL DEBT (acknowledged on migration to dotfiles, 2026-05-11):
@@ -149,7 +149,7 @@ if [[ ${#js_nontest[@]} -gt 0 ]]; then
     f="${match%%:*}"
     rest="${match#*:}"
     ln="${rest%%:*}"
-    fail "$f:$ln — \`console.*\` in non-test source (BUN_RULES §10, LOGGING_STANDARD §8)"
+    fail "$f:$ln — \`console.*\` in non-test source (write_ts_adhere_bun.md §10, LOGGING_STANDARD §8)"
     console_hits=$((console_hits + 1))
   done < <(grep -nHE '\bconsole\.(log|debug|info|warn|error)\(' "${js_nontest[@]}" 2>/dev/null || true)
 fi
@@ -209,7 +209,7 @@ fi
 # ---------------------------------------------------------------------------
 ok "scanned ${#FILES[@]} files; std.debug.print=$debug_print_hits console.*=$console_hits std.log.scoped=$scoped_hits missing-error_code=$missing_code_hits"
 if [[ $FAIL -ne 0 ]]; then
-  printf "\n🔴 LOGGING GATE: blocking violations. See docs/gates/logging.md.\n" >&2
+  printf "\n🔴 LOGGING GATE: blocking violations. See dispatch/write_any.md (Logging Gate).\n" >&2
   exit 1
 fi
 [[ $INFO_COUNT -gt 0 ]] && note "$INFO_COUNT informational findings; not blocking. Use --strict to enforce."

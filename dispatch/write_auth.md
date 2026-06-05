@@ -3,8 +3,8 @@
 This is the prose the AGENT reads **before touching any auth-flow, token-minting,
 or credential-typed code**. It is **fully ⚪ delegated**: the canonical rule doc
 `AUTH.md` lives in the **product repo**, not in dotfiles, so dotfiles cannot
-merge-coverage-prove it. This façade carries only the trigger + the routing + the
-cross-cutting auth invariants that hold regardless of repo.
+mechanically prove its coverage. This façade carries only the trigger + the routing
++ the cross-cutting auth invariants that hold regardless of repo.
 
 **Signal legend:**
 

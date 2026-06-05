@@ -11,7 +11,6 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 AGENTS="$ROOT/AGENTS.md"
 FIXTURES="$ROOT/audits/fixtures"
-GATES_DIR="$ROOT/docs/gates"
 FAIL=0
 
 # Expectation tables (EXPECTED_LABELS, REQUIRED_GATES, EXTS, FORBIDDEN_KEYS,
@@ -43,26 +42,19 @@ info "Auditing $AGENTS"
 [[ -f "$AGENTS" ]] || { echo "FAIL: $AGENTS missing" >&2; exit 2; }
 
 # ---------------------------------------------------------------------------
-# 1. Gate inventory — every named gate still exists (REQUIRED_GATES in data).
+# 1. Dispatch inventory — every dispatch entry (REQUIRED_DISPATCH in data) has
+#    a row in the AGENTS.md dispatch table, with the entry name as the table's
+#    SECOND column ("| <trigger> | `<entry>` | …"). This is the same column the
+#    parity check (check 9b) counts, so inventory and parity agree by
+#    construction — a renamed/dropped entry fails here AND there.
 # ---------------------------------------------------------------------------
-missing_gates=0
-for g in "${REQUIRED_GATES[@]}"; do
-  # The name must appear as the Gate COLUMN value of an index row — i.e.
-  # right after a "| " cell delimiter ("| <name>") — on a line that ALSO
-  # carries a docs/gates/ body reference. Rationale for each part:
-  #   * A file-wide substring match was too loose: the same row's override
-  #     text repeats the name (·`$g: SKIPPED…`) on the very line holding the
-  #     docs/gates/ path, so renaming the Gate column kept the check green.
-  #   * The "| " prefix anchors to the column cell; the override repetition
-  #     is preceded by a backtick, not "| ", so it no longer satisfies it.
-  #   * We do NOT require a trailing " |": row 1's cell carries a "(meta)"
-  #     suffix, and REQUIRED_GATES stores the bare name.
-  # (Both failure shapes are pinned by the negative harness; see
-  #  evals/test-agents-md.sh.)
-  grep -F "| $g" "$AGENTS" | grep -q 'docs/gates/' \
-    || { fail "gate missing from index: $g"; missing_gates=1; }
+bt='`'   # backtick held in a var — keeps it explicit inside the regex
+missing_dispatch=0
+for e in "${REQUIRED_DISPATCH[@]}"; do
+  grep -qE "^\|[^|]*\| *${bt}${e}${bt} *\|" "$AGENTS" \
+    || { fail "dispatch entry missing from table: $e"; missing_dispatch=1; }
 done
-[[ $missing_gates -eq 0 ]] && pass "gate inventory (${#REQUIRED_GATES[@]} gates present in index)"
+[[ $missing_dispatch -eq 0 ]] && pass "dispatch inventory (${#REQUIRED_DISPATCH[@]} entries present in table)"
 
 # ---------------------------------------------------------------------------
 # 2. Trigger surface — every source/config language has a mention (EXTS in data).
@@ -164,51 +156,24 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 9. Gate-body completeness — DERIVED, not hand-listed. The set of gate
-#    bodies is computed from disk; each must carry the three structural
-#    markers (Triggers, Override, 🚧 H1) AND be referenced by AGENTS.md.
-#    A hand-maintained array was the root cause of UFS/DESIGN-TOKEN drift
-#    (bodies on disk + in the AGENTS.md index, but absent from the array,
-#    so the audit silently skipped them). Deriving removes that failure mode.
+# 9b. Dispatch parity — the three sources of truth must agree: dispatch/*.md
+#     bodies on disk, dispatch-table rows in AGENTS.md, and REQUIRED_DISPATCH
+#     (check #1). The check also asserts docs/gates/ is EMPTY — the dissolved-
+#     gate end state — so a half-done switchover (a leftover card) hard-fails.
+#     The logic lives in the sibling parity-dispatch.sh so the model-B sandbox
+#     test (evals/test-dispatch-parity.sh) can exercise it in isolation; this
+#     keeps the body completeness + existence guarantee that the old per-card
+#     gate-body check used to provide (each REQUIRED_DISPATCH entry must resolve
+#     to a real dispatch/<entry>.md).
 # ---------------------------------------------------------------------------
-mapfile -t GATE_FILES < <(cd "$ROOT" && ls docs/gates/*.md 2>/dev/null | sort)
-gate_body_fail=0
-if [[ ${#GATE_FILES[@]} -eq 0 ]]; then
-  fail "no gate bodies found under docs/gates/"; gate_body_fail=1
+. "$ROOT/audits/parity-dispatch.sh"
+parity_out=$(check_dispatch_parity "$ROOT"); parity_rc=$?
+if [[ $parity_rc -eq 0 ]]; then
+  pass "dispatch parity ${parity_out#PASS: dispatch parity }"
+else
+  printf '%s\n' "$parity_out" >&2
+  fail "dispatch parity mismatch (see FAIL lines above)"
 fi
-for gf in "${GATE_FILES[@]}"; do
-  full="$ROOT/$gf"
-  grep -qE '^\*\*Triggers' "$full"   || { fail "$gf missing **Triggers** marker"; gate_body_fail=1; }
-  grep -qE '^\*\*Override' "$full"   || { fail "$gf missing **Override** marker"; gate_body_fail=1; }
-  grep -qE '^# 🚧 '          "$full" || { fail "$gf missing 🚧 shield in H1";    gate_body_fail=1; }
-  # AGENTS.md must point at this gate body (no orphan body on disk).
-  grep -qF "$gf" "$AGENTS"           || { fail "AGENTS.md does not reference $gf (orphan gate body)"; gate_body_fail=1; }
-done
-[[ $gate_body_fail -eq 0 ]] && pass "gate bodies complete (${#GATE_FILES[@]} files derived from disk, each with Triggers + Override + 🚧 + AGENTS.md ref)"
-
-# ---------------------------------------------------------------------------
-# 9b. Gate parity — the three sources of truth must agree in size, so adding
-#     a gate to one place but forgetting another is a hard FAIL:
-#       (a) gate-index rows in AGENTS.md (lines carrying a docs/gates/ ref),
-#       (b) gate bodies on disk,
-#       (c) the REQUIRED_GATES name array (check #1).
-#     Also: every docs/gates/ path the AGENTS.md index names must exist on
-#     disk (no dangling pointer). This is the structural backstop that the
-#     hand-list let slip — it makes "wire it everywhere or fail" mechanical.
-# ---------------------------------------------------------------------------
-parity_fail=0
-index_rows=$(grep -cE '^\| *[0-9]+ .*docs/gates/[a-z0-9-]+\.md' "$AGENTS")
-disk_count=${#GATE_FILES[@]}
-required_count=${#REQUIRED_GATES[@]}
-if [[ "$index_rows" -ne "$disk_count" || "$disk_count" -ne "$required_count" ]]; then
-  fail "gate parity mismatch: AGENTS.md index rows=$index_rows, disk bodies=$disk_count, REQUIRED_GATES=$required_count (all three must match)"
-  parity_fail=1
-fi
-# Every index-named body path resolves to a real file.
-while IFS= read -r ref; do
-  [[ -f "$ROOT/$ref" ]] || { fail "AGENTS.md gate index references missing body: $ref"; parity_fail=1; }
-done < <(grep -oE 'docs/gates/[a-z0-9-]+\.md' "$AGENTS" | sort -u)
-[[ $parity_fail -eq 0 ]] && pass "gate parity (index=$index_rows ↔ disk=$disk_count ↔ REQUIRED_GATES=$required_count, all index refs resolve)"
 
 # ---------------------------------------------------------------------------
 # 10. audits/agents-md.md presence + basic shape (questionnaire layer).
@@ -260,8 +225,8 @@ fi
 
 # ---------------------------------------------------------------------------
 # 13. Hook trigger coverage — pre-commit AND pre-push must reference
-#     AGENTS.md AND docs/gates so ruleset changes can never silently
-#     bypass either layer.
+#     AGENTS.md AND dispatch/ so ruleset changes can never silently
+#     bypass either layer (dispatch/ replaces the dissolved docs/gates/).
 # ---------------------------------------------------------------------------
 PRE_COMMIT="$ROOT/.githooks/pre-commit"
 PRE_PUSH="$ROOT/.githooks/pre-push"
@@ -272,9 +237,9 @@ for hook in "$PRE_COMMIT" "$PRE_PUSH"; do
     fail "hook missing: .githooks/$name"; hook_fail=1; continue
   fi
   grep -qF "AGENTS.md"  "$hook" || { fail "$name missing AGENTS.md trigger reference"; hook_fail=1; }
-  grep -qF "docs/gates" "$hook" || { fail "$name missing docs/gates trigger reference"; hook_fail=1; }
+  grep -qF "dispatch/"  "$hook" || { fail "$name missing dispatch/ trigger reference"; hook_fail=1; }
 done
-[[ $hook_fail -eq 0 ]] && pass "hook triggers (.githooks/pre-commit + pre-push both gate AGENTS.md + docs/gates)"
+[[ $hook_fail -eq 0 ]] && pass "hook triggers (.githooks/pre-commit + pre-push both gate AGENTS.md + dispatch/)"
 
 # ---------------------------------------------------------------------------
 # 14. Rule extension protocol — AGENTS.md MUST document the 4-step recipe

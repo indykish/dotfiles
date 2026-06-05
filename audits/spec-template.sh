@@ -11,7 +11,7 @@
 #      FILLED. A spec that omits them forces the executing agent to guess intent.
 #      This is the half that makes a spec "built for the agent".
 #
-# Gate body: docs/gates/spec-template.md
+# Dispatch façade: dispatch/write_spec.md (SPEC TEMPLATE GATE)
 # Fires in: make lint (after audit-logging, before audit-error-codes).
 #
 # Modes:
@@ -180,7 +180,7 @@ for spec in "${SPECS[@]}"; do
 done
 
 if [[ $FAIL -ne 0 ]]; then
-  printf "\n🔴 SPEC TEMPLATE GATE: violations found. See docs/gates/spec-template.md.\n" >&2
+  printf "\n🔴 SPEC TEMPLATE GATE: violations found. See dispatch/write_spec.md.\n" >&2
   exit 1
 fi
 

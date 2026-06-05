@@ -3,7 +3,7 @@
 This is the prose the AGENT reads **before writing or editing a spec** under
 `docs/v*/{pending,active,done}/`. It pairs with the deterministic half
 `audits/spec.sh` (named `audits/spec-template.sh` until the Stage-2 rename),
-which runs in `make lint`. (This is `docs/gates/spec-template.md` absorbed into
+which runs in `make lint`. (This is the former Spec Template gate absorbed into
 the dispatch model — `docs/TEMPLATE.md` remains the canonical section source.)
 
 **Signal legend:**

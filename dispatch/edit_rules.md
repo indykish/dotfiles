@@ -5,7 +5,7 @@ It is the meta-dispatch: it watches every other dispatch entry's source-of-truth
 Its **latent half is the questionnaire at [`audits/agents-md.md`](../audits/agents-md.md)**;
 its **deterministic half is [`audits/agents-md.sh`](../audits/agents-md.sh)** (run by
 the git hooks), and `make llmevals` proves a live agent still complies. (This is
-`docs/gates/invariance-suite.md` absorbed into the dispatch model — the only
+the former Invariance Suite gate absorbed into the dispatch model — the only
 dispatch entry whose `.sh` half is the system's own self-checker.)
 
 **Signal legend:**

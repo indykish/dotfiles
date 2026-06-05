@@ -60,7 +60,7 @@ Determinism starts here. Before copying the template:
 
 This is the step that prevents greptile findings — the spec becomes a pre-commitment to the rules its code must obey:
 
-- **Applicable Rules** — name the *specific* `docs/greptile-learnings/RULES.md` rule IDs the diff will trip (e.g. NDC, NLR, NLG, UFS), plus the per-surface rule files: `ZIG_RULES.md` (`*.zig`), `REST_API_DESIGN_GUIDELINES.md` (`src/http/handlers/**`), `SCHEMA_CONVENTIONS.md` (`schema/*`), `BUN_RULES.md`, `LOGGING_STANDARD.md`, `LIFECYCLE_PATTERNS.md`. Generic "follow RULES.md" earns a greptile finding; named IDs the implementer obeys by construction do not.
+- **Applicable Rules** — name the *specific* `docs/greptile-learnings/RULES.md` rule IDs the diff will trip (e.g. NDC, NLR, NLG, UFS), plus the per-surface dispatch façades / rule files: `dispatch/write_zig.md` (`*.zig`), `REST_API_DESIGN_GUIDELINES.md` (`src/http/handlers/**`), `SCHEMA_CONVENTIONS.md` (`schema/*`), `dispatch/write_ts_adhere_bun.md`, `LOGGING_STANDARD.md`, `LIFECYCLE_PATTERNS.md`. Generic "follow RULES.md" earns a greptile finding; named IDs the implementer obeys by construction do not.
 - **Applicable Gates** — which Action-Triggered Guards fire (ZIG, PUB, LENGTH, UFS, UI, DESIGN TOKEN, LOGGING, LIFECYCLE, SCHEMA, ERROR REGISTRY) and the satisfaction strategy for each. Rules ≠ gates: rules are knowledge to read; gates fire on edits.
 - **Prior-Art / Reference Implementations** — the reference codebase to mirror (CLI → the supabase effects pillars at `docs/CLI_DX_PILLARS.md`; API → REST guide + nearest handler). No reinventing what a known-good pattern already solves.
 

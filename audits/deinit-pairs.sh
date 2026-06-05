@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # deinit-pairs.sh — verify init/deinit pairing for Zig structs.
 #
-# Gate body: docs/gates/lifecycle.md
+# Dispatch façade: dispatch/write_zig.md (lifecycle / LIFECYCLE GATE)
 # Standalone tool — not wired into make lint or pre-commit (per Indy's
 # direction, gates fire pre-emptively via printed proof-blocks during
 # agent work; lint integration is intentionally absent).
@@ -217,7 +217,7 @@ fi
 # ---------------------------------------------------------------------------
 ok "scanned $files_scanned files; $inits_total init methods ($inits_value_type value-type, $inits_requires_cleanup require cleanup, $inits_unpaired unpaired)"
 if [[ $FAIL -ne 0 ]]; then
-  printf "\n🔴 LIFECYCLE GATE: violations found. See docs/gates/lifecycle.md.\n" >&2
+  printf "\n🔴 LIFECYCLE GATE: violations found. See dispatch/write_zig.md (lifecycle).\n" >&2
   exit 1
 fi
 ok "LIFECYCLE GATE: clean"

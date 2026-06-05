@@ -1,6 +1,6 @@
 # write_ts_adhere_bun.md — TypeScript / Bun latent façade
 
-This is the prose the AGENT reads before writing any `*.ts` / `*.tsx` / `*.js` / `*.jsx` file. It pairs with the deterministic façade `dispatch/write_ts_adhere_bun.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. This document is `docs/BUN_RULES.md` merged with the TypeScript-relevant `docs/gates/*.md` deltas (`ui-substitution`, `design-token`): every original BUN_RULES line is preserved verbatim (one forward-looking repoint: `ZIG_RULES.md` → `write_zig.md`), each `## ` section now carries exactly one enforcement tag, and the dissolved gate-card prose is appended under "Merged from dissolved gate cards." Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
+This is the prose the AGENT reads before writing any `*.ts` / `*.tsx` / `*.js` / `*.jsx` file. It pairs with the deterministic façade `dispatch/write_ts_adhere_bun.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. This document consolidates the former Bun/TypeScript rules merged with the TypeScript-relevant dissolved gate-card deltas (UI substitution, design-token): every original rule line is preserved verbatim (one forward-looking repoint to `write_zig.md`), each `## ` section now carries exactly one enforcement tag, and the dissolved gate-card prose is appended under "Merged from dissolved gate cards." Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
 
 **Signal legend** (printed by `write_ts_adhere_bun.sh`):
 
@@ -19,7 +19,7 @@ See [`docs/DISPATCH_ARCHITECTURE.md`](../docs/DISPATCH_ARCHITECTURE.md) §3 for 
 
 ---
 
-# BUN_RULES — TypeScript / Bun discipline
+# Bun / TypeScript discipline
 
 Modelled on `write_zig.md`. Pre-design rules, decisive defaults, and the
 anti-patterns each rule exists to prevent. Every rule has a one-line
@@ -36,7 +36,7 @@ Triggers on every `Edit`/`Write` to:
 
 Out of scope: framework-generated files (Next.js generated types, Astro `.astro`).
 
-The **UI Component Substitution Gate** (`docs/gates/ui-substitution.md`) and **GREPTILE GATE** (which carries RULE UFS, RULE TGU, RULE PRI for TypeScript) sit on top of this file — they fire in addition to these rules, not instead of them.
+The **UI Component Substitution Gate** (the UI Component Substitution section below) and **GREPTILE GATE** (which carries RULE UFS, RULE TGU, RULE PRI for TypeScript) sit on top of this file — they fire in addition to these rules, not instead of them.
 
 ## §1 · TS FILE SHAPE DECISION (mandatory at PLAN)
 
@@ -272,8 +272,8 @@ immediately preceding the edit. **User-invokable only.** Generic "scope creep" /
 > [DETERMINISTIC → FLL]
 
 - Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `docs/greptile-learnings/RULES.md` and apply to TypeScript via the **GREPTILE GATE**.
-- Frontend visual primitives live in `docs/gates/ui-substitution.md` (UI GATE).
-- Length caps live in `docs/gates/file-length.md` (LENGTH GATE — file ≤ 350, fn ≤ 50, method ≤ 70 — same as every other source language).
+- Frontend visual primitives live in the UI Component Substitution section of this façade (UI GATE).
+- Length caps live in `dispatch/write_any.md` (LENGTH GATE — file ≤ 350, fn ≤ 50, method ≤ 70 — same as every other source language).
 - This file is the **TypeScript / Bun-specific** layer that those universal rules cannot express. Read it once at session start, re-read on sub-task shape change.
 
 ## Merged from dissolved gate cards

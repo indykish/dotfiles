@@ -2,7 +2,7 @@
 # design-tokens.sh — enforce design-system token discipline across
 # ui/packages/{app,website}/**/*.tsx.
 #
-# Gate body: docs/gates/design-token.md
+# Dispatch façade: dispatch/write_ts_adhere_bun.md (Design Tokens / DESIGN TOKEN GATE)
 # Fires in: HARNESS VERIFY (via `make harness-verify`).
 #
 # Rejects arbitrary Tailwind classes when an equivalent design-system
@@ -88,7 +88,7 @@ case "$MODE" in
     ;;
   *)
     echo "usage: $0 [--all|--staged]" >&2
-    echo "note: --diff was retired in M70 — see docs/gates/design-token.md (Scope)." >&2
+    echo "note: --diff was retired in M70 — see dispatch/write_ts_adhere_bun.md (Design Tokens → Scope)." >&2
     exit 2 ;;
 esac
 
@@ -139,5 +139,5 @@ echo "FAIL: design-token discipline ($FILES_WITH_VIOLATIONS file(s) with violati
 echo "      Replace each match with the suggested token utility, or add the inline override:"
 echo "        // DESIGN TOKEN: SKIPPED per user override (reason: <concrete reason>)"
 echo "      Token source: ui/packages/design-system/src/theme.css"
-echo "      Rule body:    docs/gates/design-token.md (proposed)"
+echo "      Rule body:    dispatch/write_ts_adhere_bun.md (Design Tokens)"
 exit 1

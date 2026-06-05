@@ -1,6 +1,6 @@
 # LIFECYCLE_PATTERNS — init/deinit/defer/errdefer convention for Zig
 
-The contract for memory ownership and cleanup in Zig structs. Sister doc to `ZIG_RULES.md` (which covers per-edit discipline) and `LOGGING_STANDARD.md` (which covers the cross-language wire format).
+The contract for memory ownership and cleanup in Zig structs. Sister doc to `dispatch/write_zig.md` (which covers per-edit discipline) and `LOGGING_STANDARD.md` (which covers the cross-language wire format).
 
 Pre-design rules, decisive defaults, and the anti-patterns each rule exists to prevent. Every rule has a one-line "why" so you can judge edge cases.
 
@@ -20,7 +20,7 @@ Out of scope:
 - Stack-only structs with no allocation (zero-cost values; no lifecycle).
 - Test-only mocks/stubs in `*_test.zig` that fake init/deinit for assertion purposes.
 
-The **LIFECYCLE GATE** (`docs/gates/lifecycle.md`) sits on top of this file and audits init/deinit pairing + errdefer placement on every Zig edit. It is **not** a substitute for the **PUB GATE** (`docs/gates/pub-surface.md`) — see §11 for the carve-out.
+The **LIFECYCLE GATE** (`dispatch/write_zig.md`, lifecycle) sits on top of this file and audits init/deinit pairing + errdefer placement on every Zig edit. It is **not** a substitute for the **PUB GATE** (`dispatch/write_zig.md`, pub-surface) — see §11 for the carve-out.
 
 ## §2 · Today's de-facto convention (survey-derived)
 
@@ -281,9 +281,9 @@ Failure modes the audit script and reviewer must close. These are **not aspirati
 | LC7 | "Empty no-op `init` paired with empty no-op `deinit` to satisfy the gate" | Audit informational-flags when both `init` and `deinit` bodies are empty or single `_ = self;`. Pair exists for shape, not for state — likely should be a `const` value or removed. |
 | LC8 | "Auto-mode is on" | **Auto-mode does NOT cover gate skips.** Skip without explicit user-given override = automatic violation. |
 | LC9 | "Renamed-only file (no content change), gate doesn't fire" | Rename without content change does **not** fire LIFECYCLE GATE. Rename + content change does. Pure rename is a no-op for the gate. |
-| LC10 | "Two docs disagree (e.g. ZIG_RULES says X, LIFECYCLE_PATTERNS says Y)" | Precedence: gate body file > standards doc > spec. The gate body (`docs/gates/lifecycle.md`) is the canonical enforcement layer. |
+| LC10 | "Two docs disagree (e.g. write_zig.md says X, LIFECYCLE_PATTERNS says Y)" | Precedence: dispatch façade > standards doc > spec. The façade (`dispatch/write_zig.md`, lifecycle) is the canonical enforcement layer. |
 
-These are enforced by `deinit-pairs.sh` (mechanical) and the gate body file (`docs/gates/lifecycle.md`, output discipline). When in conflict, the gate body file wins.
+These are enforced by `deinit-pairs.sh` (mechanical) and the dispatch façade (`dispatch/write_zig.md`, lifecycle — output discipline). When in conflict, the façade wins.
 
 ## §11 · Carve-out: PUB GATE vs LIFECYCLE GATE
 
@@ -291,8 +291,8 @@ Both gates touch the same `pub fn init` / `pub fn deinit` symbols, but ask diffe
 
 | Gate | Question |
 |---|---|
-| **PUB GATE** (`docs/gates/pub-surface.md`) | Should this symbol be `pub`? Does the file shape (file-as-struct vs functions-module) justify it? |
-| **LIFECYCLE GATE** (`docs/gates/lifecycle.md`) | If `init` exists, does `deinit`? Is `errdefer` placed correctly? Is allocator ownership clear? Is the call-site contract documented? |
+| **PUB GATE** (`dispatch/write_zig.md`, pub-surface) | Should this symbol be `pub`? Does the file shape (file-as-struct vs functions-module) justify it? |
+| **LIFECYCLE GATE** (`dispatch/write_zig.md`, lifecycle) | If `init` exists, does `deinit`? Is `errdefer` placed correctly? Is allocator ownership clear? Is the call-site contract documented? |
 
 When a `pub fn init` is added, **both gates may fire**. Print both blocks. Neither gate skips deferring to the other; the redundancy on this critical surface is a feature.
 
@@ -308,10 +308,9 @@ immediately preceding the edit. Generic "save for later" / "tactical decision" n
 
 ## §13 · Family
 
-- `ZIG_RULES.md` — Zig discipline umbrella. This doc is the lifecycle-specific layer below it.
+- `dispatch/write_zig.md` — Zig discipline umbrella (absorbs ZIG GATE + PUB + LIFECYCLE). This doc is the lifecycle-specific layer below it.
 - `LOGGING_STANDARD.md` §7 — orthogonal: how lifecycle hooks (init/deinit) emit observability records.
-- `docs/gates/zig.md` — ZIG GATE umbrella.
-- `docs/gates/pub-surface.md` — PUB GATE; carve-out in §11.
-- `docs/gates/file-length.md` — file ≤ 350, fn ≤ 50, method ≤ 70 (deinit/init don't escape these limits).
+- `dispatch/write_zig.md` (pub-surface) — PUB GATE; carve-out in §11.
+- `dispatch/write_any.md` (File & Function Length) — file ≤ 350, fn ≤ 50, method ≤ 70 (deinit/init don't escape these limits).
 - Universal rules (RULE UFS, RULE TGU, RULE ORP) live in `docs/greptile-learnings/RULES.md` and apply via the GREPTILE GATE.
 - This file is the **lifecycle convention** that those universal rules cannot express. Read it once at session start; re-read on sub-task shape change.

@@ -16,7 +16,7 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
-if git diff --cached --name-only | grep -qE '^(AGENTS\.md|AGENTS_INVARIANCE\.md|docs/gates/.*\.md|audits/agents-md\.sh|audits/fixtures/.*\.diff)$'; then
+if git diff --cached --name-only | grep -qE '^(AGENTS\.md|audits/agents-md\.(md|sh)|audits/data\.sh|audits/parity-dispatch\.sh|dispatch/.*\.md|audits/fixtures/.*\.diff)$'; then
   if [[ "${SKIP_AGENTS_AUDIT:-0}" = "1" ]]; then
     echo "pre-commit: SKIP_AGENTS_AUDIT=1 — bypassing AGENTS.md audit (one-off)" >&2
   else

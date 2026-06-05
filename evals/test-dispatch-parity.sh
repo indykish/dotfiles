@@ -48,8 +48,11 @@ sb="$(build_sandbox)"; grep -v '`edit_rules`' "$sb/AGENTS.md" > "$sb/AGENTS.md.t
 green "$sb" && bad "should bite on a dropped table row" || ok "bites when an AGENTS.md table row is dropped"
 
 # 4. Bite — a leftover gate card (half-done switchover) must FAIL.
-sb="$(build_sandbox)"; printf '# leftover\n' > "$sb/docs/gates/zig.md"
-green "$sb" && bad "should bite on a leftover docs/gates card" || ok "bites when docs/gates/ still holds a card"
+# Fixture name uses an underscore so `find -name '*.md'` still catches it (the
+# guard bites) while the strict zero-dangling-ref regex `docs/gates/[a-z-]*\.md`
+# does not — keeping this harness off that sweep.
+sb="$(build_sandbox)"; printf '# leftover\n' > "$sb/docs/gates/leftover_card.md"
+green "$sb" && bad "should bite on a leftover docs/gates card" || ok "bites when a leftover gate card remains"
 
 # 5. Bite — an extra unlisted dispatch body (count mismatch) must FAIL.
 sb="$(build_sandbox)"; printf '# rogue\n' > "$sb/dispatch/write_rogue.md"

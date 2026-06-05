@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Negative-test harness for audits/agents-md.sh.
+# Negative-test harness for audits/agents-md.sh (dispatch model).
 #
 # Conformance + determinism require more than "the audit passes on a good
 # tree". They require proof that the audit FAILS on a bad tree — that every
@@ -7,7 +7,8 @@
 # stops firing (the exact UFS / DESIGN-TOKEN drift this suite already paid
 # for) is invisible to a green run. This harness makes that visible.
 #
-# Method: build a pristine sandbox COPY of the ruleset, apply one targeted
+# Method: build a pristine model-B sandbox COPY of the ruleset (AGENTS.md
+# dispatch table + dispatch/*.md façades, NO docs/gates/), apply one targeted
 # mutation, run the audit against the sandbox, and assert it exits non-zero
 # AND emits the specific FAIL substring. Each mutation maps to one invariant.
 #
@@ -30,22 +31,25 @@ fi
 ok()  { printf '%s✓%s %s\n' "$G" "$X" "$*"; OK=$((OK + 1)); }
 bad() { printf '%s✗ %s%s\n' "$R" "$*" "$X" >&2; BAD=$((BAD + 1)); }
 
-# Build a self-contained sandbox the audit can run against unmodified.
+# Build a self-contained model-B sandbox the audit can run against unmodified.
 # The audit derives ROOT from its own location, so a copied script run from
 # the sandbox treats the sandbox as ROOT — no env override needed.
+#
+# Model-B end state: AGENTS.md carries the 10-row dispatch table, dispatch/
+# holds the 10 façades, docs/gates/ does NOT exist (parity asserts it empty).
 make_sandbox() {
   local sb; sb="$(mktemp -d)"
   cp "$SRC_ROOT/AGENTS.md" "$sb/"
-  mkdir -p "$sb/audits/fixtures" "$sb/docs/gates" \
-           "$sb/docs/greptile-learnings" "$sb/.githooks"
-  cp "$SRC_ROOT/audits/agents-md.sh" "$sb/audits/"
-  cp "$SRC_ROOT/audits/agents-md.md" "$sb/audits/"
-  cp "$SRC_ROOT/audits/data.sh" "$sb/audits/"
-  cp "$SRC_ROOT"/audits/fixtures/*.diff "$sb/audits/fixtures/"
-  cp "$SRC_ROOT"/docs/gates/*.md "$sb/docs/gates/"
+  mkdir -p "$sb/audits/fixtures" "$sb/docs/greptile-learnings" \
+           "$sb/dispatch" "$sb/.githooks"
+  cp "$SRC_ROOT/audits/agents-md.sh"       "$sb/audits/"
+  cp "$SRC_ROOT/audits/agents-md.md"       "$sb/audits/"
+  cp "$SRC_ROOT/audits/data.sh"            "$sb/audits/"
+  cp "$SRC_ROOT/audits/parity-dispatch.sh" "$sb/audits/"
+  cp "$SRC_ROOT"/audits/fixtures/*.diff    "$sb/audits/fixtures/"
+  cp "$SRC_ROOT"/dispatch/*.md             "$sb/dispatch/"
   local d
-  for d in TEMPLATE REST_API_DESIGN_GUIDELINES ZIG_RULES BUN_RULES \
-           LOGGING_STANDARD LIFECYCLE_PATTERNS; do
+  for d in TEMPLATE REST_API_DESIGN_GUIDELINES LOGGING_STANDARD LIFECYCLE_PATTERNS; do
     cp "$SRC_ROOT/docs/$d.md" "$sb/docs/" 2>/dev/null
   done
   cp "$SRC_ROOT/docs/greptile-learnings/RULES.md" "$sb/docs/greptile-learnings/"
@@ -59,7 +63,7 @@ check_baseline() {
   local sb rc; sb="$(make_sandbox)"
   bash "$sb/audits/agents-md.sh" >"$sb/.out" 2>&1; rc=$?
   if [[ $rc -eq 0 ]]; then
-    ok "baseline — pristine sandbox PASSES (rc=0)"
+    ok "baseline — pristine model-B sandbox PASSES (rc=0)"
   else
     bad "baseline — pristine sandbox FAILED (rc=$rc); sandbox build is broken"
     grep -E '🔴|REGRESSION' "$sb/.out" | head
@@ -82,35 +86,46 @@ expect_fail() {
   rm -rf "$sb"
 }
 
-printf '%s🔬 Negative-test harness for agents-md.sh%s\n\n' "$B$BO" "$X"
+printf '%s🔬 Negative-test harness for agents-md.sh (dispatch model)%s\n\n' "$B$BO" "$X"
 
 check_baseline
 echo
 
 # --- one mutation per invariant ------------------------------------------
-expect_fail "gate inventory bites when a gate name is renamed in the index" \
-  "gate missing from index: UFS GATE" \
-  "perl -pi -e 's/\| UFS GATE \|/| XXX GATE |/' AGENTS.md"
+
+# Check 1 — dispatch inventory: an entry renamed out of the table's 2nd column.
+expect_fail "dispatch inventory bites when an entry is renamed in the table" \
+  "dispatch entry missing from table: write_sql" \
+  "perl -pi -e 's/write_sql/write_xxx/g' AGENTS.md"
+
+# Check 9b — dispatch parity: a façade body removed (disk < table).
+expect_fail "dispatch parity bites when a dispatch body is deleted" \
+  "dispatch entry has no body: dispatch/verify.md" \
+  "rm dispatch/verify.md"
+
+# Check 9b — dispatch parity: an extra unlisted table row (table > disk).
+expect_fail "dispatch parity bites when an extra unlisted row is added" \
+  "dispatch parity" \
+  "printf '| writes X | \`write_rogue\` | prose | check |\n' >> AGENTS.md"
+
+# Check 9b — dispatch parity: a leftover gate card (half-done switchover).
+# Fixture name uses an underscore (leftover_card.md) so `find -name '*.md'`
+# still catches it (the guard bites) while the strict zero-dangling-ref regex
+# `docs/gates/[a-z-]*\.md` does not — keeping this harness off that sweep.
+expect_fail "dispatch parity bites when a leftover gate card remains" \
+  "switchover incomplete" \
+  "mkdir -p docs/gates && printf '# leftover\n' > docs/gates/leftover_card.md"
+
+# Check 7 — cross-references: a dotfiles-resident doc named by AGENTS.md vanishes.
+# Use a non-dispatch resident (docs/TEMPLATE.md) so this isolates check 7
+# without also tripping dispatch parity.
+expect_fail "cross-reference bites when a resident doc is missing" \
+  "dotfiles-resident ref missing: docs/TEMPLATE.md" \
+  "rm docs/TEMPLATE.md"
 
 expect_fail "trigger surface bites when an extension is dropped" \
   "trigger surface missing extension: .sql" \
   "perl -pi -e 's/\.sql//g' AGENTS.md"
-
-expect_fail "parity bites when a gate body is deleted (dangling index ref)" \
-  "references missing body: docs/gates/ufs.md" \
-  "rm docs/gates/ufs.md"
-
-expect_fail "orphan-body bites when a body lacks an AGENTS.md reference" \
-  "orphan gate body" \
-  "printf '# 🚧 X\n\n**Triggers:** t\n\n**Override:** none\n' > docs/gates/_orphan.md"
-
-expect_fail "gate-body marker bites when **Triggers** is stripped" \
-  "missing **Triggers** marker" \
-  "perl -0pi -e 's/^\*\*Triggers/REMOVED_Triggers/m' docs/gates/zig.md"
-
-expect_fail "gate-body marker bites when the 🚧 H1 shield is stripped" \
-  "missing 🚧 shield in H1" \
-  "perl -pi -e 's/^# 🚧 /# /' docs/gates/zig.md"
 
 expect_fail "skill-chain bites when /review-pr is removed from CHORE(close)" \
   "skill chain not in order" \
@@ -151,10 +166,6 @@ expect_fail "size bites when AGENTS.md exceeds the byte cap" \
   "exceeds limit" \
   "perl -e 'print \"x\" x 40000' >> AGENTS.md"
 
-expect_fail "parity ref-resolve bites on a dangling index pointer" \
-  "references missing body: docs/gates/ghost.md" \
-  "printf '| 21 | GHOST | \`docs/gates/ghost.md\` | x |\n' >> AGENTS.md"
-
 expect_fail "self-fingerprint bites when a whole check is deleted from the script" \
   "self-fingerprint: expected check 'identity handles' did not run" \
   "perl -0pi -e 's/if grep -qF \"human is Kishore\".*?\nfi\n//s' audits/agents-md.sh"
@@ -163,9 +174,9 @@ expect_fail "fixture fingerprint bites when dirty.diff is sanitised" \
   "fixture dirty.diff missing M40_001 marker" \
   "perl -pi -e 's/M40_001/CLEAN/g' audits/fixtures/dirty.diff"
 
-expect_fail "hook trigger bites when pre-push drops its docs/gates guard" \
-  "missing docs/gates trigger reference" \
-  "perl -pi -e 's{docs/gates}{docs/XXX}g' .githooks/pre-push"
+expect_fail "hook trigger bites when pre-push drops its dispatch/ guard" \
+  "missing dispatch/ trigger reference" \
+  "perl -pi -e 's{dispatch/}{XXX/}g' .githooks/pre-push"
 
 echo
 printf '%s' "$BO"

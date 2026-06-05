@@ -1,6 +1,6 @@
 # write_zig.md — Zig latent façade
 
-This is the prose the AGENT reads before writing any `*.zig` file. It pairs with the deterministic façade `dispatch/write_zig.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. This document is `docs/ZIG_RULES.md` merged with the Zig-relevant `docs/gates/*.md` deltas: every original ZIG_RULES line is preserved verbatim, each `## ` section now carries exactly one enforcement tag, and the dissolved gate-card prose is appended under "Merged from dissolved gate cards." Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
+This is the prose the AGENT reads before writing any `*.zig` file. It pairs with the deterministic façade `dispatch/write_zig.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. This document consolidates the former Zig rules merged with the Zig-relevant dissolved gate-card deltas: every original rule line is preserved verbatim, each `## ` section now carries exactly one enforcement tag, and the dissolved gate-card prose is appended under "Merged from dissolved gate cards." Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
 
 **Signal legend** (printed by `write_zig.sh`):
 
@@ -30,9 +30,9 @@ Status: Canonical Zig source of truth for agents and commits
 
 > [JUDGMENT → ARCH]
 
-For every commit that touches `*.zig`, the agent runs the workflow below — no human approvals required mid-loop. ZIG_RULES.md is the human-discipline complement to `make lint`; rules already enforced by lint are not duplicated here. The agent owns the rules that lint cannot mechanically catch.
+For every commit that touches `*.zig`, the agent runs the workflow below — no human approvals required mid-loop. This façade is the human-discipline complement to `make lint`; rules already enforced by lint are not duplicated here. The agent owns the rules that lint cannot mechanically catch.
 
-1. **Before write (trigger: about to edit / create `*.zig`):** scan ZIG_RULES.md section headers (`grep -n "^## " docs/ZIG_RULES.md`). Re-read any section whose topic the diff touches: concurrency for atomics / threads, allocator-ownership for new structs, doc-comments for new `pub` types, comptime assertions for new invariants, single-type-module pattern for new file structure, etc.
+1. **Before write (trigger: about to edit / create `*.zig`):** scan this façade's section headers (`grep -n "^## " dispatch/write_zig.md`). Re-read any section whose topic the diff touches: concurrency for atomics / threads, allocator-ownership for new structs, doc-comments for new `pub` types, comptime assertions for new invariants, single-type-module pattern for new file structure, etc.
 
 2. **During write:** for each surfaced uncertainty (atomic ordering choice, allocator pattern, naming, structural choice), state the rule and the choice in chat — don't decide silently.
 
@@ -46,7 +46,7 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
     - New allocator choice (`ArenaAllocator`, fixed buffer, page allocator, caller allocator, stored allocator) — confirm an `ALLOCATOR CHOICE:` line was printed before the edit.
     - New long-running worker, child process, socket/read loop, or blocking wait — confirm timeout, cancellation, and join/cleanup paths are named in the diff or adjacent comments.
 
-4. **After ZIG_RULES.md edits land:** every active branch with uncommitted Zig work must rerun steps 1–3 against the updated rules. Do not assume yesterday's audit covers today's rules. The agent is responsible for re-checking; the user is not the gate.
+4. **After `dispatch/write_zig.md` edits land:** every active branch with uncommitted Zig work must rerun steps 1–3 against the updated rules. Do not assume yesterday's audit covers today's rules. The agent is responsible for re-checking; the user is not the gate.
 
 5. **Test discovery hygiene:** when extracting tests to a new file, verify discovery by adding an import to `main.zig` (or a `test {}` façade block), per the "New File Rules" section below.
 
@@ -100,7 +100,7 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
 
 - This repo uses `zlint` as part of `make lint`.
 - Pinned version: `v0.7.9`.
-- **`unused-decls: error` is load-bearing.** PUB GATE (`docs/gates/pub-surface.md`) delegates mechanical consumer-grep to this rule — a `pub` without an in-tree consumer fails `make lint`. Disabling or downgrading it silently bypasses half the gate; if you must, amend PUB GATE in the same diff so the design call is captured elsewhere.
+- **`unused-decls: error` is load-bearing.** PUB GATE (the pub-surface section of this façade) delegates mechanical consumer-grep to this rule — a `pub` without an in-tree consumer fails `make lint`. Disabling or downgrading it silently bypasses half the gate; if you must, amend PUB GATE in the same diff so the design call is captured elsewhere.
 - `suppressed-errors` stays off because this repo intentionally uses narrow `pg` cleanup patterns that a generic rule cannot classify correctly.
 - `unsafe-undefined` is a good future tightening target once current low-level uses are cleaned up or annotated.
 - A disabled ZLint is not useful; prefer a scoped ruleset that passes today and tightens over time.

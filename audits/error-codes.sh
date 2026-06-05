@@ -4,7 +4,7 @@
 # enforcing that UZ-<CAT>-<NNN> strings only appear in registry/allowlist
 # files (every other call site must reference the registry symbol).
 #
-# Gate body: docs/gates/error-registry.md
+# Dispatch façade: dispatch/write_any.md (Error Registry Gate)
 # Fires in: HARNESS VERIFY (via `make harness-verify`).
 #
 # TECHNICAL DEBT (acknowledged on migration to dotfiles, 2026-05-11):

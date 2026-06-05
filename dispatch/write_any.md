@@ -181,9 +181,9 @@ LOGGING GATE: <file>
 > [DETERMINISTIC → LOG]
 
 - `docs/LOGGING_STANDARD.md` — full standard, including §10A tightenings.
-- `docs/ZIG_RULES.md` — Zig discipline umbrella; §7 of the standard depends on it.
-- `docs/BUN_RULES.md` §10 — bans `console.log` in TS/JS source. This gate enforces.
-- `docs/gates/error-registry.md` — pairs with this gate on `error_code=` audits.
+- `dispatch/write_zig.md` — Zig discipline umbrella; §7 of the standard depends on it.
+- `dispatch/write_ts_adhere_bun.md` §10 — bans `console.log` in TS/JS source. This gate enforces.
+- the Error Registry Gate section of this façade — pairs with this gate on `error_code=` audits.
 
 ### Milestone-ID Gate (MILESTONE ID)
 
@@ -308,7 +308,7 @@ ERROR REGISTRY GATE: <file>
 > [DETERMINISTIC → ERR]
 
 - `docs/LOGGING_STANDARD.md` §5 — error-code embedding rules in log records.
-- `docs/gates/logging.md` — pairs with this gate on `error_code=` audits.
+- the Logging Gate section of this façade — pairs with this gate on `error_code=` audits.
 - `docs/REST_API_DESIGN_GUIDELINES.md` — HTTP error response shape includes `code`.
 - `docs/greptile-learnings/RULES.md` RULE ORP — orphan sweep on rename/delete.
 
@@ -317,7 +317,7 @@ ERROR REGISTRY GATE: <file>
 > [DETERMINISTIC → UFS]
 
 
-**Family:** Constant discipline. **Source:** `AGENTS.md` (HARNESS VERIFY enforcement) + `BUN_RULES.md §2` + `ZIG_RULES.md` "RULE UFS" clauses.
+**Family:** Constant discipline. **Source:** `AGENTS.md` (HARNESS VERIFY enforcement) + `dispatch/write_ts_adhere_bun.md §2` + `dispatch/write_zig.md` "RULE UFS" clauses.
 
 **Triggers** — every `Edit`/`Write` to source files under `src/`, `ui/packages/*/src/`, `ui/packages/*/app/`, `ui/packages/*/lib/`, `ui/packages/*/components/`, `ui/packages/*/pages/`, `ui/packages/*/tests/`, `zombiectl/src/`, `zombiectl/test/` matching `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`. Excluded: `vendor/`, `third_party/`, `.zig-cache/`, `node_modules/`, `*.tsbuildinfo`.
 
@@ -416,7 +416,7 @@ Violations resolve by either (1) extracting to a named const + replacing all sit
 
 > [DETERMINISTIC → UFS]
 
-Indy's M66_001 §3 tail surfaced the failure clearly: `RULE UFS` lived as a single bullet in `BUN_RULES.md §2` with no audit, no HARNESS VERIFY row, and no per-edit ceremony. Across an 800-LOC session the agent introduced ~20 inline literals (`"platform"`, `"self_managed"`, `"receive"`, `"stage"`, `mode: "byok"`, `1e9`, `1_000_000_000`, etc.) that the rule already covered but no mechanism caught. The rule is fine; the enforcement was missing. This gate adds the enforcement.
+Indy's M66_001 §3 tail surfaced the failure clearly: `RULE UFS` lived as a single bullet in the former Bun rules §2 with no audit, no HARNESS VERIFY row, and no per-edit ceremony. Across an 800-LOC session the agent introduced ~20 inline literals (`"platform"`, `"self_managed"`, `"receive"`, `"stage"`, `mode: "byok"`, `1e9`, `1_000_000_000`, etc.) that the rule already covered but no mechanism caught. The rule is fine; the enforcement was missing. This gate adds the enforcement.
 
 ### Greptile Gate (GREPTILE GATE)
 

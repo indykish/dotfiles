@@ -18,7 +18,7 @@ Out of scope (explicitly):
 - Build/release scripts in `~/Projects/dotfiles/`, `audits/release-*` — toolchain output, not application logs.
 - Generated framework noise (Next.js startup banners, Bun runtime warnings) — out of our control.
 
-The **LOGGING GATE** (`docs/gates/logging.md`) sits on top of this file — it fires in addition to the language-level rules in `ZIG_RULES.md` and `BUN_RULES.md`, not instead of them.
+The **LOGGING GATE** (`dispatch/write_any.md`, Logging Gate) sits on top of this file — it fires in addition to the language-level rules in `dispatch/write_zig.md` and `dispatch/write_ts_adhere_bun.md`, not instead of them.
 
 ## §2 · Today's de-facto standard (survey-derived)
 
@@ -190,9 +190,9 @@ Colors: red `error`, dim parens. Rendering inspired by Bun's `SystemError.format
 
 Schema mirrors Bun's `SystemError` extern struct (`bun:src/bun.js/bindings/SystemError.zig:1`) — `{ code, message, ...context, hint?, docs? }`. Our `code` is `UZ-XXX-NNN` (registry-defined) rather than errno; the *shape* is what we mirror.
 
-**Logging emit sites** in `zombiectl/src/**` use a thin Bun-runtime logger that produces logfmt records to `stderr`. `console.log` / `console.error` are forbidden in source per `BUN_RULES.md` §10 — `logging.sh` enforces this for TS/JS.
+**Logging emit sites** in `zombiectl/src/**` use a thin Bun-runtime logger that produces logfmt records to `stderr`. `console.log` / `console.error` are forbidden in source per `dispatch/write_ts_adhere_bun.md` §10 — `logging.sh` enforces this for TS/JS.
 
-**Module-level error style** is governed by `BUN_RULES.md` §9 (one style per module — throw OR Result, never both). The error type itself is the same:
+**Module-level error style** is governed by `dispatch/write_ts_adhere_bun.md` §9 (one style per module — throw OR Result, never both). The error type itself is the same:
 
 ```ts
 class ZombieError extends Error {
@@ -252,7 +252,7 @@ Failure modes the audit script and reviewer must close. These are **not aspirati
 | L8 | "I read this doc at session start; subsequent edits don't need re-print" | Gate fires **per-edit**. The printed `🚧 LOGGING GATE` block is required before every triggered Edit/Write, not once per session. |
 | L9 | "Fix-pass touches every line; printing per-line is noise" | Fix-pass produces **one combined gate block per file**, not per-line. The block lists all violations addressed in that file. Still required, just consolidated. |
 
-These are enforced by `logging.sh` (mechanical) and the gate body file (`docs/gates/logging.md`, output discipline). When in conflict, the gate body file wins — it is the enforcement layer.
+These are enforced by `logging.sh` (mechanical) and the dispatch façade (`dispatch/write_any.md`, Logging Gate — output discipline). When in conflict, the façade wins — it is the enforcement layer.
 
 ## §11 · Anti-patterns (named, banned)
 
@@ -260,7 +260,7 @@ These are enforced by `logging.sh` (mechanical) and the gate body file (`docs/ga
 |---|---|
 | Free-form English log lines | Not greppable, not parseable, no event tag. |
 | `std.debug.print` outside tests | No level, no scope, no fields — dev debugging that escaped to main. |
-| `console.log` in `zombiectl` source | Bypasses logger, breaks `--json` mode, violates `BUN_RULES.md` §10. |
+| `console.log` in `zombiectl` source | Bypasses logger, breaks `--json` mode, violates `dispatch/write_ts_adhere_bun.md` §10. |
 | Logging on hot per-iteration paths at `info` | Floods collectors. Use `debug` (gated off by default). |
 | `error_code=` missing on `err`/`warn` mapping to registry codes | Breaks traceability; future operator can't link log to docs. |
 | Logging credentials, tokens, or BYOK keys | Severe leak surface. Redaction harness mandatory. |
@@ -280,11 +280,11 @@ immediately preceding the edit. Generic "scope creep" is not a valid reason — 
 
 ## §13 · Family
 
-- `BUN_RULES.md` §10 — banned `console.log` in TS/JS source. Cross-referenced by `logging.sh`.
-- `BUN_RULES.md` §9 — module-level error style (throw vs Result) for `zombiectl`.
-- `ZIG_RULES.md` — Zig discipline umbrella; this doc's §7 is the logging-specific layer.
+- `dispatch/write_ts_adhere_bun.md` §10 — banned `console.log` in TS/JS source. Cross-referenced by `logging.sh`.
+- `dispatch/write_ts_adhere_bun.md` §9 — module-level error style (throw vs Result) for `zombiectl`.
+- `dispatch/write_zig.md` — Zig discipline umbrella; this doc's §7 is the logging-specific layer.
 - `LIFECYCLE_PATTERNS.md` — orthogonal: ownership/cleanup of structs, including allocator wiring for the thread-local log buffer.
 - M42_002 redaction harness (`src/executor/runner_progress.zig`) — secret-redaction precondition; this doc's §6 inherits.
 - Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `docs/greptile-learnings/RULES.md`.
-- Length caps in `docs/gates/file-length.md`.
+- Length caps in `dispatch/write_any.md` (File & Function Length).
 - This file is the **wire-format and discipline contract** that those universal rules cannot express. Read it once at session start; re-read on sub-task shape change.

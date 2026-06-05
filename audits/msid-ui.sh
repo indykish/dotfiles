@@ -15,7 +15,7 @@
 #
 # Note on PUB:
 #   This script no longer flags `pub` declarations. The PUB GATE
-#   (docs/gates/pub-surface.md) has two mechanical enforcers and one
+#   (dispatch/write_zig.md, pub-surface) has two mechanical enforcers and one
 #   human one; this script was a fourth, redundant layer:
 #     * Orphan check ("is anyone using this pub?") → zlint's
 #       `unused-decls: error` rule, run by `make lint` later in the
@@ -58,10 +58,10 @@
 #   --diff              diff against origin/main (vs BASE...HEAD)
 #             — used by `make harness-verify-all` periodic deep audit
 #
-# Gate bodies:
-#   docs/gates/milestone-id.md
-#   docs/gates/ui-substitution.md
-#   docs/gates/pub-surface.md  (handled by zlint + agent chat output, not this script)
+# Dispatch façades:
+#   dispatch/write_any.md (Milestone-ID Gate)
+#   dispatch/write_ts_adhere_bun.md (UI Component Substitution)
+#   dispatch/write_zig.md (pub-surface)  (handled by zlint + agent chat output, not this script)
 
 set -euo pipefail
 

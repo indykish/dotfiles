@@ -1,7 +1,13 @@
-# Dispatch Architecture — operating-model proposal (v2)
+# Dispatch Architecture — operating-model (v3, EXECUTED)
 
-Date: Jun 04, 2026
-Status: PROPOSAL v2 — awaiting Indy approval before execution
+Date: Jun 04, 2026 (proposed) · Jun 05, 2026 (Stage-2 executed)
+Status: **v3 EXECUTED** — the Stage-2 atomic switchover landed on
+`feat/resolver-architecture` (PR #18): the 20 `docs/gates/` cards + `ZIG_RULES.md`
++ `BUN_RULES.md` dissolved into the 10 `dispatch/` entries; `docs/gates/` no longer
+exists; `audits/agents-md.sh` enforces dispatch parity on every commit. The body
+below is preserved as the design rationale **as proposed** (v2) — past-tense future
+sections ("will", "Stage 2 does…") describe the now-completed migration; it is the
+durable record of *why* the dispatch model exists, not a live to-do list.
 Owner: Orly (Oracle)
 Scope: `~/Projects/dotfiles` operating model + cross-repo rule-doc references
 

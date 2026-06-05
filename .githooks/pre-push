@@ -4,7 +4,7 @@
 # Behaviour:
 # - Runs audits/agents-md.sh always (script layer; deterministic).
 # - When the push includes commits that touched AGENTS.md, audits/agents-md.md,
-#   or any docs/gates/*.md, ALSO requires a fresh sign-off file written by an
+#   or any dispatch/*.md, ALSO requires a fresh sign-off file written by an
 #   LLM agent that ran the audits/agents-md.md questionnaire.
 #
 # Sign-off file: .agents-invariance-signoff (gitignored — it's a machine-local
@@ -46,7 +46,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
     range="$remote_sha..$local_sha"
     files=$(git diff --name-only "$range")
   fi
-  if echo "$files" | grep -qE '^(AGENTS\.md|AGENTS_INVARIANCE\.md|docs/gates/.*\.md)$'; then
+  if echo "$files" | grep -qE '^(AGENTS\.md|audits/agents-md\.md|dispatch/.*\.md)$'; then
     contract_changed=1
   fi
 done
@@ -69,7 +69,7 @@ fi
 if [[ ! -f "$SIGNOFF" ]]; then
   cat >&2 <<MSG
 
-pre-push: 🔴 BLOCKED — AGENTS.md / docs/gates / audits/agents-md.md changed in
+pre-push: 🔴 BLOCKED — AGENTS.md / dispatch/ / audits/agents-md.md changed in
           this push, but no .agents-invariance-signoff file exists.
 
 To proceed:

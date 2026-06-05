@@ -26,8 +26,8 @@ is no separate "gates" directory: the table below **is** the router.
 
 | Trigger — when the agent… | Dispatch entry | Latent `.md` holds | Deterministic check |
 |---|---|---|---|
-| writes `*.zig` | `write_zig` | Zig rules (ZIG_RULES + lifecycle + pub-surface) | `audits/deinit-pairs.sh`, … |
-| writes `*.ts/tsx/js/jsx` | `write_ts_adhere_bun` | Bun/TS rules (BUN_RULES + UI substitution + design tokens) | `audits/design-tokens.sh`, `audits/msid-ui.sh` |
+| writes `*.zig` | `write_zig` | Zig discipline (ZIG + LIFECYCLE + PUB surface) | `audits/deinit-pairs.sh`, … |
+| writes `*.ts/tsx/js/jsx` | `write_ts_adhere_bun` | Bun/TS discipline + UI substitution + design tokens | `audits/design-tokens.sh`, `audits/msid-ui.sh` |
 | writes `schema/*.sql` | `write_sql` | schema / migration rules | `write_sql.sh` |
 | writes **any** source file | `write_any` | cross-cutting authoring invariants — length, logging, milestone-id, error-registry, UFS, legacy-workaround family + universal greptile read | `audits/ufs.sh`, `audits/logging.sh`, … |
 | writes a spec under `docs/v*/…` | `write_spec` | spec structure (required + prohibited sections) | `audits/spec.sh` |
@@ -41,12 +41,12 @@ is no separate "gates" directory: the table below **is** the router.
 (no script can decide — the agent reads the prose and calls it) · ⚪ delegated
 (checked only in the product repo, not in dotfiles).
 
-> **Migration status:** all 10 dispatch entries above now exist as additive
-> scaffolding on `feat/resolver-architecture` (PR #18), and the Stage-2 parity
-> audit is proven green + biting (`make dispatch-parity`). The legacy
-> `docs/gates/` cards remain until the Stage-2 atomic switchover dissolves all 20
-> into this table. Machine mirror of this table: `REQUIRED_DISPATCH` in
-> [`audits/data.sh`](audits/data.sh).
+> **Migration status:** EXECUTED. The Stage-2 atomic switchover dissolved all 20
+> legacy gate cards (and the per-language Zig/Bun standards docs) into the 10
+> dispatch entries above — there is no `docs/gates/` directory. `audits/agents-md.sh`
+> enforces dispatch parity (`disk == table == REQUIRED_DISPATCH`) on every commit;
+> `make dispatch-parity` proves it bites. Machine mirror of this table:
+> `REQUIRED_DISPATCH` in [`audits/data.sh`](audits/data.sh).
 
 The instructions below assume you are in the `~/Projects/dotfiles` directory.
 

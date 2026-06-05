@@ -5,7 +5,7 @@ is verified**. Unlike `write_zig` / `write_any`, `verify` has **no deterministic
 `.sh` half** — no script can detect the moment an agent is *about to claim done*.
 It is a pure **🔵 judgment** dispatch: the agent reads this, runs the canonical
 `make` targets, and emits the verdict block. The trigger is a *claim*, not a file
-edit. (This is `docs/gates/verification.md` absorbed into the dispatch model.)
+edit. (This is the former Verification gate absorbed into the dispatch model.)
 
 **Signal legend:**
 

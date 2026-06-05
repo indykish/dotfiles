@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ufs.sh — enforce RULE UFS (Unified Form for Symbols) across the worktree.
 #
-# Gate body: docs/gates/ufs.md
+# Dispatch façade: dispatch/write_any.md (UFS Gate)
 # Fires in: make lint, HARNESS VERIFY.
 #
 # Generic detection — no manifest of known literals, so the audit scales
@@ -37,7 +37,7 @@ case "${1:-}" in
   ""|--all|all) ;;
   *)
     printf "usage: %s [--all]\n" "$0" >&2
-    printf "note: --diff was retired in M70 — see docs/gates/ufs.md (Scope).\n" >&2
+    printf "note: --diff was retired in M70 — see dispatch/write_any.md (UFS Gate → Scope).\n" >&2
     exit 2
     ;;
 esac

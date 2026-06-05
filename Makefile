@@ -1,12 +1,10 @@
 .PHONY: audit test-audit llmevals signoff \
-        dispatch-coverage dispatch-evals merge-coverage dispatch-parity
+        dispatch-coverage dispatch-evals dispatch-parity
 
-# Run the deterministic audit chain (Stage 0, additive — all green):
-#   1. agents-md.sh          — AGENTS.md invariance (script layer).
+# Run the deterministic audit chain (all green):
+#   1. agents-md.sh          — AGENTS.md invariance + dispatch parity (script layer).
 #   2. dispatch-coverage.sh  — dispatch façade-pair coherence (6.3 + 6.4).
 #   3. evals/dispatch/run.sh — prose-pinned deterministic façade evals.
-# merge-coverage is NOT here: it is a Stage-2 deletion gate (see `make
-# merge-coverage`), red until the reworded-away tokens get Indy drop-acks.
 audit:
 	@bash audits/agents-md.sh
 	@bash evals/dispatch/coverage.sh
@@ -21,21 +19,15 @@ dispatch-coverage:
 dispatch-evals:
 	@bash evals/dispatch/run.sh
 
-# Merge-loss proof — Stage-2 deletion gate (DISPATCH_ARCHITECTURE.md 6.5).
-# Asserts every dissolving card's tokens landed in some dispatch .md or are
-# Indy-acked drops. `--selftest` proves the orphan-sentence check still bites.
-merge-coverage:
-	@bash evals/dispatch/merge-coverage.sh
-
 # Negative-test the audit itself — prove every check still FAILS on a bad
 # tree (conformance + determinism). Run whenever agents-md.sh changes.
 test-audit:
 	@bash evals/test-agents-md.sh
 
-# Stage-2 readiness proof — runs audits/parity-dispatch.sh against a model-B
-# end-state sandbox (docs/gates/ empty, AGENTS.md dispatch table, 10 entries)
-# and asserts it goes green AND bites. De-risks the switchover; folds into
-# test-audit once agents-md.sh adopts the dispatch parity at Stage 2.
+# Dispatch-parity proof — runs audits/parity-dispatch.sh against a model-B
+# sandbox (docs/gates/ empty, AGENTS.md dispatch table, 10 entries) and asserts
+# it goes green AND bites. agents-md.sh now sources the same check (check 9b);
+# this isolates + proves it against synthetic regressions.
 dispatch-parity:
 	@bash evals/test-dispatch-parity.sh
 
