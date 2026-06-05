@@ -41,11 +41,12 @@ is no separate "gates" directory: the table below **is** the router.
 (no script can decide — the agent reads the prose and calls it) · ⚪ delegated
 (checked only in the product repo, not in dotfiles).
 
-> **Migration status:** the four `write_{zig,ts_adhere_bun,sql,any}` façades are
-> live. The process pairs (`write_spec`, `verify`, `name_architecture`,
-> `edit_rules`) and `write_http`/`write_auth` are landing additively on
-> `feat/resolver-architecture` (PR #18). The legacy `docs/gates/` cards remain
-> until the Stage-2 atomic switchover dissolves all 20 into this table.
+> **Migration status:** all 10 dispatch entries above now exist as additive
+> scaffolding on `feat/resolver-architecture` (PR #18), and the Stage-2 parity
+> audit is proven green + biting (`make dispatch-parity`). The legacy
+> `docs/gates/` cards remain until the Stage-2 atomic switchover dissolves all 20
+> into this table. Machine mirror of this table: `REQUIRED_DISPATCH` in
+> [`audits/data.sh`](audits/data.sh).
 
 The instructions below assume you are in the `~/Projects/dotfiles` directory.
 
