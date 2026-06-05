@@ -16,6 +16,37 @@ git keeps using `.git/hooks/` (sample stubs only). Re-run on every fresh
 clone or worktree. See [AGENTS_INVARIANCE.md](AGENTS_INVARIANCE.md) for the
 contract; run `make audit` any time to verify it by hand.
 
+## Agent dispatch model
+
+[`AGENTS.md`](AGENTS.md) is the **dispatcher**. Every authoring or process action
+routes to one **dispatch entry** under [`dispatch/`](dispatch/) — a *latent* half
+(`.md`, the prose the agent reads) plus, where a check can be mechanised, a
+*deterministic* half (`.sh`, run by [`audits/`](audits/) + the git hooks). There
+is no separate "gates" directory: the table below **is** the router.
+
+| Trigger — when the agent… | Dispatch entry | Latent `.md` holds | Deterministic check |
+|---|---|---|---|
+| writes `*.zig` | `write_zig` | Zig rules (ZIG_RULES + lifecycle + pub-surface) | `audits/deinit-pairs.sh`, … |
+| writes `*.ts/tsx/js/jsx` | `write_ts_adhere_bun` | Bun/TS rules (BUN_RULES + UI substitution + design tokens) | `audits/design-tokens.sh`, `audits/msid-ui.sh` |
+| writes `schema/*.sql` | `write_sql` | schema / migration rules | `write_sql.sh` |
+| writes **any** source file | `write_any` | cross-cutting authoring invariants — length, logging, milestone-id, error-registry, UFS, legacy-workaround family + universal greptile read | `audits/ufs.sh`, `audits/logging.sh`, … |
+| writes a spec under `docs/v*/…` | `write_spec` | spec structure (required + prohibited sections) | `audits/spec.sh` |
+| writes `src/http/handlers/**` / OpenAPI | `write_http` | REST API design rules | ⚪ delegated (product repo) |
+| writes auth-flow / token-minting files | `write_auth` | auth invariants | ⚪ delegated (product repo) |
+| claims "tests pass / ready / shipping" | `verify` | verification tiers (`make` is canonical) | 🔵 judgment-only |
+| names a stream / channel / schema, or describes a flow | `name_architecture` | architecture-consult discipline | 🔵 judgment-only |
+| edits the governance (AGENTS.md, `dispatch/`, `audits/agents-md.sh`, the questionnaire) | `edit_rules` | invariance suite → [`AGENTS_INVARIANCE.md`](AGENTS_INVARIANCE.md) | `audits/agents-md.sh` + cross-agent `make llmevals` |
+
+**Signal tags** (printed by the `.sh` halves): 🟢 pass · 🔴 fail · 🔵 judgment-only
+(no script can decide — the agent reads the prose and calls it) · ⚪ delegated
+(checked only in the product repo, not in dotfiles).
+
+> **Migration status:** the four `write_{zig,ts_adhere_bun,sql,any}` façades are
+> live. The process pairs (`write_spec`, `verify`, `name_architecture`,
+> `edit_rules`) and `write_http`/`write_auth` are landing additively on
+> `feat/resolver-architecture` (PR #18). The legacy `docs/gates/` cards remain
+> until the Stage-2 atomic switchover dissolves all 20 into this table.
+
 The instructions below assume you are in the `~/Projects/dotfiles` directory.
 
 ## Install
