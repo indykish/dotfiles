@@ -2,7 +2,7 @@
 # evals/dispatch/merge-coverage.sh — merge-loss proof for the dispatch migration
 # (DISPATCH_ARCHITECTURE.md 6.5, the keystone).
 #
-# For each of the 15 dissolving authoring cards, assert every non-boilerplate
+# For each of the 20 dissolving cards (15 authoring + 5 process), assert every non-boilerplate
 # token appears in some dispatch/*.md, OR is captured as an explicit Indy-acked
 # drop. A card is not deleted (Stage 2) until its assertion is green. This proves
 # PROSE-TOKEN COVERAGE only — NOT semantic equivalence and NOT trigger
@@ -23,7 +23,7 @@
 # A negative fixture (fixtures/merge_orphan_card.md, run via --selftest) proves an
 # orphaned sentence FAILS — if it ever passes, the proof has gone blind.
 #
-# Modes:  (default) scan the 15 dissolving cards | --card <file> scan one file |
+# Modes:  (default) scan the 20 dissolving cards | --card <file> scan one file |
 #         --selftest run the orphan fixture and assert it FAILS.
 set -uo pipefail
 
@@ -35,7 +35,8 @@ PYCORE="$ROOT/evals/dispatch/merge_coverage.py"
 GATES="$ROOT/docs/gates"
 DISSOLVE=(zig pub-surface lifecycle ui-substitution design-token schema-removal \
           file-length logging milestone-id error-registry ufs greptile nlr nlg \
-          legacy-design)
+          legacy-design \
+          verification invariance-suite spec-template architecture doc-read)
 
 # Thin wrapper over the frozen-normalization core. Card paths are argv; the
 # corpus glob + drops ledger travel via the environment.
@@ -63,7 +64,7 @@ case "$MODE" in
     printf 'MERGE COVERAGE — single card: %s\n' "${2:?usage: --card <file>}"
     run_py "$2"; exit $? ;;
   default)
-    printf 'MERGE COVERAGE AUDIT — 15 dissolving cards → dispatch corpus (6.5)\n'
+    printf 'MERGE COVERAGE AUDIT — 20 dissolving cards → dispatch corpus (6.5)\n'
     cards=(); for d in "${DISSOLVE[@]}"; do cards+=("$GATES/$d.md"); done
     if run_py "${cards[@]}"; then
       printf '\n✅ MERGE COVERAGE: every card token covered or acked-dropped\n'; exit 0
