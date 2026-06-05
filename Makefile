@@ -1,4 +1,4 @@
-.PHONY: audit test-audit llmevals llmevals-check signoff \
+.PHONY: audit test-audit llmevals signoff \
         resolver-coverage resolver-evals merge-coverage
 
 # Run the deterministic audit chain (Stage 0, additive — all green):
@@ -37,12 +37,14 @@ test-audit:
 # verdicts graded by exact match. Live LLM calls — costs tokens on every
 # agent. Resumable (journalled); writes .agents-llmevals-signoff on
 # all-gradable-agents-pass.
+#
+# One entry point. The live run validates fixtures + reports availability as a
+# mandatory preamble (run-llmevals.sh:188) before any spend. For the zero-token
+# dry path (CI / runner unavailable, Scenario 23.8) pass CHECK=1:
+#   make llmevals          — live graded run (costs tokens)
+#   make llmevals CHECK=1  — validate fixtures + availability only, no live calls
 llmevals:
-	@bash evals/llmevals/run-llmevals.sh
-
-# Dry validation — fixtures well-formed + agent availability. No live calls.
-llmevals-check:
-	@bash evals/llmevals/run-llmevals.sh --check
+	@bash evals/llmevals/run-llmevals.sh $(if $(CHECK),--check)
 
 # Write the AGENTS_INVARIANCE sign-off file against current HEAD.
 # Only run this AFTER answering every AGENTS_INVARIANCE.md question with YES.

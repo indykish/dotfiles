@@ -267,7 +267,7 @@ The questions force *proof of reading* over *recall*.
 | 23.5 | For an auto-mode / override question, must the agent trace the full conditional chain (auto-mode AND (active-spec OR start-instruction); action-triggered guards still block) rather than collapsing it to "auto mode = yes"? | YES |
 | 23.6 | Is the negative-test harness (`scripts/test-audit-agents-md.sh`) required to pass — proving each deterministic check still *bites* — whenever `scripts/audit-agents-md.sh` itself changes? | YES |
 | 23.7 | Is Scenario 23 enforced by a live, cross-agent LLM-eval runner (`evals/llmevals/run-llmevals.sh`, `make llmevals`) that feeds the frozen golden-set (`evals/llmevals/fixtures.jsonl`) to EVERY installed agent (claude, codex, amp, opencode) and grades each `VERDICT:` by exact match — with a per-agent threshold and absent agents logged, never silently skipped? | YES |
-| 23.8 | When the LLM-eval runner is unavailable (no agent CLIs) or the golden-set changes, is the dry validator `make llmevals-check` (fixtures well-formed + availability, no live calls) the minimum that must still pass? | YES |
+| 23.8 | When the LLM-eval runner is unavailable (no agent CLIs) or the golden-set changes, is the dry validator `make llmevals CHECK=1` (fixtures well-formed + availability, no live calls) the minimum that must still pass? | YES |
 
 ## LLM-eval layer (Scenario 23 enforcement)
 
