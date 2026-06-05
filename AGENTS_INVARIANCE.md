@@ -282,7 +282,8 @@ LLM-eval layer closes that gap:
   investigate-vs-authorize, no-override bans). YES/NO is balanced so a
   constant-answer strategy fails the threshold.
 - **Runner** — `evals/llmevals/run-llmevals.sh` embeds AGENTS.md +
-  all gate bodies in every prompt (no tool use, no file-read variance), asks
+  all gate bodies + the resolver façades (`resolvers/*.md`) in every prompt (no
+  tool use, no file-read variance), asks
   each installed agent, and grades the single `VERDICT:` line by exact match.
   Resumable — each agent's verdict is journalled, so a re-run after an
   interruption replays finished agents instead of re-spending tokens.

@@ -250,7 +250,7 @@ grader, **not an adherence judge** over free-form code. v2 is honest about that:
 Proves **completeness and symbol-presence** — NOT prose semantics (that's §6.1's
 fixtures). Fails if any of:
 - a `[DETERMINISTIC → CODE]` tag has no row for `CODE` in **any** resolver `.sh` (a *universal* code like `UFS` is wired once in its home façade — `write_any` — and satisfies the tag wherever the rule's prose appears; only a code wired in NO resolver fails — §16 Decision 6);
-- a DETERMINISTIC rule has no pass+fail fixture (and, where the prose states a bound, no boundary pair that pins it — §6.1);
+- a DETERMINISTIC rule has no pass+fail fixture — this audit checks fixture *presence* only; the boundary-*pinning* of a bounded rule (the `351` flips if the cap moves) is proven by `run.sh` executing the boundary fixtures against the live cap, NOT by this audit (§6.1);
 - a `[JUDGMENT]` rule has no comprehension probe (§6.2);
 - a `.sh` CODE row has no tag in the `.md` (orphan check);
 - **a CODE row delegates to a leaf helper that is absent / non-executable**

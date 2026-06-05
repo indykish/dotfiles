@@ -39,18 +39,31 @@ def load_corpus():
     return corpus
 
 
+ONE_TOKEN = re.compile(r'[a-z0-9]+\Z')
+
+
 def load_drops(path):
-    drops, bad = set(), []
+    # Ledger is 3-column: <card-basename><TAB><token><TAB><Indy ack>. Drops are
+    # PER-CARD (a token reworded away in card A is not assumed harmless in card
+    # B). Returns {card_basename: set(tokens)} plus a list of rejected lines.
+    drops, bad = {}, []
     if not os.path.exists(path):
         return drops, bad
     for ln in open(path, encoding="utf-8"):
         s = ln.rstrip("\n")
         if not s.strip() or s.lstrip().startswith("#"):
             continue
-        parts = s.split("\t", 1)
-        tok = parts[0].strip().lower()
-        ack = parts[1].strip() if len(parts) > 1 else ""
-        (drops.add(tok) if ACK.search(ack) else bad.append(tok or "<blank>"))
+        parts = s.split("\t")
+        if len(parts) < 3:
+            bad.append("malformed (need card<TAB>token<TAB>ack): %r" % s[:48])
+            continue
+        card, tok, ack = parts[0].strip(), parts[1].strip().lower(), parts[2].strip()
+        if not ONE_TOKEN.match(tok):
+            bad.append("%r is not a single [a-z0-9]+ token (dead drop)" % tok)
+        elif not ACK.search(ack):
+            bad.append("%s/%s lacks an Indy ack-quote (self-cert)" % (card, tok))
+        else:
+            drops.setdefault(card, set()).add(tok)
     return drops, bad
 
 
@@ -59,12 +72,12 @@ def main():
     drops, bad = load_drops(os.environ["DROPS"])
     rc = 0
     if bad:
-        print("  🔴 LEDGER: %d drop line(s) lack a valid Indy ack-quote "
-              "(self-cert): %s" % (len(bad), ", ".join(bad)))
+        print("  🔴 LEDGER: %d invalid drop line(s): %s" % (len(bad), "; ".join(bad)))
         rc = 1
     for card in sys.argv[1:]:
         name = os.path.basename(card)
-        uncov = sorted(normset(open(card, encoding="utf-8").read()) - corpus - drops)
+        carddrops = drops.get(name, set())
+        uncov = sorted(normset(open(card, encoding="utf-8").read()) - corpus - carddrops)
         if uncov:
             print("  🔴 %-22s %d uncovered: %s" % (name, len(uncov), ", ".join(uncov)))
             rc = 1

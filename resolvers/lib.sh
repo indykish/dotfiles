@@ -11,7 +11,7 @@
 #   HARNESS VERIFY resolvers/<lang>.sh --staged    end-of-turn aggregate (the anchor)
 #   COMMIT         pre-commit → resolvers/<lang>.sh --staged   mechanical backstop
 #
-# Signal semantics (printed in every row — see RESOLVER_ARCHITECTURE.md §3.1):
+# Signal semantics (printed in every row — see RESOLVER_ARCHITECTURE.md, Signal semantics):
 #   🟢 GREEN    deterministic check passed                → proceed         (exit 0)
 #   🔴 RED      deterministic check failed / helper absent → STOP, fix, rerun (exit 1)
 #   🔵 DECIDE   judgment-only; no script can decide        → agent reads §, makes
@@ -176,7 +176,7 @@ resolver_delegate() {
 
 # A judgment gate that NO script can pass/fail (architecture, legacy-design,
 # greptile, tagged-unions). 🔵 DECIDE = open question, NOT a failure: exit stays 0
-# but the TURN is incomplete until the agent states a verdict in chat (see §3.1).
+# but the TURN is incomplete until the agent states a verdict in chat (Signal semantics).
 # 🔵 (not 🟡) so it never collides with HARNESS_VERIFY's "violations addressed" 🟡.
 # Faking determinism on a taste decision is the anti-goal.
 resolver_judgment() {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# evals/resolver-evals/run.sh — prose-pinned deterministic-façade evals (§6.1).
+# evals/resolver-evals/run.sh — prose-pinned deterministic-façade evals (RESOLVER_ARCHITECTURE.md 6.1).
 #
 # Each fixture is a source file crafted to trip EXACTLY ONE deterministic resolver
 # code (or none, for the *_ok pass fixtures). The runner drops it into an isolated

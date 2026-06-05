@@ -48,17 +48,20 @@ jud_tags() { grep -hoE '\[JUDGMENT → [A-Z0-9_:-]+\]' "$RES"/*.md \
 # A code is exempt from check (a)/(c) if it is a stub or proposed marker.
 real() { grep -vE '^(TODO-CHECK|NEW:)'; }
 
-# .sh dispatch rows, classified by the lib.sh helper that wraps them.
-sh_runhelper() { grep -hoE '^resolver_run_helper +"[A-Z0-9_:-]+"' "$RES"/*.sh \
-  | sed -E 's/.*"([A-Z0-9_:-]+)"/\1/' | sort -u; }
-sh_delegate() { grep -hoE '^resolver_delegate +"[A-Z0-9_:-]+"' "$RES"/*.sh \
-  | sed -E 's/.*"([A-Z0-9_:-]+)"/\1/' | sort -u; }
-sh_judgment() { grep -hoE '^resolver_judgment +"[A-Z0-9_:-]+"' "$RES"/*.sh \
-  | sed -E 's/.*"([A-Z0-9_:-]+)"/\1/' | sort -u; }
+# .sh dispatch rows, classified by the lib.sh helper that wraps them. Real .sh
+# codes are [A-Z0-9_-] only (no colon) — colon codes (NEW:*) are .md-tag-only
+# proposed markers, never legal in a live dispatch row; this class matches the
+# gloss/fixture extractors below so all .sh-code handling agrees.
+sh_runhelper() { grep -hoE '^resolver_run_helper +"[A-Z0-9_-]+"' "$RES"/*.sh \
+  | sed -E 's/.*"([A-Z0-9_-]+)"/\1/' | sort -u; }
+sh_delegate() { grep -hoE '^resolver_delegate +"[A-Z0-9_-]+"' "$RES"/*.sh \
+  | sed -E 's/.*"([A-Z0-9_-]+)"/\1/' | sort -u; }
+sh_judgment() { grep -hoE '^resolver_judgment +"[A-Z0-9_-]+"' "$RES"/*.sh \
+  | sed -E 's/.*"([A-Z0-9_-]+)"/\1/' | sort -u; }
 sh_lengthgate() { grep -qE '^resolver_length_gate ' "$RES"/*.sh && echo FLL; }
 # run_helper rows as "CODE script" pairs (for the leaf-presence check).
-sh_helper_pairs() { grep -hoE '^resolver_run_helper +"[A-Z0-9_:-]+" +"[^"]+"' "$RES"/*.sh \
-  | sed -E 's/^resolver_run_helper +"([A-Z0-9_:-]+)" +"([^"]+)".*/\1 \2/'; }
+sh_helper_pairs() { grep -hoE '^resolver_run_helper +"[A-Z0-9_-]+" +"[^"]+"' "$RES"/*.sh \
+  | sed -E 's/^resolver_run_helper +"([A-Z0-9_-]+)" +"([^"]+)".*/\1 \2/'; }
 
 # Run-enforced (needs fixture) vs all-emitted (needs tag + gloss).
 run_enforced() { { sh_lengthgate; sh_runhelper; } | sort -u; }
@@ -92,7 +95,7 @@ check_fixture_coverage() {
     done <<<"$specs"
     if [ "$has0" = 1 ] && [ "$has1" = 1 ]; then okln "$code — pass + fail fixture present"
     else fail "$code — missing $([ $has0 = 0 ] && echo pass) $([ $has1 = 0 ] && echo fail) fixture in resolver-evals"; fi
-  done < <(run_enforced)
+  done < <(run_enforced | real)
 }
 
 # ---- check (c) — every JUDGMENT tag has a comprehension probe ---------------
@@ -149,8 +152,13 @@ gloss_rules() { sed -n '/^## Rule-code gloss legend (canonical)/,/^## RULE NDC/p
   | sed -E 's/^\| ([A-Z0-9_-]+) \| (.*) \|$/\1\t\2/'; }
 check_gloss_divergence() {
   sec "(g) RULES.md canonical legend ↔ lib.sh RESOLVER_GLOSS (byte-identical map)"
+  local nl nr; nl="$(gloss_lib | wc -l | tr -d ' ')"; nr="$(gloss_rules | wc -l | tr -d ' ')"
+  if [ "$nl" -eq 0 ] || [ "$nr" -eq 0 ]; then
+    fail "gloss legend parsed to 0 rows (lib.sh=$nl, RULES.md=$nr) — heading/format reworded? empty≠identical"
+    return
+  fi
   local d; d="$(diff <(gloss_lib | sort) <(gloss_rules | sort) || true)"
-  if [ -z "$d" ]; then okln "gloss maps identical ($(gloss_lib | wc -l | tr -d ' ') codes)"
+  if [ -z "$d" ]; then okln "gloss maps identical ($nl codes)"
   else fail "gloss divergence between lib.sh and RULES.md:"; printf '%s\n' "$d" | sed 's/^/        /'; fi
 }
 

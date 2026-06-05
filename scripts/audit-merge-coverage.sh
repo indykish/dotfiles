@@ -12,9 +12,12 @@
 #      lowercase, tokenize on [a-z0-9]+, drop a fixed stopword set + tokens
 #      shorter than 3 + pure numbers. Not a tunable threshold; a binary
 #      present/absent test per token.
-#   2. No self-certification — the drops ledger (evals/resolver-evals/merge-coverage-drops.tsv)
-#      requires an Indy ack-quote per line; an agent-authored bare drop is
-#      rejected and the audit fails.
+#   2. Ledger discipline (FORMAT, not authenticity) — each drop in
+#      evals/resolver-evals/merge-coverage-drops.tsv is PER-CARD and must be a
+#      single token carrying an Indy ack-quote; a malformed, multi-word, or
+#      un-acked line is rejected. This stops a bare/lazy agent self-cert — it
+#      CANNOT prove Indy authored the quote (no crypto on a plaintext ledger the
+#      agent also writes); ack authenticity is enforced socially at PR review.
 #   3. Trigger-surface enforcement is separate — handled by the coverage audit.
 #
 # A negative fixture (fixtures/merge_orphan_card.md, run via --selftest) proves an
@@ -41,11 +44,20 @@ run_py() { RES_GLOB="$RES_GLOB" DROPS="$DROPS" python3 "$PYCORE" "$@"; }
 MODE="${1:-default}"
 case "$MODE" in
   --selftest)
-    printf 'MERGE COVERAGE — selftest (orphan fixture MUST fail)\n'
-    if out="$(run_py "$FIXDIR/merge_orphan_card.md" 2>&1)"; then
-      printf '%s\n  ❌ SELFTEST FAIL: orphan card passed — the proof is blind\n' "$out"; exit 1
+    printf 'MERGE COVERAGE — selftest (orphan discriminators MUST be flagged)\n'
+    out="$(run_py "$FIXDIR/merge_orphan_card.md" 2>&1)"; rc=$?
+    # exit!=0 alone is NOT enough: the fixture's framing prose also contributes
+    # uncovered tokens, so a blinded orphan LINE (e.g. via over-stopwording)
+    # could still exit 1 while the proof has gone blind. Assert the orphan
+    # line's invented discriminators actually appear in the uncovered list.
+    miss=""
+    for d in quombulent flarnesque zindlewop grobnatically snorklewidget vorpalised; do
+      printf '%s' "$out" | grep -qF "$d" || miss="$miss $d"
+    done
+    if [ "$rc" -ne 0 ] && [ -z "$miss" ]; then
+      printf '%s\n  ✅ SELFTEST PASS: orphan discriminators correctly flagged\n' "$out"; exit 0
     else
-      printf '%s\n  ✅ SELFTEST PASS: orphan sentence correctly flagged\n' "$out"; exit 0
+      printf '%s\n  ❌ SELFTEST FAIL: rc=%s missing:%s — proof is blind\n' "$out" "$rc" "${miss:- none}"; exit 1
     fi ;;
   --card)
     printf 'MERGE COVERAGE — single card: %s\n' "${2:?usage: --card <file>}"
