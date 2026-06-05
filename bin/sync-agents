@@ -11,6 +11,13 @@
 #
 # Skip rule: if a target already exists as a real file/dir (NOT a symlink),
 # warn and skip — never clobber project-local content.
+#
+# Prune rule: after linking, a dangling symlink that points into $DOTFILES (an
+# orphan left when a manifest entry's source was deleted or renamed) is removed
+# from each project repo. Only provably-broken dotfiles-pointing links are
+# touched — never valid links or links pointing elsewhere. The removal lands as
+# a staged deletion on the repo's next `git add -A`, mirroring how an added link
+# awaits the user's commit. Pass --no-prune to disable.
 
 set -uo pipefail
 
@@ -96,6 +103,19 @@ AGENT_HOME_LINKS=(
   "AGENTS.md:$HOME/.amp/AGENTS.md"
 )
 
+# Flag parsing — strip --no-prune out of the positional args so the --list
+# check below still sees only positional input. PRUNE defaults on.
+PRUNE=1
+_args=()
+for _a in ${@+"$@"}; do
+  case "$_a" in
+    --no-prune) PRUNE=0 ;;
+    *) _args+=("$_a") ;;
+  esac
+done
+set -- ${_args[@]+"${_args[@]}"}
+unset _a _args
+
 if [[ "${1:-}" == "--list" ]]; then
   echo "Project-repo manifest (sources in $DOTFILES):"
   for link in "${PROJECT_LINKS[@]}"; do echo "  ${link%%:*}"; done
@@ -105,6 +125,8 @@ if [[ "${1:-}" == "--list" ]]; then
   echo
   echo "Agent home-dir links:"
   for link in "${AGENT_HOME_LINKS[@]}"; do echo "  ${link%%:*}  →  ${link#*:}"; done
+  echo
+  echo "Prune: dangling symlinks into $DOTFILES are removed from project repos (--no-prune to disable)."
   exit 0
 fi
 
@@ -112,6 +134,7 @@ fi
 
 LINKED=0
 RETARGETED=0
+PRUNED=0
 SKIPPED=0
 FAILED=0
 
@@ -221,6 +244,54 @@ expand_worktrees() {
 }
 
 # ---------------------------------------------------------------------------
+# Helper: collapse '.'/'..' segments in an absolute path textually. No
+# filesystem access — works even when the target was deleted (realpath would
+# fail). String-built, no arrays, so it's safe under macOS bash 3.2 + `set -u`.
+# ---------------------------------------------------------------------------
+normalize_path() {
+  local part result="" IFS=/
+  for part in $1; do
+    case "$part" in
+      ''|.) ;;
+      ..)   result="${result%/*}" ;;
+      *)    result="$result/$part" ;;
+    esac
+  done
+  printf '%s\n' "${result:-/}"
+}
+
+# ---------------------------------------------------------------------------
+# Helper: prune orphaned symlinks under a repo — links that are dangling AND
+# point into $DOTFILES (a manifest entry whose source was deleted/renamed).
+# Filesystem-only: the removal becomes a staged deletion on the repo's next
+# `git add -A`, just like an added link awaits commit. Skips .git/node_modules/
+# .zig-cache; never touches valid links or links pointing outside $DOTFILES.
+# ---------------------------------------------------------------------------
+prune_orphans() {
+  local root="$1" link tgt abs
+  while IFS= read -r link; do
+    [[ -e "$link" ]] && continue          # target resolves → not an orphan
+    tgt=$(readlink "$link") || continue
+    [[ "$tgt" = /* ]] || tgt="$(dirname "$link")/$tgt"
+    abs=$(normalize_path "$tgt")
+    case "$abs" in
+      "$DOTFILES"/*|"$DOTFILES")
+        if rm "$link"; then
+          warn "  pruned orphan: ${link#$root/} ↛ $tgt"
+          PRUNED=$((PRUNED + 1))
+        else
+          fail "  rm failed: $link"
+          FAILED=$((FAILED + 1))
+        fi
+        ;;
+    esac
+  done < <(find "$root" -type l \
+             -not -path '*/.git/*' \
+             -not -path '*/node_modules/*' \
+             -not -path '*/.zig-cache/*' 2>/dev/null)
+}
+
+# ---------------------------------------------------------------------------
 # Pass 1: project repos (expanded across worktrees).
 # ---------------------------------------------------------------------------
 for repo in "${KISHORES_TARGETS[@]}"; do
@@ -241,6 +312,7 @@ for repo in "${KISHORES_TARGETS[@]}"; do
       dst="${link#*:}"
       make_link "$DOTFILES/$src" "$wt/$dst" "$dst"
     done
+    [[ $PRUNE -eq 1 ]] && prune_orphans "$wt"
   done < <(expand_worktrees "$repo")
 done
 
@@ -260,5 +332,5 @@ for link in "${AGENT_HOME_LINKS[@]}"; do
 done
 
 echo
-echo "summary: linked=$LINKED retargeted=$RETARGETED skipped=$SKIPPED failed=$FAILED"
+echo "summary: linked=$LINKED retargeted=$RETARGETED pruned=$PRUNED skipped=$SKIPPED failed=$FAILED"
 [[ $FAILED -eq 0 ]] && ok "agents sync complete" || { fail "some links failed"; exit 1; }
