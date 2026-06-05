@@ -1,6 +1,6 @@
 # write_sql.md — SQL / schema latent façade
 
-This is the prose the AGENT reads before writing any `schema/*.sql` file. It pairs with the deterministic façade `dispatch/write_sql.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. SQL has no standalone source-of-truth RULES file: the dissolving **Schema Table Removal Guard** card is merged verbatim below, while the durable SQL rules (`NSQ`, `STS`, `SGR`, `ITF`) stay in `docs/greptile-learnings/RULES.md` (retained) — referenced here, enforced by the GREPTILE GATE. Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
+This is the prose the AGENT reads before writing any `schema/*.sql` file. It pairs with the deterministic façade `dispatch/write_sql.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. **Read `docs/SCHEMA_CONVENTIONS.md` first** — it is the source-of-truth for table/column naming, type choices, and schema-qualification (the analogue of `docs/REST_API_DESIGN_GUIDELINES.md` for `write_http`). The dissolving **Schema Table Removal Guard** card is merged verbatim below, while the durable SQL rules (`NSQ`, `STS`, `SGR`, `ITF`) stay in `docs/greptile-learnings/RULES.md` (retained) — referenced here, enforced by the GREPTILE GATE. Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
 
 **Signal legend** (printed by `write_sql.sh`):
 
@@ -25,7 +25,7 @@ See [`docs/DISPATCH_ARCHITECTURE.md`](../docs/DISPATCH_ARCHITECTURE.md) §3 for 
 
 > [JUDGMENT → SCH]
 
-Triggers on every `Edit`/`Write` to `schema/*.sql`, `schema/embed.zig` (`@embedFile` constants), and the canonical migration array in `src/cmd/common.zig`. SQL embedded in handlers (`*.zig`) and integration-test fixtures is also governed by the companion rules below — those surfaces additionally fire `write_zig.md` and the GREPTILE GATE.
+Triggers on every `Edit`/`Write` to `schema/*.sql`, `schema/embed.zig` (`@embedFile` constants), and the canonical migration array in `src/cmd/common.zig`. **Before authoring DDL, read `docs/SCHEMA_CONVENTIONS.md`** (naming, types, schema-qualification). SQL embedded in handlers (`*.zig`) and integration-test fixtures is also governed by the companion rules below — those surfaces additionally fire `write_zig.md` and the GREPTILE GATE.
 
 ## Merged from dissolved gate cards
 

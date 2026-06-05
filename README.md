@@ -16,37 +16,36 @@ git keeps using `.git/hooks/` (sample stubs only). Re-run on every fresh
 clone or worktree. See [audits/agents-md.md](audits/agents-md.md) for the
 contract; run `make audit` any time to verify it by hand.
 
-## Agent dispatch model
+## How the rules work (in plain terms)
 
-[`AGENTS.md`](AGENTS.md) is the **dispatcher**. Every authoring or process action
-routes to one **dispatch entry** under [`dispatch/`](dispatch/) — a *latent* half
-(`.md`, the prose the agent reads) plus, where a check can be mechanised, a
-*deterministic* half (`.sh`, run by [`audits/`](audits/) + the git hooks). There
-is no separate "gates" directory: the table below **is** the router.
+[`AGENTS.md`](AGENTS.md) is the rulebook every AI agent follows. Instead of one
+giant list, the rules are split by **what you're about to do** — and the agent is
+handed only the one page that applies.
 
-| Trigger — when the agent… | Dispatch entry | Latent `.md` holds | Deterministic check |
-|---|---|---|---|
-| writes `*.zig` | `write_zig` | Zig discipline (ZIG + LIFECYCLE + PUB surface) | `audits/deinit-pairs.sh`, … |
-| writes `*.ts/tsx/js/jsx` | `write_ts_adhere_bun` | Bun/TS discipline + UI substitution + design tokens | `audits/design-tokens.sh`, `audits/msid-ui.sh` |
-| writes `schema/*.sql` | `write_sql` | schema / migration rules | `write_sql.sh` |
-| writes **any** source file | `write_any` | cross-cutting authoring invariants — length, logging, milestone-id, error-registry, UFS, legacy-workaround family + universal greptile read | `audits/ufs.sh`, `audits/logging.sh`, … |
-| writes a spec under `docs/v*/…` | `write_spec` | spec structure (required + prohibited sections) | `audits/spec.sh` |
-| writes `src/http/handlers/**` / OpenAPI | `write_http` | REST API design rules | ⚪ delegated (product repo) |
-| writes auth-flow / token-minting files | `write_auth` | auth invariants | ⚪ delegated (product repo) |
-| claims "tests pass / ready / shipping" | `verify` | verification tiers (`make` is canonical) | 🔵 judgment-only |
-| names a stream / channel / schema, or describes a flow | `name_architecture` | architecture-consult discipline | 🔵 judgment-only |
-| edits the governance (AGENTS.md, `dispatch/`, `audits/agents-md.sh`, the questionnaire) | `edit_rules` | invariance suite → [`audits/agents-md.md`](audits/agents-md.md) | `audits/agents-md.sh` + cross-agent `make llmevals` |
+Think of it like a front desk: you say "I'm about to write some Zig," and it gives
+you exactly the Zig rules — not the whole binder. Each of those pages lives in
+[`dispatch/`](dispatch/), and where a rule can be checked by a machine, a small
+script runs it automatically.
 
-**Signal tags** (printed by the `.sh` halves): 🟢 pass · 🔴 fail · 🔵 judgment-only
-(no script can decide — the agent reads the prose and calls it) · ⚪ delegated
-(checked only in the product repo, not in dotfiles).
+| If you're about to… | The agent reads… |
+|---|---|
+| write Zig | `dispatch/write_zig.md` |
+| write TypeScript / JavaScript | `dispatch/write_ts_adhere_bun.md` |
+| write SQL or a database schema | `dispatch/write_sql.md` |
+| write *any* code at all | `dispatch/write_any.md` |
+| write a spec / changelog / API / auth code | the matching `dispatch/write_*.md` |
+| say "it's done — tests pass" | `dispatch/verify.md` |
+| name a stream or design a flow | `dispatch/name_architecture.md` |
+| change the rules themselves | `dispatch/edit_rules.md` |
 
-> **Migration status:** EXECUTED. The Stage-2 atomic switchover dissolved all 20
-> legacy gate cards (and the per-language Zig/Bun standards docs) into the 10
-> dispatch entries above — there is no `docs/gates/` directory. `audits/agents-md.sh`
-> enforces dispatch parity (`disk == table == REQUIRED_DISPATCH`) on every commit;
-> `make dispatch-parity` proves it bites. Machine mirror of this table:
-> `REQUIRED_DISPATCH` in [`audits/data.sh`](audits/data.sh).
+One command — `make audit` — keeps the rulebook honest: it fails loudly if this
+list, the files on disk, and the agent's own checklist ever fall out of sync.
+
+> **Want the full story?** The *why* behind this design — the latent/deterministic
+> "façade pair" per topic, the 🟢/🔴/🔵/⚪ signal tags, the parity guarantees, and
+> the migration that produced it — is written up in detail in
+> [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md). The exact,
+> machine-checked list of entries lives in [`audits/data.sh`](audits/data.sh).
 
 The instructions below assume you are in the `~/Projects/dotfiles` directory.
 

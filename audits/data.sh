@@ -39,7 +39,7 @@ EXPECTED_LABELS=(
 # dispatch/*.md.
 REQUIRED_DISPATCH=(
   "write_zig" "write_ts_adhere_bun" "write_sql" "write_any"
-  "write_spec" "write_http" "write_auth"
+  "write_spec" "write_http" "write_auth" "write_changelog"
   "verify" "name_architecture" "edit_rules"
 )
 
@@ -82,6 +82,7 @@ DOTFILES_RESIDENT=(
   "dispatch/write_spec.md"
   "dispatch/write_http.md"
   "dispatch/write_auth.md"
+  "dispatch/write_changelog.md"
   "dispatch/verify.md"
   "dispatch/name_architecture.md"
   "dispatch/edit_rules.md"

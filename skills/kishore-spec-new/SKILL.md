@@ -62,7 +62,7 @@ This is the step that prevents greptile findings — the spec becomes a pre-comm
 
 - **Applicable Rules** — name the *specific* `docs/greptile-learnings/RULES.md` rule IDs the diff will trip (e.g. NDC, NLR, NLG, UFS), plus the per-surface dispatch façades / rule files: `dispatch/write_zig.md` (`*.zig`), `REST_API_DESIGN_GUIDELINES.md` (`src/http/handlers/**`), `SCHEMA_CONVENTIONS.md` (`schema/*`), `dispatch/write_ts_adhere_bun.md`, `LOGGING_STANDARD.md`, `LIFECYCLE_PATTERNS.md`. Generic "follow RULES.md" earns a greptile finding; named IDs the implementer obeys by construction do not.
 - **Applicable Gates** — which Action-Triggered Guards fire (ZIG, PUB, LENGTH, UFS, UI, DESIGN TOKEN, LOGGING, LIFECYCLE, SCHEMA, ERROR REGISTRY) and the satisfaction strategy for each. Rules ≠ gates: rules are knowledge to read; gates fire on edits.
-- **Prior-Art / Reference Implementations** — the reference codebase to mirror (CLI → the supabase effects pillars at `docs/CLI_DX_PILLARS.md`; API → REST guide + nearest handler). No reinventing what a known-good pattern already solves.
+- **Prior-Art / Reference Implementations** — the reference codebase to mirror (CLI → the "7 Pillars" of CLI DX in `docs/TEMPLATE.md` Prior-Art; API → REST guide + nearest handler). No reinventing what a known-good pattern already solves.
 
 → Fills **Applicable Rules**, **Applicable Gates**, **Prior-Art / Reference Implementations**.
 
@@ -150,5 +150,4 @@ The spec lands in `pending/` on the branch/worktree where the skill was invoked.
 - `docs/TEMPLATE.md` — the section shape this skill fills (per-repo copy; fallback `~/Projects/dotfiles/docs/TEMPLATE.md`).
 - `audits/spec-template.sh` — the enforcer (`--staged` BLOCKs an incomplete spec).
 - `docs/greptile-learnings/RULES.md` — the rule IDs Step 2 pins for review-cleanliness.
-- `docs/CLI_DX_PILLARS.md` — the CLI prior-art reference.
 - `~/Projects/dotfiles/AGENTS.md` — lifecycle stages, action-triggered guards, deterministic VERIFY/CHORE sequencing.

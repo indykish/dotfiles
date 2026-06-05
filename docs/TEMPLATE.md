@@ -176,7 +176,7 @@ Touch nothing a gate watches → "N/A — docs/markdown only."
 
 > **SOUL.md rule: before proposing architecture, find the reference codebase — there almost always is one.** Name it so the agent mirrors a known-good pattern instead of inventing. State the alignment, or justify the divergence.
 
-- **CLI** → `docs/CLI_DX_PILLARS.md` (the "7 Pillars" ADR, vendored from the supabase-style `oss/cli`) — the pillars: command → handler → errors split; **handler purity** (no `console.log` / `process.exit` in handlers); **output as a service** (human vs JSON vs env rendering chosen by the renderer, not the handler); **structured JSON errors** with `suggestion`/`retry` fields; **3-tier test pyramid** (handler unit / in-process integration / subprocess e2e); **auto-JSON when stdout is piped** (LLM-native). State per CLI spec: which pillars this aligns with, and the reason for any divergence.
+- **CLI** → the **"7 Pillars"** of CLI developer experience (vendored from the supabase-style `oss/cli`): command → handler → errors split; **handler purity** (no `console.log` / `process.exit` in handlers); **output as a service** (human vs JSON vs env rendering chosen by the renderer, not the handler); **structured JSON errors** with `suggestion`/`retry` fields; **3-tier test pyramid** (handler unit / in-process integration / subprocess e2e); **auto-JSON when stdout is piped** (LLM-native). State per CLI spec: which pillars this aligns with, and the reason for any divergence.
 - **API** → `docs/REST_API_DESIGN_GUIDELINES.md` + the closest existing handler under `src/http/handlers/`.
 - **Schema** → the nearest existing migration + `docs/SCHEMA_CONVENTIONS.md`.
 - **UI** → design-system primitives + `theme.css` tokens.
