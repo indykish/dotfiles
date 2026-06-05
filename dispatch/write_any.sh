@@ -14,8 +14,8 @@
 # Exit:      0 = mechanical gates pass · 1 = ≥1 failed · 2 = usage error.
 #
 # Leaf modes are verified against each script's own arg-parser (lib.sh warns the
-# contracts are NON-UNIFORM): ufs.sh takes --all only (--staged retired M70);
-# logging.sh / error-codes.sh / msid-ui.sh all accept --staged.
+# contracts are NON-UNIFORM): ufs.sh accepts --all + --staged (--diff retired
+# M70); logging.sh / error-codes.sh / msid-ui.sh all accept --staged.
 # The fn≤50/method≤70 sub-cap (write_any.md, file-length card) is a TODO-CHECK:
 # dispatch_length_gate enforces only the file cap; no fn/method leaf is wired yet.
 
@@ -27,7 +27,7 @@ dispatch_header
 
 # ── deterministic gates ────────────────────────────────────────────
 dispatch_length_gate 350                                       # FLL — file cap (fn/method 50/70 = TODO-CHECK)
-dispatch_run_helper "UFS"  "ufs.sh"          "--all"
+dispatch_run_helper "UFS"  "ufs.sh"          "--all"   # full-tree on purpose: the per-edit lens must not be blind to an unstaged edit
 dispatch_run_helper "LOG"  "logging.sh"      "--staged"
 dispatch_run_helper "MSID" "msid-ui.sh"      "--staged"
 
