@@ -11,5 +11,56 @@
 # Format (TAB-separated):  <token><TAB>Indy (YYYY-MM-DD): "<verbatim ack>" — <context>
 #
 # A token cleared here is treated as covered for EVERY card (the rewording is
-# global). One token per line. Empty at Stage 0 — populated at the Stage-2
-# deletion boundary once Indy adjudicates the uncovered-token report.
+# global). One token per line.
+#
+# ---- Stage-2-prep drops (Indy adjudication, 2026-06-05) --------------------
+# Indy reviewed the uncovered-token report and authorized these as faithful
+# rewordings. Orly verified each underlying RULE survives in write_zig.md
+# (use-after-free → :112, allocator-ownership → :42/:46, PUB surface → :70/:103,
+# DEINIT/lifecycle → :61/:62) — only explanatory/example PROSE was reworded away.
+
+# zig.md
+broader	Indy (2026-06-05): "yes draft the drops-ledger acks" — zig.md prose; broader-context adjective, no rule lost (verified)
+uaf	Indy (2026-06-05): "yes draft the drops-ledger acks" — zig.md abbrev; "use-after-free" rule present verbatim in write_zig.md:112 (verified)
+
+# pub-surface.md (PUB surface + struct-shape rules retained in write_zig.md, verified)
+cheaply	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+checklist	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+choose	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+constructors	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md example; struct-shape rule retained (verified)
+crossing	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+dispatch	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+dominant	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+dsls	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md example, no rule lost (verified)
+enabled	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+enough	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+filter	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+forget	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+isready	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md example method name, no rule lost (verified)
+justified	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+loud	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+modeling	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+mutators	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md example; struct-shape rule retained (verified)
+proof	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+stripping	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+sym	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md abbrev (symbol), no rule lost (verified)
+testability	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+yours	Indy (2026-06-05): "yes draft the drops-ledger acks" — pub-surface.md prose, no rule lost (verified)
+
+# lifecycle.md (DEINIT + lifecycle rules retained in write_zig.md, verified)
+acknowledgements	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+batched	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+gpa	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md example (GeneralPurposeAllocator); allocator-lifecycle rule retained (verified)
+holding	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+immediate	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+incl	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md abbrev (including), no rule lost (verified)
+lexically	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+listed	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+placement	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+precede	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+protected	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+protects	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+question	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+reshapes	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
+sister	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose (sister skill), no rule lost (verified)
+unneeded	Indy (2026-06-05): "yes draft the drops-ledger acks" — lifecycle.md prose, no rule lost (verified)
