@@ -1,5 +1,5 @@
 .PHONY: audit test-audit llmevals signoff \
-        dispatch-coverage dispatch-evals merge-coverage
+        dispatch-coverage dispatch-evals merge-coverage dispatch-parity
 
 # Run the deterministic audit chain (Stage 0, additive — all green):
 #   1. agents-md.sh          — AGENTS.md invariance (script layer).
@@ -31,6 +31,13 @@ merge-coverage:
 # tree (conformance + determinism). Run whenever agents-md.sh changes.
 test-audit:
 	@bash evals/test-agents-md.sh
+
+# Stage-2 readiness proof — runs audits/parity-dispatch.sh against a model-B
+# end-state sandbox (docs/gates/ empty, AGENTS.md dispatch table, 10 entries)
+# and asserts it goes green AND bites. De-risks the switchover; folds into
+# test-audit once agents-md.sh adopts the dispatch parity at Stage 2.
+dispatch-parity:
+	@bash evals/test-dispatch-parity.sh
 
 # Cross-agent LLM eval signoff (audits/agents-md.md Scenario 23): each
 # installed agent (claude/codex/amp/opencode) answers the frozen golden-set;

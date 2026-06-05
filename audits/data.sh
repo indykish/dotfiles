@@ -45,6 +45,16 @@ REQUIRED_GATES=(
   "SPEC TEMPLATE GATE" "DOC READ GATE"
 )
 
+# Stage-2 dispatch parity — the 10 dispatch entries that replace the 20 gate
+# cards once docs/gates/ dissolves. Source of truth for check_dispatch_parity
+# (audits/parity-dispatch.sh). Each name has a dispatch/<name>.md and a row in
+# the AGENTS.md dispatch table. Keep 1:1 with dispatch/*.md.
+REQUIRED_DISPATCH=(
+  "write_zig" "write_ts_adhere_bun" "write_sql" "write_any"
+  "write_spec" "write_http" "write_auth"
+  "verify" "name_architecture" "edit_rules"
+)
+
 # Check 2 — every source/config language has at least one mention.
 EXTS=( ".zig" ".ts" ".tsx" ".js" ".jsx" ".py" ".rs" ".go" ".sh" ".sql" )
 
