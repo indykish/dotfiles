@@ -148,6 +148,15 @@ done < <(awk '
     # Strip single-line /* ... */ inline block comments (jsdoc/etc) so
     # literals inside them are not counted.
     gsub(/\/\*[^*]*\*+([^\/*][^*]*\*+)*\//, "", line)
+    # Const-declaration carve-out (mirrors the numeric-suspect is_const_decl
+    # exemption below): a literal on a `const`/`pub const`/`export const` line is
+    # its single-source DEFINITION, not a magic-string use. Two distinct named
+    # constants may legitimately share a value across domains (e.g. a runner
+    # status and a lease status both "active") — RULE UFS targets UN-named
+    # repetition, and both sites here are already named. Do not count literals on
+    # const-declaration lines; genuine un-named repeats (in calls/returns) still
+    # count and still flag.
+    if (line ~ /(^|[[:space:]])(pub[[:space:]]+const|export[[:space:]]+const|const)[[:space:]]/) next
     rest = line
     # Strip Zig identifier-escape syntax @"name" — body is an identifier,
     # not a string literal, but the regex below would otherwise match it.
