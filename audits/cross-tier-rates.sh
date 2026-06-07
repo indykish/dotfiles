@@ -97,6 +97,6 @@ if [[ $FAIL -ne 0 ]]; then
   exit 1
 fi
 
-printf "PASS: all %d rate constants pin across %d files\n" \
+printf "OK:   all %d rate constants pin across %d files\n" \
   "${#NAMES[@]}" "${#FILES[@]}"
 exit 0
