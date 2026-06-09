@@ -28,15 +28,17 @@ Canonical reference for UseZombie database schema patterns. All new tables **mus
 - Keep the database DDL value unchanged unless the product default is intentionally changing; the Zig constant mirrors the schema default for drift detection.
 - Add an adjacent `Canonical constant:` SQL comment next to each shared numeric default so reviewers can verify the linkage quickly.
 
-## ID Format
+## Unique Identifier (UID) Format
 
-- **Type:** `UUID PRIMARY KEY`
-- **Generation:** Application-side UUIDv7 via `src/types/id_format.zig`, never `gen_random_uuid()`.
+- **Column:** `uid`
+- **Type:** Universally Unique Identifier (UUID) `PRIMARY KEY`
+- **Generation:** Application-side UUID version 7 (UUIDv7) via `src/types/id_format.zig`, never `gen_random_uuid()`.
 - **Constraint:** Every table must have a UUIDv7 CHECK constraint:
   ```sql
-  CONSTRAINT ck_{table}_id_uuidv7 CHECK (substring(id::text from 15 for 1) = '7')
+  CONSTRAINT ck_{table}_uid_uuidv7 CHECK (substring(uid::text from 15 for 1) = '7')
   ```
 - **Adding a new table:** Add a `generate{TableName}Id()` function to `src/types/id_format.zig`.
+- **API shape:** public API fields may continue to expose `id`, `tenant_id`, `workspace_id`, or other documented names. SQL should alias `uid` back to the public field name at the boundary instead of casually renaming client-facing payloads.
 
 ## Timestamps
 
@@ -50,7 +52,7 @@ Every table must have:
 
 | Column | Type | Required | Notes |
 |--------|------|----------|-------|
-| `id` | `UUID PRIMARY KEY` | Yes | UUIDv7, app-generated |
+| `uid` | `UUID PRIMARY KEY` | Yes | UUIDv7, app-generated |
 | `created_at` | `BIGINT NOT NULL` | Yes | Set once at INSERT |
 | `updated_at` | `BIGINT NOT NULL` | If mutable | Set at INSERT and every UPDATE |
 
