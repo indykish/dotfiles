@@ -8,7 +8,7 @@ Pre-design rules, decisive defaults, and the anti-patterns each rule exists to p
 
 Triggers on every `Edit`/`Write` that adds, removes, or changes a log emit:
 
-- `*.zig` outside `vendor/`/`third_party/`/`.zig-cache/` — `std.log.*`, `std.debug.print`, `std.io.getStdErr().writer().print`, any helper in `src/observability/`.
+- `*.zig` outside `vendor/`/`third_party/`/`.zig-cache/` — `std.log.*`, `std.debug.print`, `std.io.getStdErr().writer().print`, any helper in `src/lib/logging/`.
 - `*.ts`/`*.tsx`/`*.js`/`*.jsx` outside `vendor/`/`node_modules/` — `console.*`, custom logger calls.
 - `*.sh` outside generated directories — `echo`, `printf` to `&2`.
 
@@ -26,9 +26,9 @@ Documented honestly, not aspirationally. Pre-M62 baseline (the fix-pass converge
 
 - Zig calls are mostly `std.log.scoped(.tag).info(comptime fmt, args)` with positional `{s} {d}` placeholders. Severity choice is inconsistent: successful happy-path events sometimes log at `info`, sometimes are silent. Per-call migration to the structured `log.<level>("event", .{ .field = val })` form is in flight.
 - A small number of Zig sites use `std.debug.print` directly — bypasses the scope/level system entirely. Always a violation.
-- The named module `log` (source: `src/logging/mod.zig`) exposes `scoped(.tag)` returning a logger struct with `.err` / `.warn` / `.info` / `.debug` methods. M62 removed the older free-function helpers (`logErr` / `logErrWithHint` / `logWarnErr`) — there is no compat shim.
+- The named module `log` (source: `src/lib/logging/mod.zig`) exposes `scoped(.tag)` returning a logger struct with `.err` / `.warn` / `.info` / `.debug` methods. M62 removed the older free-function helpers (`logErr` / `logErrWithHint` / `logWarnErr`) — there is no compat shim.
 - TypeScript (`zombiectl/src/**`) calls `console.log`/`console.error` directly. No structure. No scope. No severity beyond err vs out.
-- Error-code embedding (`UZ-XXX-NNN`) appears on some `err` lines but not others. The registry (`src/errors/error_registry.zig`) is the source of truth, but enforcement is voluntary.
+- Error-code embedding (`UZ-XXX-NNN`) appears on some `err` lines but not others. The registry (`src/zombied/errors/error_registry.zig`) is the source of truth, but enforcement is voluntary.
 - No collector-friendly format. Logs are a mix of free-form English and ad-hoc `key={value}` fragments.
 
 The proposed standard below is what every new emit must conform to and what the fix-pass converges existing emits toward.
@@ -90,18 +90,18 @@ Concrete tests for whether an event deserves `info`:
 
 ## §5 · Error-code embedding
 
-Every `err` and `warn` record that maps to a domain error MUST carry `error_code=UZ-XXX-NNN` where `UZ-XXX-NNN` is declared in `src/errors/error_registry.zig`.
+Every `err` and `warn` record that maps to a domain error MUST carry `error_code=UZ-XXX-NNN` where `UZ-XXX-NNN` is declared in `src/zombied/errors/error_registry.zig`.
 
 - **Used-but-undeclared** (`UZ-FAKE-999` appearing in code, no entry in registry): **blocking** in `make lint`.
 - **Declared-but-unreferenced** (registry has `UZ-LEGACY-007`, no code references it): **informational**. Deletion may be deferred to a sweep milestone.
 
-Embed the code as a struct field on the logger call: `log.err("event_name", .{ .error_code = error_codes.ERR_X, .err = @errorName(err) })`. The encoding helpers in `src/logging/mod.zig` serialize it as `error_code=UZ-XXX-NNN` per §3. CLI (`zombiectl`) renders the code in human format and as `code: "UZ-XXX-NNN"` in `--json` output (see §8).
+Embed the code as a struct field on the logger call: `log.err("event_name", .{ .error_code = error_codes.ERR_X, .err = @errorName(err) })`. The encoding helpers in `src/lib/logging/mod.zig` serialize it as `error_code=UZ-XXX-NNN` per §3. CLI (`zombiectl`) renders the code in human format and as `code: "UZ-XXX-NNN"` in `--json` output (see §8).
 
 System-level failures with no domain meaning (e.g. raw `EACCES` from a syscall before we attribute it to a tenant operation) emit without `error_code`. The follow-up rule: if a syscall failure surfaces to a user, it gets attributed to a registry code at the boundary.
 
 ## §6 · PII / secret discipline
 
-Inherits the redaction list from M42_002 (`src/executor/runner_progress.zig`). Same secret values must not appear anywhere in log records.
+Inherits the redaction list from M42_002 (`src/runner/engine/runner_progress.zig`). Same secret values must not appear anywhere in log records.
 
 - **Allocator outputs** (Postgres connection strings, Redis URLs, OAuth tokens, OpenAI keys) — never log. If a record needs to identify a config source, log the *source* (`source=env:OPENAI_API_KEY`), not the *value*.
 - **Tenant-supplied secrets** (workspace API keys, BYOK credentials) — redaction harness covers stdout/stderr from executor children. Log emit sites in this codebase MUST NOT bypass the harness.
@@ -112,7 +112,7 @@ When in doubt, omit. A missing field is recoverable; a leaked secret is not.
 
 ## §7 · Per-language binding — Zig
 
-The wire format above is produced by helpers in `src/logging/mod.zig`, exposed as the named module `log` so any layer-isolated tree (auth/, executor/) can import it without violating layer rules. Call sites use:
+The wire format above is produced by helpers in `src/lib/logging/mod.zig`, exposed as the named module `log` so any layer-isolated tree (auth/, executor/) can import it without violating layer rules. Call sites use:
 
 ```zig
 const logging = @import("log");                  // named module, see build.zig
@@ -243,7 +243,7 @@ Failure modes the audit script and reviewer must close. These are **not aspirati
 | # | Rationalization | Closure |
 |---|---|---|
 | L1 | "Temporary debug print, I'll remove later" | `logging.sh` greps `std.debug.print` and `console.log` / `console.debug` / `console.info` in non-test source unconditionally. Found in commit → gate fails. No "temporary" carve-out. |
-| L2 | "`std.log.scoped` is fine, `obs.scoped` is just a wrapper" | `std.log.scoped` is **forbidden** in `src/**/*.zig` outside `src/observability/`. Only `obs.scoped` is callable. Audit flags every `std.log.` call site. |
+| L2 | "`std.log.scoped` is fine, `obs.scoped` is just a wrapper" | `std.log.scoped` is **forbidden** in `src/**/*.zig` outside `src/lib/logging/`. Only `obs.scoped` is callable. Audit flags every `std.log.` call site. |
 | L3 | "I added `error_code=UZ-NEW-001` — registry entry coming next commit" | The registry entry **must land in the same commit** as the first reference. `error-codes.sh` runs against the staged diff; missing entry = blocking. |
 | L4 | "This per-iteration event matters for debugging — `info`-level" | `info` allow-list is fixed: `server_started`, `server_stopped`, `request_received`, `request_completed`, `worker_pool_resized`, `migration_applied`, `batch_started`, `batch_completed`. Anything else at `info` → audit warning; reviewer must justify or downgrade to `debug`. |
 | L5 | "Operator needs the full stack trace in `msg=`" | `msg=` capped at 300 chars; total fields per record capped at 15. Stack traces emit as a separate `event=stack_trace` record at `debug` level, correlated by `correlation_id`, not stuffed into `msg`. |
@@ -284,7 +284,7 @@ immediately preceding the edit. Generic "scope creep" is not a valid reason — 
 - `dispatch/write_ts_adhere_bun.md` §9 — module-level error style (throw vs Result) for `zombiectl`.
 - `dispatch/write_zig.md` — Zig discipline umbrella; this doc's §7 is the logging-specific layer.
 - `LIFECYCLE_PATTERNS.md` — orthogonal: ownership/cleanup of structs, including allocator wiring for the thread-local log buffer.
-- M42_002 redaction harness (`src/executor/runner_progress.zig`) — secret-redaction precondition; this doc's §6 inherits.
+- M42_002 redaction harness (`src/runner/engine/runner_progress.zig`) — secret-redaction precondition; this doc's §6 inherits.
 - Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `docs/greptile-learnings/RULES.md`.
 - Length caps in `dispatch/write_any.md` (File & Function Length).
 - This file is the **wire-format and discipline contract** that those universal rules cannot express. Read it once at session start; re-read on sub-task shape change.
