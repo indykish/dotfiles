@@ -165,7 +165,7 @@ The `comptime if ... return` makes the entire emit path disappear when the scope
 | `std.log.info("..."` outside `logging.scoped(.tag)` | Bypasses scope/event/field discipline. | Convert to `logging.scoped(.tag).info("event", .{...})`. |
 | `std.debug.print(` in non-test source | No level, no scope, no field structure. Dev-only debugging that escaped to main. | Convert or delete before commit. |
 | `std.log.err` without `error_code=` field | Drops registry traceability. | Add the registry code, or add a registry entry if missing. |
-| `std.log.scoped(...)` outside `src/logging/` | Free-form printf-style emit. | Switch the file's alias to `const log = logging.scoped(.tag);` and migrate every call site to the event+fields form. |
+| `std.log.scoped(...)` outside `src/lib/logging/` | Free-form printf-style emit. | Switch the file's alias to `const log = logging.scoped(.tag);` and migrate every call site to the event+fields form. |
 | Positional `{s} {d}` placeholders | Not logfmt; not greppable. | Convert to struct-of-fields. |
 
 ## §8 · Per-language binding — TypeScript / JavaScript (`zombiectl`)
