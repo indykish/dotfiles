@@ -157,15 +157,18 @@ done < <(awk '
     # Strip single-line /* ... */ inline block comments (jsdoc/etc) so
     # literals inside them are not counted.
     gsub(/\/\*[^*]*\*+([^\/*][^*]*\*+)*\//, "", line)
-    # Const-declaration carve-out (mirrors the numeric-suspect is_const_decl
-    # exemption below): a literal on a `const`/`pub const`/`export const` line is
-    # its single-source DEFINITION, not a magic-string use. Two distinct named
-    # constants may legitimately share a value across domains (e.g. a runner
-    # status and a lease status both "active") — RULE UFS targets UN-named
-    # repetition, and both sites here are already named. Do not count literals on
-    # const-declaration lines; genuine un-named repeats (in calls/returns) still
-    # count and still flag.
-    if (line ~ /(^|[[:space:]])(pub[[:space:]]+const|export[[:space:]]+const|const)[[:space:]]/) next
+    # Const-BINDING carve-out (narrower than the numeric-suspect is_const_decl
+    # exemption below — deliberately): a literal that IS the right-hand side of a
+    # `const`/`pub const`/`export const` binding is its single-source DEFINITION,
+    # not a magic-string use. Two distinct named constants may legitimately share
+    # a value across domains (e.g. a runner status and a lease status both
+    # "active") — RULE UFS targets UN-named repetition, and both sites there are
+    # already named. But a literal passed as a CALL ARGUMENT on a const line
+    # (`const x = foo("lit");`) is NOT named by that const — it counts and flags
+    # like any other use. (A prior line-level skip exempted those too and silently
+    # gutted the check for most Zig code; the ufs_dup_string eval fixture pins the
+    # binding-level semantic.)
+    if (line ~ /(^|[[:space:]])(pub[[:space:]]+const|export[[:space:]]+const|const)[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*([[:space:]]*:[^=]*)?[[:space:]]*=[[:space:]]*"((\\.)|[^\\"])+"[[:space:]]*(as[[:space:]]+const)?[[:space:]]*[;,]?[[:space:]]*$/) next
     rest = line
     # Strip Zig identifier-escape syntax @"name" — body is an identifier,
     # not a string literal, but the regex below would otherwise match it.
