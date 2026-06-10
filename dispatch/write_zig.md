@@ -564,6 +564,8 @@ Multi-type modules (e.g. a protocol with `MessageType` + `Envelope` + `Decoded`)
 
 **Reuse a std type before inventing one.** A field that is an IP address is `std.Io.net.IpAddress` (0.16), not a hand-rolled `[4]u8`; a socket handle is a thin wrapper that owns the fd (the `std.Io.net.Stream` shape), not a bare `fd: i32` with ad-hoc methods; a byte accumulator is the BUFFER GATE's `std.ArrayList(u8)`/`StringBuilder`, not a custom growable. Inventing a parallel type fragments the surface and forfeits std's `format`/`parse`/`eql` for free — only roll your own when no std type fits, and say why in the Pub Surface gate block.
 
+**Compound type names follow Zig std: split the words, TitleCase each.** A file-as-struct type that is two words is `HostName`, not `Hostname` (`std/Io/net/HostName.zig` is literally `const HostName = @This();`); `AllowList`, not `Allowlist`; mirror `FixedBufferAllocator` / `HeadParser` / `ErrorBundle` — std has **zero** single-word-joined compound type. (Functions stay camelCase, fields/vars/constants snake_case, and a non-type module file — a function namespace, not a `@This()` type — keeps a snake_case name: `mem.zig`, `array_list.zig`.)
+
 ## Bun-Inspired Conventions (apply on new code, do not retrofit blindly)
 
 > [JUDGMENT → TGU]
