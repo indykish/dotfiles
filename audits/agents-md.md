@@ -111,6 +111,8 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 6.6 | Is at least one tier-3 `make test-integration` from clean state required per branch before ship-ready? | YES |
 | 6.7 | Are package-scoped runners (`bun run test`, `vitest <file>`, `zig build test` w/o integration) explicitly **not** verification? | YES |
 | 6.8 | Must memleak evidence (last 3 lines verbatim) appear in PR Session Notes when touching `src/http/**` / `src/cmd/serve.zig` / allocator wiring? | YES |
+| 6.9 | Does CHORE(open) record a `Test Baseline:` line (unit + integration counts from `make _lint_zig_test_depth`) in the spec header? | YES |
+| 6.10 | Does VERIFY end with a Test Delta row (growth vs the CHORE(open) baseline) plus a lacking-areas verdict, with zero/negative unit delta on a code-adding diff requiring justification or a return to EXECUTE? | YES |
 
 ### Scenario 7 — Reviewing / `/review-pr` of a specification
 

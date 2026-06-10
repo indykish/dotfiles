@@ -12,6 +12,19 @@
 | 2 | `make test-integration` | Diff touches `src/http/**`, `src/db/**`, `src/zombie/**`, `src/observability/**`, `*_integration_test.zig`, schema, migrations. Before COMMIT. |
 | 3 | `make test-integration` | ≥1× per branch from clean state (after `make down`) before ship-ready. Mandatory when schema changes pre-v2.0. Tier 2 passing + 3 failing = state pollution; fix isolation. |
 
+## Test delta — VERIFY ends by reporting coverage growth
+
+CHORE(open) recorded the branch-point counts in the spec header (`**Test Baseline:** unit=<N> integration=<M>`, from `make _lint_zig_test_depth`, which also writes `.tmp/zombied-test-depth.txt`). VERIFY ends with the same command and this required row in the verification block:
+
+```
+Test Delta: unit <N₀>→<N₁> (+x) · integration <M₀>→<M₁> (+y) vs CHORE(open) baseline
+Lacking:    <changed surfaces whose tests did not grow, or "none">
+```
+
+- **Delta is deterministic; Lacking is judgment (🔵)** — walk the diff's changed modules and name every one whose coverage did not move (e.g. "EgressScope Linux paths — integration lane pending"). "none" must be earned, not defaulted.
+- **Zero/negative unit delta while the diff adds non-trivial code** → justify in the row (pure refactor, test consolidation) or return to EXECUTE. Deleting tests to go green is a violation, not a justification.
+- Spec predates this rule (no `Test Baseline:` line) → reconstruct from the branch point (run the counter at the CHORE(open) commit or on `origin/main`) and add the line to the spec in the same commit as the VERIFY report.
+
 ## Performance / leak (before PR)
 
 | Gate | Command | When |

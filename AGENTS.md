@@ -174,7 +174,7 @@ Non-trivial (full lifecycle) if it: touches >1 file · new abstraction · data m
 
 ### CHORE (open)
 
-Spec `pending/`→`active/`; `Status: IN_PROGRESS`; `Branch:` set; committed. Worktree created, CWD inside (verify `pwd` + `git worktree list`). No code yet.
+Spec `pending/`→`active/`; `Status: IN_PROGRESS`; `Branch:` set; **`Test Baseline:` recorded** — run `make _lint_zig_test_depth` and copy the counts into the spec header as `**Test Baseline:** unit=<N> integration=<M>` (VERIFY's Test Delta row compares against it; `docs/VERIFY_TIERS.md` §Test delta); committed. Worktree created, CWD inside (verify `pwd` + `git worktree list`). No code yet.
 
 ### PLAN
 
@@ -198,7 +198,7 @@ Runs after EXECUTE, before VERIFY. Aggregates every gate verdict — full output
 
 ### VERIFY
 
-Verification Gate defines the output block; what to actually run lives in [`docs/VERIFY_TIERS.md`](./docs/VERIFY_TIERS.md) — correctness tiers (1=`make test`, 2/3=`make test-integration`), performance/leak (`make memleak`, `make bench`), hygiene (`make lint`, `make check-pg-drain`, cross-compile both linux targets, `gitleaks`, orphan sweep, 350-line check). **FIRST: `/write-unit-test`** — audits diff coverage vs spec's Test Specification (or changed surface when no spec); skipping = CHORE(close) violation. Memleak evidence pasted into PR Session Notes (or cite CI URL). After refactors, list newly dead code before removing.
+Verification Gate defines the output block; what to actually run lives in [`docs/VERIFY_TIERS.md`](./docs/VERIFY_TIERS.md) — correctness tiers (1=`make test`, 2/3=`make test-integration`), performance/leak (`make memleak`, `make bench`), hygiene (`make lint`, `make check-pg-drain`, cross-compile both linux targets, `gitleaks`, orphan sweep, 350-line check). **FIRST: `/write-unit-test`** — audits diff coverage vs spec's Test Specification (or changed surface when no spec); skipping = CHORE(close) violation. **LAST: the Test Delta row** — re-run `make _lint_zig_test_depth` and report unit/integration growth vs the spec's CHORE(open) `Test Baseline:` line plus a lacking-areas verdict (`docs/VERIFY_TIERS.md` §Test delta); zero/negative unit delta on a code-adding diff → justify or return to EXECUTE. Memleak evidence pasted into PR Session Notes (or cite CI URL). After refactors, list newly dead code before removing.
 
 ### DOCUMENT
 
