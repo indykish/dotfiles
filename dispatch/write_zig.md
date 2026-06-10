@@ -62,7 +62,7 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
 - Copy row-backed slices before `q.drain()` or `q.deinit()`.
 - Materialize rows into owned memory before issuing writes on the same `pg.Conn`.
 - Keep temp-table fixtures aligned with the real production write contract.
-- Use `var rows: std.ArrayList(T) = .{};` for ArrayList init (Zig 0.15). Pass alloc per-operation: `append(alloc, ...)`, `toOwnedSlice(alloc)`, `deinit(alloc)`.
+- Use `var rows: std.ArrayList(T) = .empty;` for ArrayList init (Zig 0.16; the `= .{}` form was 0.15). Pass alloc per-operation: `append(alloc, ...)`, `toOwnedSlice(alloc)`, `deinit(alloc)`.
 - Use `q.*.next()` and `q.*.drain()` when the query result is passed through `anytype` as a pointer (`&q`). Direct local vars use `q.next()`.
 - Reference nested struct types with the full path: `Module.Struct.NestedType`, not `Module.NestedType`.
 - Add new test files to test discovery. Either `_ = @import("path/to/new_file.zig");` in `main.zig`'s test block, or — preferred when a façade already exists — in a `test {}` block inside the façade (`test { _ = @import("foo_test.zig"); }`). Zig strips `test {}` blocks in release builds, so this adds zero bytes to the production binary. The façade pattern keeps `main.zig` at a flat one-line-per-module list and lets each module own its own test discovery.
@@ -559,6 +559,10 @@ const std = @import("std");      // imports at file END
 ```
 
 Multi-type modules (e.g. a protocol with `MessageType` + `Envelope` + `Decoded`) keep the conventional struct-inside-file layout — file-as-struct only fits when there is exactly one primary type.
+
+**Directory of file-as-struct types → a facade module (the `std.net` pattern).** When a feature is several cohesive `@This()` types in their own directory (`foo/Bar.zig`, `foo/Baz.zig`), add a one-line-per-type facade `foo/foo.zig` that re-exports them — `pub const Bar = @import("Bar.zig");` — and have callers import the facade, not the leaf files. Mirrors `std.net` (re-exports `Address`/`Stream`/`Server`) and `std.Build`. Stateless helper collections in the same directory stay plain function namespaces (the `std.mem`/`std.fmt` shape), **not** `@This()` structs — `@This()` is for types that own state, function namespaces for stateless builders.
+
+**Reuse a std type before inventing one.** A field that is an IP address is `std.Io.net.IpAddress` (0.16), not a hand-rolled `[4]u8`; a socket handle is a thin wrapper that owns the fd (the `std.Io.net.Stream` shape), not a bare `fd: i32` with ad-hoc methods; a byte accumulator is the BUFFER GATE's `std.ArrayList(u8)`/`StringBuilder`, not a custom growable. Inventing a parallel type fragments the surface and forfeits std's `format`/`parse`/`eql` for free — only roll your own when no std type fits, and say why in the Pub Surface gate block.
 
 ## Bun-Inspired Conventions (apply on new code, do not retrofit blindly)
 
