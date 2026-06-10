@@ -15,6 +15,15 @@
 #
 # Carve-out: any `// pin test: literal is the contract` comment on or
 # above the offending line excludes that line from numeric-suspect.
+# A `const` / `pub const` / `export const` declaration line is likewise
+# exempt for both per-file checks (is_const_decl + its string-dup mirror
+# below) — binding the literal to a name on a const line clears the hit.
+#
+# Staged-scope semantics: --staged narrows WHICH FILES are scanned, not
+# how much of each — a staged file is audited in FULL, so staging a file
+# for an unrelated one-line change drags its pre-existing literal debt
+# into the commit. Broad sweeps (renames touching N files) surface N
+# files' latent hits at once; plan that cleanup before staging.
 #
 # Scope (M70):
 #   Walks the full working tree via `git ls-files` — sees staged content

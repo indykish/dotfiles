@@ -298,6 +298,8 @@ Canonical source: `src/http/test_harness.zig`. Every `*_http_integration_test.zi
 > [DETERMINISTIC → XCOMPILE]
 
 - Run `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` before every commit that touches Zig files. Do not rely on macOS-only compilation.
+- **Production-binary targets alone do NOT catch Linux-gated drift.** Code inside `if (builtin.os.tag == .linux)` branches and test-only helpers is comptime-dead on a macOS target and never analysed in the production graph (M82 shipped green locally; three Linux-gated `std.fs.accessAbsolute` sites failed CI). For cross-platform changes, also compile the linux **test graphs**: `zig build test -Dtarget=x86_64-linux` + `zig build test-lib -Dtarget=x86_64-linux` + `zig build --build-file build_runner.zig test -Dtarget=x86_64-linux`. A clean compile ending only in `unable to execute binaries from the target` is the PASS signal.
+- **Linux-gated tests compile but never RUN on macOS** (`SkipZigTest` off-linux) — a wrong runtime assertion slips through to CI (M84_007). To execute locally: cross-compile the test graph `-Dtarget=aarch64-linux`, take the static ELF from `.zig-cache/o/*/`, and run it in a **native arm64** container: `docker run --rm --platform linux/arm64 -v "$PWD:/w" -w /w debian:stable-slim /w/<binary>`. qemu-emulated x86_64 is a false oracle — its fork/clone emulation breaks tests that pass on real Linux. Note: prod children run under bwrap (closes non-passed fds), so bwrap-less tests must assert the *relative* fd property (child fds ⊆ parent), never absolute fd counts.
 - `std.http.Client.open()` does not exist on Linux targets in Zig 0.15.2. Use `client.request()` + `response.reader()` + `readVec()` for cross-platform HTTP streaming.
 - `std.Io.Reader` on Linux has `readVec()`, not `read()`. Use `readVec(&[_][]u8{&buf})` for single-buffer reads.
 - Verify stdlib API existence by grepping: `grep -n "pub fn" ~/.local/share/mise/installs/zig/*/lib/std/http/Client.zig`
@@ -316,6 +318,14 @@ Canonical source: `src/http/test_harness.zig`. Every `*_http_integration_test.zi
 
 - The heartbeat interval must be LESS than `SO_RCVTIMEO` (socket read timeout). If `SO_RCVTIMEO = 25s` and heartbeat check is at `30s`, the first wakeup at `t=25s` skips the heartbeat (25 < 30) and the proxy drops the connection at `t=30s` before the second wakeup.
 - Correct invariant: `heartbeat_interval < SO_RCVTIMEO < proxy_idle_timeout`.
+
+## Listener Shutdown Must Wake accept() — Linux (0.16)
+
+> [JUDGMENT → NEW:HANG]
+
+- `listener.deinit(io)` from another thread does NOT unblock a thread inside `std.Io.net.Server.accept(io)` on **Linux** (it does on macOS/BSD) — so `acceptor.join()` hangs forever, and deinit-during-accept races the acceptor. Passes locally, dies only in Linux CI (M88_002: 10-minute timeout, zero test output).
+- Shutdown pattern: (1) `stop.store(true)`; (2) one throwaway loopback connect to the listen port to wake the blocked `accept()`; (3) acceptor accepts it, sees `stop`, closes, returns; (4) `acceptor.join()`; (5) only THEN `listener.deinit(io)` — no thread may still sit in `accept` at deinit.
+- Verify any Linux-gated hang fix in a native arm64 container (Cross-Compile Verification above), not on macOS.
 
 ## Tagged Unions for Result Types (M4_001)
 
@@ -477,6 +487,8 @@ Rules:
 - Use `//!` for module-level documentation at the top of a file. Reserve `///` for `pub` type, function, and field doc-comments. Reserve `//` for inline rationale.
 - Comments above fields explain *why* the field exists, not what its type is. Group related fields with `// === Section ===` separators.
 - Skip comments when a well-named identifier already explains intent. Add a comment only when removing it would confuse a future reader (hidden invariant, surprising workaround, non-obvious lifetime contract).
+- **Production `.zig` stays comment-sparse**: at most one short line per `pub` symbol (often none), no multi-line rationale blocks, struct fields uncommented unless they encode a non-obvious invariant. The 350-line FLL cap is hard, and comment bloat is the first thing that pushes a file over it. Move rationale and usage narrative to the spec or the sibling `_test.zig`.
+- `_test.zig` files are the opposite — FLL-exempt, so commentary, setup explanation, and section markers are welcome there. When extracting tests, let the test file carry the longer explanations the source file can't afford.
 
 ## Concurrency
 

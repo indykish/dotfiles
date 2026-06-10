@@ -55,6 +55,11 @@ the PR Session Notes block OR cite the CI memleak job URL. Branches touching
 `src/http/**`, `src/cmd/serve.zig`, or allocator wiring MUST include the last 3
 lines verbatim. No "I ran it, trust me."
 
+## Coverage discipline
+
+- **Branch coverage is the goal; line coverage is the floor.** One input "covers" a multi-clause condition while leaving its logic untested (`trimmed === "" || === "y" || === "yes"` passes line coverage with a single `"y"`). Feed varied inputs across the equivalence classes — each OR clause independently, success-retry AND fail-retry paths, every early-return guard, empty/casing/whitespace/garbage for normalizers. bun's lcov emits no branch records, so this is test-design discipline, not a number to chase.
+- **Do not chase per-file 97% on declaration-heavy files.** bun marks compiler-erased lines (`import type`, `interface`) as 0-hit — no test can execute them, and restructuring to lift the number backfires (inlined type literals get instrumented as 0-hit too). The enforced gates are **aggregates** (`enforce-coverage.mjs` global row; codecov patch across uploaded packages); a few erased lines dilute to noise there. No codecov `ignore` entries either — gate on the aggregate.
+
 ## Bench knobs
 
 `make/test-bench.mk` env vars: `API_BENCH_METHOD`, `API_BENCH_DURATION_SEC`,

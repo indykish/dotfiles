@@ -272,6 +272,20 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 15b. Memory discipline — auto-memory is retired in favour of dispatch + repo
+#      docs + HANDOFF. The section MUST keep three load-bearing facts so a
+#      future edit can't silently re-enable the per-session memory tax or drop
+#      the routing that replaces it: the disable flag, the never-write rule, and
+#      the dispatch-first routing target.
+# ---------------------------------------------------------------------------
+md_fail=0
+grep -qF "## Memory Discipline" "$AGENTS"      || { fail "memory discipline: section header missing"; md_fail=1; }
+grep -qF "autoMemoryEnabled" "$AGENTS"         || { fail "memory discipline: autoMemoryEnabled disable flag not documented"; md_fail=1; }
+grep -qiE "NEVER write to .*memory" "$AGENTS"  || { fail "memory discipline: never-write-memory rule missing"; md_fail=1; }
+grep -qF 'dispatch/<entry>.md' "$AGENTS"       || { fail "memory discipline: dispatch-first routing missing"; md_fail=1; }
+[[ $md_fail -eq 0 ]] && pass "memory discipline (disable flag + never-write + dispatch routing present)"
+
+# ---------------------------------------------------------------------------
 # 16. Size cap — soft guard against drift back to bloat.
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------

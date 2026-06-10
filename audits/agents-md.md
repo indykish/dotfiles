@@ -269,6 +269,21 @@ The questions force *proof of reading* over *recall*.
 | 23.7 | Is Scenario 23 enforced by a live, cross-agent LLM-eval runner (`evals/llms/run.sh`, `make llmevals`) that feeds the frozen golden-set (`evals/llms/fixtures.jsonl`) to EVERY installed agent (claude, codex, amp, opencode) and grades each `VERDICT:` by exact match — with a per-agent threshold and absent agents logged, never silently skipped? | YES |
 | 23.8 | When the LLM-eval runner is unavailable (no agent CLIs) or the golden-set changes, is the dry validator `make llmevals CHECK=1` (fixtures well-formed + availability, no live calls) the minimum that must still pass? | YES |
 
+### Scenario 24 — Memory routing (auto-memory retired)
+
+The file-based auto-memory system is disabled (`autoMemoryEnabled: false`); durable
+knowledge routes to dispatch / repo docs / HANDOFF instead of a per-session memory
+store. These questions force the agent to *route a fact* rather than reach for a
+memory file — the exact drift the `## Memory Discipline` section exists to prevent.
+
+| # | Question | Expected |
+|---|---|---|
+| 24.1 | Is writing to `**/memory/*.md` or any `MEMORY.md` forbidden, because the harness neither records nor recalls them under `autoMemoryEnabled: false`? | YES |
+| 24.2 | Does a rule that fires on a file-type / lifecycle trigger belong in `dispatch/<entry>.md` behind its gate, not in a memory note? | YES |
+| 24.3 | Does in-flight state (branch / PR / next steps) belong in a `HANDOFF_*.md` + PR Session Notes + the spec, surfaced by the `pickup` / `handoff` skills? | YES |
+| 24.4 | Is a durable architecture fact homed in the product repo's `docs/architecture/*.md`, not memory? | YES |
+| 24.5 | If a fact has no firing gate and no doc home, is the correct move to add the rule (Rule extension protocol) or drop it — never to create a memory file? | YES |
+
 ## LLM-eval layer (Scenario 23 enforcement)
 
 The deterministic audit proves the rules are *present*; it cannot prove an

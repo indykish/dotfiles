@@ -148,7 +148,7 @@ expect_fail "HARNESS VERIFY bites when a verdict row keyword is removed" \
 # scenario would conflate parity with the keyword-missing check below).
 expect_fail "scenario parity bites when a scenario is added without a keyword" \
   "named-scenario parity" \
-  "printf '\n### Scenario 24 — Untracked extra\n' >> audits/agents-md.md"
+  "printf '\n### Scenario 99 — Untracked extra\n' >> audits/agents-md.md"
 
 expect_fail "named-scenario bites when a keyword vanishes" \
   "missing scenario keyword: combined audit" \
@@ -177,6 +177,10 @@ expect_fail "fixture fingerprint bites when dirty.diff is sanitised" \
 expect_fail "hook trigger bites when pre-push drops its dispatch/ guard" \
   "missing dispatch/ trigger reference" \
   "perl -pi -e 's{dispatch/}{XXX/}g' .githooks/pre-push"
+
+expect_fail "memory discipline bites when the never-write rule is dropped" \
+  "memory discipline: never-write-memory rule missing" \
+  "perl -pi -e 's/NEVER write to/You may write to/g' AGENTS.md"
 
 echo
 printf '%s' "$BO"

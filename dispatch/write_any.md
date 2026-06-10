@@ -29,6 +29,8 @@ Triggers on every `Edit`/`Write` to a source file in any language: `*.zig`, `*.t
 
 **Per-file lens.** This is the EXECUTE/HARNESS-VERIFY early-warning: it dispatches over the source files actually touched or `--staged`, so a turn that stages no in-scope source short-circuits with nothing to check. The full-tree audits (`audit-ufs` etc.) still fire unconditionally via the product repo's `make harness-verify` — the dispatch is the per-edit lens, not the codebase-wide backstop.
 
+**"Green deferred" defers only the build gate.** When the user grants "free to break, green later" on a multi-slice cutover, the per-edit gates in this façade (UFS, LENGTH, and the language façade's PUB / LIFECYCLE / BUFFER) still run on every Write/Edit — with no compile until late convergence they are the *only* correctness signal, and a big-bang build will not retro-catch speculative `pub`s, re-spelled literals, or missing `errdefer`s (M80 B3 drifted exactly this way).
+
 ## Merged from dissolved gate cards
 
 > [container]
@@ -517,6 +519,8 @@ Any edit to a file with pre-existing legacy framing or dead code MUST remove it 
 
 The carve-out "pre-existing violations are not the agent's responsibility" does **not** apply when the agent is already touching the file. You see it, you own it.
 
+The inverse discipline on the same touch: **performance opportunities are surfaced, never silently bundled.** A behavior-preserving refactor that quietly folds in optimizations (pooling a per-call construction, collapsing allocations on a hot path) destroys bisectability of any regression. Keep a perf-opportunities list as you edit and surface it at the next checkpoint for the user's fold-in-or-file decision — same posture as security follow-ups. Dead-code removal on touch stays in (that is this rule); perf rewrites stay out until decided.
+
 #### Pre-edit check
 
 > [JUDGMENT → NLR]
@@ -678,3 +682,9 @@ Every triggered consult is logged in the active spec's **Discovery** section, or
 > [JUDGMENT → LDC]
 
 NLR is the cleanup-on-touch arm; NLG bans new legacy framing pre-v2.0.0; this guard covers the harder judgment calls ("should this whole subsystem exist") that need the user's input.
+
+## Mid-Task Repo-Wide Flips Need a Blast-Radius Grep
+
+> [JUDGMENT → NEW:BLAST]
+
+Before flipping or removing any identifier/value referenced beyond the file in hand — a skill ref, package name, template slug, config key — run `git grep -rn -w '<token>'` from the repo root with **no path filter**, even for a "one-line change". Word-boundary, never quoted-literal (YAML and multiline-string refs carry no quotes). Separate true targets from same-spelling-different-meaning hits (a skill ref vs the GitHub repo slug) and update every true hit in the same diff. Grepping only the "obvious" files is the trap: M75_001 flipped an installer slug while a doc *edited in the same PR* still advertised the old one. The spec-authoring twin (teardown/rename specs) lives in `dispatch/write_spec.md`.

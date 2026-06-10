@@ -20,6 +20,8 @@ Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
 
 **Acronym self-check (pre-send, invariant).** On par with HARNESS VERIFY: before sending any message or committing any durable artifact, scan the outgoing text for `\b[A-Z][A-Z0-9]{1,5}\b` hits. For each: (1) staple allowlist above → skip; (2) already spelled out earlier *in this same message/artifact* → skip; (3) otherwise spell out as `Full Form (ACR)` then reuse bare. Bitten recently: `RSC`, `SPA`, `OTP`, `SDK`, `MCP`, `UUID`, `FAPI`, `pk`/`sk`, `OIDC`, `JWT`, `RBAC`. Skipping = `ACRONYM CHECK: SKIPPED per user override (reason: ...)`; reasonable only when expansion would distort a verbatim quote.
 
+**Banned-vocabulary self-check (pre-send, invariant).** Paired with the acronym check above: before sending any message or committing any durable artifact, scan the outgoing text for the whole-word banned terms **`phase`** and **`contract`**. Each hit → swap for the hierarchy / stage vocabulary above, or `external commitment` / `vendor agreement` for a genuine commercial agreement. `phase` has been caught across multiple sessions — this is the term it bites on. Skipping = `BANNED-VOCAB CHECK: SKIPPED per user override (reason: ...)`; reasonable only when the term names a real-world commercial agreement with no clearer word, or would distort a verbatim quote.
+
 ## Changelog voice (Mintlify-style)
 
 Routed by the `write_changelog` dispatch (`dispatch/write_changelog.md`); full rules in [`docs/CHANGELOG_VOICE.md`](./docs/CHANGELOG_VOICE.md). Summary: one headline per entry, no marketing words ("seamless"/"magical"/"powerful"/"robust" banned); lead paragraph states the change, not the announcement; bullets follow `**Bold lead-noun** — consequence-first clause`; internal cleanup gets aggressive trimming; never drop load-bearing facts (error codes, endpoints, env vars, schema names, money amounts); historical entries archived not rewritten; rate constants pinned to three files (`tenant_billing.zig`, `rates.ts`, `rates.mdx`).
@@ -31,6 +33,19 @@ Routed by the `write_changelog` dispatch (`dispatch/write_changelog.md`); full r
 **Mid-task conflict** → (1) STOP, (2) name the confusion, (3) present tradeoff or ask one precise question, (4) wait. Don't paper over with assumptions.
 
 **Routine choice points** (no ambiguity, no conflict — just two paths that both solve the problem) → pick and proceed, stating the WHY in one line. **Reasoning is mandatory; lowest-cost is the *default* when reasoning is silent, not a constraint on the reasoning.** The reason can argue for the *more* expensive path when correctness / pattern-match / gate compliance / prior Kishore decision demands it — the reasoning wins; the default loses. Match the answer shape to the question shape: string-shaped questions ("where is X?", "what's the default?") get string-shaped answers with at most a one-line "because"; context-shaped questions (design, scope, "should we…") get the call + reasoning + 1–2 alternatives only when costs are genuinely symmetric. Don't enumerate options just because you can see them — name the winner with the reason and move; only enumerate when costs are close AND Kishore's taste is load-bearing. Re-read before surfacing: if the answer is grep-able, grep. Wrong cheap moves cost ~2 min to revert; wrong nags cost Kishore a context switch. Bias accordingly when the move is local + reversible.
+
+## Memory Discipline
+
+Auto-memory is **disabled** (`autoMemoryEnabled: false` in `~/.claude/settings.json`; env `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`). NEVER write to `**/memory/*.md` or any `MEMORY.md` — the harness neither records nor recalls them. Durable knowledge routes by shape to where it fires deterministically:
+
+| Knowledge shape | Home | Surfaced by |
+|---|---|---|
+| **Rule** (fires on a file-type / lifecycle trigger) | `dispatch/<entry>.md` + its gate | the gate, at edit time |
+| **Working style** (how I respond / decide) | this file / `SOUL.md` | read every session |
+| **Architecture** (durable design fact) | the product repo's `docs/architecture/*.md` | spec citations, grep |
+| **In-flight state** (branch / PR / next steps) | `HANDOFF_*.md` + PR Session Notes + the spec | `pickup` / `handoff` skills |
+
+A fact with no firing gate and no doc home is dropped on purpose, or it is a missing rule — add the rule, don't reach for a memory file.
 
 ---
 
@@ -63,6 +78,8 @@ Routed by the `write_changelog` dispatch (`dispatch/write_changelog.md`); full r
 - **Docs-repo edits on own branch.** `~/Projects/docs/` is shared across milestones. Before: `cd ~/Projects/docs && git status`; HEAD ≠ `main` → checkout `main` or `git worktree add` off `main`; commit on `chore/m{N}-{slug}-changelog`. Recovery: `git stash` (or patch + `git checkout .`), re-apply on fresh branch.
 - Other dotfiles (`.zshrc`/`.gitconfig`/etc.): timestamped backup; minimal edits.
 - Before commit/push: `gitleaks` must pass.
+- **Vault (1Password `op`).** Resolve secrets via the `op` CLI, never hand-paste/log. Named vaults: `ops`, `ZMB_LOCAL_DEV`, `ZMB_CD_DEV`, `ZMB_CD_PROD`.
+- No new `make` targets without a distinct caller (CI job, spec-mandated gate, or a workflow existing targets can't express) — check `make/*.mk` for an existing fit first; prefer extending over near-duplicate wrappers.
 - `*.zig` → read `dispatch/write_zig.md`; ZIG GATE fires. Auth-flow (`src/auth/**`, `ui/packages/app/lib/auth/**`, token-minting handlers, credential-typed spec dimensions): read `docs/AUTH.md` first.
 - `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make check-pg-drain`. Use `conn.exec()` for no-rows.
 - Local Docker `ENOSPC`: `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
@@ -210,4 +227,4 @@ Skills required. Skipping = violation. MCP down → PR Session Notes: *"`/review
 
 **Deferral discipline.** Any claim that a spec Section/Dimension was "deferred to follow-up" — in `HANDOFF.md`, PR description, Session Notes, or chat — requires an **Indy-acked verbatim quote** in PR Session Notes (or spec Discovery). Format: `> Indy (YYYY-MM-DD HH:MM): "<verbatim ack>" — context: <which item, why>`. Agent-unilateral deferral = incomplete scope, not deferral; CHORE(close) blocks until the item lands or the quote is captured. **HANDOFF.md is a faithful state report** — a pickup agent reading a HANDOFF claiming items were deferred without ack-quotes must treat them as in-scope and surface the contradiction to Kishore before continuing.
 
-**Pre-PR gates** (besides skill chain): spec in `docs/v*/done/` in diff (skip iff parked); `changelog.mdx` has new `<Update>` in diff (skip iff internal-only or parked); `Status: DONE` but spec not in `done/` → do not open PR; `make check-version` passes.
+**Pre-PR gates** (besides skill chain): spec in `docs/v*/done/` in diff (skip iff parked); `changelog.mdx` has new `<Update>` in diff (skip iff internal-only or parked); `Status: DONE` but spec not in `done/` → do not open PR; `make check-version` passes; branch contains `origin/main` HEAD (rebase pre-push / merge post-push — never force-push an open PR branch).

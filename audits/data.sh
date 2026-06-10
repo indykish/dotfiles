@@ -28,6 +28,7 @@ EXPECTED_LABELS=(
   "hook triggers"
   "rule extension protocol"
   "identity handles"
+  "memory discipline"
   "size"
 )
 
@@ -126,6 +127,7 @@ NAMED_SCENARIOS=(
   "Gate-flag triage"         # Scenario 21
   "Pre-commit audit scope"   # Scenario 22
   "Agent comprehension"      # Scenario 23
+  "Memory routing"           # Scenario 24
 )
 
 # Check 14 — the Rule-extension protocol must enumerate all four wiring steps.

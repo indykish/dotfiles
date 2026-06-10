@@ -73,6 +73,8 @@ TS FILE SHAPE DECISION: <intended-path>
 
 _`UFS` is a universal rule **enforced once by `write_any`** (which fires for every source file); this façade carries its prose for the author but does not re-run `audit-ufs` — no redundant full-tree scan (`DISPATCH_ARCHITECTURE.md` §16, Decision 6)._
 
+_**ui/ carve-out = manual duty.** `audits/ufs.sh` skips `ui/packages/*/{src,app,tests,components,lib,hooks}/` for the string-dup check (Tailwind class-strings are noise); cross-runtime `ERR_*` parity still runs. So in ui/ TS/TSX the **author** runs the UFS pass by hand: extract any literal repeated ≥2× in-file to a named const; for discriminated-union tags use an `as const` object so narrowing survives (`const STATUS = { approved: "approved" } as const`, reference `STATUS.approved` at every site). Do not trust the audit to catch ui/ literals._
+
 - **`const` by default. `let` only when the variable is reassigned in the same scope.** Never `let` "because I might change it later". A future-tense `let` is dead-on-arrival.
 - **No `var`. Ever.** Hoisting is a bug nursery; the lint rule should be a hard error in `tsconfig`/`eslint.config.ts`.
 - **Module-level constants are `SCREAMING_SNAKE_CASE`** when they're tunables (timeouts, limits, magic numbers). `camelCase` when they're configuration values composed at runtime (`const config = {...}`).
@@ -199,6 +201,7 @@ In a Result-style module, **never throw**. In a throw-style module, **never retu
 | `let` for "I might change it later" | Future-tense reassignment is a bug pretending to be flexibility. |
 | `any` to silence the type-checker | The check exists to find this. |
 | `// @ts-ignore` / `// @ts-expect-error` without an issue link | Comments rot; a permanent `@ts-ignore` is a permanent lie. |
+| `!` non-null assertion (or `as any` / `as unknown as T`) to silence strictness | Strict mode exists to catch null/undefined — that is the migration's whole intent. "Could be undefined" is a found bug: handle with `??` / `if` / early return / array-method narrowing, never assert it away. `noUncheckedIndexedAccess` returning `T \| undefined` for `arr[i]` is the feature, not the obstacle. |
 | Default exports for application code | Renames cascade. Imports lie about what they import. |
 | Re-exporting everything from `index.ts` | Hides dependency graph, defeats tree-shaking. Re-export only what's part of the public surface. |
 | `Object.assign` for shallow merging | Use spread (`{ ...a, ...b }`). `Object.assign` mutates the first arg — bug class waiting to happen. |
