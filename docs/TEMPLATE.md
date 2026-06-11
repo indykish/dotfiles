@@ -12,6 +12,7 @@
 A milestone spec is a **goal contract** the executing agent plans and ships from *without playing 20-questions with the author*. It answers, in agent-actionable terms:
 
 - **Intent** — what Pull Request (PR) is this, and what does success look like as a test?
+- **Product behaviour** — whose moment is this, what stays unchanged, and which surfaces stay restrained?
 - **Surface** — which files, interfaces, gates, and invariants are in play?
 - **Prior art** — what existing code/pattern does the agent mirror (so it doesn't reinvent)?
 - **Alternatives** — why this shape, and not a larger refactor or a smaller patch?
@@ -128,6 +129,41 @@ Greenfield (no existing pattern)? Say so explicitly and point at the `docs/archi
 - **PR title (eventual):** {imperative, ≤72 chars — what the merged PR is called}
 - **Intent (one sentence):** {why this PR exists, in user-facing-outcome terms}
 - **Handshake (agent fills at PLAN, before EXECUTE):** the implementing agent restates the intent in its own words and lists the assumptions it is proceeding on (`ASSUMPTIONS I'M MAKING: …`). A mismatch between this restatement and the Intent above → STOP and reconcile before any edit.
+
+---
+
+## Product Clarity (answer in order, at authoring)
+
+> Indy's product questions, in the order they must be answered — BEFORE the
+> implementation sections below are written. They exist so the authoring agent
+> (Orly) holds the product behaviour, not just the file list. One short paragraph
+> or list per item; a question that can't be answered yet is a `[?]` that blocks
+> the spec (golden-path rule, `AGENTS.md`).
+
+1. **Successful user moment** — the single observable moment that proves this
+   worked. Write it as a scene ("run N+1 opens and the zombie already knows…"),
+   not a metric.
+2. **Preserved user behaviour** — what users do today that keeps working
+   unchanged. Breaking any of it is a redesign, not a feature.
+3. **Optimal-way check** — is this the most direct way to deliver moment #1?
+   Sketch the unconstrained-optimal shape; name the gap to it and why the gap is
+   acceptable now.
+4. **Rebuild-vs-iterate** — would a larger refactor serve better? Weigh against
+   the platform constants (`docs/architecture/direction.md`) and run-to-run
+   determinism; a refactor that trades determinism away is wrong by default.
+   Verdict here; full rationale in Decomposition & alternatives below.
+5. **What we build** — the shortest artifact list that delivers moment #1.
+6. **What we do NOT build** — adjacent scope rejected, one-line reason each.
+   Seed Out of Scope from this list.
+7. **Fit with existing features** — what this compounds with, and the one
+   feature it must not destabilize.
+8. **Surface order** — CLI-first, UI-first, or both. Repo default: CLI-first
+   (`zombiectl`), UI later as a read-only view; justify divergence.
+9. **Dashboard restraint** — what the UI must hide until the signal behind it is
+   real: no controls before evidence, no quality claims before counters.
+10. **Confused-user next step** — when this confuses someone, what is their
+    self-serve move (a command, an error message, a doc)? If the answer is
+    "file a ticket," a surface is missing from item 5.
 
 ---
 
