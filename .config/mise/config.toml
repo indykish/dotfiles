@@ -29,7 +29,7 @@ sops = "latest"
 terraform = "latest"
 trivy = "latest"
 uv = "latest"
-zig = "0.15.2"
+zig = "0.16.0"
 usage = "latest"
 protobuf = "latest"
 glab = { version = "latest", exe = "glab" }
