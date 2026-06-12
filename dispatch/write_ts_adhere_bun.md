@@ -292,7 +292,7 @@ The TypeScript-relevant gate cards (`ui-substitution`, `design-token`) dissolve 
 
 **Family:** Frontend design-system discipline. **Source:** `AGENTS.md` (project-side guard). Authoritative primitive set: `ui/packages/design-system/src/index.ts`.
 
-**Triggers** — every `Edit`/`Write` to a `*.tsx` / `*.jsx` under `ui/packages/app/` **or** `ui/packages/website/`. Both packages share the same design-system source of truth (`@usezombie/design-system`), so the same primitive-first standard applies. Tests (`*.test.tsx`) and Playwright specs (`tests/e2e/**`) are exempt — they assert on rendered DOM and frequently use raw selectors.
+**Triggers** — every `Edit`/`Write` to a `*.tsx` / `*.jsx` under `ui/packages/app/` **or** `ui/packages/website/`. Both packages share the same design-system source of truth (`@agentsfleet/design-system`), so the same primitive-first standard applies. Tests (`*.test.tsx`) and Playwright specs (`tests/e2e/**`) are exempt — they assert on rendered DOM and frequently use raw selectors.
 
 **Override:** `UI GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
@@ -302,7 +302,7 @@ The TypeScript-relevant gate cards (`ui-substitution`, `design-token`) dissolve 
 
 The design-system package (`ui/packages/design-system/src/index.ts` exports — `Section`, `Card`, `Badge`, `Button`, `Input`, `Dialog`, `Pagination`, `EmptyState`, `Tooltip`, `List`/`ListItem`, `WakePulse`, `Terminal`, `InstallBlock`, etc.) is the source of truth for visual primitives. Raw HTML in either dashboard or marketing files drifts from those tokens silently.
 
-**Marketing-display typography — primitives now exist.** `<DisplayXL>` (marketing hero `<h1>`, `text-fluid-hero`) and `<DisplayLG>` (section heads `<h2>`, `text-fluid-display-lg`) ship from `@usezombie/design-system` and compose `font-mono` + the fluid text/leading/tracking tokens internally. Use them on marketing-display surfaces. Raw `<h1>+utilities` is no longer the carve-out — UI GATE blocks it. The dashboard's `<PageTitle>` (`text-heading ≈ 18px`) remains the correct primitive for app surfaces.
+**Marketing-display typography — primitives now exist.** `<DisplayXL>` (marketing hero `<h1>`, `text-fluid-hero`) and `<DisplayLG>` (section heads `<h2>`, `text-fluid-display-lg`) ship from `@agentsfleet/design-system` and compose `font-mono` + the fluid text/leading/tracking tokens internally. Use them on marketing-display surfaces. Raw `<h1>+utilities` is no longer the carve-out — UI GATE blocks it. The dashboard's `<PageTitle>` (`text-heading ≈ 18px`) remains the correct primitive for app surfaces.
 
 This gate enforces "use the primitive when one exists" without enumerating the primitives in this rule (so the rule scales as the design-system grows).
 

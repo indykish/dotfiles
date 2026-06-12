@@ -170,7 +170,7 @@ LOGGING GATE: <file>
 
 > [DETERMINISTIC → LOG]
 
-`logging.sh` walks the **full `src/` + `zombiectl/src/` working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
+`logging.sh` walks the **full `src/` + `agentsfleet/src/` working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
 
 #### End-of-turn audit
 
@@ -240,7 +240,7 @@ Covered by the combined awk audit in AGENTS.md HARNESS VERIFY section.
 
 **Triggers** — every `Edit`/`Write` that:
 
-- Adds or modifies `error_code=UZ-XXX-NNN` in any source file under `src/**` or `zombiectl/**`.
+- Adds or modifies `error_code=UZ-XXX-NNN` in any source file under `src/**` or `agentsfleet/**`.
 - Edits `src/errors/error_registry.zig`.
 - Touches HTTP error responses, executor frames, or CLI error surfaces.
 
@@ -261,10 +261,10 @@ Every `err`/`warn` log mapping to a domain failure must carry an `error_code=UZ-
 | New `error_code=UZ-XXX-NNN` reference | Registry entry exists in `src/errors/error_registry.zig` in the same commit. **Blocking.** |
 | Adding a registry entry | Code follows `UZ-<CATEGORY>-<NNN>` pattern (categories: AUTH, EXEC, HTTP, REDIS, DB, CLI, EXTERNAL, INTERNAL). Hint and docs URL fields populated. |
 | Removing a registry entry | All references removed in same commit (RULE ORP — orphan sweep). |
-| Registry entry with no references in `src/**` or `zombiectl/**` | Informational — declared-but-unreferenced (dead code). |
+| Registry entry with no references in `src/**` or `agentsfleet/**` | Informational — declared-but-unreferenced (dead code). |
 | Reference in source with no registry entry | Blocking — used-but-undeclared (orphan). |
 | HTTP error response | Body includes `code: "UZ-XXX-NNN"`. |
-| `zombiectl` error output | Human format: `error UZ-XXX-NNN: <message> (<context>)`. JSON format: `{ "code": "UZ-XXX-NNN", "message": ..., ... }` per `LOGGING_STANDARD.md` §8. |
+| `agentsfleet` error output | Human format: `error UZ-XXX-NNN: <message> (<context>)`. JSON format: `{ "code": "UZ-XXX-NNN", "message": ..., ... }` per `LOGGING_STANDARD.md` §8. |
 
 #### Required output (default — one line)
 
@@ -297,13 +297,13 @@ ERROR REGISTRY GATE: <file>
 
 > [DETERMINISTIC → ERR]
 
-`error-codes.sh` walks the **full `src/` + `zombiectl/` working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
+`error-codes.sh` walks the **full `src/` + `agentsfleet/` working tree** via `git ls-files`. The index includes staged-but-not-yet-committed content, so a fix staged in pre-commit satisfies the check on the same hook run. `--staged` is preserved as an opt-in narrowing mode for iterative dev.
 
 #### End-of-turn audit
 
 > [DETERMINISTIC → ERR]
 
-`audits/error-codes.sh` runs as part of `make lint`. Greps `src/errors/error_registry.zig` for declared codes, then greps `src/**` and `zombiectl/**` for any `UZ-[A-Z]+-[0-9]+` literal that isn't in the registry. Reports orphans (blocking) and dead codes (informational).
+`audits/error-codes.sh` runs as part of `make lint`. Greps `src/errors/error_registry.zig` for declared codes, then greps `src/**` and `agentsfleet/**` for any `UZ-[A-Z]+-[0-9]+` literal that isn't in the registry. Reports orphans (blocking) and dead codes (informational).
 
 #### Family
 
@@ -321,7 +321,7 @@ ERROR REGISTRY GATE: <file>
 
 **Family:** Constant discipline. **Source:** `AGENTS.md` (HARNESS VERIFY enforcement) + `dispatch/write_ts_adhere_bun.md §2` + `dispatch/write_zig.md` "RULE UFS" clauses.
 
-**Triggers** — every `Edit`/`Write` to source files under `src/`, `ui/packages/*/src/`, `ui/packages/*/app/`, `ui/packages/*/lib/`, `ui/packages/*/components/`, `ui/packages/*/pages/`, `ui/packages/*/tests/`, `zombiectl/src/`, `zombiectl/test/` matching `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`. Excluded: `vendor/`, `third_party/`, `.zig-cache/`, `node_modules/`, `*.tsbuildinfo`.
+**Triggers** — every `Edit`/`Write` to source files under `src/`, `ui/packages/*/src/`, `ui/packages/*/app/`, `ui/packages/*/lib/`, `ui/packages/*/components/`, `ui/packages/*/pages/`, `ui/packages/*/tests/`, `agentsfleet/src/`, `agentsfleet/test/` matching `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`. Excluded: `vendor/`, `third_party/`, `.zig-cache/`, `node_modules/`, `*.tsbuildinfo`.
 
 **Override:** `UFS GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit. **User-only**; auto-mode does not cover.
 
@@ -349,7 +349,7 @@ Before saving an edit that introduces or relocates a literal:
 
 1. **Same-file repeat?** Grep within the file for the literal value. If it appears ≥1 time already, define a const at the top of the file (or in the module's `constants.ts`/`constants.zig`) and replace all occurrences.
 
-2. **Same-module repeat?** Grep within the module/package (`ui/packages/app/`, `zombiectl/src/`, `src/`). If repeated, define in the module's canonical types/constants file (`lib/types.ts`, `src/state/<topic>.zig`, `zombiectl/src/constants/<topic>.js`).
+2. **Same-module repeat?** Grep within the module/package (`ui/packages/app/`, `agentsfleet/src/`, `src/`). If repeated, define in the module's canonical types/constants file (`lib/types.ts`, `src/state/<topic>.zig`, `agentsfleet/src/constants/<topic>.js`).
 
 3. **Cross-runtime sibling?** When the literal is a wire-format string or unit-conversion numeric, grep all three runtimes for an existing matching name. If found, reuse the name. If not, define in every runtime that uses the same value, same commit.
 
@@ -471,7 +471,7 @@ Read RULES.md for any code not in this short-list.
    git diff -U0 origin/main | grep -oE '"[^"]{4,}"' | sort -u
    ```
 
-   For each unique literal, grep `src/ ui/ zombiectl/` for an existing `const` / `pub const` / `export const` / `as const` / `Final[str]` / `readonly` declaration. Found → import. Novel + ≥2 sites → declare a const.
+   For each unique literal, grep `src/ ui/ agentsfleet/` for an existing `const` / `pub const` / `export const` / `as const` / `Final[str]` / `readonly` declaration. Found → import. Novel + ≥2 sites → declare a const.
 
 #### Required output (one row per applicable rule, suppress non-applicable)
 

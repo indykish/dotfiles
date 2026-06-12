@@ -32,7 +32,7 @@ get_branch() {
 
 # 🌲 Get worktree indicator — non-empty when not in the canonical repo dir.
 # Strategy: compare the session's current_dir basename against the git toplevel
-# basename. If they differ (e.g. usezombie-m28-webhook-auth vs usezombie), show
+# basename. If they differ (e.g. agentsfleet-m28-webhook-auth vs agentsfleet), show
 # the current_dir basename so the worktree suffix is always visible.
 get_worktree() {
 	local input="$1"

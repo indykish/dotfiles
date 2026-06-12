@@ -1,6 +1,6 @@
 # Release doc template — `changelog.mdx` `<Update>` block
 
-Source of truth: `~/Projects/docs/changelog.mdx`. New `<Update>` blocks go at the top, after the leading `<Tip>`/`<Note>`. Labels are date-only — never a semver prefix. `VERSION` is the single source of truth for binary version (binaries via `make sync-version` propagate to `build.zig.zon`, `zombiectl/package.json`, `zombiectl/src/cli.js`); changelog stays chronological. Decoupled by design — avoids parallel-branch collisions.
+Source of truth: `~/Projects/docs/changelog.mdx`. New `<Update>` blocks go at the top, after the leading `<Tip>`/`<Note>`. Labels are date-only — never a semver prefix. `VERSION` is the single source of truth for binary version (binaries via `make sync-version` propagate to `build.zig.zon`, `agentsfleet/package.json`, `agentsfleet/src/cli.js`); changelog stays chronological. Decoupled by design — avoids parallel-branch collisions.
 
 ## Block template
 
@@ -23,7 +23,7 @@ Source of truth: `~/Projects/docs/changelog.mdx`. New `<Update>` blocks go at th
   {User-visible bugs fixed — observed behavior before/after. Omit if none.}
 
   ## CLI
-  {`zombiectl` additions or shape changes. Omit if none.}
+  {`agentsfleet` additions or shape changes. Omit if none.}
 </Update>
 ```
 

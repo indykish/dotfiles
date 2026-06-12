@@ -252,7 +252,7 @@ done < <(awk -v re="$NUMERIC_RE" '
 # committed history.
 #
 # Perf (M70): batched `xargs grep` (single process across all files)
-# instead of `xargs -I{} grep` (one process per file). On usezombie the
+# instead of `xargs -I{} grep` (one process per file). On agentsfleet the
 # server-side scan dropped from ~30s to <2s.
 
 zig_err=$(git ls-files -z -- 'src/*.zig' 2>/dev/null \
@@ -260,7 +260,7 @@ zig_err=$(git ls-files -z -- 'src/*.zig' 2>/dev/null \
   | xargs -0 grep -hE '^pub const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' 2>/dev/null \
   | grep -oE 'ERR_[A-Z][A-Z0-9_]+' | sort -u || true)
 
-js_err=$(git ls-files -z -- 'zombiectl/src/*.js' 'zombiectl/src/*.jsx' 'zombiectl/src/*.ts' 'zombiectl/src/*.tsx' 2>/dev/null \
+js_err=$(git ls-files -z -- 'agentsfleet/src/*.js' 'agentsfleet/src/*.jsx' 'agentsfleet/src/*.ts' 'agentsfleet/src/*.tsx' 2>/dev/null \
   | { grep -zvE '\.test\.|\.spec\.' || true; } \
   | xargs -0 grep -hE '^export const ERR_[A-Z][A-Z0-9_]+[[:space:]]*=' 2>/dev/null \
   | grep -oE 'ERR_[A-Z][A-Z0-9_]+' | sort -u || true)

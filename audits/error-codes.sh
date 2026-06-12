@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # error-codes.sh — orphan + dead code detection against the canonical
-# error registry at src/zombied/errors/error_registry.zig, plus a raw-literal check
+# error registry at src/agentsfleetd/errors/error_registry.zig, plus a raw-literal check
 # enforcing that UZ-<CAT>-<NNN> strings only appear in registry/allowlist
 # files (every other call site must reference the registry symbol).
 #
@@ -9,9 +9,9 @@
 #
 # TECHNICAL DEBT (acknowledged on migration to dotfiles, 2026-05-11):
 # The script hard-codes:
-#   - `UZ-` as the error-code prefix (usezombie schema)
-#   - `src/zombied/errors/error_registry.zig` as the canonical registry path
-#   - The raw-literal allowlist below (src/zombied/errors/**, src/runner/engine/client_errors.zig)
+#   - `UZ-` as the error-code prefix (agentsfleet schema)
+#   - `src/agentsfleetd/errors/error_registry.zig` as the canonical registry path
+#   - The raw-literal allowlist below (src/agentsfleetd/errors/**, src/runner/engine/client_errors.zig)
 # A parameterised version that reads prefix + registry path + allowlist
 # from a per-project config (e.g. `.audit-error-codes.toml`) is the right
 # long-term shape; not done yet. Today, this script lives in dotfiles so
@@ -20,7 +20,7 @@
 # Definitions:
 #   - DECLARED  — every UZ-<CAT>-<NNN> string literal in error_registry.zig
 #   - USED      — every UZ-<CAT>-<NNN> reference in src/**/*.zig (excluding
-#                  the registry itself). zombiectl/src/** is intentionally
+#                  the registry itself). agentsfleet/src/** is intentionally
 #                  out of scope — the CLI consumes server-emitted UZ-* codes
 #                  as opaque strings from API responses; the dispatcher's
 #                  typed CliError variants are the CLI's named surface.
@@ -32,7 +32,7 @@
 #                  symbol, never duplicate the literal).
 #
 # Raw-literal allowlist (files where UZ-* literals are legitimate):
-#   - src/zombied/errors/**                 (canonical registry + entry tables)
+#   - src/agentsfleetd/errors/**            (canonical registry + entry tables)
 #   - src/runner/engine/client_errors.zig   (the runner engine's own mirror file
 #                                            — see file header for build-module
 #                                            isolation rationale; deliberate
@@ -40,7 +40,7 @@
 #                                            sources import from there)
 #   - **/*_test.zig                         (tests)
 #   - src/zbench_fixtures.zig               (benchmark fixture seeds)
-#   - src/zombied/http/test_harness.zig     (HTTP test harness)
+#   - src/agentsfleetd/http/test_harness.zig (HTTP test harness)
 #   - lines starting with `//`              (comments)
 #   - lines annotated `// audit-error-codes: intentional-fake`
 #
@@ -62,7 +62,7 @@ MODE="${1:-${SCOPE:-all}}"
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-REGISTRY="src/zombied/errors/error_registry.zig"
+REGISTRY="src/agentsfleetd/errors/error_registry.zig"
 [[ -f "$REGISTRY" ]] || { printf "FAIL: registry missing: %s\n" "$REGISTRY" >&2; exit 1; }
 
 FAIL=0
@@ -84,18 +84,18 @@ declared_count=$(printf '%s\n' "$declared_codes" | wc -l | tr -d ' ')
 # ---------------------------------------------------------------------------
 # 2. Determine USED codes.
 #    Source set: src/**/*.zig minus *_test.zig minus the registry itself,
-#    plus zombiectl/src/**.
+#    plus agentsfleet/src/**.
 # ---------------------------------------------------------------------------
 gather_used_paths() {
   case "$MODE" in
     --staged|staged)
       git diff --cached --name-only --diff-filter=ACMRT \
         | grep -E '^src/' \
-        | grep -vE '^src/zombied/errors/error_registry\.zig$' || true
+        | grep -vE '^src/agentsfleetd/errors/error_registry\.zig$' || true
       ;;
     --all|all)
       find src -type f -name '*.zig' 2>/dev/null \
-        | grep -vE '^src/zombied/errors/error_registry\.zig$'
+        | grep -vE '^src/agentsfleetd/errors/error_registry\.zig$'
       ;;
     *)
       printf "usage: %s [--staged|--all]\n" "$0" >&2
@@ -193,7 +193,7 @@ raw_leaks=$(awk '
     print FILENAME ":" FNR ":" $0;
   }
 ' $(printf '%s\n' "${USED_PATHS[@]}" | grep -vE \
-    '^src/zombied/errors/|/_?test_harness\.zig$|_test\.zig$|^src/runner/engine/client_errors\.zig$|^src/zbench_fixtures\.zig$' \
+    '^src/agentsfleetd/errors/|/_?test_harness\.zig$|_test\.zig$|^src/runner/engine/client_errors\.zig$|^src/zbench_fixtures\.zig$' \
     || true) 2>/dev/null || true)
 
 if [[ -n "$raw_leaks" ]]; then

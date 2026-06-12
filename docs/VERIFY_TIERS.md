@@ -14,7 +14,7 @@
 
 ## Test delta — VERIFY ends by reporting coverage growth
 
-CHORE(open) recorded the branch-point counts in the spec header (`**Test Baseline:** unit=<N> integration=<M>`, from `make _lint_zig_test_depth`, which also writes `.tmp/zombied-test-depth.txt`). VERIFY ends with the same command and this required row in the verification block:
+CHORE(open) recorded the branch-point counts in the spec header (`**Test Baseline:** unit=<N> integration=<M>`, from `make _lint_zig_test_depth`, which also writes `.tmp/agentsfleetd-test-depth.txt`). VERIFY ends with the same command and this required row in the verification block:
 
 ```
 Test Delta: unit <N₀>→<N₁> (+x) · integration <M₀>→<M₁> (+y) vs CHORE(open) baseline
@@ -31,7 +31,7 @@ Lacking:    <changed surfaces whose tests did not grow, or "none">
 |---|---|---|
 | Leak | `make memleak` | Server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, cross-thread heap ownership. |
 | Bench (local) | `make bench` | When the diff touches request-path code, allocator wiring, or startup/shutdown sequencing. |
-| Bench (dev) | `API_BENCH_URL=https://api-dev.usezombie.com/healthz make bench` | After deploy to dev. |
+| Bench (dev) | `API_BENCH_URL=https://api-dev.agentsfleet.net/healthz make bench` | After deploy to dev. |
 
 Knobs (`make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY`, `_TIMEOUT_MS`, `_MAX_ERROR_RATE`, `_MAX_P95_MS`, `_MAX_RSS_GROWTH_MB`.
 

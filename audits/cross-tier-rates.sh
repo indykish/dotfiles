@@ -11,10 +11,10 @@
 #
 # Files (one definition site per constant per file):
 #
-#   src/zombied/state/tenant_billing.zig            — server enforces the charge
+#   src/agentsfleetd/state/tenant_billing.zig       — server enforces the charge
 #   ui/packages/website/src/lib/rates.ts    — pricing page display
 #   ui/packages/app/lib/types.ts            — dashboard display
-#   zombiectl/src/constants/billing.ts      — `zombiectl doctor --json` billing block
+#   agentsfleet/src/constants/billing.ts    — `agentsfleet doctor --json` billing block
 #
 # A drift between any two = a billing-display lie or a server-vs-CLI disagreement.
 # Zig is the source of truth (server enforces); the three TS surfaces echo it.
@@ -34,10 +34,10 @@ readonly NAMES=(
 )
 
 readonly FILES=(
-  src/zombied/state/tenant_billing.zig
+  src/agentsfleetd/state/tenant_billing.zig
   ui/packages/website/src/lib/rates.ts
   ui/packages/app/lib/types.ts
-  zombiectl/src/constants/billing.ts
+  agentsfleet/src/constants/billing.ts
 )
 
 # Extract the numeric value bound to `name` in `file`. Matches definition
@@ -93,7 +93,7 @@ if [[ $FAIL -ne 0 ]]; then
     printf "  %s\n" "$v" >&2
   done
   printf "\nFix: align all four files on the canonical Zig value\n" >&2
-  printf "     (src/zombied/state/tenant_billing.zig is the server-side enforcer).\n" >&2
+  printf "     (src/agentsfleetd/state/tenant_billing.zig is the server-side enforcer).\n" >&2
   exit 1
 fi
 

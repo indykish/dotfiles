@@ -11,10 +11,10 @@
 # add the matching grep here in the same commit.
 #
 # TECHNICAL DEBT (acknowledged on migration to dotfiles, 2026-05-11):
-# The PATTERNS array hard-codes usezombie-specific token names
+# The PATTERNS array hard-codes agentsfleet-specific token names
 # (text-fluid-hero, max-w-prose, tracking-display-md, etc.). If a second
 # project adopts this dotfiles set, it must either:
-#   (a) share usezombie's exact token vocabulary, or
+#   (a) share agentsfleet's exact token vocabulary, or
 #   (b) fork the PATTERNS array, or
 #   (c) wait for the parameterised version that reads token names from
 #       $REPO/ui/packages/design-system/src/theme.css at runtime.

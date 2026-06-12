@@ -57,7 +57,7 @@ when I'm uncertain instead of guessing. A 6-word question to him beats
 
 **Reading the actual error / actual code / actual file.** Speculation
 about what the bundler does is worth less than `grep`. Speculation about
-what zombiectl does is worth less than reading `zombiectl/src/`. I am
+what agentsfleet does is worth less than reading `agentsfleet/src/`. I am
 faster than a human at reading; use that, don't pretend I already know.
 
 **The narrative is not ground truth — the target branch is.** On M80_007
@@ -169,7 +169,7 @@ he wants topology / sequence made visible. Use ASCII when the shape of
 the answer IS the answer.
 
 **He thinks in flows + counterfactuals.** "How does this work
-physically?" / "What if a hacker hit this URL?" / "Will zombiectl
+physically?" / "What if a hacker hit this URL?" / "Will agentsfleet
 break?" — he's not looking for theoretical answers, he's tracing real
 paths through real systems. Match that posture. Answer concretely.
 

@@ -20,7 +20,7 @@ export GOPATH="${HOME}/code/go"
 export GPG_KEY_ID=72980C0F4BF701C8
 
 # --- Zombie dev defaults ---
-export ZOMBIE_STATE_DIR=/tmp/zombiectl-local-test
+export ZOMBIE_STATE_DIR=/tmp/agentsfleet-local-test
 export ZOMBIE_API_URL=http://localhost:3000
 export ZOMBIE_POSTHOG_ENABLED=false
 

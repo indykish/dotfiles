@@ -6,10 +6,10 @@
 #
 # TECHNICAL DEBT (acknowledged on migration to dotfiles, 2026-05-11):
 # The script hard-codes:
-#   - usezombie scope-prefix format from LOGGING_STANDARD §7 (the
+#   - agentsfleet scope-prefix format from LOGGING_STANDARD §7 (the
 #     `log.scoped(...)` API path under `src/logging/`)
 #   - `UZ-XXX-NNN` as the `error_code=` substring per LOGGING_STANDARD §5
-#   - `src/` + `zombiectl/src/` as the scan roots
+#   - `src/` + `agentsfleet/src/` as the scan roots
 # A parameterised version that reads prefix + scope-api path + scan
 # roots from a per-project config is the right long-term shape; not
 # done yet. Today, this script lives in dotfiles so the gate body and
@@ -18,7 +18,7 @@
 # Two severity tiers:
 #   BLOCK  — exits 1, must fix:
 #            - `std.debug.print(` in non-test source under src/.
-#            - `console.log/debug/info/warn/error` in zombiectl/src outside tests.
+#            - `console.log/debug/info/warn/error` in agentsfleet/src outside tests.
 #   INFO   — surfaced for reviewer/agent attention, doesn't block:
 #            - `std.log.scoped(...)` outside `src/logging/` (LOGGING_STANDARD §7
 #              says only the named-module `log.scoped` API should be used;
@@ -29,7 +29,7 @@
 #
 # Modes:
 #   --staged   diff-scope: only files in `git diff --cached`
-#   --all      (default) full src/ + zombiectl/src/ scan
+#   --all      (default) full src/ + agentsfleet/src/ scan
 #   --strict   promote every INFO finding to BLOCK (post-migration use)
 #
 # Exits 0 clean, 1 on BLOCK findings.
@@ -86,11 +86,11 @@ gather_paths() {
   case "$MODE" in
     --staged)
       git diff --cached --name-only --diff-filter=ACMRT \
-        | grep -E '^(src/.*\.zig$|zombiectl/src/.*\.(js|jsx|ts|tsx)$)' || true
+        | grep -E '^(src/.*\.zig$|agentsfleet/src/.*\.(js|jsx|ts|tsx)$)' || true
       ;;
     --all)
       find src -type f -name '*.zig' 2>/dev/null
-      find zombiectl/src -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' \) 2>/dev/null
+      find agentsfleet/src -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' \) 2>/dev/null
       ;;
   esac
 }
@@ -111,8 +111,8 @@ for f in "${FILES[@]}"; do
     zig_nontest+=("$f")
   fi
   case "$f" in
-    zombiectl/src/*.test.*|zombiectl/src/*.spec.*|zombiectl/src/tests/*) ;;
-    zombiectl/src/*.js|zombiectl/src/*.jsx|zombiectl/src/*.ts|zombiectl/src/*.tsx)
+    agentsfleet/src/*.test.*|agentsfleet/src/*.spec.*|agentsfleet/src/tests/*) ;;
+    agentsfleet/src/*.js|agentsfleet/src/*.jsx|agentsfleet/src/*.ts|agentsfleet/src/*.tsx)
       js_nontest+=("$f")
       ;;
   esac
@@ -140,7 +140,7 @@ if [[ ${#zig_nontest[@]} -gt 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 3. BLOCKING: console.log/debug/info/warn/error in zombiectl/src non-test.
+# 3. BLOCKING: console.log/debug/info/warn/error in agentsfleet/src non-test.
 # ---------------------------------------------------------------------------
 console_hits=0
 if [[ ${#js_nontest[@]} -gt 0 ]]; then

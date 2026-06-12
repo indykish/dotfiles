@@ -206,7 +206,7 @@ every code a dispatch `.sh` emits resolves to exactly one row here.
 
 Everything else — status values, frame kinds, channel suffixes/prefixes, header names, route paths, error codes, error labels, log *scope* names, env-var names, JSON field discriminants, Redis keys, SQL table/column references, regex patterns, version strings, file paths, content types — gets a const, no exceptions, on first appearance.
 
-**Pre-edit self-audit (mandatory, all languages).** Before saving any source file that adds or modifies a string literal of length ≥4, grep the repo for the literal: `grep -RInF '"<lit>"' src/ ui/ zombiectl/ --include='*.{zig,js,ts,tsx,jsx,py,sh,go,rs,sql}'`. If any prior occurrence exists as a `const` / `pub const` / `export const` / `as const` / `Final[str]` / `readonly` declaration, import it. If the literal is novel, declare it as a const at the appropriate ownership site (the module that "owns" the concept) before using it elsewhere.
+**Pre-edit self-audit (mandatory, all languages).** Before saving any source file that adds or modifies a string literal of length ≥4, grep the repo for the literal: `grep -RInF '"<lit>"' src/ ui/ agentsfleet/ --include='*.{zig,js,ts,tsx,jsx,py,sh,go,rs,sql}'`. If any prior occurrence exists as a `const` / `pub const` / `export const` / `as const` / `Final[str]` / `readonly` declaration, import it. If the literal is novel, declare it as a const at the appropriate ownership site (the module that "owns" the concept) before using it elsewhere.
 
 **End-of-turn self-audit.** `git diff -U0 HEAD | grep -oE '"[^"]{4,}"' | sort -u` — for each unique literal in the diff, run the pre-edit grep again. Any literal appearing at >1 call site without a shared const is a violation.
 
@@ -284,7 +284,7 @@ Everything else — status values, frame kinds, channel suffixes/prefixes, heade
 
 ## RULE ORP — Cross-layer orphan sweep on every rename, delete, or format change
 
-**Rule:** After any rename/delete, grep OLD_NAME across src/, schema/, zombiectl/, docs/ before committing.
+**Rule:** After any rename/delete, grep OLD_NAME across src/, schema/, agentsfleet/, docs/ before committing.
 **Why:** Stale references in tests, SQL queries, and comments compile fine but fail at runtime.
 **Tags:** zig, js, sql, all
 **Ref:** M2_002 webhook_secret renamed but stale comments and test fixtures still used the old name.
@@ -388,9 +388,9 @@ Everything else — status values, frame kinds, channel suffixes/prefixes, heade
 
 ## RULE OBS — Every observable state must have a log/event entry
 
-**Rule:** Every branch that changes how an external party perceives the system MUST emit a structured log line. "External party" includes operators reading dashboards, callers receiving an HTTP response, downstream consumers of a queue, end-users running `zombiectl`, and incident responders running `journalctl`. If a code path can be read as "we decided to do something different here," it is observable, and it MUST be logged. **Applies to every Zig source file under `src/` and every JS source file under `zombiectl/src/`** — handler code, middleware, workers, CLI commands, lifecycle code, retries, fallbacks, all of it.
+**Rule:** Every branch that changes how an external party perceives the system MUST emit a structured log line. "External party" includes operators reading dashboards, callers receiving an HTTP response, downstream consumers of a queue, end-users running `agentsfleet`, and incident responders running `journalctl`. If a code path can be read as "we decided to do something different here," it is observable, and it MUST be logged. **Applies to every Zig source file under `src/` and every JS source file under `agentsfleet/src/`** — handler code, middleware, workers, CLI commands, lifecycle code, retries, fallbacks, all of it.
 
-**Why:** Silent state transitions are invisible in dashboards and incident response. The code can be 100% correct on the wire and 100% opaque to the operator at the same time. A dropped GitHub webhook the user can't explain, a `zombiectl` command that exited 0 with no output, a worker that silently skipped a job — same root cause, same fix: log the branch.
+**Why:** Silent state transitions are invisible in dashboards and incident response. The code can be 100% correct on the wire and 100% opaque to the operator at the same time. A dropped GitHub webhook the user can't explain, an `agentsfleet` command that exited 0 with no output, a worker that silently skipped a job — same root cause, same fix: log the branch.
 
 ### Concrete trigger list (any one fires the rule, in either stack)
 
@@ -413,7 +413,7 @@ const log = std.log.scoped(.<module_name>);
 ```
 
 Picking the scope name:
-- The scope IS the module identity in operator-facing logs. Choose specifically (`.webhook_sig_lookup`, `.zombie_event_loop`, `.firewall`, `.clerk_webhook`) rather than generically (`.zombied`, `.utils`).
+- The scope IS the module identity in operator-facing logs. Choose specifically (`.webhook_sig_lookup`, `.zombie_event_loop`, `.firewall`, `.clerk_webhook`) rather than generically (`.agentsfleetd`, `.utils`).
 - One scope per file is the default. Sibling files in the same package use the same scope only if they're a single logical module split across files for length-gate reasons.
 - Existing scopes already cover most subsystems — grep `std.log.scoped\(\.` before inventing a new one. Consistency with neighbors beats novelty.
 
@@ -430,12 +430,12 @@ log.warn("github_webhook.parse_failed zombie_id={s} delivery={s} err={s}", .{ zo
 log.err("github_webhook.enqueue_failed zombie_id={s} delivery={s} err={s}", .{ zombie_id, delivery, @errorName(err) });
 ```
 
-#### JS CLI (`zombiectl`) — structured stderr via `writeError` + diagnostic JSON in `--json` mode
+#### JS CLI (`agentsfleet`) — structured stderr via `writeError` + diagnostic JSON in `--json` mode
 
 The CLI's "log" surface is whatever the user (or a calling script) sees. Two channels:
 
 - **Human mode (default):** call `ui.err(...)` / `ui.warn(...)` / `ui.dim(...)` from `ui-theme.js` and write to `ctx.stderr` via `writeLine`. Always include the operator-meaningful reason, never just "failed." Include the upstream error code if the API returned one (`UZ-WH-010`, etc.).
-- **JSON mode (`--json`):** call `writeError(ctx, code, message)` from `program/io.js`, which emits `{"error":{"code":"<code>","message":"<msg>"}}` on stderr. Every non-success branch must have a `code` from `zombiectl/src/constants/error-codes.js` (add a new constant if none fits — RULE UFS).
+- **JSON mode (`--json`):** call `writeError(ctx, code, message)` from `program/io.js`, which emits `{"error":{"code":"<code>","message":"<msg>"}}` on stderr. Every non-success branch must have a `code` from `agentsfleet/src/constants/error-codes.js` (add a new constant if none fits — RULE UFS).
 
 The same trigger list applies: every retry, fallback, "no-op exit 0," `process.exit(non-zero)`, swallowed `catch` block must produce an entry on stderr. The bar is "could a user paste the stderr to support and have us reproduce the decision?" If not, the log is missing or insufficient.
 
@@ -466,12 +466,12 @@ RULE OBS is a self-audit, not a separate `make` target — it runs at HARNESS VE
 # Zig: every newly-added hx.fail / hx.ok-with-discriminant / common.internal*Error
 #      line in a handler or middleware file must have a log.{info,warn,err,debug}
 #      line within the same function.
-# JS:  every newly-added writeError / process.exit(non-zero) line in zombiectl/src
+# JS:  every newly-added writeError / process.exit(non-zero) line in agentsfleet/src
 #      must have a writeError / writeLine(ctx.stderr / log.* line in the same
 #      function (writeError itself counts — it writes to stderr).
 #
 # How to run:
-#   git diff -U0 HEAD -- 'src/**/*.zig' 'zombiectl/src/**/*.js' \
+#   git diff -U0 HEAD -- 'src/**/*.zig' 'agentsfleet/src/**/*.js' \
 #     | grep -E '^\+.*(hx\.fail\(|hx\.ok\(\.[a-z]|common\.internal.*Error\(|writeError\(|process\.exit\([1-9])'
 #
 # For each match: open the file, locate the enclosing function, and confirm
@@ -905,7 +905,7 @@ const handleConfirm = useCallback(async () => {
 - Rely on `grep -r "<old-command>" src/` finding everything — hints often paraphrase ("the install template…" instead of `install <template>`). Search for the pattern, then read the sentence around each hit.
 
 **Tags:** cli, error-messages, ux, refactor
-**Ref:** PR #258 (M44_001). Greptile P1 finding `3145406909` on `feat/m44-install-contract`: UZ-ZMB-008 hint still said `Run 'zombiectl install <template>'` after the legacy positional form was removed in §1 of the same PR. Sweep also caught a stale `// zombiectl up sends both files raw` comment in `config.zig` header. Fix in commit (this commit).
+**Ref:** PR #258 (M44_001). Greptile P1 finding `3145406909`: UZ-ZMB-008 hint still said `Run 'agentsfleet install <template>'` after the legacy positional form was removed in §1 of the same PR. Sweep also caught a stale `// agentsfleet up sends both files raw` comment in `config.zig` header. Fix in commit (this commit).
 
 ## RULE NLG — No legacy compat shims pre-v2.0.0
 

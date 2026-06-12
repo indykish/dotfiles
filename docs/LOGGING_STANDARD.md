@@ -27,8 +27,8 @@ Documented honestly, not aspirationally. Pre-M62 baseline (the fix-pass converge
 - Zig calls are mostly `std.log.scoped(.tag).info(comptime fmt, args)` with positional `{s} {d}` placeholders. Severity choice is inconsistent: successful happy-path events sometimes log at `info`, sometimes are silent. Per-call migration to the structured `log.<level>("event", .{ .field = val })` form is in flight.
 - A small number of Zig sites use `std.debug.print` directly — bypasses the scope/level system entirely. Always a violation.
 - The named module `log` (source: `src/lib/logging/mod.zig`) exposes `scoped(.tag)` returning a logger struct with `.err` / `.warn` / `.info` / `.debug` methods. M62 removed the older free-function helpers (`logErr` / `logErrWithHint` / `logWarnErr`) — there is no compat shim.
-- TypeScript (`zombiectl/src/**`) calls `console.log`/`console.error` directly. No structure. No scope. No severity beyond err vs out.
-- Error-code embedding (`UZ-XXX-NNN`) appears on some `err` lines but not others. The registry (`src/zombied/errors/error_registry.zig`) is the source of truth, but enforcement is voluntary.
+- TypeScript (`agentsfleet/src/**`) calls `console.log`/`console.error` directly. No structure. No scope. No severity beyond err vs out.
+- Error-code embedding (`UZ-XXX-NNN`) appears on some `err` lines but not others. The registry (`src/agentsfleetd/errors/error_registry.zig`) is the source of truth, but enforcement is voluntary.
 - No collector-friendly format. Logs are a mix of free-form English and ad-hoc `key={value}` fragments.
 
 The proposed standard below is what every new emit must conform to and what the fix-pass converges existing emits toward.
@@ -90,12 +90,12 @@ Concrete tests for whether an event deserves `info`:
 
 ## §5 · Error-code embedding
 
-Every `err` and `warn` record that maps to a domain error MUST carry `error_code=UZ-XXX-NNN` where `UZ-XXX-NNN` is declared in `src/zombied/errors/error_registry.zig`.
+Every `err` and `warn` record that maps to a domain error MUST carry `error_code=UZ-XXX-NNN` where `UZ-XXX-NNN` is declared in `src/agentsfleetd/errors/error_registry.zig`.
 
 - **Used-but-undeclared** (`UZ-FAKE-999` appearing in code, no entry in registry): **blocking** in `make lint`.
 - **Declared-but-unreferenced** (registry has `UZ-LEGACY-007`, no code references it): **informational**. Deletion may be deferred to a sweep milestone.
 
-Embed the code as a struct field on the logger call: `log.err("event_name", .{ .error_code = error_codes.ERR_X, .err = @errorName(err) })`. The encoding helpers in `src/lib/logging/mod.zig` serialize it as `error_code=UZ-XXX-NNN` per §3. CLI (`zombiectl`) renders the code in human format and as `code: "UZ-XXX-NNN"` in `--json` output (see §8).
+Embed the code as a struct field on the logger call: `log.err("event_name", .{ .error_code = error_codes.ERR_X, .err = @errorName(err) })`. The encoding helpers in `src/lib/logging/mod.zig` serialize it as `error_code=UZ-XXX-NNN` per §3. CLI (`agentsfleet`) renders the code in human format and as `code: "UZ-XXX-NNN"` in `--json` output (see §8).
 
 System-level failures with no domain meaning (e.g. raw `EACCES` from a syscall before we attribute it to a tenant operation) emit without `error_code`. The follow-up rule: if a syscall failure surfaces to a user, it gets attributed to a registry code at the boundary.
 
@@ -168,7 +168,7 @@ The `comptime if ... return` makes the entire emit path disappear when the scope
 | `std.log.scoped(...)` outside `src/lib/logging/` | Free-form printf-style emit. | Switch the file's alias to `const log = logging.scoped(.tag);` and migrate every call site to the event+fields form. |
 | Positional `{s} {d}` placeholders | Not logfmt; not greppable. | Convert to struct-of-fields. |
 
-## §8 · Per-language binding — TypeScript / JavaScript (`zombiectl`)
+## §8 · Per-language binding — TypeScript / JavaScript (`agentsfleet`)
 
 Wire format identical to §3. CLI obeys two render modes:
 
@@ -177,20 +177,20 @@ Wire format identical to §3. CLI obeys two render modes:
 ```
 error UZ-EXEC-012: tool returned non-zero (executor) tool=bash duration=1.24s
   hint: check the tool's stderr above for details
-  see: https://docs.usezombie.com/errors/UZ-EXEC-012
+  see: https://docs.agentsfleet.net/errors/UZ-EXEC-012
 ```
 
 Colors: red `error`, dim parens. Rendering inspired by Bun's `SystemError.format()` (`bun:src/bun.js/bindings/SystemError.zig:85`) — same shape, our error registry as the source.
 
-**JSON mode** (`--json` flag, or stdout is a pipe and `ZOMBIECTL_FORMAT=json` is set):
+**JSON mode** (`--json` flag, or stdout is a pipe and `AGENTSFLEET_FORMAT=json` is set):
 
 ```json
-{ "code": "UZ-EXEC-012", "message": "tool returned non-zero", "scope": "executor", "fields": { "tool": "bash", "duration_ms": 1240 }, "hint": "check the tool's stderr above for details", "docs": "https://docs.usezombie.com/errors/UZ-EXEC-012" }
+{ "code": "UZ-EXEC-012", "message": "tool returned non-zero", "scope": "executor", "fields": { "tool": "bash", "duration_ms": 1240 }, "hint": "check the tool's stderr above for details", "docs": "https://docs.agentsfleet.net/errors/UZ-EXEC-012" }
 ```
 
 Schema mirrors Bun's `SystemError` extern struct (`bun:src/bun.js/bindings/SystemError.zig:1`) — `{ code, message, ...context, hint?, docs? }`. Our `code` is `UZ-XXX-NNN` (registry-defined) rather than errno; the *shape* is what we mirror.
 
-**Logging emit sites** in `zombiectl/src/**` use a thin Bun-runtime logger that produces logfmt records to `stderr`. `console.log` / `console.error` are forbidden in source per `dispatch/write_ts_adhere_bun.md` §10 — `logging.sh` enforces this for TS/JS.
+**Logging emit sites** in `agentsfleet/src/**` use a thin Bun-runtime logger that produces logfmt records to `stderr`. `console.log` / `console.error` are forbidden in source per `dispatch/write_ts_adhere_bun.md` §10 — `logging.sh` enforces this for TS/JS.
 
 **Module-level error style** is governed by `dispatch/write_ts_adhere_bun.md` §9 (one style per module — throw OR Result, never both). The error type itself is the same:
 
@@ -230,9 +230,9 @@ We borrowed pattern, not code. Concrete file:line references for traceability:
 |---|---|---|
 | Scoped logger with comptime visibility | `~/Projects/oss/bun/src/output.zig:869-902` | `Scope` enum + `LoggerFor(scope)` returning a struct of inline methods. Compile-time short-circuit via `comptime if (visibility == .hidden) return;`. |
 | Severity ladder | `~/Projects/oss/bun/src/logger.zig:1-31` | Five levels (we drop Bun's `note`). |
-| `Output.err` rendering errno + label + syscall | `~/Projects/oss/bun/src/output.zig:1155-1170` | Inspiration for `zombiectl` human render: `code: message (context)`. |
+| `Output.err` rendering errno + label + syscall | `~/Projects/oss/bun/src/output.zig:1155-1170` | Inspiration for `agentsfleet` human render: `code: message (context)`. |
 | `SystemError` JSON-facing shape | `~/Projects/oss/bun/src/bun.js/bindings/SystemError.zig:1-12` | `{ code, message, path?, syscall?, ... }` mirrored as our `--json` output schema. |
-| `SystemError.format()` ANSI-colored render | `~/Projects/oss/bun/src/bun.js/bindings/SystemError.zig:85-116` | Pattern reused for `zombiectl` human mode (red code, dim context). |
+| `SystemError.format()` ANSI-colored render | `~/Projects/oss/bun/src/bun.js/bindings/SystemError.zig:85-116` | Pattern reused for `agentsfleet` human mode (red code, dim context). |
 
 Zero lines copied verbatim. The patterns above each compile to ~10–30 lines of our own Zig/TypeScript in idiomatic form.
 
@@ -260,7 +260,7 @@ These are enforced by `logging.sh` (mechanical) and the dispatch façade (`dispa
 |---|---|
 | Free-form English log lines | Not greppable, not parseable, no event tag. |
 | `std.debug.print` outside tests | No level, no scope, no fields — dev debugging that escaped to main. |
-| `console.log` in `zombiectl` source | Bypasses logger, breaks `--json` mode, violates `dispatch/write_ts_adhere_bun.md` §10. |
+| `console.log` in `agentsfleet` source | Bypasses logger, breaks `--json` mode, violates `dispatch/write_ts_adhere_bun.md` §10. |
 | Logging on hot per-iteration paths at `info` | Floods collectors. Use `debug` (gated off by default). |
 | `error_code=` missing on `err`/`warn` mapping to registry codes | Breaks traceability; future operator can't link log to docs. |
 | Logging credentials, tokens, or BYOK keys | Severe leak surface. Redaction harness mandatory. |
@@ -281,7 +281,7 @@ immediately preceding the edit. Generic "scope creep" is not a valid reason — 
 ## §13 · Family
 
 - `dispatch/write_ts_adhere_bun.md` §10 — banned `console.log` in TS/JS source. Cross-referenced by `logging.sh`.
-- `dispatch/write_ts_adhere_bun.md` §9 — module-level error style (throw vs Result) for `zombiectl`.
+- `dispatch/write_ts_adhere_bun.md` §9 — module-level error style (throw vs Result) for `agentsfleet`.
 - `dispatch/write_zig.md` — Zig discipline umbrella; this doc's §7 is the logging-specific layer.
 - `LIFECYCLE_PATTERNS.md` — orthogonal: ownership/cleanup of structs, including allocator wiring for the thread-local log buffer.
 - M42_002 redaction harness (`src/runner/engine/runner_progress.zig`) — secret-redaction precondition; this doc's §6 inherits.

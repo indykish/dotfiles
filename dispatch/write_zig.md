@@ -55,7 +55,7 @@ For every commit that touches `*.zig`, the agent runs the workflow below — no 
 > [DETERMINISTIC → DRAIN]
 
 - Run `make lint`, `make test`, and `gitleaks detect` before any commit that includes Zig changes.
-- Run `TEST_DATABASE_URL=postgres://usezombie:usezombie@localhost:5432/usezombiedb make test-integration-db` when touching DB-backed handlers, proposal flows, or temp-table-based Zig tests.
+- Run `TEST_DATABASE_URL=postgres://agentsfleet:agentsfleet@localhost:5432/agentsfleetdb make test-integration-db` when touching DB-backed handlers, proposal flows, or temp-table-based Zig tests.
 - Read this file before creating any new `*.zig` file.
 - Use `conn.exec()` for INSERT / UPDATE / DDL whenever possible.
 - Drain early-exit `conn.query()` results before `deinit()`.
@@ -280,7 +280,7 @@ Canonical source: `src/http/test_harness.zig`. Every `*_http_integration_test.zi
 
 - `make lint`
 - `make test`
-- `TEST_DATABASE_URL=postgres://usezombie:usezombie@localhost:5432/usezombiedb make test-integration-db`
+- `TEST_DATABASE_URL=postgres://agentsfleet:agentsfleet@localhost:5432/agentsfleetdb make test-integration-db`
 - `gitleaks detect`
 - `make check-pg-drain` — static check: every `conn.query()` must have `.drain()` in the same function. Run this when touching any file that calls `conn.query()`. See `lint-zig.py`.
 
@@ -477,7 +477,7 @@ Rules:
 
 > [DETERMINISTIC → XCOMPILE]
 
-- Verification commands are defined in `make` targets and CI runs `make`. Use `make test` (tier 1) and `make test-integration` (tier 2) for verification — **not** `zig build test` standalone. `zig build test` runs only the Zig unit set and silently skips the website / app / zombiectl unit tests + cross-language gates that the verification gate is defined against. Use `zig build` directly only for compilation, never for "did my change pass tests".
+- Verification commands are defined in `make` targets and CI runs `make`. Use `make test` (tier 1) and `make test-integration` (tier 2) for verification — **not** `zig build test` standalone. `zig build test` runs only the Zig unit set and silently skips the website / app / agentsfleet unit tests + cross-language gates that the verification gate is defined against. Use `zig build` directly only for compilation, never for "did my change pass tests".
 - `make memleak` is required when the diff touches server lifecycle, allocator wiring, or cross-thread heap ownership. The macOS `leaks` tool prints a "not debuggable" line under System Integrity Protection — that is expected; the authoritative signal is the allocator-leak phase across `std.testing.allocator`-wrapped tests.
 
 ## Doc-Comments and Inline Comments
@@ -511,7 +511,7 @@ Extends "Type Design Rules". Two patterns, both legitimate; pick deliberately an
 
 > [DETERMINISTIC → TODO-CHECK]
 
-- snake_case throughout: file names, fields, functions, locals, constants. usezombie has no JS-interop boundary — there is no carve-out for camelCase fields. (Bun mixes the two for JS-mapped fields; we do not.)
+- snake_case throughout: file names, fields, functions, locals, constants. agentsfleet has no JS-interop boundary — there is no carve-out for camelCase fields. (Bun mixes the two for JS-mapped fields; we do not.)
 
 ## RULE UFS — Named constants for repeated and semantic literals
 

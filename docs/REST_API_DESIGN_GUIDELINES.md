@@ -1,4 +1,4 @@
-# REST API Design Guidelines — `usezombie/zombied`
+# REST API Design Guidelines — `agentsfleet/agentsfleetd`
 
 **Status:** Canonical instruction set. Read this before adding, modifying, or removing any HTTP endpoint.
 **Trigger:** the global instruction `HTTP handler or OpenAPI changes → read docs/REST_API_DESIGN_GUIDELINES.md first` fires when the diff touches `src/http/handlers/**`, `public/openapi/**`, or any `route_*` file. If you're an agent reading this — you got here because that trigger fired. Follow this doc as a checklist, not as background reading.
@@ -372,7 +372,7 @@ These are NOT wrapped on `Hx`.
 
 ```json
 {
-  "type": "https://docs.usezombie.com/errors/invalid-request",
+  "type": "https://docs.agentsfleet.net/errors/invalid-request",
   "title": "Invalid request",
   "status": 400,
   "detail": "workspace_id must be a valid UUIDv7",
@@ -546,7 +546,7 @@ When in doubt, mirror an existing handler:
 
 ## §8 — Handler signature contract
 
-Every HTTP handler in `zombied` follows this shape. Enforced by `make lint` and the comptime wrappers in `src/http/handlers/hx.zig`.
+Every HTTP handler in `agentsfleetd` follows this shape. Enforced by `make lint` and the comptime wrappers in `src/http/handlers/hx.zig`.
 
 ```zig
 pub fn innerMyEndpoint(hx: Hx, req: *httpz.Request, ...path_params) void {
@@ -708,7 +708,7 @@ Before opening a PR touching any handler:
 - **Secret-shaped response fields are write-only or one-time-read.** Any field whose name contains `token`, `secret`, `key`, `password`, `credential` (and is not just a key-by-name like `key_name`) MUST either be: (a) write-only — never returned by GET, only echoed in the POST that creates it, or (b) one-time-read — returned in the create response and never again. Document which in the OpenAPI description with `x-secret-handling: write-only | one-time-read`. This includes raw API keys, OAuth tokens, HMAC shared secrets, and webhook signing secrets.
 - Never log secret values. Substitution happens at the tool bridge inside the executor sandbox; tokens never enter the agent's context, the event log, or any handler-level log line. (See `docs/ARCHITECHTURE.md` §10 for the substrate guarantees.)
 - Webhook receivers verify HMAC signatures using `std.crypto.utils.timingSafeEql`. Never string-compare HMACs.
-- **CORS posture is per-endpoint and explicit.** Endpoints intended for browser callers (the dashboard at `app.usezombie.com`) MUST declare their allowed origin in the spec; everything else MUST refuse cross-origin requests at the edge. Do not enable wildcard `Access-Control-Allow-Origin: *`. Adding browser exposure to an existing endpoint is a surface change — call it out in the §9 PR-level surface diff.
+- **CORS posture is per-endpoint and explicit.** Endpoints intended for browser callers (the dashboard at `app.agentsfleet.net`) MUST declare their allowed origin in the spec; everything else MUST refuse cross-origin requests at the edge. Do not enable wildcard `Access-Control-Allow-Origin: *`. Adding browser exposure to an existing endpoint is a surface change — call it out in the §9 PR-level surface diff.
 
 ---
 

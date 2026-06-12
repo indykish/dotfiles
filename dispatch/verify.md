@@ -41,7 +41,7 @@ cross-compile, pg-drain, and integration. `make` targets are the canonical gates
 | `make test-integration` | Tier 3: at least once per branch before declaring ship-ready, from a clean state (e.g. after `make down`) when tier 2 is intermittent — fresh DB proves no state carry-over. |
 | `make memleak` | Server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, cross-thread heap ownership. |
 | `make bench` (local) | Diff touches request-path code, allocator wiring, or startup/shutdown sequencing. |
-| `API_BENCH_URL=https://api-dev.usezombie.com/healthz make bench` | After branch deploys to dev. |
+| `API_BENCH_URL=https://api-dev.agentsfleet.net/healthz make bench` | After branch deploys to dev. |
 | Cross-compile `x86_64-linux` + `aarch64-linux` | Whenever `*.zig` touched. |
 | `make check-pg-drain` | Whenever `*.zig` touched. |
 

@@ -51,7 +51,7 @@ A test does **NOT** belong here if it:
 - Tests pure logic / codec / parser → `write-unit-test`
 - Drives a browser / asserts UI → gstack `/qa` or `/e2e-qa-playwright`
 - Mocks the DB or Redis → demote to unit
-- Hits a deployed environment (`api-dev.usezombie.com`) → that's a probe/canary
+- Hits a deployed environment (`api-dev.agentsfleet.net`) → that's a probe/canary
 
 ## Truth hierarchy
 
@@ -79,7 +79,7 @@ Spec asserts "503 on Redis down", code returns 200 → test the spec, flag the c
 | **Standard** | New service method, new Redis stream/key, schema change with logic | + T4 + T5 + T6 |
 | **Hardening** | Auth / payment / lease / migration / streaming / anything in the data-loss radius | + T7 (if applicable) + T8 + chaos pass |
 
-Auto-detect from diff: `src/auth/**`, `src/zombie/leases/**`, `src/runner/**` + `src/zombied/fleet/**` (the lease/reclaim/fence + client-daemon surface → T9), schema migrations, streaming handlers → Hardening. CRUD-only against existing schema → Smoke. Default → Standard.
+Auto-detect from diff: `src/auth/**`, `src/zombie/leases/**`, `src/runner/**` + `src/agentsfleetd/fleet/**` (the lease/reclaim/fence + client-daemon surface → T9), schema migrations, streaming handlers → Hardening. CRUD-only against existing schema → Smoke. Default → Standard.
 
 **A client daemon (no router, no datastore — e.g. `agentsfleet-runner`) is always Hardening + T9**, regardless of diff size: its public surface *is* the process lifecycle (kill / restart / reclaim / fence), and that is exactly the surface a happy-path loop test misses.
 
@@ -320,7 +320,7 @@ Every claim → ≥1 test. Untestable claims → flag `needs infra`, never silen
 
 | Stack | Suite runner | Real PG | Real Redis | Drain/leak | Concurrency |
 |---|---|---|---|---|---|
-| Zig (usezombie) | `make test-integration` | `make up` container | `make up` container | `std.testing.allocator` + `make check-pg-drain` | `std.Thread.spawn` |
+| Zig (agentsfleet) | `make test-integration` | `make up` container | `make up` container | `std.testing.allocator` + `make check-pg-drain` | `std.Thread.spawn` |
 | Zig runner (client daemon) | `make test-integration` (protocol loop vs a harness/real control plane) | via the control plane (runner holds none) | via the control plane | `std.testing.allocator` over parent + forked child | `fork` + `kill -9` / fake-clock past lease TTL for reclaim |
 | Python | `pytest -m integration` | `testcontainers-python` | `testcontainers-python` | `gc` + `objgraph` over N iters | `asyncio.gather` / `ThreadPoolExecutor` |
 | Rust | `cargo test --test 'integration_*'` | `testcontainers-rs` / `sqlx::test` | `testcontainers-rs` | `dhat-rs`; `Drop` checks | `tokio::spawn` + `loom` for races |

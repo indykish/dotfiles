@@ -9,7 +9,7 @@ mechanically prove its coverage. This façade carries only the trigger + the rou
 **Signal legend:**
 
 - ⚪ delegated — the auth rules + their checks live and run in the product repo
-  (usezombie `docs/AUTH.md`). Dotfiles routes to them and enforces the
+  (agentsfleet `docs/AUTH.md`). Dotfiles routes to them and enforces the
   always-forbidden credential rules (below) that apply everywhere.
 
 ## Trigger — read the product repo's `docs/AUTH.md` before

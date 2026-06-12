@@ -1,6 +1,6 @@
 # Schema Conventions
 
-Canonical reference for UseZombie database schema patterns. All new tables **must** follow these conventions. Existing tables are brought into compliance when rebuilt.
+Canonical reference for agentsfleet database schema patterns. All new tables **must** follow these conventions. Existing tables are brought into compliance when rebuilt.
 
 ## Migration Model
 

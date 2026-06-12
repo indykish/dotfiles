@@ -158,7 +158,7 @@ Greenfield (no existing pattern)? Say so explicitly and point at the `docs/archi
 7. **Fit with existing features** — what this compounds with, and the one
    feature it must not destabilize.
 8. **Surface order** — CLI-first, UI-first, or both. Repo default: CLI-first
-   (`zombiectl`), UI later as a read-only view; justify divergence.
+   (`agentsfleet`), UI later as a read-only view; justify divergence.
 9. **Dashboard restraint** — what the UI must hide until the signal behind it is
    real: no controls before evidence, no quality claims before counters.
 10. **Confused-user next step** — when this confuses someone, what is their
