@@ -58,7 +58,7 @@ A test does **NOT** belong here if it:
 When sources disagree, trust in this order:
 
 1. **Production runtime behaviour** — logs, incidents, traces
-2. **Spec / OpenAPI / API contract**
+2. **Spec / OpenAPI / API rules**
 3. **Code**
 
 Spec asserts "503 on Redis down", code returns 200 → test the spec, flag the code as a defect.
@@ -81,7 +81,7 @@ Spec asserts "503 on Redis down", code returns 200 → test the spec, flag the c
 
 Auto-detect from diff: `src/auth/**`, `src/zombie/leases/**`, `src/runner/**` + `src/zombied/fleet/**` (the lease/reclaim/fence + client-daemon surface → T9), schema migrations, streaming handlers → Hardening. CRUD-only against existing schema → Smoke. Default → Standard.
 
-**A client daemon (no router, no datastore — e.g. `zombie-runner`) is always Hardening + T9**, regardless of diff size: its contract *is* the process lifecycle (kill / restart / reclaim / fence), and that is exactly the surface a happy-path loop test misses.
+**A client daemon (no router, no datastore — e.g. `agentsfleet-runner`) is always Hardening + T9**, regardless of diff size: its public surface *is* the process lifecycle (kill / restart / reclaim / fence), and that is exactly the surface a happy-path loop test misses.
 
 ## Risk-weighted priority
 
@@ -91,7 +91,7 @@ Within a mode, write tests in this order. Stop when the surface is covered.
 2. **Each downstream-failure branch** (T4) — every `catch`/`orelse`/`except`/`Err` in handler/service/repo
 3. **Concurrency under contention** (T5) — same row, same lease, same idempotency key
 4. **Resource lifecycle** (T6) — drain after every query, leak across N requests, pool exhaustion
-5. **Edge-of-spec contract checks** (T8) — OpenAPI breaking-change
+5. **Edge-of-spec rule checks** (T8) — OpenAPI breaking-change
 
 ---
 
@@ -113,7 +113,7 @@ Full HTTP request → response, asserting:
 - Response headers — `content-type`, `x-request-id`, `cache-control`, custom
 - Body shape validated against OpenAPI/protobuf schema (not just `assert response["id"]`)
 - Pagination headers / cursors when applicable
-- HEAD/OPTIONS behaviour when contract requires
+- HEAD/OPTIONS behaviour when API rules require
 
 ### T3 — State assertions (the part most teams skip)
 
@@ -220,7 +220,7 @@ Spec claim "real-time" → assert *bytes arrive incrementally*, not just that th
 - **Mid-stream failure** — producer dies mid-frame → consumer sees error, not silent truncation
 - **Cancel propagation** — client disconnects → producer stops work within bounded time
 
-### T8 — API contract & schema
+### T8 — API rules & schema
 
 - Request and response validated against OpenAPI/protobuf in-test (not just at server startup)
 - `oasdiff breaking origin/main..HEAD` exits 0 (PR gate)
@@ -230,7 +230,7 @@ Spec claim "real-time" → assert *bytes arrive incrementally*, not just that th
 
 ### T9 — Client-daemon & process supervision (split-architecture services)
 
-For a service that is **not** an HTTP server but a **client daemon** holding no datastore — e.g. the `zombie-runner`: register → heartbeat → long-poll lease → fork a sandboxed child → report — the router/request tiers don't map. Integration testing it means driving its protocol loop against a real (or harness) control plane and exercising the process lifecycle that *is* its contract.
+For a service that is **not** an HTTP server but a **client daemon** holding no datastore — e.g. the `agentsfleet-runner`: register → heartbeat → long-poll lease → fork a sandboxed child → report — the router/request tiers don't map. Integration testing it means driving its protocol loop against a real (or harness) control plane and exercising the process lifecycle that *is* its public surface.
 
 - **Protocol loop against a real control plane** — stand up the control-plane HTTP server (real handlers, real PG/Redis behind it); the daemon registers, leases a seeded event, executes, reports; assert the durable rows the report writes (T3 state assertions), not just that the loop ran.
 - **Sudden kill (SIGKILL, not SIGTERM) mid-lease** — the cattle-not-pets case, distinct from graceful drain (T6). Kill the daemon while a lease is in flight; assert the lease expires at its deadline, the reclaim sweep re-issues it with a higher fencing token to another holder, the event is processed **exactly once**, and the dead holder's late report is **fenced** (stale-token reject), never a double-write.
@@ -258,13 +258,13 @@ Both make every downstream test a lie — fix them before adding coverage. A gre
 - **Real deps or it's not integration.** Mocking PG, Redis, or any internal module disqualifies. External-edge HTTP may be mocked at the HTTP boundary, not at the SDK call site.
 - **Assert state, not just response.** Body assertion alone is half a test.
 - **Per-test isolation is the test's job.** Txn rollback, unique IDs, namespaced keys, or scoped truncation — pick one and apply per test. Suite-level resets (drop+migrate before the run, fixture teardown scripts) are setup hygiene; they don't isolate tests from each other inside one run. Suite passes shuffled.
-- **Tier may be env-gated, not binary-gated.** Many projects ship one test binary that runs both unit and integration tests, with env vars / build tags / pytest markers / Zig comptime flags switching the live-deps tier on. That's fine — but the env contract that flips the gate must be documented in the suite README and surfaced in CI, not folklore.
+- **Tier may be env-gated, not binary-gated.** Many projects ship one test binary that runs both unit and integration tests, with env vars / build tags / pytest markers / Zig comptime flags switching the live-deps tier on. That's fine — but the env interface that flips the gate must be documented in the suite README and surfaced in Continuous Integration (CI), not folklore.
 - **Specific error contracts.** Status code + error code + message + structured fields. Bare `expect 500` is a smell.
 - **Failure injection is deterministic.** If you can't reproduce a failure on demand, the test is fiction.
 - **Drain + leak proofs are required, not optional.** Once per suite, recorded in PR Session Notes.
 - **No hitting deployed environments.** Integration tests run against `make up` containers, never `api-dev`/`api`.
 - **Test names read as documentation.** `should_503_when_redis_down`, `should_release_lease_on_handler_panic`, `should_not_double_charge_on_idempotency_replay`.
-- **Cover the scenario axis per surface.** Each surface gets, explicitly: a **positive** path, a **negative** path (rejected input → specific error contract), an **invalid** case (oversized / wrong-typed / unknown-enum / bad-token / malformed payload), a **flaky-connection** case (T4 for a server, T9 for a client daemon), a **kill-and-restart** case wherever a process holds state (T9), and a **concurrency** case (T5). A surface missing one axis is under-covered, not done — name the missing axis in the coverage report rather than declaring green.
+- **Cover the scenario axis per surface.** Each surface gets, explicitly: a **positive** path, a **negative** path (rejected input → specific error shape), an **invalid** case (oversized / wrong-typed / unknown-enum / bad-token / malformed payload), a **flaky-connection** case (T4 for a server, T9 for a client daemon), a **kill-and-restart** case wherever a process holds state (T9), and a **concurrency** case (T5). A surface missing one axis is under-covered, not done — name the missing axis in the coverage report rather than declaring green.
 - **Guard the harness as a test (Determinism & harness hygiene).** Server binds-and-holds its port; teardown/reset is catalog-derived. A suite on a racy harness or a stale teardown is a false signal — fix it before trusting any result.
 
 ## Anti-patterns (reject in review)
@@ -272,7 +272,7 @@ Both make every downstream test a lie — fix them before adding coverage. A gre
 - ❌ Mocking the DB or Redis "for speed" — that's a unit test, label it correctly
 - ❌ Asserting only the HTTP response body
 - ❌ Tests that pass only when run in a specific order
-- ❌ Bare `expect 500` / `assert.throws` with no error-code contract
+- ❌ Bare `expect 500` / `assert.throws` with no error-code shape
 - ❌ Hand-wavy "handles failure" with no injection mechanism named
 - ❌ Sharing state across tests via module-level fixtures
 - ❌ Hitting deployed environments from the integration suite
@@ -371,7 +371,7 @@ After the suite, produce:
 | T5 Concurrency & isolation     | yes      | 2/2   | ✅     |
 | T6 Resource lifecycle          | yes      | 1/2   | 🟡     |
 | T7 Streaming / transport       | n/a      | —     | ⚪     |
-| T8 API contract & schema       | yes      | 1/1   | ✅     |
+| T8 API rules & schema          | yes      | 1/1   | ✅     |
 | T9 Client-daemon supervision   | n/a      | —     | ⚪     |
 Mode:        Smoke | Standard | Hardening
 Scenario axis: positive ✅ · negative ✅ · invalid 🟡 · flaky-conn ✅ · kill/restart ✅ · concurrency ✅
