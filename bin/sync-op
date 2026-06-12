@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-USEZOMBIE_ENV="${HOME}/.config/usezombie/.env"
+AGENTSFLEET_ENV="${HOME}/.config/agentsfleet/.env"
 E2E_ENV="${HOME}/.config/e2e/.env"
 
 ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
@@ -10,20 +10,20 @@ warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 op_get() { op item get "$1" --vault "$2" --fields "$3" --reveal 2>/dev/null || true; }
 
 # Bootstrap
-[[ -z "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]] && [[ -f "${USEZOMBIE_ENV}" ]] && { set -a; source "${USEZOMBIE_ENV}"; set +a; }
+[[ -z "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]] && [[ -f "${AGENTSFLEET_ENV}" ]] && { set -a; source "${AGENTSFLEET_ENV}"; set +a; }
 [[ -z "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]] && { echo "OP_SERVICE_ACCOUNT_TOKEN not set"; exit 1; }
 export OP_SERVICE_ACCOUNT_TOKEN
 saved_token="${OP_SERVICE_ACCOUNT_TOKEN}"
 
-echo "sync-op: overwrite ${USEZOMBIE_ENV} and ${E2E_ENV} from 1Password?"
+echo "sync-op: overwrite ${AGENTSFLEET_ENV} and ${E2E_ENV} from 1Password?"
 read -rp "[y/N] " confirm
 [[ "${confirm}" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 
-# --- usezombie (vault: ZMB_LOCAL_ENV) ---
+# --- agentsfleet (vault: ZMB_LOCAL_ENV) ---
 V=ZMB_LOCAL_ENV
-mkdir -p "$(dirname "${USEZOMBIE_ENV}")"
-printf 'export OP_SERVICE_ACCOUNT_TOKEN=%q\n' "${saved_token}" > "${USEZOMBIE_ENV}"
-chmod 600 "${USEZOMBIE_ENV}"
+mkdir -p "$(dirname "${AGENTSFLEET_ENV}")"
+printf 'export OP_SERVICE_ACCOUNT_TOKEN=%q\n' "${saved_token}" > "${AGENTSFLEET_ENV}"
+chmod 600 "${AGENTSFLEET_ENV}"
 
 for pair in \
   "github-pat=GITHUB_PERSONAL_ACCESS_TOKEN" \
@@ -34,7 +34,7 @@ for pair in \
   "pioneer-api-token=PIONEER_API_KEY"; do
   item="${pair%%=*}"; var="${pair#*=}"
   val="$(op_get "${item}" "${V}" password)"; [[ -z "${val}" ]] && val="$(op_get "${item}" "${V}" credential)"
-  [[ -n "${val}" ]] && { printf 'export %s=%q\n' "${var}" "${val}" >> "${USEZOMBIE_ENV}"; ok "${var}"; } || warn "${var}"
+  [[ -n "${val}" ]] && { printf 'export %s=%q\n' "${var}" "${val}" >> "${AGENTSFLEET_ENV}"; ok "${var}"; } || warn "${var}"
 done
 
 # --- e2e (vault: E2E_WORK) ---

@@ -19,10 +19,10 @@ export CLICOLOR=1
 export GOPATH="${HOME}/code/go"
 export GPG_KEY_ID=72980C0F4BF701C8
 
-# --- Zombie dev defaults ---
-export ZOMBIE_STATE_DIR=/tmp/agentsfleet-local-test
-export ZOMBIE_API_URL=http://localhost:3000
-export ZOMBIE_POSTHOG_ENABLED=false
+# --- agentsfleet dev defaults ---
+export AGENTSFLEET_STATE_DIR=/tmp/agentsfleet-local-test
+export AGENTSFLEET_API_URL=http://localhost:3000
+export AGENTSFLEET_POSTHOG_ENABLED=false
 
 # --- Aliases ---
 alias ls='ls -G'
@@ -49,7 +49,7 @@ use-mysqlclient-build-flags
 use-freetype-build-flags
 
 # --- Env files (flat, synced via ~/bin/sync-op) ---
-[[ -f "${HOME}/.config/usezombie/.env" ]] && { set -a; source "${HOME}/.config/usezombie/.env"; set +a; }
+[[ -f "${HOME}/.config/agentsfleet/.env" ]] && { set -a; source "${HOME}/.config/agentsfleet/.env"; set +a; }
 [[ -f "${HOME}/.config/e2e/.env" ]]       && { set -a; source "${HOME}/.config/e2e/.env"; set +a; }
 
 # --- Tool activation ---

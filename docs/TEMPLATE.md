@@ -141,7 +141,7 @@ Greenfield (no existing pattern)? Say so explicitly and point at the `docs/archi
 > the spec (golden-path rule, `AGENTS.md`).
 
 1. **Successful user moment** — the single observable moment that proves this
-   worked. Write it as a scene ("run N+1 opens and the zombie already knows…"),
+   worked. Write it as a scene ("run N+1 opens and the agent already knows…"),
    not a metric.
 2. **Preserved user behaviour** — what users do today that keeps working
    unchanged. Breaking any of it is a redesign, not a feature.
@@ -202,7 +202,7 @@ Touch nothing a gate watches → "N/A — docs/markdown only."
 
 **Goal (testable):** one sentence that could be a test name. Bad: "Implement streaming." Good: "Server-Sent Events (SSE) handler streams Redis pubsub messages as `text/event-stream` with stable ordering and reconnection, p95 latency under 200ms."
 
-**Problem:** observable symptoms in user-facing terms ("operators can't see the zombie's tool calls in real time"), not implementation language ("we don't have a foo handler").
+**Problem:** observable symptoms in user-facing terms ("operators can't see the agent's tool calls in real time"), not implementation language ("we don't have a foo handler").
 
 **Solution summary:** one paragraph — what changes, at what layer, what the user-visible outcome is. Implementation steps belong in Sections, not here.
 

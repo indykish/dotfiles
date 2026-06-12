@@ -154,7 +154,7 @@ pub fn LoggerFor(comptime scope: Scope) type {
 
 The `comptime if ... return` makes the entire emit path disappear when the scope is gated off. A `debug`-tagged log call in a tight loop, when its scope is gated off, costs zero. Faster than any runtime-flag library.
 
-**Runtime visibility override** — env var `ZOMBIE_LOG_<SCOPE>=debug` (e.g. `ZOMBIE_LOG_EXECUTOR=debug`) flips a scope to debug-visible without recompiling. Read once at startup, cached. Production never re-checks env per call.
+**Runtime visibility override** — env var `AGENTSFLEET_LOG_<SCOPE>=debug` (e.g. `AGENTSFLEET_LOG_EXECUTOR=debug`) flips a scope to debug-visible without recompiling. Read once at startup, cached. Production never re-checks env per call.
 
 **Field encoding is allocation-free on the hot path** — the helper writes directly to a thread-local 4 KiB buffer and flushes on `\n`. Spillover to heap only on records exceeding 4 KiB, which is rare and warns at debug.
 
@@ -208,7 +208,7 @@ Throw-style modules `throw new ZombieError({...})`. Result-style modules return 
 
 In production: every record on the wire is logfmt. No exceptions.
 
-In development (TTY attached, optional `ZOMBIE_LOG_PRETTY=1` env var): the same record can render as a colored printf-style line for human readability:
+In development (TTY attached, optional `AGENTSFLEET_LOG_PRETTY=1` env var): the same record can render as a colored printf-style line for human readability:
 
 ```
 14:32:18.234  WARN  executor  tool_call_failed  tool=bash duration=1.24s — tool returned non-zero  [UZ-EXEC-012]
@@ -216,7 +216,7 @@ In development (TTY attached, optional `ZOMBIE_LOG_PRETTY=1` env var): the same 
 
 Mechanics:
 
-- TTY check happens **once at process startup** (`isatty(stderr) && env.ZOMBIE_LOG_PRETTY != "0"`). Cached as a compile-once boolean.
+- TTY check happens **once at process startup** (`isatty(stderr) && env.AGENTSFLEET_LOG_PRETTY != "0"`). Cached as a compile-once boolean.
 - A single sink picks the formatter at startup; from then on every record renders through the chosen formatter exactly once. **No strip step. No re-render.** The wire path never sees colors.
 - LOGGING GATE audits the **wire** format only. Pretty mode is post-hoc render and not on the audit path.
 

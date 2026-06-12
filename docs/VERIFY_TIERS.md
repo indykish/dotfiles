@@ -9,7 +9,7 @@
 | Tier | Command | When |
 |---|---|---|
 | 1 | `make test` | Every EXECUTE iteration; start of VERIFY. Unit-only — never substitutes for 2/3. |
-| 2 | `make test-integration` | Diff touches `src/http/**`, `src/db/**`, `src/zombie/**`, `src/observability/**`, `*_integration_test.zig`, schema, migrations. Before COMMIT. |
+| 2 | `make test-integration` | Diff touches `src/http/**`, `src/db/**`, `src/agent/**`, `src/observability/**`, `*_integration_test.zig`, schema, migrations. Before COMMIT. |
 | 3 | `make test-integration` | ≥1× per branch from clean state (after `make down`) before ship-ready. Mandatory when schema changes pre-v2.0. Tier 2 passing + 3 failing = state pollution; fix isolation. |
 
 ## Test delta — VERIFY ends by reporting coverage growth

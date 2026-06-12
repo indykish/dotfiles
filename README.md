@@ -138,10 +138,10 @@ sync-skills
 
 ### Secrets (1Password)
 Secrets sync via `sync-op` from 1Password vaults:
-- `ZMB_LOCAL_ENV` → `~/.config/usezombie/.env`
+- `ZMB_LOCAL_ENV` → `~/.config/agentsfleet/.env`
 - `E2E_WORK` → `~/.config/e2e/.env`
 
-Bootstrap: set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.config/usezombie/.env`, then run `sync-op`.
+Bootstrap: set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.config/agentsfleet/.env`, then run `sync-op`.
 
 ## License
 

@@ -79,7 +79,7 @@ Spec asserts "503 on Redis down", code returns 200 → test the spec, flag the c
 | **Standard** | New service method, new Redis stream/key, schema change with logic | + T4 + T5 + T6 |
 | **Hardening** | Auth / payment / lease / migration / streaming / anything in the data-loss radius | + T7 (if applicable) + T8 + chaos pass |
 
-Auto-detect from diff: `src/auth/**`, `src/zombie/leases/**`, `src/runner/**` + `src/agentsfleetd/fleet/**` (the lease/reclaim/fence + client-daemon surface → T9), schema migrations, streaming handlers → Hardening. CRUD-only against existing schema → Smoke. Default → Standard.
+Auto-detect from diff: `src/auth/**`, `src/agent/leases/**`, `src/runner/**` + `src/agentsfleetd/fleet/**` (the lease/reclaim/fence + client-daemon surface → T9), schema migrations, streaming handlers → Hardening. CRUD-only against existing schema → Smoke. Default → Standard.
 
 **A client daemon (no router, no datastore — e.g. `agentsfleet-runner`) is always Hardening + T9**, regardless of diff size: its public surface *is* the process lifecycle (kill / restart / reclaim / fence), and that is exactly the surface a happy-path loop test misses.
 
@@ -236,7 +236,7 @@ For a service that is **not** an HTTP server but a **client daemon** holding no 
 - **Sudden kill (SIGKILL, not SIGTERM) mid-lease** — the cattle-not-pets case, distinct from graceful drain (T6). Kill the daemon while a lease is in flight; assert the lease expires at its deadline, the reclaim sweep re-issues it with a higher fencing token to another holder, the event is processed **exactly once**, and the dead holder's late report is **fenced** (stale-token reject), never a double-write.
 - **Restart / re-register** — bring the daemon back; assert it re-registers and resumes leasing with no duplicate processing of in-flight work and no orphan lease left held.
 - **Flaky control-plane link (client side)** — the daemon is an HTTP *client* over an unreliable link: lease long-poll drops, heartbeat fails, report fails *after* the child already ran. Assert backoff-without-crash, the un-acked lease redelivers, and report retry is idempotent (a second delivery of the same outcome is fenced/deduped, not double-applied).
-- **Forked-child lifecycle** — the child is always reaped (no zombies/orphans) and the sandbox/cgroup scope always destroyed (idempotent) on every exit path including timeout and crash; a child past its deadline is killed and the outcome **classified** (timeout vs OOM vs crash), not hung.
+- **Forked-child lifecycle** — the child is always reaped (no orphaned processes) and the sandbox/cgroup scope always destroyed (idempotent) on every exit path including timeout and crash; a child past its deadline is killed and the outcome **classified** (timeout vs OOM vs crash), not hung.
 
 Injection: `kill -9 <pid>` / `docker kill` for sudden death; `toxiproxy` or a pause on the control-plane endpoint for the flaky link; a fake clock past the lease TTL for reclaim.
 

@@ -54,7 +54,7 @@ every code a dispatch `.sh` emits resolves to exactly one row here.
 **Rule:** Remove unused variables, imports, parameters, and unreachable branches immediately.
 **Why:** They mislead readers about real dependencies and are flagged in every review.
 **Tags:** zig, js, all
-**Ref:** M1_001 unused deps in zombie.js; dead currentObj branch in simpleYamlParse. M30_002 dead CLI variables.
+**Ref:** M1_001 unused deps in agent.js; dead currentObj branch in simpleYamlParse. M30_002 dead CLI variables.
 
 ## RULE NRC — No redundant comments
 
@@ -200,7 +200,7 @@ every code a dispatch `.sh` emits resolves to exactly one row here.
 **Rule:** Default: every string literal in source code is a named constant. The literal lives at exactly one declaration site; every other reference imports it. There is no "this one is small," no "this one is just a domain value," no "I'll inline it once and extract later." Adding a literal is the trigger to add (or import) the const.
 
 **Allowed exceptions, narrow:**
-- Single-use, throwaway log/error message bodies that are not asserted on by other code (e.g. `log.warn("zombie.claim_fail err={s}", .{...})` — the format string is fine inline).
+- Single-use, throwaway log/error message bodies that are not asserted on by other code (e.g. `log.warn("agent.claim_fail err={s}", .{...})` — the format string is fine inline).
 - Test-fixture human-readable names that have no production counterpart (e.g. `"scrooge-mcduck"` tenant name).
 - Single-character separators / `""` / whitespace strings.
 
@@ -245,14 +245,14 @@ Everything else — status values, frame kinds, channel suffixes/prefixes, heade
 **Rule:** Store a vault key_name in entity tables; resolve via crypto_store.load() at runtime.
 **Why:** Plaintext secrets appear in query results, backups, and logs.
 **Tags:** zig, sql, security
-**Ref:** M2_002 webhook_secret TEXT column in core.zombies → refactored to webhook_secret_ref.
+**Ref:** M2_002 webhook_secret TEXT column in core.agents → refactored to webhook_secret_ref.
 
 ## RULE STS — No static strings in SQL schema
 
 **Rule:** Never use DEFAULT or CHECK with hardcoded strings in SQL; enforce value constraints via application constants.
 **Why:** SQL can't reference Zig/JS constants, so schema strings drift from code.
 **Tags:** sql
-**Ref:** M2_002 DEFAULT 'active' and CHECK status IN (...) removed from core.zombies.
+**Ref:** M2_002 DEFAULT 'active' and CHECK status IN (...) removed from core.agents.
 
 ## RULE ESC — Escape control characters in JSON string emission
 
@@ -413,21 +413,21 @@ const log = std.log.scoped(.<module_name>);
 ```
 
 Picking the scope name:
-- The scope IS the module identity in operator-facing logs. Choose specifically (`.webhook_sig_lookup`, `.zombie_event_loop`, `.firewall`, `.clerk_webhook`) rather than generically (`.agentsfleetd`, `.utils`).
+- The scope IS the module identity in operator-facing logs. Choose specifically (`.webhook_sig_lookup`, `.agent_event_loop`, `.firewall`, `.clerk_webhook`) rather than generically (`.agentsfleetd`, `.utils`).
 - One scope per file is the default. Sibling files in the same package use the same scope only if they're a single logical module split across files for length-gate reasons.
 - Existing scopes already cover most subsystems — grep `std.log.scoped\(\.` before inventing a new one. Consistency with neighbors beats novelty.
 
 Format the message body as `<scope>.<state> <key>=<value> <key>=<value>`:
 - **state** is a short snake_case noun phrase naming the branch — `parse_failed`, `dedup_replay`, `ignored_event`, `metering_debit`, `claim_skipped`. Operators grep on `<scope>.<state>`; make it unique and stable.
-- **key=value** pairs carry correlation IDs needed to join with downstream traces. Always include `req_id` for request-scoped paths. Add `zombie_id` / `workspace_id` / `tenant_id` / `delivery` / `reason` / `err` where relevant.
+- **key=value** pairs carry correlation IDs needed to join with downstream traces. Always include `req_id` for request-scoped paths. Add `agent_id` / `workspace_id` / `tenant_id` / `delivery` / `reason` / `err` where relevant.
 - Severity: `log.info` for routine non-default branches (ignores, dedupes, retries), `log.warn` for malformed input / fail-closed / unexpected-but-recoverable, `log.err` for internal failures and contract violations.
 
 ```zig
 const log = std.log.scoped(.http_webhook_github);
 // ...
-log.info("github_webhook.ignored_event zombie_id={s} delivery={s} event={s}", .{ zombie_id, delivery, event });
-log.warn("github_webhook.parse_failed zombie_id={s} delivery={s} err={s}", .{ zombie_id, delivery, @errorName(err) });
-log.err("github_webhook.enqueue_failed zombie_id={s} delivery={s} err={s}", .{ zombie_id, delivery, @errorName(err) });
+log.info("github_webhook.ignored_event agent_id={s} delivery={s} event={s}", .{ agent_id, delivery, event });
+log.warn("github_webhook.parse_failed agent_id={s} delivery={s} err={s}", .{ agent_id, delivery, @errorName(err) });
+log.err("github_webhook.enqueue_failed agent_id={s} delivery={s} err={s}", .{ agent_id, delivery, @errorName(err) });
 ```
 
 #### JS CLI (`agentsfleet`) — structured stderr via `writeError` + diagnostic JSON in `--json` mode
@@ -550,16 +550,16 @@ This is intentionally manual — the structural diversity of "function body" acr
 - **Private fields:** No underscore prefix convention. Use Zig visibility (`pub` vs none) and `const`/`var` to control mutability. Helper functions are private by default (no `pub`).
 - **Refcounting:** Use `std.atomic.Value(usize)` with `ref()` / `unref()` helpers for shared ownership. `unref()` calls `destroy` when count hits zero.
 
-**Why:** bvisor/src/core shows these patterns consistently. Deviating breaks the ownership contract — missed errdefer means memory leak on partial init; missing ROLLBACK on deinit-equivalent means inconsistent state.
+**Why:** bvisor/src/core shows these patterns consistently. Deviating breaks the ownership rule — missed errdefer means memory leak on partial init; missing ROLLBACK on deinit-equivalent means inconsistent state.
 **Tags:** zig, memory, ownership, patterns
 **Ref:** bvisor src/core/Supervisor.zig, Thread.zig, ThreadGroup.zig, OverlayRoot.zig, LogBuffer.zig.
 
 ## RULE CTX — Cross-tenant data requires a process boundary, not a shared filesystem
 
-**Rule:** Any data that a sandboxed agent must not read across tenant boundaries (zombie, workspace, customer) must live behind a process boundary — a database, a network service, or an authenticated API. A shared filesystem (bind-mounted volume, NFS, host directory) shared between sibling sandboxes is never acceptable, even if the data is "scoped" by path convention.
-**Why:** The memory-tool API enforces zombie_id scoping on `memory_recall`. But if the underlying store is a bind-mounted `/var/lib/zombie-memory/{zombie_id}/` directory and the agent has ANY shell or file-read tool (Bash, code execution, Read-file), the agent can bypass the memory API entirely: `cat /var/lib/zombie-memory/zom_other/core/*.md`. This is the classic confused-deputy pattern — the API's scoping checks are bypassed by a different tool that has broader filesystem permissions. Moving the store to a process boundary (Postgres with `memory_runtime` role, different protocol, different credentials) makes cross-tenant access structurally impossible, not just policy-enforced.
+**Rule:** Any data that a sandboxed agent must not read across tenant boundaries (agent, workspace, customer) must live behind a process boundary — a database, a network service, or an authenticated API. A shared filesystem (bind-mounted volume, NFS, host directory) shared between sibling sandboxes is never acceptable, even if the data is "scoped" by path convention.
+**Why:** The memory-tool API enforces agent_id scoping on `memory_recall`. But if the underlying store is a bind-mounted `/var/lib/agent-memory/{agent_id}/` directory and the agent has ANY shell or file-read tool (Bash, code execution, Read-file), the agent can bypass the memory API entirely: `cat /var/lib/agent-memory/agt_other/core/*.md`. This is the classic confused-deputy pattern — the API's scoping checks are bypassed by a different tool that has broader filesystem permissions. Moving the store to a process boundary (Postgres with `memory_runtime` role, different protocol, different credentials) makes cross-tenant access structurally impossible, not just policy-enforced.
 **Tags:** security, architecture, multi-tenancy, confused-deputy
-**Ref:** M14_001 design review — original draft proposed SQLite on a persistent host volume; rejected because agent shell tools could read sibling zombies' directories. Storage moved to a dedicated Postgres database with a scoped `memory_runtime` role. The rule generalizes: it applies to any future cross-tenant data (per-workspace caches, per-customer artifacts, per-zombie workspaces).
+**Ref:** M14_001 design review — original draft proposed SQLite on a persistent host volume; rejected because agent shell tools could read sibling agents' directories. Storage moved to a dedicated Postgres database with a scoped `memory_runtime` role. The rule generalizes: it applies to any future cross-tenant data (per-workspace caches, per-customer artifacts, per-agent workspaces).
 
 ## RULE WAUTH — Every workspace-scoped handler must call authorizeWorkspace after authenticate
 
@@ -573,7 +573,7 @@ This is intentionally manual — the structural diversity of "function body" acr
 ## RULE IDMP — Idempotency checks must not block re-request for terminal statuses
 
 **Rule:** When an idempotency guard queries for an existing row before INSERT, it must distinguish between active statuses (`pending`, `approved`) and terminal statuses (`revoked`, `denied`). Terminal rows must allow re-request via UPDATE back to `pending`, not early-return with the stale status.
-**Why:** The UNIQUE constraint on `(zombie_id, service)` makes INSERT impossible after the first row. If the idempotency check returns for ANY status including `revoked`, the zombie can never re-request a grant for that service — it gets `{ "status": "revoked" }` forever. Caught by greptile on PR #205 (P1).
+**Why:** The UNIQUE constraint on `(agent_id, service)` makes INSERT impossible after the first row. If the idempotency check returns for ANY status including `revoked`, the agent can never re-request a grant for that service — it gets `{ "status": "revoked" }` forever. Caught by greptile on PR #205 (P1).
 **Do:** Check `is_terminal = eql(status, "revoked") or eql(status, "denied")`. If terminal, UPDATE to pending.
 **Don't:** Return early for every existing row regardless of status.
 **Tags:** zig, database, idempotency
@@ -673,7 +673,7 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 **Do:** Paste the six-point checklist into the PLAN surface-area section and tick each item before EXECUTE.
 **Don't:** Write the handler and check guidelines afterward — the response shape is the hardest thing to change once tests and OpenAPI are written against it.
 **Tags:** zig, http, api-design, rest, naming
-**Ref:** M23_001 `zombie_steer_http.zig` — `ack` dropped, `run_steered` split into `message_queued` + `execution_active` after post-build audit. `docs/REST_API_DESIGN_GUIDELINES.md`.
+**Ref:** M23_001 `agent_steer_http.zig` — `ack` dropped, `run_steered` split into `message_queued` + `execution_active` after post-build audit. `docs/REST_API_DESIGN_GUIDELINES.md`.
 
 ## RULE HGD — Every new handler must follow api_handler_guide.md before writing any code
 
@@ -685,35 +685,35 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 5. All `conn.query()` results wrapped in `PgQuery` with `defer q.deinit()` (RULE FLS).
 6. No `common.writeJson` or `common.errorResponse` at call sites (RULE HXX).
 
-**Why:** The `api_handler_guide.md` encodes the M18_002 migration contract. New handlers that skip it reintroduce the old `handle*(ctx, req, res)` signature or roll their own arena/response building, breaking middleware propagation and RFC 7807 error shape consistency.
+**Why:** The `api_handler_guide.md` encodes the M18_002 migration rule. New handlers that skip it reintroduce the old `handle*(ctx, req, res)` signature or roll their own arena/response building, breaking middleware propagation and RFC 7807 error shape consistency.
 **Do:** Open `docs/nostromo/api_handler_guide.md`, skim the template, then write the handler. Read RULE HXX alongside it.
 **Don't:** Copy-paste a handler from before M18_002 (anything that takes `ctx *Context` as first param, or calls `common.writeJson` directly). Those are the old pattern.
 **Tags:** zig, http, handlers, hx, api-style
 **Ref:** `docs/nostromo/api_handler_guide.md`. RULE HXX (same topic, handler signature). M18_002 full sweep.
 
-## RULE ZWO — Workspace+zombie path routes must verify zombie-to-workspace ownership
+## RULE AWO — Workspace+agent path routes must verify agent-to-workspace ownership
 
-**Rule:** Any handler whose URL path contains both `{workspace_id}` and `{zombie_id}` must, after `common.authorizeWorkspace`, also call `common.getZombieWorkspaceId(conn, hx.alloc, zombie_id)` and reject with 404 (not 403) if the zombie does not exist or belongs to a different workspace. Returning 404 avoids leaking zombie existence across workspaces.
-**Why:** `authorizeWorkspace` only validates the principal→workspace edge. Without the zombie→workspace check, a caller authenticated for WS_A can read or mutate a zombie owned by WS_B by sending `/v1/workspaces/{WS_A}/zombies/{ZOMBIE_FROM_WS_B}/...`. `zombie_activity_api.zig:innerListActivity` shipped this bug in M24_001; caught by greptile P1 on PR #217 before merge. Every sibling handler (grants list/revoke, steer, delete) already had the check — activity was the outlier.
+**Rule:** Any handler whose URL path contains both `{workspace_id}` and `{agent_id}` must, after `common.authorizeWorkspace`, also call `common.getAgentWorkspaceId(conn, hx.alloc, agent_id)` and reject with 404 (not 403) if the agent does not exist or belongs to a different workspace. Returning 404 avoids leaking agent existence across workspaces.
+**Why:** `authorizeWorkspace` only validates the principal→workspace edge. Without the agent→workspace check, a caller authenticated for WS_A can read or mutate an agent owned by WS_B by sending `/v1/workspaces/{WS_A}/agents/{AGENT_FROM_WS_B}/...`. `agent_activity_api.zig:innerListActivity` shipped this bug in M24_001; caught by greptile P1 on PR #217 before merge. Every sibling handler (grants list/revoke, steer, delete) already had the check — activity was the outlier.
 **Do:**
 ```zig
 if (!common.authorizeWorkspace(conn, hx.principal, workspace_id)) {
     hx.fail(ec.ERR_FORBIDDEN, "Workspace access denied");
     return;
 }
-const zombie_ws_id = common.getZombieWorkspaceId(conn, hx.alloc, zombie_id) orelse {
-    hx.fail(ec.ERR_ZOMBIE_NOT_FOUND, ec.MSG_ZOMBIE_NOT_FOUND);
+const agent_ws_id = common.getAgentWorkspaceId(conn, hx.alloc, agent_id) orelse {
+    hx.fail(ec.ERR_AGENT_NOT_FOUND, ec.MSG_AGENT_NOT_FOUND);
     return;
 };
-if (!std.mem.eql(u8, zombie_ws_id, workspace_id)) {
-    hx.fail(ec.ERR_ZOMBIE_NOT_FOUND, ec.MSG_ZOMBIE_NOT_FOUND);
+if (!std.mem.eql(u8, agent_ws_id, workspace_id)) {
+    hx.fail(ec.ERR_AGENT_NOT_FOUND, ec.MSG_AGENT_NOT_FOUND);
     return;
 }
 ```
-**Don't:** Assume `authorizeWorkspace` is sufficient when both `{workspace_id}` and `{zombie_id}` are in the path. Don't return 403 on mismatch — that leaks which zombie IDs exist across tenants.
-**Test:** Add an IDOR case in `m24_001_cross_workspace_idor_test.zig` (or equivalent) that hits the route with a foreign zombie and asserts 404.
+**Don't:** Assume `authorizeWorkspace` is sufficient when both `{workspace_id}` and `{agent_id}` are in the path. Don't return 403 on mismatch — that leaks which agent IDs exist across tenants.
+**Test:** Add an IDOR case in `m24_001_cross_workspace_idor_test.zig` (or equivalent) that hits the route with a foreign agent and asserts 404.
 **Tags:** zig, security, IDOR, multi-tenancy, auth
-**Ref:** PR #217 greptile comment `3089018810` — `zombie_activity_api.zig:innerListActivity` missing check. Complements RULE WAUTH.
+**Ref:** PR #217 greptile comment `3089018810` — `agent_activity_api.zig:innerListActivity` missing check. Complements RULE WAUTH.
 
 ## RULE CNX — Handlers must not hold two pool connections concurrently per request
 
@@ -730,18 +730,18 @@ const page = helper.queryByZombieOnConn(conn, alloc, …) catch { ... };
 pub fn queryByZombie(pool: *pg.Pool, …) !Page {
     const conn = try pool.acquire();
     defer pool.release(conn);
-    return queryByZombieOnConn(conn, …);
+    return queryByAgentOnConn(conn, …);
 }
-pub fn queryByZombieOnConn(conn: *pg.Conn, …) !Page { … }
+pub fn queryByAgentOnConn(conn: *pg.Conn, …) !Page { … }
 ```
 **Don't:** Keep `defer pool.release(conn)` in the handler and then call a helper that takes `*pg.Pool` — the helper acquires a second conn and both stay live until the handler returns. Also: don't pre-release the first conn before the helper call — you lose the authorization context for post-query RLS/session settings.
 **Tags:** zig, database, connection-pool, performance, concurrency
-**Ref:** PR #217 greptile comment `3089018915` — `zombie_activity_api.zig` ↔ `activity_stream.zig:queryByZombie`. Fixed by adding `queryByZombieOnConn`.
+**Ref:** PR #217 greptile comment `3089018915` — `agent_activity_api.zig` ↔ `activity_stream.zig:queryByAgent`. Fixed by adding `queryByAgentOnConn`.
 
 ## RULE BIL — Billing and credential endpoints require operator-minimum role
 
 **Rule:** Every handler that exposes billing data (credit totals, cents figures, invoice fields) or credential material (API keys, vault secrets, OAuth tokens) must gate access with `workspace_guards.enforce(... .minimum_role = .operator)`. Plain `common.authorizeWorkspace` is **not** sufficient — it passes for any workspace member regardless of role, so a `user`-role team member can read data the workspace owner intended to restrict.
-**Why:** `authorizeWorkspace` only verifies that the authenticated principal's `workspace_scope_id` (or tenant) matches the path `workspace_id`. It does not consider role. Billing and credential data are privileged by convention across every existing endpoint (`workspaces_billing_summary.zig`, `workspaces_billing.zig`, `workspace_credentials_http.zig` all enforce operator). A new billing endpoint that follows the `authorizeWorkspace`-only pattern silently exposes cent totals to every team member. Greptile P1/security flagged `zombie_billing_summary.zig` for exactly this.
+**Why:** `authorizeWorkspace` only verifies that the authenticated principal's `workspace_scope_id` (or tenant) matches the path `workspace_id`. It does not consider role. Billing and credential data are privileged by convention across every existing endpoint (`workspaces_billing_summary.zig`, `workspaces_billing.zig`, `workspace_credentials_http.zig` all enforce operator). A new billing endpoint that follows the `authorizeWorkspace`-only pattern silently exposes cent totals to every team member. Greptile P1/security flagged `agent_billing_summary.zig` for exactly this.
 **Do:**
 ```zig
 const actor = hx.principal.user_id orelse API_ACTOR;
@@ -750,20 +750,20 @@ const access = workspace_guards.enforce(hx.res, hx.req_id, conn, hx.alloc, hx.pr
 }) orelse return;
 defer access.deinit(hx.alloc);
 ```
-**Don't:** Copy `common.authorizeWorkspace` from a non-billing handler into a new billing handler. Role policy is not uniform across endpoints — billing is strictly more sensitive than "list zombies" or "read activity".
+**Don't:** Copy `common.authorizeWorkspace` from a non-billing handler into a new billing handler. Role policy is not uniform across endpoints — billing is strictly more sensitive than "list agents" or "read activity".
 **Test:** Add an RBAC case that hits the route with a `user`-role JWT for the correct workspace and asserts 403.
 **Tags:** zig, security, rbac, billing, credentials, multi-tenancy
-**Ref:** PR #221 greptile comment `3094814139` — `zombie_billing_summary.zig` missing operator guard. Fixed by switching to `workspace_guards.enforce(.minimum_role = .operator)`.
+**Ref:** PR #221 greptile comment `3094814139` — `agent_billing_summary.zig` missing operator guard. Fixed by switching to `workspace_guards.enforce(.minimum_role = .operator)`.
 
 ## RULE QPC — Query-param accepted values must match across related endpoints
 
-**Rule:** When two endpoints expose the same semantic filter (e.g. `period_days` on both workspace-scope and per-zombie-scope billing summary), their accepted value sets must be identical. Diverging (e.g. workspace accepts `7|30|90`, zombie accepts only `7|30` and silently clamps 90 to 30) is a UX footgun: callers that work at one scope see unexpectedly-different data at the other.
+**Rule:** When two endpoints expose the same semantic filter (e.g. `period_days` on both workspace-scope and per-agent-scope billing summary), their accepted value sets must be identical. Diverging (e.g. workspace accepts `7|30|90`, agent accepts only `7|30` and silently clamps 90 to 30) is a UX footgun: callers that work at one scope see unexpectedly-different data at the other.
 **Why:** OpenAPI-generated SDKs expose one typed enum per parameter. When enums diverge between sister endpoints, downstream code tries values that "work on the other one" and silently gets wrong data — no 400, no log, just a mis-windowed response. The response carries `period_days: 30` as the only signal, which a caller asking for 90-day data will not read.
 **Do:** Extract the accepted set into a shared constant (or at minimum, cross-reference it in both handlers' doc comments) and mirror the OpenAPI `enum:` list. Return 400 `UZ-INVALID-REQUEST` for out-of-set values, OR silently coerce — but pick one and apply identically across sister endpoints.
 **Don't:** Silently clamp on one endpoint and reject on another. Don't let one endpoint's enum be a strict subset of another's — either both or neither.
 **Test:** Unit-test each accepted value + a rejected value on both endpoints. The enum in OpenAPI must match the accepted set in the handler 1:1.
 **Tags:** zig, api-consistency, validation, sdk-ergonomics
-**Ref:** PR #221 greptile comment `3094604729` — `zombie_billing_summary.zig::parsePeriodDays` accepted `{7, 30}` while `workspaces_billing_summary.zig::parsePeriodDays` accepted `{7, 30, 90}`. Fixed by adding `90` to the zombie handler and the OpenAPI enum.
+**Ref:** PR #221 greptile comment `3094604729` — `agent_billing_summary.zig::parsePeriodDays` accepted `{7, 30}` while `workspaces_billing_summary.zig::parsePeriodDays` accepted `{7, 30, 90}`. Fixed by adding `90` to the agent handler and the OpenAPI enum.
 
 ## RULE DID — React `id={...}` attributes must use `React.useId()`, never hardcoded strings
 
@@ -876,7 +876,7 @@ const handleConfirm = useCallback(async () => {
 
 **Rule:** When a path component (e.g. `/credentials/llm`) is reserved for one handler family but the *parent* collection (`/credentials`) shares storage with another, the reservation MUST be enforced on every write that lands in the shared store, not just on the route matcher. If the matcher excludes `name == "llm"` for the generic DELETE but the POST validator does not reject `{name: "llm"}`, a write under that name lands in the shared backing store under a key the generic delete cannot reach AND the specialized delete does not own — an orphaned, un-deleteable row.
 
-**Why:** `vault.secrets` stores both BYOK rows (`key_name = "llm"`) and zombie credentials (`key_name = "zombie:<name>"`). M45's generic credential POST composed `key_name = "zombie:" ++ body.name` without rejecting `body.name == "llm"`, while `matchWorkspaceCredential` already excluded the `/credentials/llm` *path* (because BYOK owns it). Net result: an operator could POST `{name:"llm",...}` → row at `zombie:llm`; subsequent DELETE `/credentials/llm` routes to the BYOK handler (looks up key `"llm"`, finds nothing, 204) and `matchWorkspaceCredential` returns null on read so the generic DELETE never fires either. Row is un-deleteable through any HTTP route.
+**Why:** `vault.secrets` stores both BYOK rows (`key_name = "llm"`) and agent credentials (`key_name = "agent:<name>"`). M45's generic credential POST composed `key_name = "agent:" ++ body.name` without rejecting `body.name == "llm"`, while `matchWorkspaceCredential` already excluded the `/credentials/llm` *path* (because BYOK owns it). Net result: an operator could POST `{name:"llm",...}` → row at `agent:llm`; subsequent DELETE `/credentials/llm` routes to the BYOK handler (looks up key `"llm"`, finds nothing, 204) and `matchWorkspaceCredential` returns null on read so the generic DELETE never fires either. Row is un-deleteable through any HTTP route.
 
 **How to apply:**
 
@@ -885,7 +885,7 @@ const handleConfirm = useCallback(async () => {
 - Cover with an integration test that POSTs the reserved name and asserts (a) 4xx response, (b) no row landed in the backing store. The "no row landed" assertion is what distinguishes a real fix from one that only changes the API shape.
 
 **Tags:** zig, http, routing, security, credentials
-**Ref:** PR #252 (M45). Greptile P1 finding `3143083466` on `feat/m45-vault-structured`. Fix in commit (this commit) — `validateCredentialName` now rejects `name == "llm"`; integration test asserts both the 400 response and the absence of a `zombie:llm` row.
+**Ref:** PR #252 (M45). Greptile P1 finding `3143083466` on `feat/m45-vault-structured`. Fix in commit (this commit) — `validateCredentialName` now rejects `name == "llm"`; integration test asserts both the 400 response and the absence of an `agent:llm` row.
 
 ## RULE CLI-HINT — Renaming or removing a CLI command means sweeping every error message that names the old syntax
 
@@ -978,7 +978,7 @@ Cite the most-specific source of truth by **file path** in the new doc (in the s
 **Override syntax:** `RULE GRD: SKIPPED per user override (reason: ...)` immediately preceding the edit. User-invokable only; rare, and only when the locked decision is itself being explicitly revised in the same PR (with the override-PR cleaning up the prior-art it supersedes).
 
 **Tags:** governance, architecture, all
-**Ref:** PR #278 (May 01, 2026). Three review rounds reframed the platform-managed LLM api_key as a magic constant, "loaded at API boot from server config," and "platform vault at platform-scope identifier" before the user pointed at `playbooks/012_usezombie_admin_bootstrap/001_playbook.md` + `schema/006_platform_llm_keys.sql` + `docs/v2/done/M11_006_P1_API_AUTH_BIL_BOOTSTRAP_REMOVAL_AND_BALANCE_GATE.md`. Each prior framing was internally consistent within its own doc but contradicted the locked M11_006 contract (admin user signs up like any user, stores credential in own workspace vault, registers via `PUT /v1/admin/platform-keys`, the `platform_llm_keys` table stores only a pointer). The pattern — skip the playbook + done-spec walk, invent a fresh framing — is fully generalisable across any cross-cutting domain, so the rule is intentionally domain-agnostic.
+**Ref:** PR #278 (May 01, 2026). Three review rounds reframed the platform-managed LLM api_key as a magic constant, "loaded at API boot from server config," and "platform vault at platform-scope identifier" before the user pointed at `playbooks/012_usezombie_admin_bootstrap/001_playbook.md` + `schema/006_platform_llm_keys.sql` + `docs/v2/done/M11_006_P1_API_AUTH_BIL_BOOTSTRAP_REMOVAL_AND_BALANCE_GATE.md`. Each prior framing was internally consistent within its own doc but contradicted the locked M11_006 decision (admin user signs up like any user, stores credential in own workspace vault, registers via `PUT /v1/admin/platform-keys`, the `platform_llm_keys` table stores only a pointer). The pattern — skip the playbook + done-spec walk, invent a fresh framing — is fully generalisable across any cross-cutting domain, so the rule is intentionally domain-agnostic.
 
 ## RULE NCC — No nested CSS comments (CSS doesn't support them)
 

@@ -72,16 +72,16 @@ NOT `/getProducts`, `/createProduct`, `/product`.
 ### Reflect ownership in the path
 
 ```
-GET /workspaces/{ws_id}/zombies/{zombie_id}/events
-POST /workspaces/{ws_id}/zombies
+GET /workspaces/{ws_id}/agents/{agent_id}/events
+POST /workspaces/{ws_id}/agents
 ```
 
-Nested paths express the containment relationship. Don't flatten — `/zombies?workspace_id=...` loses the contract that the zombie belongs to that workspace.
+Nested paths express the containment relationship. Don't flatten — `/agents?workspace_id=...` loses the rule that the agent belongs to that workspace.
 
 ### No verbs in URLs
 
-- Bad: `/users/{id}/activate`, `/zombies/{id}/start`
-- Good: `PATCH /users/{id}` body `{status: "active"}`, `POST /zombies/{id}/events` (event resource creation)
+- Bad: `/users/{id}/activate`, `/agents/{id}/start`
+- Good: `PATCH /users/{id}` body `{status: "active"}`, `POST /agents/{id}/events` (event resource creation)
 
 **Operation-style endpoints** — the `POST /v1/.../approvals/{gate_id}:approve` colon form is allowed ONLY when the action falls into one of these three categories, named explicitly in the OpenAPI `description`:
 
@@ -95,15 +95,15 @@ Anything else MUST be modeled as `PATCH /resource/{id}` with a state field. "Con
 
 ### Path-param naming consistency
 
-`{zombie_id}` not `{id}`, not `{zombieId}`, not `{zid}`. The path-param name matches the field name in the resource body. One spelling per concept across the whole API.
+`{agent_id}` not `{id}`, not `{agentId}`, not `{aid}`. The path-param name matches the field name in the resource body. One spelling per concept across the whole API.
 
 ### Trailing slash
 
-URLs are canonical without a trailing slash: `/v1/zombies`, not `/v1/zombies/`. Requests with a trailing slash MUST `308 Permanent Redirect` to the canonical form (preserves method + body). No silent 404, no silent rewrite.
+URLs are canonical without a trailing slash: `/v1/agents`, not `/v1/agents/`. Requests with a trailing slash MUST `308 Permanent Redirect` to the canonical form (preserves method + body). No silent 404, no silent rewrite.
 
 ### Tag mapping is 1:1 with resource
 
-Every top-level resource maps to exactly one OpenAPI tag, and each tag maps to one `paths/<tag>.yaml` file. Don't split a resource across multiple tags ("Zombies" + "ZombieEvents"); don't merge resources under one tag ("Workspaces and Zombies"). Sub-resources live under the parent tag's file unless that file hits the §6 400-line cap, at which point you split by sub-resource and document the split in `root.yaml`.
+Every top-level resource maps to exactly one OpenAPI tag, and each tag maps to one `paths/<tag>.yaml` file. Don't split a resource across multiple tags ("Agents" + "AgentEvents"); don't merge resources under one tag ("Workspaces and Agents"). Sub-resources live under the parent tag's file unless that file hits the §6 400-line cap, at which point you split by sub-resource and document the split in `root.yaml`.
 
 ### Resource ID lives in path, not body
 
@@ -117,7 +117,7 @@ If the parent ID is in the path, never repeat it in the body.
 ### Field naming (Microsoft-aligned)
 
 - **Plural for collections, singular for items**
-- **`_id` suffix** for identifiers (`product_id`, `zombie_id`) — never bare `id` except as the resource's own primary key field
+- **`_id` suffix** for identifiers (`product_id`, `agent_id`) — never bare `id` except as the resource's own primary key field
 - **`_at` suffix** for datetimes; values are int64 epoch milliseconds (§4)
 - **Unit suffix** for durations: `_ms` or `_seconds` (§4) — never bare `timeout`/`ttl`/`interval`/`duration`/`expiration`
 - **Adjectives before nouns** (`completed_items`, not `items_completed`)
@@ -208,7 +208,7 @@ GET /products?status=active&sort=-created_at&starting_after=01HZQ...&limit=50
 
 ### Bulk operations
 
-If an endpoint accepts a batch (e.g. `POST /zombies/batch`), it MUST return `207 Multi-Status` with this exact shape — no per-endpoint reinvention:
+If an endpoint accepts a batch (e.g. `POST /agents/batch`), it MUST return `207 Multi-Status` with this exact shape — no per-endpoint reinvention:
 
 ```json
 {
@@ -232,7 +232,7 @@ This rule is binding on responses AND requests. SDK consumers branch on `field =
 
 - Use **UUIDv7** for all externally-exposed IDs (sortable, time-encoded). See [uuid7.com](https://uuid7.com).
 - Do not expose database serial integers.
-- Sensitive IDs (workspace_id, zombie_id) live in the path, not the body. Never log their values at INFO level (§11).
+- Sensitive IDs (workspace_id, agent_id) live in the path, not the body. Never log their values at INFO level (§11).
 
 ---
 
@@ -241,7 +241,7 @@ This rule is binding on responses AND requests. SDK consumers branch on `field =
 ### Success — use `hx.ok`
 
 ```zig
-hx.ok(.ok, .{ .zombie_id = id, .status = "active" });
+hx.ok(.ok, .{ .agent_id = id, .status = "active" });
 hx.ok(.created, .{ .agent_id = id, .key = raw_key });
 hx.ok(.accepted, .{ .status = "accepted", .event_id = event_id });
 ```
@@ -313,7 +313,7 @@ The error-code registry (`src/errors/error_entries.zig`) owns the HTTP status, R
 ```zig
 hx.fail(ec.ERR_INVALID_REQUEST, "workspace_id must be a valid UUIDv7");
 hx.fail(ec.ERR_FORBIDDEN, "Workspace access denied");
-hx.fail(ec.ERR_ZOMBIE_NOT_FOUND, ec.MSG_ZOMBIE_NOT_FOUND);
+hx.fail(ec.ERR_AGENT_NOT_FOUND, ec.MSG_AGENT_NOT_FOUND);
 ```
 
 NOT `common.errorResponse(hx.res, "...", "...", req_id)`. NOT `hx.res.status = 400; hx.res.body = "{...}"`.
@@ -328,7 +328,7 @@ If you need an error code that doesn't exist:
 
 Titles are **short imperative noun phrases, 2–5 words, sentence case, no trailing punctuation**. Match the existing codebase style:
 
-- Good: `Invalid UUID canonical format`, `Database unavailable`, `Insufficient role`, `Zombie name already exists`, `Invalid webhook signature`.
+- Good: `Invalid UUID canonical format`, `Database unavailable`, `Insufficient role`, `Agent name already exists`, `Invalid webhook signature`.
 - Bad: `error: database is currently unavailable.` (sentence, lowercase, period), `WORKSPACE_NOT_FOUND` (screaming snake, that's the code not the title), `Something went wrong while processing your request` (vague + long).
 
 The title must be safe to render verbatim in a UI toast — think "what would I show a user."
@@ -340,7 +340,7 @@ The title must be safe to render verbatim in a UI toast — think "what would I 
 1. **Length:** ≤200 characters. If you need more, you're explaining implementation; cut it.
 2. **Voice:** one sentence OR one fragment. Be consistent within a code: pick one shape for `ERR_INVALID_REQUEST` and stick to it.
 3. **Audience:** a developer integrating the API. Not a database admin, not a Zig engineer.
-4. **Templating:** `{s}` placeholders are allowed for **enumerable safe values** — role labels, sort options, supported services. `{s}` placeholders are forbidden for **entity values** — never interpolate a `workspace_id`, `zombie_id`, `agent_id`, `user_id`, email, IP, hostname, or any UUID into `detail`.
+4. **Templating:** `{s}` placeholders are allowed for **enumerable safe values** — role labels, sort options, supported services. `{s}` placeholders are forbidden for **entity values** — never interpolate a `workspace_id`, `agent_id`, `user_id`, email, IP, hostname, or any UUID into `detail`.
 5. **Ban list — `detail` MUST NOT contain any of these substrings, even when paraphrased:**
    - Internal table/column names: `pg_`, `pg.`, table names from `schema/*.sql`, column names not exposed in the OpenAPI response.
    - SQL fragments: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `WHERE`, `JOIN`, `CONSTRAINT`, `relation does not exist`, `duplicate key value violates`.
@@ -351,7 +351,7 @@ The title must be safe to render verbatim in a UI toast — think "what would I 
 6. **Acceptable shapes — match these patterns:**
    - Validation: `"<field> must <constraint>"` — `key_name must be 1-64 chars, alphanumeric + hyphen + underscore`.
    - Capability: `"<resource/action> <verb-form>"` — `Workspace access denied`, `Tenant context required`.
-   - State: `"<noun> already exists"` / `"<noun> not found"` / `"<noun> expired"` — `Zombie name already exists`, `token expired`.
+   - State: `"<noun> already exists"` / `"<noun> not found"` / `"<noun> expired"` — `Agent name already exists`, `token expired`.
    - Format help: `"<param>: use <format>"` — `invalid_since_format: use Go-style duration (15s, 30m, 2h, 7d) or RFC 3339 (YYYY-MM-DDTHH:MM:SSZ)`.
 
 When you write a new `hx.fail`, find the closest existing call site in `src/http/handlers/**` and copy its shape. Don't freelance.
@@ -533,12 +533,12 @@ When in doubt, mirror an existing handler:
 
 | Pattern | Look at |
 |---------|---------|
-| Simple list/get | `zombie_api.zig::innerListZombies` |
-| POST with body + validation | `zombie_api.zig::innerCreateZombie` |
-| DELETE with idempotency | `zombie_api.zig::innerDeleteZombie` |
+| Simple list/get | `agent_api.zig::innerListAgents` |
+| POST with body + validation | `agent_api.zig::innerCreateAgent` |
+| DELETE with idempotency | `agent_api.zig::innerDeleteAgent` |
 | Admin-only | `admin_platform_keys_http.zig::innerGetAdminPlatformKeys` |
 | Multi-method on one path (GET/PUT/DELETE) | `workspace_credentials_http.zig` |
-| Workspace auth + tenant context | `zombie_telemetry.zig::innerZombieTelemetry` |
+| Workspace auth + tenant context | `agent_telemetry.zig::innerAgentTelemetry` |
 | Webhook with inline auth | `webhooks.zig::innerReceiveWebhook` |
 | Streaming (SSE) | `agent_relay.zig::innerRelay` |
 
@@ -598,9 +598,9 @@ Comptime wrappers used to register handlers:
 | Wrapper | When |
 |---------|------|
 | `authenticated(inner)` | Standard Bearer-authed handler with no path params |
-| `authenticatedWithParam(inner)` | Handler with one path param (e.g. `zombie_id`) |
+| `authenticatedWithParam(inner)` | Handler with one path param (e.g. `agent_id`) |
 
-Handlers with two or more path params (e.g. `webhooks.zig`'s `zombie_id` + `url_secret`) do NOT use the wrappers — they stay raw and call `common.authenticate` directly with their own logic.
+Handlers with two or more path params (e.g. `webhooks.zig`'s `agent_id` + `url_secret`) do NOT use the wrappers — they stay raw and call `common.authenticate` directly with their own logic.
 
 ### Guardrails on `hx.zig`
 
@@ -703,7 +703,7 @@ Before opening a PR touching any handler:
 
 - Use HTTPS for all endpoints. The Cloudflare Tunnel layer (see `playbooks/ARCHITECHTURE.md`) enforces this for public ingress.
 - Bearer tokens for user-facing endpoints. OAuth (Clerk) for the auth-issuance flow.
-- Sensitive IDs (workspace_id, zombie_id, agent_id, user_id) live in the path, not the body. **Never log their literal values at INFO or above.** A log call whose format string OR struct argument references one of these IDs MUST be `DEBUG` or below, OR carry a same-line comment `// log-id-allowed: <reason>` explaining why this specific call is safe (e.g. it's a hashed prefix, not the raw value).
+- Sensitive IDs (workspace_id, agent_id, user_id) live in the path, not the body. **Never log their literal values at INFO or above.** A log call whose format string OR struct argument references one of these IDs MUST be `DEBUG` or below, OR carry a same-line comment `// log-id-allowed: <reason>` explaining why this specific call is safe (e.g. it's a hashed prefix, not the raw value).
 - Use **UUIDv7** for all IDs.
 - **Secret-shaped response fields are write-only or one-time-read.** Any field whose name contains `token`, `secret`, `key`, `password`, `credential` (and is not just a key-by-name like `key_name`) MUST either be: (a) write-only — never returned by GET, only echoed in the POST that creates it, or (b) one-time-read — returned in the create response and never again. Document which in the OpenAPI description with `x-secret-handling: write-only | one-time-read`. This includes raw API keys, OAuth tokens, HMAC shared secrets, and webhook signing secrets.
 - Never log secret values. Substitution happens at the tool bridge inside the executor sandbox; tokens never enter the agent's context, the event log, or any handler-level log line. (See `docs/ARCHITECHTURE.md` §10 for the substrate guarantees.)

@@ -60,14 +60,14 @@ Nine cross-cutting gate cards dissolve into this façade. Each is preserved verb
 1. `wc -l <file>` — current count (0 for new files).
 2. Net delta: `+added - removed`.
 3. Projected: `current + delta`.
-4. If projected > 350, **STOP**. Split first: extract a cohesive block to a sibling file using the repo's `<module>_<concern>.<ext>` convention (`zombie_list.js` beside `zombie.js`). Then apply the original edit.
+4. If projected > 350, **STOP**. Split first: extract a cohesive block to a sibling file using the repo's `<module>_<concern>.<ext>` convention (`agent_list.js` beside `agent.js`). Then apply the original edit.
 5. Function sub-gate: project post-edit line count for any touched function. If > 50 (function) or > 70 (method), split into named helpers **before** writing.
 
 #### Splitting conventions
 
 > [DETERMINISTIC → FLL]
 
-- Files named after the concern extracted (`zombie_list.js` not `zombie2.js`).
+- Files named after the concern extracted (`agent_list.js` not `agent2.js`).
 - Helper function names describe the step (`normalizeCursor()` not `helperA()`).
 
 #### Required output

@@ -200,7 +200,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 | # | Question | Expected |
 |---|---|---|
-| 16.1 | Are plaintext secrets in entity tables (`core.zombies`, `core.workspaces`, etc.) a **no-override** forbidden? | YES |
+| 16.1 | Are plaintext secrets in entity tables (`core.agents`, `core.workspaces`, etc.) a **no-override** forbidden? | YES |
 | 16.2 | Must credentials be stored as a vault `key_name` reference and resolved at runtime via `crypto_store.load()`? | YES |
 | 16.3 | Are static strings in SQL schema (`DEFAULT 'value'`, `CHECK (col IN ('a','b'))`) a **no-override** forbidden — enforced via app-code named constants instead? | YES |
 | 16.4 | Must the agent NEVER print/log/paste a credential value, and always use `op read 'op://...'` at runtime when verification steps reference credentials? | YES |
