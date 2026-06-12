@@ -307,7 +307,7 @@ A card is not deleted until its delta-landed assertion is green. Preserve any
 on every per-edit call — contradicting "instant on no-match." v2 scopes leaf runs
 to `DISPATCH_FILES` (teach `ufs.sh` a file-list mode; pass the staged set);
 `--all` runs only on the Audit/Evals planes. State a measured latency on
-`usezombie` before claiming "instant."
+`agentsfleet` before claiming "instant."
 
 ## 8 · In-dotfiles blast radius (PRIMARY — grounded, ~14 files)
 
@@ -417,9 +417,9 @@ Session Notes. The agent does not switch over unilaterally.
 `dispatch_resolve_files --staged` discovers files via `git -C "$DISPATCH_ROOT"`,
 where `DISPATCH_ROOT` is derived from `BASH_SOURCE` (`lib.sh:35`). But
 **`bin/sync-agents` SYMLINKS** (`ln -s`, confirmed `:160,176`) — it does not copy.
-So a dispatch "shipped" into `usezombie` is a symlink back to
+So a dispatch "shipped" into `agentsfleet` is a symlink back to
 `~/Projects/dotfiles/dispatch/`, and a `BASH_SOURCE`-derived `DISPATCH_ROOT`
-resolves to **dotfiles**, not `usezombie` — the Zig checks scan dotfiles' empty
+resolves to **dotfiles**, not `agentsfleet` — the Zig checks scan dotfiles' empty
 tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
 
 **v2 model — separate the two roots `lib.sh` currently conflates:**
@@ -428,8 +428,8 @@ tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
    correct for *locating the code*.
 2. **`TARGET_ROOT`** (the repo being checked, for `--staged` git discovery AND the
    leaf-check scope) — from **`git rev-parse --show-toplevel`** of the CWD (or the
-   file arg's dir). This resolves to `usezombie` when the symlinked dispatch is run
-   from inside `usezombie`, so discovery and the leaves (`ufs.sh` etc., which
+   file arg's dir). This resolves to `agentsfleet` when the symlinked dispatch is run
+   from inside `agentsfleet`, so discovery and the leaves (`ufs.sh` etc., which
    already root off `--show-toplevel`) **agree on the same repo**. Robust whether
    sync copies or symlinks.
 3. **Ship dispatch into each product repo via `bin/sync-agents`** (add a
@@ -535,7 +535,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 - [ ] `zero-dangling-ref` grep gate green (§8) — machine-enforced, not trust-the-table
 - [ ] invariance-questionnaire migration done: stranded scenarios relocated/retired/rebased with Indy ack (§11)
 - [ ] all §8 sibling-doc references repointed in the Stage-2 diff (incl. `logging.sh`, `SKILL.md`)
-- [ ] cross-repo (`usezombie`) refs resolved via `sync-agents` propagation (§10)
+- [ ] cross-repo (`agentsfleet`) refs resolved via `sync-agents` propagation (§10)
 - [ ] `make audit` + `make test-audit` ALL CHECKS PASSED at Stage-2 boundary + invariance signoff
 
 ## 14 · Failure modes → mitigations
@@ -547,7 +547,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 | `make audit` red mid-migration blocks the commit | staged, additive migration; red only conceivable inside the one atomic Stage-2 commit (§9) |
 | Unique gate prose lost on merge | `merge-coverage.sh` blocks deletion until delta lands (§6.5) |
 | `llmevals` dies on empty `docs/gates/` under `set -e` | `build_context` repointed to `dispatch/` in Stage 2 (§6.2, §8) |
-| Dispatch never reaches `usezombie` | added to `sync-agents`; dispatch ship into product repos (§10) |
+| Dispatch never reaches `agentsfleet` | added to `sync-agents`; dispatch ship into product repos (§10) |
 | `🔵` judgment silently ignored | HARNESS VERIFY JUDGMENT row audited; LLM-judge eval samples adherence (§11) |
 | Glyph ambiguity | `🟡` and `🔵` disjoint, pinned by invariance question (§3.1) |
 | Backstop never runs on fresh clone | wired to `.githooks/` (core.hooksPath), not `.git/hooks/` (§7) |

@@ -6,15 +6,15 @@
 [alias]
     mr = !sh -c 'git fetch $1 merge-requests/$2/head:mr-$1-$2 && git checkout mr-$1-$2' -
 
-# Override author email for usezombie and personal repos
-[includeIf "hasconfig:remote.*.url:git@github.com:usezombie/**"]
-    path = ~/.gitconfig-usezombie
+# Override author email for agentsfleet and personal repos
+[includeIf "hasconfig:remote.*.url:git@github.com:agentsfleet/**"]
+    path = ~/.gitconfig-agentsfleet
 
 [includeIf "hasconfig:remote.*.url:git@github.com:indykish/**"]
-    path = ~/.gitconfig-usezombie
+    path = ~/.gitconfig-agentsfleet
 
-[includeIf "hasconfig:remote.*.url:https://github.com/usezombie/**"]
-    path = ~/.gitconfig-usezombie
+[includeIf "hasconfig:remote.*.url:https://github.com/agentsfleet/**"]
+    path = ~/.gitconfig-agentsfleet
 
 [includeIf "hasconfig:remote.*.url:https://github.com/indykish/**"]
-    path = ~/.gitconfig-usezombie
+    path = ~/.gitconfig-agentsfleet
