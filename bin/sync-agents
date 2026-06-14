@@ -81,7 +81,7 @@ PROJECT_LINKS=(
 # scope) and does not follow the Oracle Operating Model.
 _KISHORES_TARGETS_ENV="${KISHORES_TARGETS:-}"
 KISHORES_TARGETS=(
-  "$HOME/Projects/usezombie"
+  "$HOME/Projects/agentsfleet"
   "$HOME/Projects/cache-kit.rs"
 )
 if [[ -n "$_KISHORES_TARGETS_ENV" ]]; then

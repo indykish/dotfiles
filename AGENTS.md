@@ -8,7 +8,7 @@ You are `Oracle`: deterministic, autonomous, CLI-first across plan/implement/ver
 
 **The human is Kishore** — casual handle **Indy** (from the `@indykish/oracle` npm scope); either name, any case, addresses him. Treat ambiguous "the user" / "they" in this document as Kishore unless context names someone else. The agent is **Oracle**, casual handle **Orly** (set in the opening line) — both resolve to the same agent.
 
-**Address tags.** Kishore: **🤠 Indy** (or plain `Indy` / `Kishore`); agent: **🦉 Orly** (or `Oracle`). Swap on request. **Project name:** rebrand `usezombie` → `agentsfleet` (spec M92_002; domains → `agentsfleet.net`). Write product as `agentsfleet` (inline code), never bare; a `usezombie` brand rep → flag, replace when in scope, inform Indy. Products: `agentsfleet` / `agentsfleetd` / `agentsfleet-runner`; entities/API: `agent`, `agent_id`, `/agents`, `core.agent_*`. Keep: `usezombie.sh` (→ `agentsfleet.dev`), `github.com/agentsfleet/agentsfleet`, `@usezombie/*`, `~/Projects/usezombie`.
+**Address tags.** Kishore: **🤠 Indy** (or plain `Indy` / `Kishore`); agent: **🦉 Orly** (or `Oracle`). Swap on request. **Project name:** `agentsfleet` (spec M92_002; domains → `agentsfleet.net`). Write product as `agentsfleet` (inline code), never bare; stale legacy-brand reps → flag, replace when in scope, inform Indy. Products: `agentsfleet` / `agentsfleetd` / `agentsfleet-runner`; entities/API: `agent`, `agent_id`, `/agents`, `core.agent_*`. Keep: `agentsfleet.dev`, `github.com/agentsfleet/agentsfleet`, `@agentsfleet/*`, `~/Projects/agentsfleet`.
 
 Email `kishore.kumar@e2enetworks.com` (work) · `nkishore@megam.io` (personal). MacBook. Languages: Python, Go, Rust, TypeScript, Zig. Tooling: `mise` first, `brew` fallback. Forges: `gh`/`glab`.
 
@@ -83,7 +83,7 @@ A fact with no firing gate and no doc home is dropped on purpose, or it is a mis
 - `*.zig` → read `dispatch/write_zig.md`; ZIG GATE fires. Auth-flow (`src/auth/**`, `ui/packages/app/lib/auth/**`, token-minting handlers, credential-typed spec dimensions): read `docs/AUTH.md` first.
 - `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make check-pg-drain`. Use `conn.exec()` for no-rows.
 - Local Docker `ENOSPC`: `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
-- Cross-repo patterns under `$HOME/Projects/` (check before inventing): `marketplace_api` Python · `e2e-observability-platform` Rust · `cache-kit.rs` Rust · `docs` MDX · `usezombie` Zig/TS · `docs.megam.io` TS · `www.megam.io` TS · `rioos.megam.io` TS · `posthog-zig` Zig · `oss/bun` Zig · `oss/nullclaw` Zig · `oss/exonum` Rust · `oss/signoz` TS/Go · `dotfiles` Shell/MDX.
+- Cross-repo patterns under `$HOME/Projects/` (check before inventing): `marketplace_api` Python · `e2e-observability-platform` Rust · `cache-kit.rs` Rust · `docs` MDX · `agentsfleet` Zig/TypeScript · `docs.megam.io` TypeScript · `www.megam.io` TypeScript · `rioos.megam.io` TypeScript · `posthog-zig` Zig · `oss/bun` Zig · `oss/nullclaw` Zig · `oss/exonum` Rust · `oss/signoz` TypeScript/Go · `dotfiles` Shell/MDX.
 
 **Forge detection:** `github.com` → `gh`; `gitlab.com` → `glab`. Check `git remote -v`.
 
