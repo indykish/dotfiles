@@ -701,12 +701,12 @@ Before opening a PR touching any handler:
 
 ## §11 — Security
 
-- Use HTTPS for all endpoints. The Cloudflare Tunnel layer (see `playbooks/ARCHITECHTURE.md`) enforces this for public ingress.
+- Use HTTPS for all endpoints. The Cloudflare Tunnel layer (see `playbooks/ARCHITECTURE.md`) enforces this for public ingress.
 - Bearer tokens for user-facing endpoints. OAuth (Clerk) for the auth-issuance flow.
 - Sensitive IDs (workspace_id, agent_id, user_id) live in the path, not the body. **Never log their literal values at INFO or above.** A log call whose format string OR struct argument references one of these IDs MUST be `DEBUG` or below, OR carry a same-line comment `// log-id-allowed: <reason>` explaining why this specific call is safe (e.g. it's a hashed prefix, not the raw value).
 - Use **UUIDv7** for all IDs.
 - **Secret-shaped response fields are write-only or one-time-read.** Any field whose name contains `token`, `secret`, `key`, `password`, `credential` (and is not just a key-by-name like `key_name`) MUST either be: (a) write-only — never returned by GET, only echoed in the POST that creates it, or (b) one-time-read — returned in the create response and never again. Document which in the OpenAPI description with `x-secret-handling: write-only | one-time-read`. This includes raw API keys, OAuth tokens, HMAC shared secrets, and webhook signing secrets.
-- Never log secret values. Substitution happens at the tool bridge inside the executor sandbox; tokens never enter the agent's context, the event log, or any handler-level log line. (See `docs/ARCHITECHTURE.md` §10 for the substrate guarantees.)
+- Never log secret values. Substitution happens at the tool bridge inside the executor sandbox; tokens never enter the agent's context, the event log, or any handler-level log line. (See `docs/ARCHITECTURE.md` §10 for the substrate guarantees.)
 - Webhook receivers verify HMAC signatures using `std.crypto.utils.timingSafeEql`. Never string-compare HMACs.
 - **CORS posture is per-endpoint and explicit.** Endpoints intended for browser callers (the dashboard at `app.agentsfleet.net`) MUST declare their allowed origin in the spec; everything else MUST refuse cross-origin requests at the edge. Do not enable wildcard `Access-Control-Allow-Origin: *`. Adding browser exposure to an existing endpoint is a surface change — call it out in the §9 PR-level surface diff.
 
