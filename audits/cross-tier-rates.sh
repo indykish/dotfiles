@@ -14,7 +14,7 @@
 #   src/agentsfleetd/state/tenant_billing.zig       — server enforces the charge
 #   ui/packages/website/src/lib/rates.ts    — pricing page display
 #   ui/packages/app/lib/types.ts            — dashboard display
-#   agentsfleet/src/constants/billing.ts    — `agentsfleet doctor --json` billing block
+#   cli/src/constants/billing.ts    — `agentsfleet doctor --json` billing block
 #
 # A drift between any two = a billing-display lie or a server-vs-CLI disagreement.
 # Zig is the source of truth (server enforces); the three TS surfaces echo it.
@@ -37,7 +37,7 @@ readonly FILES=(
   src/agentsfleetd/state/tenant_billing.zig
   ui/packages/website/src/lib/rates.ts
   ui/packages/app/lib/types.ts
-  agentsfleet/src/constants/billing.ts
+  cli/src/constants/billing.ts
 )
 
 # Extract the numeric value bound to `name` in `file`. Matches definition
