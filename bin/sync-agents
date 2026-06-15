@@ -10,7 +10,7 @@
 # is the only edit required when a new rules file lands.
 #
 # Skip rule: if a target already exists as a real file/dir (NOT a symlink),
-# warn and skip — never clobber project-local content.
+# warn and skip — never overwrite project-local content.
 #
 # Prune rule: after linking, a dangling symlink that points into $DOTFILES (an
 # orphan left when a manifest entry's source was deleted or renamed) is removed
@@ -195,7 +195,7 @@ make_link() {
   fi
 
   if [[ -e "$dst_full" ]]; then
-    warn "  skip: $label exists as real file/dir (would clobber)"
+    warn "  skip: $label exists as real file/dir (would overwrite)"
     SKIPPED=$((SKIPPED + 1))
     return
   fi
