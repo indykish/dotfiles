@@ -95,8 +95,9 @@ cp .claude/settings.json ~/.claude/settings.json
 # Codex
 mkdir -p ~/.codex && cp .codex/config.toml ~/.codex/config.toml
 
-# OpenCode
-mkdir -p ~/.config/opencode && cp opencode/opencode.json ~/.config/opencode/opencode.json
+# OpenCode — config is symlinked (not copied) by `sync-skills`; see the Skills step below.
+# It runs `ln -snf .config/opencode/opencode.json ~/.config/opencode/opencode.json`,
+# so edits to the repo file are live immediately. No manual copy needed.
 
 # Amp
 mkdir -p ~/.config/amp && cp .config/amp/settings.json ~/.config/amp/settings.json
