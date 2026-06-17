@@ -72,9 +72,13 @@ note() { printf "NOTE: %s\n" "$*"; }
 
 # ---------------------------------------------------------------------------
 # 1. Extract DECLARED codes from the registry.
-#    Pattern: literal "UZ-<CAT>-<NNN>" inside the registry file.
+#    Pattern: literal "UZ-<CAT>-<NNN>" inside the registry file. <CAT> may
+#    contain digits but must start with a letter (e.g. UUIDV7), so the class is
+#    [A-Z][A-Z0-9]* — a bare [A-Z]+ stops at the first digit and silently drops
+#    the entire UZ-UUIDV7-* family (its category ends in a digit), leaving those
+#    codes invisible to the orphan/dead/used passes below.
 # ---------------------------------------------------------------------------
-declared_codes=$(grep -oE 'UZ-[A-Z]+-[0-9]{3,}\b' "$REGISTRY" | sort -u)
+declared_codes=$(grep -oE 'UZ-[A-Z][A-Z0-9]*-[0-9]{3,}\b' "$REGISTRY" | sort -u)
 if [[ -z "$declared_codes" ]]; then
   fail "no codes declared in $REGISTRY (registry empty?)"
   exit 1
@@ -121,7 +125,7 @@ used_codes=$(awk '
   skip_next { skip_next = 0; next }
   {
     line = $0;
-    while (match(line, /UZ-[A-Z]+-[0-9][0-9][0-9][0-9]*/)) {
+    while (match(line, /UZ-[A-Z][A-Z0-9]*-[0-9][0-9][0-9][0-9]*/)) {
       m = substr(line, RSTART, RLENGTH);
       # Reject codes whose digit run is followed by a word char (rejects
       # placeholder forms like UZ-INTERNAL-00X that grep would truncate).
