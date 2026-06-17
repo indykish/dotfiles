@@ -122,7 +122,7 @@ cp .gitignore_global ~/.gitignore_global
 cp .npmrc ~/.npmrc
 ```
 
-### Scripts
+### Scripts (symlink the helper binaries into ~/bin)
 ```bash
 mkdir -p ~/bin
 ln -sf ~/Projects/dotfiles/bin/sync-op           ~/bin/sync-op
@@ -132,9 +132,10 @@ ln -sf ~/Projects/dotfiles/bin/upgrade-ai-tools  ~/bin/upgrade-ai-tools
 # scripts in dotfiles/bin/ are already executable; symlinks inherit that.
 ```
 
-### Skills
+### Agent ruleset + skills
 ```bash
-sync-skills
+sync-agents   # symlinks AGENTS.md into ~/.claude, ~/.codex, ~/.opencode, ~/.amp (+ project repos)
+sync-skills   # symlinks the unified skills overlay + opencode.json
 ```
 
 ### Secrets (1Password)
