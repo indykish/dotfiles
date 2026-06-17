@@ -165,6 +165,9 @@
         "accounts/fireworks/models/glm-5p1": {
           "name": "GLM 5.1"
         },
+        "accounts/fireworks/models/glm-5p2": {
+          "name": "GLM 5.2"
+        },
         "accounts/fireworks/models/kimi-k2p6": {
           "name": "Kimi K2.6"
         },
