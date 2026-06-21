@@ -163,13 +163,29 @@
       },
       "models": {
         "accounts/fireworks/models/glm-5p2": {
-          "name": "GLM 5.2"
+          "name": "GLM 5.2 (Fireworks OpenAI-compatible)"
         },
-        "accounts/fireworks/models/kimi-k2p7": {
-          "name": "Kimi K2.7"
+        "accounts/fireworks/routers/kimi-k2p7-code-fast": {
+          "name": "Kimi K2.7 Code Fast (Fireworks OpenAI-compatible)"
         },
         "accounts/fireworks/models/deepseek-v4-pro": {
           "name": "DeepSeek V4 Pro"
+        }
+      }
+    },
+    "fireworks-anthropic": {
+      "name": "Fireworks AI (Anthropic-compatible)",
+      "npm": "@ai-sdk/anthropic",
+      "options": {
+        "baseURL": "https://api.fireworks.ai/inference",
+        "apiKey": "{env:FIREWORKS_API_KEY}"
+      },
+      "models": {
+        "accounts/fireworks/models/glm-5p2": {
+          "name": "GLM 5.2 (Fireworks Anthropic-compatible)"
+        },
+        "accounts/fireworks/routers/kimi-k2p7-code-fast": {
+          "name": "Kimi K2.7 Code Fast (Fireworks Anthropic-compatible)"
         }
       }
     },
