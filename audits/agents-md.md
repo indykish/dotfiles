@@ -239,9 +239,9 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 | # | Question | Expected |
 |---|---|---|
-| 21.1 | Does AGENTS.md define a "Gate-flag triage" rule that, when a gate fires, makes the default response a Kishore ask — NOT silencing the gate or patching the harness? | YES |
+| 21.1 | Does AGENTS.md define a "Gate-flag triage" rule that splits a fired gate by kind — a mechanical/deterministic fix is auto-applied + informed, a judgment-level flag makes the default a Kishore ask — never silencing the gate or patching the harness in either case? | YES |
 | 21.2 | Does the rule require the ask to include: (a) symbol/file/line flagged, (b) fix scope (files, lines, follow-on), (c) what we gain, (d) what happens if not fixed? | YES |
-| 21.3 | Does the rule explicitly forbid the agent from unilaterally classifying a flag as a false-positive — including for one-line obvious fixes? | YES |
+| 21.3 | Does the rule explicitly forbid the agent from unilaterally classifying a flag as a false-positive (declaring the gate wrong), as distinct from auto-fixing a mechanical violation? | YES |
 
 ### Scenario 22 — Pre-commit audit scope (M70)
 

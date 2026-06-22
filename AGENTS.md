@@ -113,16 +113,7 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 
 **Rule extension protocol** — when adding a new rules file (`docs/<TOPIC>_RULES.md`) or dispatch entry (`dispatch/<entry>.md`), all four steps land in the same diff: (1) row in EXECUTE doc-reads table; (2) ≥1 question in `audits/agents-md.md`; (3) path in `DOTFILES_RESIDENT` (audit script); (4) `make audit` ALL CHECKS PASSED. A new dispatch entry *also* lands in `REQUIRED_DISPATCH` (`audits/data.sh`) + a row in the dispatch table above, so `check_dispatch_parity` (disk == table == REQUIRED) stays green — step (4) is the backstop that bites if either is missed. The Invariance Suite Gate fires; questionnaire all-YES + sign-off are mandatory before push.
 
-**🚨 Gate-flag triage** — gate fires → **STOP, surface to Kishore.** NOT silence. NOT harness-patch. The gate exists to make the code better; silencing it forfeits the gain. The ask is structured:
-
-| | What goes in the ask |
-|---|---|
-| 🎯 **Flagged** | symbol · file · line — what exactly tripped the gate |
-| 🔧 **Fix scope** | files touched · lines changed · follow-on impact |
-| 🏆 **What we gain** | the code-quality outcome the gate exists to produce |
-| ⚠️ **If not fixed** | debt carried · future blockages · related-rule violations |
-
-Kishore decides fix-or-defer. Agent does **NOT** unilaterally call a flag false-positive — even a one-line "obvious fix" goes through the ask.
+**🚨 Gate-flag triage** — gate fires → never silence, never harness-patch. Split by kind. **Mechanical** — an obvious deterministic fix (fmt, lint-autofix, UFS literal → const, over-length → split, dead code, broken link): auto-apply + inform Kishore in one line. **Judgment** — design call / weakened guarantee / security-arch boundary / >1 form / possible false-positive: STOP, surface the ask — 🎯 flagged (symbol·file·line) · 🔧 fix scope (files·lines·follow-on) · 🏆 what we gain · ⚠️ if not fixed (debt·blockages) — Kishore decides fix-or-defer. Never unilaterally call a flag a false-positive — that's itself a judgment call.
 
 **Dispatch index — full rule prose in each `dispatch/<entry>.md` façade. Read the façade when its trigger fires.** Trigger-surface extensions: `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.py`, `*.rs`, `*.go`, `*.sh`, `*.sql`. Each entry is a **façade pair**: a latent `.md` (prose the agent reads) + a deterministic `.sh` (run by `audits/` + the git hooks) where the rule is mechanisable. Signal tags the `.sh` halves print: 🟢 pass · 🔴 fail · 🔵 judgment-only (no script decides — read the prose, call it) · ⚪ delegated to the product repo. The router below **is** the gate set — there is no separate `docs/gates/` directory.
 
