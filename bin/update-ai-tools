@@ -6,7 +6,7 @@ ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
 info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
 warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 
-info "🤖 Upgrading Artificial Intelligence (AI) coding tools..."
+info "🤖 Updating Artificial Intelligence (AI) coding tools..."
 
 # Upgrade each tool if installed
 if command -v claude &>/dev/null; then
@@ -29,24 +29,24 @@ if command -v codex &>/dev/null || npm list -g @openai/codex &>/dev/null; then
     npm install -g @openai/codex || warn "Codex upgrade failed"
 fi
 
-ok "All AI coding tools upgraded!"
+ok "All AI coding tools updated!"
 
 echo ""
-info "🔗 Running sync-dotfiles to symlink personal dotfiles and helper commands..."
-if [[ -x "$HOME/bin/sync-dotfiles" ]]; then
-  ~/bin/sync-dotfiles
+info "🔗 Running link-bin-dotfiles to link personal dotfiles and helper commands..."
+if [[ -x "$HOME/bin/link-bin-dotfiles" ]]; then
+  ~/bin/link-bin-dotfiles
 else
-  "$HOME/Projects/dotfiles/bin/sync-dotfiles"
+  "$HOME/Projects/dotfiles/bin/link-bin-dotfiles"
 fi
 
 echo ""
-info "🔄 Running sync-skills to keep skills updated..."
-~/bin/sync-skills
+info "🔄 Running update-skills to keep skills updated..."
+~/bin/update-skills
 
 echo ""
-info "🔗 Running sync-agents to symlink AGENTS.md ruleset into project repos and agent home dirs..."
-if [[ -x "$HOME/bin/sync-agents" ]]; then
-  ~/bin/sync-agents
+info "🔗 Running link-agents-md to link AGENTS.md ruleset into project repos and agent home dirs..."
+if [[ -x "$HOME/bin/link-agents-md" ]]; then
+  ~/bin/link-agents-md
 else
-  warn "sync-agents not found in ~/bin/ — symlink from dotfiles/bin/ to enable"
+  warn "link-agents-md not found in ~/bin/ — run link-bin-dotfiles first"
 fi

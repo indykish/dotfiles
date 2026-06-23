@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sync-skills — install gstack, then generate one symlink overlay for all agents.
+# update-skills — install gstack, then generate one symlink overlay for all agents.
 set -euo pipefail
 
 DOTFILES="$HOME/Projects/dotfiles"
@@ -184,8 +184,8 @@ for agent_config in "${AGENTS[@]}"; do
     fi
 done
 
-# 5. Sync opencode.json config (XDG Base Directory location)
-info "Syncing opencode.json..."
+# 5. Link opencode.json config (XDG Base Directory location)
+info "Linking opencode.json..."
 OPENCODE_CONFIG_SRC="$DOTFILES/.config/opencode/opencode.json"
 OPENCODE_CONFIG_DST="$HOME/.config/opencode/opencode.json"
 if [ -f "$OPENCODE_CONFIG_SRC" ]; then
@@ -204,6 +204,6 @@ fi
 info "Running skills doctor..."
 doctor_overlay
 
-ok "Skills synced! All agents now use unified skills from $UNIFIED_SKILLS"
+ok "Skills updated! All agents now use unified skills from $UNIFIED_SKILLS"
 info "Gstack installed at: $GSTACK_DIR"
 info "Unified skills at: $UNIFIED_SKILLS"

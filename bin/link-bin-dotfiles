@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sync-dotfiles — link personal dotfiles and helper commands into $HOME.
+# link-bin-dotfiles — link personal dotfiles and helper commands into $HOME.
 set -euo pipefail
 
 DOTFILES="$HOME/Projects/dotfiles"
@@ -12,6 +12,7 @@ fail() { printf '\033[31m✘\033[0m %s\n' "$1" >&2; }
 LINKED=0
 RETARGETED=0
 SKIPPED=0
+REMOVED=0
 FAILED=0
 
 DOTFILE_LINKS=(
@@ -19,11 +20,19 @@ DOTFILE_LINKS=(
 )
 
 BIN_LINKS=(
-  "bin/sync-dotfiles:$HOME/bin/sync-dotfiles"
-  "bin/sync-agents:$HOME/bin/sync-agents"
-  "bin/sync-skills:$HOME/bin/sync-skills"
-  "bin/sync-op:$HOME/bin/sync-op"
-  "bin/upgrade-ai-tools:$HOME/bin/upgrade-ai-tools"
+  "bin/link-bin-dotfiles:$HOME/bin/link-bin-dotfiles"
+  "bin/link-agents-md:$HOME/bin/link-agents-md"
+  "bin/update-skills:$HOME/bin/update-skills"
+  "bin/provision-env-1password:$HOME/bin/provision-env-1password"
+  "bin/update-ai-tools:$HOME/bin/update-ai-tools"
+)
+
+LEGACY_BIN_LINKS=(
+  "$HOME/bin/sync-dotfiles"
+  "$HOME/bin/sync-agents"
+  "$HOME/bin/sync-skills"
+  "$HOME/bin/sync-op"
+  "$HOME/bin/upgrade-ai-tools"
 )
 
 canonical_path() {
@@ -93,6 +102,26 @@ make_link() {
   fi
 }
 
+remove_legacy_link() {
+  local dst_full="$1"
+  local cur cur_resolved
+
+  [[ -L "$dst_full" ]] || return 0
+  cur=$(readlink "$dst_full")
+  cur_resolved=$(link_target_path "$dst_full" "$cur" || true)
+  case "$cur_resolved" in
+    "$DOTFILES"/bin/*)
+      if rm "$dst_full"; then
+        ok "removed legacy helper link: ${dst_full#$HOME/}"
+        REMOVED=$((REMOVED + 1))
+      else
+        fail "rm failed: ${dst_full#$HOME/}"
+        FAILED=$((FAILED + 1))
+      fi
+      ;;
+  esac
+}
+
 [[ -d "$DOTFILES" ]] || { fail "$DOTFILES not found"; exit 1; }
 
 info "Linking dotfiles"
@@ -111,5 +140,11 @@ for link in "${BIN_LINKS[@]}"; do
 done
 
 echo
-echo "summary: linked=$LINKED retargeted=$RETARGETED skipped=$SKIPPED failed=$FAILED"
-[[ $FAILED -eq 0 ]] && ok "dotfiles sync complete" || { fail "some links failed"; exit 1; }
+info "Removing old helper command names"
+for link in "${LEGACY_BIN_LINKS[@]}"; do
+  remove_legacy_link "$link"
+done
+
+echo
+echo "summary: linked=$LINKED retargeted=$RETARGETED removed=$REMOVED skipped=$SKIPPED failed=$FAILED"
+[[ $FAILED -eq 0 ]] && ok "dotfiles links complete" || { fail "some links failed"; exit 1; }

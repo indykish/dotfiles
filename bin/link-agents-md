@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sync-agents — propagate the AGENTS.md ruleset from ~/Projects/dotfiles
+# link-agents-md — propagate the AGENTS.md ruleset from ~/Projects/dotfiles
 # into every calling project repo AND into each agent's home directory
 # (~/.claude, ~/.codex, ~/.opencode, ~/.amp).
 #
@@ -54,7 +54,7 @@ PROJECT_LINKS=(
   "dispatch:dispatch"
   # Project-consumed audit scripts (invoked by each repo's Makefile / hooks).
   # Previously hand-symlinked into repos out-of-band; listed here so a single
-  # `sync-agents` run is the source of truth and new repos/worktrees pick them
+  # `link-agents-md` run is the source of truth and new repos/worktrees pick them
   # up automatically.
   "audits/spec-template.sh:audits/spec-template.sh"
   "audits/ufs.sh:audits/ufs.sh"
@@ -72,7 +72,7 @@ PROJECT_LINKS=(
 )
 
 # Project repos. Override per-invocation via:
-#   KISHORES_TARGETS="path1 path2 ..." sync-agents
+#   KISHORES_TARGETS="path1 path2 ..." link-agents-md
 # (env value is captured BEFORE the default array assignment, otherwise
 # the array would overwrite the env string and the override would be lost.)
 #
@@ -93,7 +93,7 @@ unset _KISHORES_TARGETS_ENV
 # Agent home-dir manifest — each agent's global instructions file.
 # Format: `<source-rel-to-dotfiles>:<absolute-target>`.
 # Different agents read different filenames; this maps them all to the
-# single dotfiles AGENTS.md so the global instructions stay in sync.
+# single dotfiles AGENTS.md so the global instructions stay aligned.
 # Skipped silently when the agent's home dir is missing.
 # ---------------------------------------------------------------------------
 AGENT_HOME_LINKS=(
@@ -333,4 +333,4 @@ done
 
 echo
 echo "summary: linked=$LINKED retargeted=$RETARGETED pruned=$PRUNED skipped=$SKIPPED failed=$FAILED"
-[[ $FAILED -eq 0 ]] && ok "agents sync complete" || { fail "some links failed"; exit 1; }
+[[ $FAILED -eq 0 ]] && ok "agents links complete" || { fail "some links failed"; exit 1; }

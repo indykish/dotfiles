@@ -37,7 +37,7 @@ Scope: `~/Projects/dotfiles` operating model + cross-repo rule-doc references
 | JUDGMENT "mitigated" / "blocks the turn" | Honestly scoped: **proven for DETERMINISTIC, attested-by-honor for JUDGMENT.** A `HARNESS_VERIFY` JUDGMENT row makes the *attestation* auditable (§11). |
 | Helper-absent → `⚪`, exit 0 | A DETERMINISTIC helper that is **absent hard-fails RED** (§10) — no silent green no-op. |
 | `.git/hooks/pre-commit` backstop | Wired to **`.githooks/pre-commit`** (`core.hooksPath` = `.githooks`, confirmed) — `.git/hooks/` never runs on a fresh clone. |
-| Dispatch run in dotfiles; leaf checks "just run" | **Execution-location model defined** (§10): `bin/sync-agents` **symlinks** (confirmed `:160,176`), so the dispatch runs in the product repo against a symlink back to dotfiles. `DISPATCH_ROOT` (target repo) is derived from `git rev-parse --show-toplevel`, NOT `BASH_SOURCE` — so a symlinked dispatch scopes to the repo it runs in, not dotfiles. |
+| Dispatch run in dotfiles; leaf checks "just run" | **Execution-location model defined** (§10): `bin/link-agents-md` **symlinks** (confirmed `:160,176`), so the dispatch runs in the product repo against a symlink back to dotfiles. `DISPATCH_ROOT` (target repo) is derived from `git rev-parse --show-toplevel`, NOT `BASH_SOURCE` — so a symlinked dispatch scopes to the repo it runs in, not dotfiles. |
 | fn≤50 / method≤70 sub-cap | **Not silently dropped** — `dispatch_length_gate` is file-cap only today (`lib.sh:107`); v2 names the sub-cap as a delegated/[JUDGMENT] decision in §13. |
 
 > **This doc is the TARGET STATE, not current code.** The dispatch WIP on this
@@ -330,7 +330,7 @@ against `feat/dispatch-architecture`:
 | `.githooks/pre-push` | `:72` + guard | message + `docs/gates` guard | repoint + reword |
 | `evals/llms/run.sh` | `:22`, `:83-90` | `build_context` cats `docs/gates/*.md` | cat `dispatch/*.md` |
 | `evals/test-agents-md.sh` | `:39,46,165-167` | sandbox builds `docs/gates`+RULES; negative case asserts hook bites on dropped `docs/gates` | rewrite sandbox + negatives for dispatch model |
-| `bin/sync-agents` | `:35,37,45` | propagates `ZIG_RULES`/`BUN_RULES`/`docs/gates` → product repos | repoint + **add `dispatch/`** |
+| `bin/link-agents-md` | `:35,37,45` | propagates `ZIG_RULES`/`BUN_RULES`/`docs/gates` → product repos | repoint + **add `dispatch/`** |
 | `AGENTS.md` | `:66,212` | `*.zig`→ZIG_RULES; /review→ZIG_RULES | →`write_zig.md` + Dispatch table |
 | `docs/EXECUTE_DOC_READS.md` | `:11,12` | zig→ZIG_RULES, ts→BUN_RULES | →façades |
 | `docs/greptile-learnings/RULES.md` | `:42,91` | cross-ref ZIG_RULES sections | →`write_zig.md` |
@@ -354,7 +354,7 @@ must return **zero** hits. The table above is the human map; the grep is the gat
 **Product-repo files are out of scope (Reading A — Indy, confirmed).** This
 inventory is dotfiles-only: no product repo's `make/harness.mk` or
 `.githooks/pre-commit` is edited by the migration. The 8 leaf audits remain each
-repo's commit-plane + harness enforcement and reach it as `sync-agents`
+repo's commit-plane + harness enforcement and reach it as `link-agents-md`
 **symlinks**, so the one in-scope leaf edit (`logging.sh:152`, fail-message
 repoint) propagates with **zero product-repo commit**. Dispatch ship to product
 repos as **agent-facing files only** (§10.7) — never wired into a product Makefile
@@ -390,7 +390,7 @@ authoring cards only** (the 5 process cards STAY, §5; only after §6.5 green) +
 `merge_coverage.py`, `merge-coverage-drops.tsv`, `fixtures/merge_orphan_card.md`)
 — one-shot migration scaffolding, dead once the cards are gone (RULE NDC) — +
 AGENTS.md gate-index → Dispatch table (4 rows) + slimmed 5-row process-gate index +
-`sync-agents` repoint & dispatch-add.
+`link-agents-md` repoint & dispatch-add.
 
 **Why atomic IS green (the fresh-eyes "impossible" objection, resolved).** The
 pre-commit hook runs the *worktree's* `agents-md.sh` against the *worktree*.
@@ -416,7 +416,7 @@ Session Notes. The agent does not switch over unilaterally.
 **The problem v1 ignored — and the symlink twist the adversarial pass caught:**
 `dispatch_resolve_files --staged` discovers files via `git -C "$DISPATCH_ROOT"`,
 where `DISPATCH_ROOT` is derived from `BASH_SOURCE` (`lib.sh:35`). But
-**`bin/sync-agents` SYMLINKS** (`ln -s`, confirmed `:160,176`) — it does not copy.
+**`bin/link-agents-md` SYMLINKS** (`ln -s`, confirmed `:160,176`) — it does not copy.
 So a dispatch "shipped" into `agentsfleet` is a symlink back to
 `~/Projects/dotfiles/dispatch/`, and a `BASH_SOURCE`-derived `DISPATCH_ROOT`
 resolves to **dotfiles**, not `agentsfleet` — the Zig checks scan dotfiles' empty
@@ -432,7 +432,7 @@ tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
    from inside `agentsfleet`, so discovery and the leaves (`ufs.sh` etc., which
    already root off `--show-toplevel`) **agree on the same repo**. Robust whether
    sync copies or symlinks.
-3. **Ship dispatch into each product repo via `bin/sync-agents`** (add a
+3. **Ship dispatch into each product repo via `bin/link-agents-md`** (add a
    `dispatch:dispatch` entry to the link list). With (2), the symlink is now safe.
 4. **Dotfiles = source-of-truth + fixture/eval host**, not where Zig checks run on
    real code. `evals/dispatch/` fixtures are the only place these checks
@@ -440,11 +440,11 @@ tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
 5. **`dispatch_run_helper` hard-fails (🔴, `DISPATCH_RC=1`) on an absent
    DETERMINISTIC helper** — never `⚪`/exit 0. `⚪` is reserved for
    `dispatch_delegate`. `dispatch-coverage.sh` enforces helper presence (§6.3).
-6. Add a `sync-agents` propagation test + a **staleness note:** symlinks are always
-   current; a product-repo *real-file* override triggers sync-agents' existing
+6. Add a `link-agents-md` propagation test + a **staleness note:** symlinks are always
+   current; a product-repo *real-file* override triggers `link-agents-md`'s existing
    warn-and-skip (`:171`) — flagged, not silent. Add `dispatch/*.md` to
    `DOTFILES_RESIDENT`.
-7. **Product repos are NOT rewired (Reading A — Indy, confirmed).** `sync-agents`
+7. **Product repos are NOT rewired (Reading A — Indy, confirmed).** `link-agents-md`
    ships `dispatch/{*.md,*.sh}` into each product repo as **agent-facing files**
    (read at EXECUTE; runnable on a touched file) — but **no product repo's
    `make/harness.mk` or `.githooks/pre-commit` is edited.** The 8 leaf audits
@@ -528,14 +528,14 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 - [ ] `.githooks/pre-commit` + `pre-push` repointed (NOT `.git/hooks/`)
 - [ ] `evals/test-agents-md.sh` rewritten: sandbox + negative cases prove the NEW coherence audit bites
 - [ ] `HARNESS_VERIFY_OUTPUT.md` JUDGMENT row + `🔵` legend; `audits/agents-md.md` question pinning `🔵` and the dispatch model
-- [ ] `bin/sync-agents` repointed + `dispatch:dispatch` added + propagation test
+- [ ] `bin/link-agents-md` repointed + `dispatch:dispatch` added + propagation test
 
 **Migration & references**
 - [ ] Stage 0/1 commits keep `make audit` green; Stage 2 atomic; rollback note in PR
 - [ ] `zero-dangling-ref` grep gate green (§8) — machine-enforced, not trust-the-table
 - [ ] invariance-questionnaire migration done: stranded scenarios relocated/retired/rebased with Indy ack (§11)
 - [ ] all §8 sibling-doc references repointed in the Stage-2 diff (incl. `logging.sh`, `SKILL.md`)
-- [ ] cross-repo (`agentsfleet`) refs resolved via `sync-agents` propagation (§10)
+- [ ] cross-repo (`agentsfleet`) refs resolved via `link-agents-md` propagation (§10)
 - [ ] `make audit` + `make test-audit` ALL CHECKS PASSED at Stage-2 boundary + invariance signoff
 
 ## 14 · Failure modes → mitigations
@@ -547,7 +547,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 | `make audit` red mid-migration blocks the commit | staged, additive migration; red only conceivable inside the one atomic Stage-2 commit (§9) |
 | Unique gate prose lost on merge | `merge-coverage.sh` blocks deletion until delta lands (§6.5) |
 | `llmevals` dies on empty `docs/gates/` under `set -e` | `build_context` repointed to `dispatch/` in Stage 2 (§6.2, §8) |
-| Dispatch never reaches `agentsfleet` | added to `sync-agents`; dispatch ship into product repos (§10) |
+| Dispatch never reaches `agentsfleet` | added to `link-agents-md`; dispatch ship into product repos (§10) |
 | `🔵` judgment silently ignored | HARNESS VERIFY JUDGMENT row audited; LLM-judge eval samples adherence (§11) |
 | Glyph ambiguity | `🟡` and `🔵` disjoint, pinned by invariance question (§3.1) |
 | Backstop never runs on fresh clone | wired to `.githooks/` (core.hooksPath), not `.git/hooks/` (§7) |
@@ -573,7 +573,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 - **Decisions made this turn (Orly, pick-and-proceed):** (a) `🔵` for judgment
   rather than re-glyph `🟡` — additive, lower blast radius; (b) staged migration
   over single atomic diff — keeps `make audit` green and gives free rollback;
-  (c) dispatch ship into product repos via `sync-agents` — the only way the Zig
+  (c) dispatch ship into product repos via `link-agents-md` — the only way the Zig
   checks run against real `*.zig`. Indy to confirm or redirect.
 - **Stage-2 sign-off (Indy, Jun 04, 2026):** *"stage-2 yes signed off"* — context:
   authorizes the Stage-2 atomic switchover to edit `audit-*.sh` + `.githooks` (a

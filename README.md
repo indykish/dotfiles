@@ -95,7 +95,7 @@ cp .claude/settings.json ~/.claude/settings.json
 # Codex
 mkdir -p ~/.codex && cp .codex/config.toml ~/.codex/config.toml
 
-# OpenCode — config is symlinked (not copied) by `sync-skills`; see the Skills step below.
+# OpenCode — config is linked (not copied) by `update-skills`; see the Skills step below.
 # It runs `ln -snf .config/opencode/opencode.json ~/.config/opencode/opencode.json`,
 # so edits to the repo file are live immediately. No manual copy needed.
 
@@ -125,31 +125,31 @@ cp .npmrc ~/.npmrc
 ### Scripts (symlink the helper binaries into ~/bin)
 ```bash
 mkdir -p ~/bin
-ln -sf ~/Projects/dotfiles/bin/sync-dotfiles    ~/bin/sync-dotfiles
-ln -sf ~/Projects/dotfiles/bin/sync-op           ~/bin/sync-op
-ln -sf ~/Projects/dotfiles/bin/sync-skills       ~/bin/sync-skills
-ln -sf ~/Projects/dotfiles/bin/sync-agents       ~/bin/sync-agents
-ln -sf ~/Projects/dotfiles/bin/upgrade-ai-tools  ~/bin/upgrade-ai-tools
+ln -sf ~/Projects/dotfiles/bin/link-bin-dotfiles         ~/bin/link-bin-dotfiles
+ln -sf ~/Projects/dotfiles/bin/link-agents-md            ~/bin/link-agents-md
+ln -sf ~/Projects/dotfiles/bin/update-skills             ~/bin/update-skills
+ln -sf ~/Projects/dotfiles/bin/provision-env-1password   ~/bin/provision-env-1password
+ln -sf ~/Projects/dotfiles/bin/update-ai-tools           ~/bin/update-ai-tools
 # scripts in dotfiles/bin/ are already executable; symlinks inherit that.
 ```
 
 ### Personal dotfiles
 ```bash
-sync-dotfiles  # symlinks ~/.tmux.conf and helper commands into ~/bin
+link-bin-dotfiles  # links ~/.tmux.conf and helper commands into ~/bin
 ```
 
 ### Agent ruleset + skills
 ```bash
-sync-agents   # symlinks AGENTS.md into ~/.claude, ~/.codex, ~/.opencode, ~/.amp (+ project repos)
-sync-skills   # symlinks the unified skills overlay + opencode.json
+link-agents-md  # links AGENTS.md into ~/.claude, ~/.codex, ~/.opencode, ~/.amp (+ project repos)
+update-skills   # updates gstack, then links the unified skills overlay + opencode.json
 ```
 
 ### Secrets (1Password)
-Secrets sync via `sync-op` from 1Password vaults:
+Environment files are provisioned by `provision-env-1password` from 1Password vaults:
 - `ZMB_LOCAL_ENV` → `~/.config/agentsfleet/.env`
 - `E2E_WORK` → `~/.config/e2e/.env`
 
-Bootstrap: set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.config/agentsfleet/.env`, then run `sync-op`.
+Bootstrap: set `OP_SERVICE_ACCOUNT_TOKEN` in `~/.config/agentsfleet/.env`, then run `provision-env-1password`.
 
 ## License
 

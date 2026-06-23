@@ -35,7 +35,7 @@
 set -euo pipefail
 
 # DISPATCH_HOME — where the dispatch scripts physically live. Follows a
-# sync-agents symlink back to dotfiles, so it always locates lib.sh + the leaf
+# link-agents-md symlink back to dotfiles, so it always locates lib.sh + the leaf
 # helpers correctly. This is NOT the repo being checked.
 DISPATCH_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DISPATCH_SCRIPTS="$DISPATCH_HOME/audits"
