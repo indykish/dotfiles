@@ -48,7 +48,7 @@ use-freetype-build-flags() {
 use-mysqlclient-build-flags
 use-freetype-build-flags
 
-# --- Env files (flat, synced via ~/bin/sync-op) ---
+# --- Env files (flat, provisioned via ~/bin/provision-env-1password) ---
 [[ -f "${HOME}/.config/agentsfleet/.env" ]] && { set -a; source "${HOME}/.config/agentsfleet/.env"; set +a; }
 [[ -f "${HOME}/.config/e2e/.env" ]]       && { set -a; source "${HOME}/.config/e2e/.env"; set +a; }
 
