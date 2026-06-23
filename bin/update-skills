@@ -22,6 +22,20 @@ info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
 warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 fail() { printf '\033[31m✖\033[0m %s\n' "$1"; exit 1; }
 
+usage() {
+    cat <<'EOF'
+update-skills — update gstack, rebuild the unified skills overlay, and link it
+into Claude, Codex, OpenCode, and Amp.
+
+Also links OpenCode config and AGENTS.md / CLAUDE.md instruction files for each
+installed agent.
+EOF
+}
+
+case "${1:-}" in
+    -h|--help) usage; exit 0 ;;
+esac
+
 link_skill_dir() {
     local source_dir="$1"
     local skill_name

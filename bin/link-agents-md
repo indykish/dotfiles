@@ -28,6 +28,10 @@ info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
 warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 fail() { printf '\033[31m✘\033[0m %s\n' "$1" >&2; }
 
+case "${1:-}" in
+  -h|--help) echo "link-agents-md — link AGENTS.md rules, dispatch files, audits, and agent home instructions."; echo "Usage: link-agents-md [--list] [--no-prune]"; exit 0 ;;
+esac
+
 # ---------------------------------------------------------------------------
 # Project-repo manifest — files mirrored under each calling repo at the
 # same relative path. Format: `<source-rel-to-dotfiles>:<target-rel-to-repo>`.

@@ -9,6 +9,27 @@ info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
 warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 fail() { printf '\033[31m✘\033[0m %s\n' "$1" >&2; }
 
+usage() {
+  cat <<'EOF'
+link-bin-dotfiles — link home dotfiles and helper commands from ~/Projects/dotfiles.
+
+Links:
+  ~/.tmux.conf
+  ~/bin/link-bin-dotfiles
+  ~/bin/link-agents-md
+  ~/bin/update-skills
+  ~/bin/provision-env-1password
+  ~/bin/update-ai-tools
+
+Also removes old ~/bin/sync-* and ~/bin/upgrade-ai-tools links when they point
+back into this dotfiles repo.
+EOF
+}
+
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+esac
+
 LINKED=0
 RETARGETED=0
 SKIPPED=0

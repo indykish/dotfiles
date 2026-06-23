@@ -138,6 +138,16 @@ ln -sf ~/Projects/dotfiles/bin/update-ai-tools           ~/bin/update-ai-tools
 link-bin-dotfiles  # links ~/.tmux.conf and helper commands into ~/bin
 ```
 
+| Command | What the heck it does |
+|---|---|
+| `link-bin-dotfiles` | Links `~/.tmux.conf` and the supported helper commands into `~/bin`; removes stale old helper symlinks. |
+| `link-agents-md` | Links `AGENTS.md`, dispatch files, audits, and agent instruction files into project repos plus Claude/Codex/OpenCode/Amp homes. |
+| `update-skills` | Updates gstack, rebuilds the unified skills overlay, and links it into installed agents. |
+| `provision-env-1password` | Creates local environment files from 1Password vaults after prompting before overwrite. |
+| `update-ai-tools` | Updates Artificial Intelligence (AI) coding command-line tools, then runs the link/update helpers above. |
+
+Each helper supports `--help` for the short version.
+
 ### Agent ruleset + skills
 ```bash
 link-agents-md  # links AGENTS.md into ~/.claude, ~/.codex, ~/.opencode, ~/.amp (+ project repos)

@@ -6,6 +6,20 @@ ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
 info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
 warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 
+usage() {
+  cat <<'EOF'
+update-ai-tools — update Artificial Intelligence (AI) coding command-line tools,
+then relink local dotfiles, update skills, and link agent instructions.
+
+Runs tool updaters for: claude, opencode, amp, and @openai/codex.
+Then runs: link-bin-dotfiles, update-skills, and link-agents-md.
+EOF
+}
+
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+esac
+
 info "🤖 Updating Artificial Intelligence (AI) coding tools..."
 
 # Upgrade each tool if installed
