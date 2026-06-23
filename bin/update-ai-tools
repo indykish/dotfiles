@@ -11,13 +11,23 @@ usage() {
 update-ai-tools — update Artificial Intelligence (AI) coding command-line tools,
 then relink local dotfiles, update skills, and link agent instructions.
 
+Usage: update-ai-tools [--doctor]
+
 Runs tool updaters for: claude, opencode, amp, and @openai/codex.
-Then runs: link-bin-dotfiles, update-skills, and link-agents-md.
+Then runs: link-bin-dotfiles, update-skills, and link-agents-md. Each delegate
+runs its own doctor/postflight check before this script exits.
+--doctor verifies delegate state without updating tools.
 EOF
 }
 
 case "${1:-}" in
   -h|--help) usage; exit 0 ;;
+  --doctor)
+    ~/bin/link-bin-dotfiles --doctor
+    ~/bin/update-skills --doctor
+    ~/bin/link-agents-md --doctor
+    exit 0
+    ;;
 esac
 
 info "🤖 Updating Artificial Intelligence (AI) coding tools..."

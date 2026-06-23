@@ -13,6 +13,8 @@ usage() {
   cat <<'EOF'
 link-bin-dotfiles — link home dotfiles and helper commands from ~/Projects/dotfiles.
 
+Usage: link-bin-dotfiles [--doctor]
+
 Links:
   ~/.tmux.conf
   ~/bin/link-bin-dotfiles
@@ -23,11 +25,14 @@ Links:
 
 Also removes old ~/bin/sync-* and ~/bin/upgrade-ai-tools links when they point
 back into this dotfiles repo.
+--doctor verifies the expected links and old-name removals without changing them.
 EOF
 }
 
 case "${1:-}" in
   -h|--help) usage; exit 0 ;;
+  --doctor) DOCTOR_ONLY=1 ;;
+  *) DOCTOR_ONLY=0 ;;
 esac
 
 LINKED=0
@@ -143,7 +148,55 @@ remove_legacy_link() {
   esac
 }
 
+doctor_link() {
+  local src_full="$1" dst_full="$2" label="$3"
+  local cur cur_resolved src_resolved
+
+  if [[ ! -L "$dst_full" ]]; then
+    fail "doctor: $label is not a symlink"
+    FAILED=$((FAILED + 1))
+    return
+  fi
+
+  cur=$(readlink "$dst_full")
+  cur_resolved=$(link_target_path "$dst_full" "$cur" || true)
+  src_resolved=$(canonical_path "$src_full")
+  if [[ "$cur_resolved" = "$src_resolved" ]]; then
+    ok "doctor: $label → $src_full"
+  else
+    fail "doctor: $label points to $cur, expected $src_full"
+    FAILED=$((FAILED + 1))
+  fi
+}
+
+doctor_links() {
+  local link src dst legacy
+
+  info "Doctor: verifying linked files"
+  for link in "${DOTFILE_LINKS[@]}" "${BIN_LINKS[@]}"; do
+    src="${link%%:*}"
+    dst="${link#*:}"
+    doctor_link "$DOTFILES/$src" "$dst" "${dst#$HOME/}"
+  done
+
+  info "Doctor: verifying old helper names are absent"
+  for legacy in "${LEGACY_BIN_LINKS[@]}"; do
+    if [[ -e "$legacy" || -L "$legacy" ]]; then
+      fail "doctor: legacy helper still exists: ${legacy#$HOME/}"
+      FAILED=$((FAILED + 1))
+    else
+      ok "doctor: ${legacy#$HOME/} absent"
+    fi
+  done
+}
+
 [[ -d "$DOTFILES" ]] || { fail "$DOTFILES not found"; exit 1; }
+
+if [[ $DOCTOR_ONLY -eq 1 ]]; then
+  doctor_links
+  [[ $FAILED -eq 0 ]] && ok "dotfiles doctor passed" || { fail "dotfiles doctor failed"; exit 1; }
+  exit 0
+fi
 
 info "Linking dotfiles"
 for link in "${DOTFILE_LINKS[@]}"; do
@@ -168,4 +221,7 @@ done
 
 echo
 echo "summary: linked=$LINKED retargeted=$RETARGETED removed=$REMOVED skipped=$SKIPPED failed=$FAILED"
-[[ $FAILED -eq 0 ]] && ok "dotfiles links complete" || { fail "some links failed"; exit 1; }
+[[ $FAILED -eq 0 ]] || { fail "some links failed"; exit 1; }
+echo
+doctor_links
+[[ $FAILED -eq 0 ]] && ok "dotfiles links complete" || { fail "dotfiles doctor failed"; exit 1; }

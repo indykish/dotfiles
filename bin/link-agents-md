@@ -1,23 +1,5 @@
 #!/usr/bin/env bash
-# link-agents-md — propagate the AGENTS.md ruleset from ~/Projects/dotfiles
-# into every calling project repo AND into each agent's home directory
-# (~/.claude, ~/.codex, ~/.opencode, ~/.amp).
-#
-# Run after pulling new dotfiles changes that add or rename a rules file
-# (dispatch entry, *_RULES.md, questionnaire). Idempotent — re-running is safe.
-#
-# Manifests below name every file/dir to propagate. Adding a new entry
-# is the only edit required when a new rules file lands.
-#
-# Skip rule: if a target already exists as a real file/dir (NOT a symlink),
-# warn and skip — never overwrite project-local content.
-#
-# Prune rule: after linking, a dangling symlink that points into $DOTFILES (an
-# orphan left when a manifest entry's source was deleted or renamed) is removed
-# from each project repo. Only provably-broken dotfiles-pointing links are
-# touched — never valid links or links pointing elsewhere. The removal lands as
-# a staged deletion on the repo's next `git add -A`, mirroring how an added link
-# awaits the user's commit. Pass --no-prune to disable.
+# link-agents-md — link AGENTS.md rules, dispatch files, audits, and agent home instructions.
 
 set -uo pipefail
 
@@ -29,14 +11,10 @@ warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 fail() { printf '\033[31m✘\033[0m %s\n' "$1" >&2; }
 
 case "${1:-}" in
-  -h|--help) echo "link-agents-md — link AGENTS.md rules, dispatch files, audits, and agent home instructions."; echo "Usage: link-agents-md [--list] [--no-prune]"; exit 0 ;;
+  -h|--help) echo "link-agents-md — link AGENTS.md rules, dispatch files, audits, and agent home instructions."; echo "Usage: link-agents-md [--list] [--no-prune] [--doctor]"; exit 0 ;;
 esac
 
-# ---------------------------------------------------------------------------
-# Project-repo manifest — files mirrored under each calling repo at the
-# same relative path. Format: `<source-rel-to-dotfiles>:<target-rel-to-repo>`.
-# Add a line here when a new rules file is introduced.
-# ---------------------------------------------------------------------------
+# Project-repo manifest. Format: `<source-rel-to-dotfiles>:<target-rel-to-repo>`.
 PROJECT_LINKS=(
   "AGENTS.md:AGENTS.md"
   "audits/agents-md.md:audits/agents-md.md"
@@ -50,16 +28,7 @@ PROJECT_LINKS=(
   "docs/VERIFY_TIERS.md:docs/VERIFY_TIERS.md"
   "docs/HARNESS_VERIFY_OUTPUT.md:docs/HARNESS_VERIFY_OUTPUT.md"
   "docs/greptile-learnings:docs/greptile-learnings"
-  # Dispatch façades — the dissolved gate cards + the per-language Zig/Bun
-  # standards docs, now a single per-surface façade-pair dir. Shipped as
-  # agent-facing files (read at EXECUTE; runnable on a touched file) — NOT wired
-  # into any product repo Makefile/hook (Reading A). The legacy per-language
-  # standards docs + the gate-card dir are no longer propagated.
   "dispatch:dispatch"
-  # Project-consumed audit scripts (invoked by each repo's Makefile / hooks).
-  # Previously hand-symlinked into repos out-of-band; listed here so a single
-  # `link-agents-md` run is the source of truth and new repos/worktrees pick them
-  # up automatically.
   "audits/spec-template.sh:audits/spec-template.sh"
   "audits/ufs.sh:audits/ufs.sh"
   "audits/logging.sh:audits/logging.sh"
@@ -68,21 +37,9 @@ PROJECT_LINKS=(
   "audits/error-codes.sh:audits/error-codes.sh"
   "audits/cross-tier-rates.sh:audits/cross-tier-rates.sh"
   "audits/msid-ui.sh:audits/msid-ui.sh"
-  # agents-md.sh, data.sh, parity-dispatch.sh, test-agents-md.sh, and evals/
-  # (llms + dispatch) are dotfiles-internal — they validate AGENTS.md + the
-  # dispatch façades themselves. Not propagated; downstream repos don't audit
-  # the ruleset. The agents-md.md questionnaire IS propagated (above) so a
-  # product-repo agent can run the prompt-invariance layer against AGENTS.md.
 )
 
-# Project repos. Override per-invocation via:
-#   KISHORES_TARGETS="path1 path2 ..." link-agents-md
-# (env value is captured BEFORE the default array assignment, otherwise
-# the array would overwrite the env string and the override would be lost.)
-#
-# ~/Projects/docs is intentionally excluded — it carries its own
-# Mintlify-site-specific AGENTS.md (different terminology, different
-# scope) and does not follow the Oracle Operating Model.
+# Project repos. Override with: KISHORES_TARGETS="path1 path2 ..." link-agents-md.
 _KISHORES_TARGETS_ENV="${KISHORES_TARGETS:-}"
 KISHORES_TARGETS=(
   "$HOME/Projects/agentsfleet"
@@ -93,13 +50,7 @@ if [[ -n "$_KISHORES_TARGETS_ENV" ]]; then
 fi
 unset _KISHORES_TARGETS_ENV
 
-# ---------------------------------------------------------------------------
-# Agent home-dir manifest — each agent's global instructions file.
-# Format: `<source-rel-to-dotfiles>:<absolute-target>`.
-# Different agents read different filenames; this maps them all to the
-# single dotfiles AGENTS.md so the global instructions stay aligned.
-# Skipped silently when the agent's home dir is missing.
-# ---------------------------------------------------------------------------
+# Agent home-dir manifest. Format: `<source-rel-to-dotfiles>:<absolute-target>`.
 AGENT_HOME_LINKS=(
   "AGENTS.md:$HOME/.claude/CLAUDE.md"
   "AGENTS.md:$HOME/.codex/AGENTS.md"
@@ -107,13 +58,14 @@ AGENT_HOME_LINKS=(
   "AGENTS.md:$HOME/.amp/AGENTS.md"
 )
 
-# Flag parsing — strip --no-prune out of the positional args so the --list
-# check below still sees only positional input. PRUNE defaults on.
+# Flag parsing. PRUNE defaults on; --doctor verifies state without changing it.
 PRUNE=1
+DOCTOR_ONLY=0
 _args=()
 for _a in ${@+"$@"}; do
   case "$_a" in
     --no-prune) PRUNE=0 ;;
+    --doctor) DOCTOR_ONLY=1 ;;
     *) _args+=("$_a") ;;
   esac
 done
@@ -213,6 +165,27 @@ make_link() {
   fi
 }
 
+doctor_link() {
+  local src_full="$1" dst_full="$2" label="$3"
+  local cur cur_resolved src_resolved
+
+  if [[ ! -L "$dst_full" ]]; then
+    fail "  doctor: $label is not a symlink"
+    FAILED=$((FAILED + 1))
+    return
+  fi
+
+  cur=$(readlink "$dst_full")
+  cur_resolved=$(link_target_path "$dst_full" "$cur" || true)
+  src_resolved=$(canonical_path "$src_full")
+  if [[ "$cur_resolved" = "$src_resolved" ]]; then
+    ok "  doctor: $label → $src_full"
+  else
+    fail "  doctor: $label points to $cur, expected $src_full"
+    FAILED=$((FAILED + 1))
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Helper: expand a project target into the set of paths to link into.
 #   Includes the target itself + every linked git worktree of the same
@@ -295,6 +268,37 @@ prune_orphans() {
              -not -path '*/.zig-cache/*' 2>/dev/null)
 }
 
+doctor_links() {
+  local repo wt link src dst
+  for repo in "${KISHORES_TARGETS[@]}"; do
+    [[ -d "$repo" ]] || { warn "doctor: skip missing target $repo"; continue; }
+    while IFS= read -r wt; do
+      [[ -z "$wt" || ! -d "$wt" ]] && continue
+      info "Doctor: $wt"
+      for link in "${PROJECT_LINKS[@]}"; do
+        src="${link%%:*}"
+        dst="${link#*:}"
+        doctor_link "$DOTFILES/$src" "$wt/$dst" "$dst"
+      done
+    done < <(expand_worktrees "$repo")
+  done
+
+  echo
+  info "Doctor: agent home dirs"
+  for link in "${AGENT_HOME_LINKS[@]}"; do
+    src="${link%%:*}"
+    dst="${link#*:}"
+    [[ -d "$(dirname "$dst")" ]] || { info "  skip ${dst#$HOME/} (agent not installed)"; continue; }
+    doctor_link "$DOTFILES/$src" "$dst" "${dst#$HOME/}"
+  done
+}
+
+if [[ $DOCTOR_ONLY -eq 1 ]]; then
+  doctor_links
+  [[ $FAILED -eq 0 ]] && ok "agents doctor passed" || { fail "agents doctor failed"; exit 1; }
+  exit 0
+fi
+
 # ---------------------------------------------------------------------------
 # Pass 1: project repos (expanded across worktrees).
 # ---------------------------------------------------------------------------
@@ -337,4 +341,7 @@ done
 
 echo
 echo "summary: linked=$LINKED retargeted=$RETARGETED pruned=$PRUNED skipped=$SKIPPED failed=$FAILED"
-[[ $FAILED -eq 0 ]] && ok "agents links complete" || { fail "some links failed"; exit 1; }
+[[ $FAILED -eq 0 ]] || { fail "some links failed"; exit 1; }
+echo
+doctor_links
+[[ $FAILED -eq 0 ]] && ok "agents links complete" || { fail "agents doctor failed"; exit 1; }

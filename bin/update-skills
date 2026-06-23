@@ -27,13 +27,18 @@ usage() {
 update-skills — update gstack, rebuild the unified skills overlay, and link it
 into Claude, Codex, OpenCode, and Amp.
 
+Usage: update-skills [--doctor]
+
 Also links OpenCode config and AGENTS.md / CLAUDE.md instruction files for each
 installed agent.
+--doctor verifies the generated overlay and installed agent links only.
 EOF
 }
 
 case "${1:-}" in
     -h|--help) usage; exit 0 ;;
+    --doctor) DOCTOR_ONLY=1 ;;
+    *) DOCTOR_ONLY=0 ;;
 esac
 
 link_skill_dir() {
@@ -87,6 +92,12 @@ doctor_overlay() {
     [ -z "$stale_entry" ] || fail "Unexpected non-symlink entry in generated overlay: $stale_entry"
     ok "No copied GStack tree remains in $UNIFIED_SKILLS"
 }
+
+if [ "$DOCTOR_ONLY" -eq 1 ]; then
+    doctor_overlay
+    ok "Skills doctor passed"
+    exit 0
+fi
 
 # 1. Clone/update gstack to proper XDG Base Directory location.
 info "Installing gstack to $GSTACK_DIR..."

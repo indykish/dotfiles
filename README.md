@@ -146,7 +146,9 @@ link-bin-dotfiles  # links ~/.tmux.conf and helper commands into ~/bin
 | `provision-env-1password` | Creates local environment files from 1Password vaults after prompting before overwrite. |
 | `update-ai-tools` | Updates Artificial Intelligence (AI) coding command-line tools, then runs the link/update helpers above. |
 
-Each helper supports `--help` for the short version.
+Each helper supports `--help` for the short version. `link-bin-dotfiles`,
+`link-agents-md`, `update-skills`, and `provision-env-1password` also support
+`--doctor` to verify expected state without rewriting it.
 
 ### Agent ruleset + skills
 ```bash
