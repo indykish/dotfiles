@@ -125,11 +125,17 @@ cp .npmrc ~/.npmrc
 ### Scripts (symlink the helper binaries into ~/bin)
 ```bash
 mkdir -p ~/bin
+ln -sf ~/Projects/dotfiles/bin/sync-dotfiles    ~/bin/sync-dotfiles
 ln -sf ~/Projects/dotfiles/bin/sync-op           ~/bin/sync-op
 ln -sf ~/Projects/dotfiles/bin/sync-skills       ~/bin/sync-skills
 ln -sf ~/Projects/dotfiles/bin/sync-agents       ~/bin/sync-agents
 ln -sf ~/Projects/dotfiles/bin/upgrade-ai-tools  ~/bin/upgrade-ai-tools
 # scripts in dotfiles/bin/ are already executable; symlinks inherit that.
+```
+
+### Personal dotfiles
+```bash
+sync-dotfiles  # symlinks ~/.tmux.conf and helper commands into ~/bin
 ```
 
 ### Agent ruleset + skills

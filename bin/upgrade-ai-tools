@@ -6,7 +6,7 @@ ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
 info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
 warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 
-info "🤖 Upgrading AI coding tools..."
+info "🤖 Upgrading Artificial Intelligence (AI) coding tools..."
 
 # Upgrade each tool if installed
 if command -v claude &>/dev/null; then
@@ -30,6 +30,14 @@ if command -v codex &>/dev/null || npm list -g @openai/codex &>/dev/null; then
 fi
 
 ok "All AI coding tools upgraded!"
+
+echo ""
+info "🔗 Running sync-dotfiles to symlink personal dotfiles and helper commands..."
+if [[ -x "$HOME/bin/sync-dotfiles" ]]; then
+  ~/bin/sync-dotfiles
+else
+  "$HOME/Projects/dotfiles/bin/sync-dotfiles"
+fi
 
 echo ""
 info "🔄 Running sync-skills to keep skills updated..."

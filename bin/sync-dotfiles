@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# sync-dotfiles — link personal dotfiles and helper commands into $HOME.
+set -euo pipefail
+
+DOTFILES="$HOME/Projects/dotfiles"
+
+ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
+info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
+warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
+fail() { printf '\033[31m✘\033[0m %s\n' "$1" >&2; }
+
+LINKED=0
+RETARGETED=0
+SKIPPED=0
+FAILED=0
+
+DOTFILE_LINKS=(
+  ".tmux.conf:$HOME/.tmux.conf"
+)
+
+BIN_LINKS=(
+  "bin/sync-dotfiles:$HOME/bin/sync-dotfiles"
+  "bin/sync-agents:$HOME/bin/sync-agents"
+  "bin/sync-skills:$HOME/bin/sync-skills"
+  "bin/sync-op:$HOME/bin/sync-op"
+  "bin/upgrade-ai-tools:$HOME/bin/upgrade-ai-tools"
+)
+
+canonical_path() {
+  local path="$1"
+  local dir base
+  dir="$(dirname "$path")"
+  base="$(basename "$path")"
+  (cd -P "$dir" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$base")
+}
+
+link_target_path() {
+  local link_path="$1"
+  local target="$2"
+
+  if [[ "$target" = /* ]]; then
+    canonical_path "$target"
+  else
+    canonical_path "$(dirname "$link_path")/$target"
+  fi
+}
+
+make_link() {
+  local src_full="$1"
+  local dst_full="$2"
+  local label="$3"
+
+  if [[ ! -e "$src_full" ]]; then
+    warn "source missing, skip: ${src_full#$DOTFILES/}"
+    SKIPPED=$((SKIPPED + 1))
+    return
+  fi
+
+  mkdir -p "$(dirname "$dst_full")"
+
+  if [[ -L "$dst_full" ]]; then
+    local cur cur_resolved src_resolved
+    cur=$(readlink "$dst_full")
+    cur_resolved=$(link_target_path "$dst_full" "$cur" || true)
+    src_resolved=$(canonical_path "$src_full")
+    if [[ "$cur_resolved" = "$src_resolved" ]]; then
+      return
+    fi
+    warn "retarget: $label was → $cur"
+    rm "$dst_full"
+    if ln -s "$src_full" "$dst_full"; then
+      ok "$label → $src_full"
+      RETARGETED=$((RETARGETED + 1))
+    else
+      fail "ln failed: $label"
+      FAILED=$((FAILED + 1))
+    fi
+    return
+  fi
+
+  if [[ -e "$dst_full" ]]; then
+    warn "skip: $label exists as a real file or dir"
+    SKIPPED=$((SKIPPED + 1))
+    return
+  fi
+
+  if ln -s "$src_full" "$dst_full"; then
+    ok "$label → $src_full"
+    LINKED=$((LINKED + 1))
+  else
+    fail "ln failed: $label"
+    FAILED=$((FAILED + 1))
+  fi
+}
+
+[[ -d "$DOTFILES" ]] || { fail "$DOTFILES not found"; exit 1; }
+
+info "Linking dotfiles"
+for link in "${DOTFILE_LINKS[@]}"; do
+  src="${link%%:*}"
+  dst="${link#*:}"
+  make_link "$DOTFILES/$src" "$dst" "${dst#$HOME/}"
+done
+
+echo
+info "Linking helper commands"
+for link in "${BIN_LINKS[@]}"; do
+  src="${link%%:*}"
+  dst="${link#*:}"
+  make_link "$DOTFILES/$src" "$dst" "${dst#$HOME/}"
+done
+
+echo
+echo "summary: linked=$LINKED retargeted=$RETARGETED skipped=$SKIPPED failed=$FAILED"
+[[ $FAILED -eq 0 ]] && ok "dotfiles sync complete" || { fail "some links failed"; exit 1; }
