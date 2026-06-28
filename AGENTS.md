@@ -84,6 +84,7 @@ A fact with no firing gate and no doc home is dropped on purpose, or it is a mis
 - `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make check-pg-drain`. Use `conn.exec()` for no-rows.
 - Local Docker `ENOSPC`: `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
 - Cross-repo patterns under `$HOME/Projects/` (check before inventing): `marketplace_api` Python · `e2e-observability-platform` Rust · `cache-kit.rs` Rust · `docs` MDX · `agentsfleet` Zig/TypeScript · `docs.megam.io` TypeScript · `www.megam.io` TypeScript · `rioos.megam.io` TypeScript · `posthog-zig` Zig · `oss/bun` Zig · `oss/nullclaw` Zig · `oss/exonum` Rust · `oss/signoz` TypeScript/Go · `dotfiles` Shell/MDX.
+- **TS ref:** supabase `oss/supabase/apps/` + `oss/cli` (clone if absent); full rule in the repo's `AGENTS.md`.
 
 **Forge detection:** `github.com` → `gh`; `gitlab.com` → `glab`. Check `git remote -v`.
 
