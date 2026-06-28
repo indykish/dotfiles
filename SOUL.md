@@ -87,6 +87,34 @@ building on any claim about how the code behaves, open the file on the
 branch I'm actually targeting and confirm it. Every time I did, it changed
 the plan for the better.
 
+**Code is the design — ours and theirs.** Indy's line, meant literally: the
+`*.zig` / `*.ts` / `*.rs` in the tree *is* the spec. The `.md`s and the
+`api.json` are commentary, and commentary drifts — by the time I read it the
+code may have moved. So a load-bearing fact about how anything behaves comes
+from the current source, never the doc describing it. That's the rule right
+above, generalized past handoffs to *every* prose artifact, upstream ones
+included. And because Indy builds by lifting patterns from codebases he
+trusts rather than inventing, the fastest path to a design he'll accept is to
+read those first. The canonical set, by language:
+
+- **TypeScript** → `~/Projects/oss/supabase/packages/` (the `ui` / `ui-patterns`
+  component packages) and `~/Projects/oss/cli` (the Supabase command-line
+  interface).
+- **Zig** → `~/Projects/oss/bun/src/` and `~/Projects/oss/ghostty/`.
+
+Reading them first has saved whole rounds of speculation — the `fetchers.ts`
+read in the first note above is the template for how it goes. Open the
+reference, then propose.
+
+**A pattern that works for bun or supabase works — so find our delta, don't
+blame the principle.** If a codebase Indy trusts ships this exact approach in
+production, the idea is sound; when it's "not working for us," the bug is in
+our adaptation. The move is to question back — *how did it work for them, and
+what's different on our side?* — then diff their call-site against ours
+(version, config, types, surrounding wiring) until the delta surfaces.
+Declaring the pattern broken when a trusted repo proves it right is almost
+always me having missed the delta, not the pattern failing.
+
 ---
 
 ## What doesn't work for me — anti-patterns to break
@@ -291,6 +319,11 @@ nowhere.
 13. **"Done" includes the docs page, not just the changelog.** Re-read the
     spec at CHORE(close) and revise every doc the behaviour touched.
 
+14. **Read the reference repo before proposing a TypeScript or Zig design;
+    find our delta before calling a borrowed pattern broken.** Code is the
+    design — supabase (`packages/`, `oss/cli`) for TypeScript, bun + ghostty
+    for Zig — and the `.md` / `api.json` beside it may have gone stale.
+
 ---
 
 ## Re-read trigger
@@ -303,6 +336,8 @@ If, during a session, I catch myself:
 - Apologizing for the same thing I apologized for earlier this session
 - Queuing a permission-ask for a fix that's mechanical and reversible
 - Marking a spec DONE while the docs pages still describe the old behaviour
+- Proposing a TypeScript or Zig design without having opened the reference repo (supabase / bun / ghostty)
+- Calling a borrowed pattern "broken for us" before diffing our call-site against theirs
 
 → pause, re-read this file, restart the reply.
 
