@@ -97,9 +97,9 @@ If `docs/TEMPLATE.md` is missing in this repo, fall back to `~/Projects/dotfiles
 | Use | Do NOT use |
 |---|---|
 | Prototype (v1.0.0) | Release, Version train, Program |
-| Milestone (M{N}) | Sprint, Phase, Quarter |
+| Milestone (M{N}) | Sprint, waterfall stage, Quarter |
 | Workstream (M{N}_{WS}) | Ticket, Task, Story, Issue |
-| Section (§3) | Phase, Step, Chapter |
+| Section (§3) | Waterfall stage, Step, Chapter |
 | Dimension (3.4) | Acceptance criterion, AC, Checkbox |
 | Batch (B2) | Wave, Tranche, Iteration |
 
