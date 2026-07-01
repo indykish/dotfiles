@@ -35,8 +35,8 @@ below the divider gets copied — so without enforcement these drift back in.
 agent-facing template mandates the determinism sections the executing agent reads
 to emit invariant output: PR Intent & comprehension handshake, Applicable Rules,
 Applicable Gates, Overview, Prior-Art / Reference Implementations, Files Changed,
-Decomposition & alternatives, Sections, Interfaces, Failure Modes, Invariants,
-Test Specification, Acceptance Criteria, Discovery. A spec missing one — or
+Decomposition & alternatives, Sections, Metrics & Observability, Interfaces,
+Failure Modes, Invariants, Test Specification, Acceptance Criteria, Discovery. A spec missing one — or
 leaving template residue (`path/to/file.ext`, `test_<short_name>`,
 `{one-line reason}`) — forces the agent to guess intent.
 

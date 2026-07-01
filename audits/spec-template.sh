@@ -7,7 +7,7 @@
 #      Always BLOCK.
 #   2. REQUIRED-PRESENT + NO-PLACEHOLDER (positive space) — the determinism
 #      sections the agent-facing template mandates (PR Intent, Applicable Gates,
-#      Prior-Art, Decomposition, tiered Test Spec, Discovery, …) must EXIST and be
+#      Prior-Art, Metrics, Decomposition, tiered Test Spec, Discovery, …) must EXIST and be
 #      FILLED. A spec that omits them forces the executing agent to guess intent.
 #      This is the half that makes a spec "built for the agent".
 #
@@ -108,6 +108,7 @@ REQUIRED_SECTIONS=(
   '^#+ .*Files Changed:Files Changed (blast radius)'
   '^#+ .*(Decomposition|Alternatives):Decomposition & alternatives (patch vs refactor)'
   '^#+ .*Sections:Sections (implementation slices)'
+  '^#+ .*Metrics.*Observability:Metrics & Observability'
   '^#+ .*Interfaces:Interfaces'
   '^#+ .*Failure Modes:Failure Modes'
   '^#+ .*Invariants:Invariants'

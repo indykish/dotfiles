@@ -14,8 +14,8 @@ description: |
 
 # kishore-spec-new
 
-A spec is the **contract** the executing agent (Orly) plans and ships from. This
-skill makes me author one whose PR lands **deterministic, review-clean, and
+A spec is the **rulebook** the executing agent (Orly) plans and ships from. This
+skill makes me author one whose Pull Request (PR) lands **deterministic, review-clean, and
 reported** — without a 20-questions loop. It is written for my reasoning, not as
 a file-naming guide: the mechanics (naming, layout) are demoted to the end
 because they are the easy part.
@@ -70,9 +70,10 @@ This is the step that prevents greptile findings — the spec becomes a pre-comm
 
 - Decompose **Sections** into numbered **Dimensions** (3.1, 3.2 …) — the unit of DONE. **Every Dimension → one Test** (tiered: unit/integration/e2e per `/write-unit-test`; any user-facing Category gets a user-centric `test-e2e*` scenario).
 - **Every Failure Mode → a negative test.** **Every Invariant → enforced by code** (compiler, lint, comptime assertion, runtime check) — never by review discipline.
+- **Every Metrics row → event/test proof.** User-facing or operator-facing specs declare product/operator signals, privacy guards, and analytics/funnel playbook updates; internal-only cleanup explicitly says no signal changed.
 - **Reporting spine** — **Discovery (consult log)** carries consults, skill-chain outcomes, and Indy-acked deferral quotes; **Verification Evidence** carries the VERIFY paste-outs. Both empty at creation, populated as work proceeds.
 
-→ Fills **Sections (+ Dimensions)**, **Failure Modes**, **Invariants**, **Test Specification (tiered)**, **Acceptance Criteria**, **Discovery**, **Verification Evidence**.
+→ Fills **Sections (+ Dimensions)**, **Metrics & Observability**, **Failure Modes**, **Invariants**, **Test Specification (tiered)**, **Acceptance Criteria**, **Discovery**, **Verification Evidence**.
 
 ## Step 4 — Mechanics (the easy part)
 
@@ -110,6 +111,7 @@ Before the spec leaves `pending/`, it must pass this checklist — the determini
 
 - [ ] intent handshake done; golden-path walk has **no `[?]`**
 - [ ] **Applicable Rules names specific greptile rule IDs**; Applicable Gates populated with satisfaction strategy
+- [ ] **Metrics & Observability declares events or explicitly says no product/operator signal changed**; any analytics/funnel playbook update is listed
 - [ ] **every Dimension has a Test**; **every Failure Mode has a negative test**; every Invariant is code-enforceable
 - [ ] Prior-Art reference named (or "greenfield — shape in `docs/architecture/`")
 - [ ] reporting sections present (Discovery, Verification Evidence)

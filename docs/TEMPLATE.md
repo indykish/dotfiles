@@ -9,7 +9,7 @@
 
 ## What this template is
 
-A milestone spec is a **goal contract** the executing agent plans and ships from *without playing 20-questions with the author*. It answers, in agent-actionable terms:
+A milestone spec is a **goal rulebook** the executing agent plans and ships from *without playing 20-questions with the author*. It answers, in agent-actionable terms:
 
 - **Intent** — what Pull Request (PR) is this, and what does success look like as a test?
 - **Product behaviour** — whose moment is this, what stays unchanged, and which surfaces stay restrained?
@@ -20,7 +20,7 @@ A milestone spec is a **goal contract** the executing agent plans and ships from
 
 It must NOT pin implementation detail that rots within a sprint: exact allocator/capacity, library version, line-by-line code, exact Structured Query Language (SQL) Data Definition Language (DDL), or import statements. The agent derives those from the repository.
 
-> **Pseudocode litmus.** If the spec names a version (`postcard 1.1`), a variable (`var ctx = …`), or a DDL clause (`CREATE TABLE … DEFAULT 'foo'`), it's pseudocode — it will be wrong within a sprint. Replace with *"use the project's existing X"* + a pointer to where X lives. The middle path is **contract + invariants + tests + pointers**; the agent has agency on the rest.
+> **Pseudocode litmus.** If the spec names a version (`postcard 1.1`), a variable (`var ctx = …`), or a Data Definition Language (DDL) clause (`CREATE TABLE … DEFAULT 'foo'`), it's pseudocode — it will be wrong within a sprint. Replace with *"use the project's existing X"* + a pointer to where X lives. The middle path is **intent + invariants + tests + pointers**; the agent has agency on the rest.
 
 ---
 
@@ -263,15 +263,35 @@ Same shape.
 
 ---
 
+## Metrics & Observability
+
+> Every realized spec must declare what product or operational signal it adds, or explicitly say why none is added.
+> User-facing or operator-facing behaviour should prefer the project's analytics architecture doc: root page telemetry
+> for views, typed event registries for actions, journey timers for funnels, and authenticated identity linking when the
+> product has a signed-in user. Do this before tests so the agent proves event names, funnel timing, and privacy bounds.
+> The implementing agent revisits this table after implementation and again during `/review`; missing action events,
+> funnel timers, heatmap context, or feature-flag exposure events are implementation gaps, not notes for later.
+
+| Metric / event | Owner | Fires when | Properties allowed | Privacy guard | Test proof |
+|----------------|-------|------------|--------------------|---------------|------------|
+| `{event_name}` | product / ops / not applicable | {exact user or system action} | {coarse product context, resource id, duration, outcome} | {no raw email/password/token/One-Time Password (OTP)/Secure Shell (SSH) key material} | `{test_name}` |
+
+Use `not applicable — no product/operator signal changes` only for internal-only cleanup. If a workflow already emits analytics,
+state whether this spec adds, renames, or intentionally leaves those events unchanged. If any funnel changes, update the
+project's analytics/funnel playbook in the same Pull Request (PR); if the playbook does not change, Discovery records
+`Metrics review: no analytics/funnel playbook update required` with the reason.
+
+---
+
 ## Interfaces
 
-> Lock the contract — public functions, endpoints, data shapes other code depends on. This is the surface the agent must NOT change without amending the spec.
+> Lock the interface — public functions, endpoints, data shapes other code depends on. This is the surface the agent must NOT change without amending the spec.
 
 ```
 {HTTP endpoints, request/response shapes, internal signatures}
 ```
 
-Specify input/output/error shapes. Use a real example payload where shape isn't self-evident. Write the contract, not the implementation.
+Specify input/output/error shapes. Use a real example payload where shape isn't self-evident. Write the interface, not the implementation.
 
 ---
 
@@ -300,7 +320,7 @@ No guardrails of this kind → "N/A — no invariants."
 
 ## Test Specification (tiered)
 
-> **Prose-and-assertions only. No test code.** One row per **Dimension**. Bound to the `write-unit-test` skill: pick the tier; cover ≥50% negative paths; every Failure Mode row gets a test. Hard-to-describe behaviour in prose ⇒ the Goal is fuzzy — fix the Goal, not this table.
+> **Prose-and-assertions only. No test code.** One row per **Dimension**. Bound to the `write-unit-test` skill: pick the tier; cover ≥50% negative paths; every Failure Mode row and Metrics row gets a test. Hard-to-describe behaviour in prose ⇒ the Goal is fuzzy — fix the Goal, not this table.
 
 **Tiers** (the implementing agent writes the actual test in project style):
 
@@ -377,6 +397,7 @@ No deletions → "N/A — no files deleted."
 > **Empty at creation.** Append as the work surfaces consults and decisions — this is the spec's running record where deferrals and skill outcomes are proven.
 
 - **Consults** — Architecture / Legacy-Design / gate-flag triage: the question asked + Indy's decision.
+- **Metrics review** — events added, extra events found during `/review`, and analytics/funnel playbook update or explicit no-change reason.
 - **Skill chain outcomes** — `/write-unit-test`, `/review`, `/review-pr`, `kishore-babysit-prs` results (iteration counts, findings dispositioned).
 - **Deferrals** — every "deferred to follow-up" needs an **Indy-acked verbatim quote** here, format `> Indy (YYYY-MM-DD HH:MM): "<quote>" — context: <which item, why>`. An agent-unilateral deferral is **incomplete scope, not deferral**, and blocks CHORE(close) until the item lands or the quote is captured.
 
@@ -389,7 +410,7 @@ No deletions → "N/A — no files deleted."
 | When | Skill | What it does | Required output |
 |------|-------|--------------|-----------------|
 | After implementation, before CHORE(close) | `/write-unit-test` | Audits diff coverage vs this Test Specification. Catches happy-path-only, missing negatives, fixture drift. | Clean. Iteration count + final coverage in Discovery. |
-| After tests pass, before CHORE(close) | `/review` | Adversarial diff review vs this spec, `docs/architecture/`, REST guide (HTTP), `dispatch/write_zig.md` (Zig), Failure Modes, Invariants. | Clean OR every finding dispositioned (fixed / deferred-with-quote / rejected-with-reason). |
+| After tests pass, before CHORE(close) | `/review` | Adversarial diff review vs this spec, `docs/architecture/`, REST guide (HTTP), `dispatch/write_zig.md` (Zig), Failure Modes, Invariants, and Metrics coverage. | Clean OR every finding dispositioned; missing metrics update code, tests, and the analytics/funnel playbook before close. |
 | After `gh pr create` | `/review-pr` | Review-comments the open PR against the immutable diff (squash artifacts, post-rebase races, codegen drift). | Comments addressed (fixup/amend) before human review/merge. |
 
 Skipping any one violates CHORE(close). Skill unavailable (MCP down) → document the skip in Discovery AND the PR description with a timestamp and a "rerun before merge" note.
