@@ -203,7 +203,7 @@ GET /products?status=active&sort=-created_at&starting_after=01HZQ...&limit=50
   - **Time ranges:** `?created_after=<ts_ms>&created_before=<ts_ms>`. Bracket grammar (`?created_at[gte]=...`) is forbidden.
   - **No boolean explosions.** Don't add `?include_x=true&include_y=true` — use `?include=x,y` with a documented enum of legal values, OR don't expose a knob.
 - **Sorting:** `sort=field` ascending; `sort=-field` descending. Single sort key per request — no multi-key.
-- **Pagination — Stripe-style keyset only.** Request: `?starting_after=<resource_id>&limit=<int>`. Response: `next_cursor: <resource_id> | null` (the field is named `next_cursor` even though the request param is `starting_after` — this matches the `parsePaginationParams` / `derivePaginationResult` helpers in `src/agentsfleetd/http/handlers/common.zig`). Default `limit=50`, max `limit=100`. To page forward, send the response's `next_cursor` value back as the next request's `starting_after`. **Forbidden:** page-based `?page=&page_size=` (the `api_keys/list.zig` shape is legacy — do not copy it); custom request-side `?cursor=` names (the `approvals/list.zig` keyset shape predates this rule — do not copy it). New endpoints MUST use the shared helper.
+- **Pagination — Stripe-style keyset only.** Request: `?starting_after=<resource_id>&limit=<int>`. Response: `next_cursor: <resource_id> | null` (the field is named `next_cursor` even though the request param is `starting_after`). Cursor encode/decode goes through the shared `src/agentsfleetd/fleet_runtime/keyset_cursor.zig` (`parse()`/`format()`) — mirror `fleets/list.zig`'s usage. `limit` parsing is currently per-handler (no shared query-parsing helper exists yet for this shape); mirror `fleets/list.zig`'s local `parseLimitFromQs`. Default `limit=50`, max `limit=100`. To page forward, send the response's `next_cursor` value back as the next request's `starting_after`. **Forbidden:** page-based `?page=&page_size=` (the `api_keys/list.zig` shape, backed by `pagination.zig::parsePageParams`, is legacy — do not copy it for new endpoints); custom request-side `?cursor=` names (the `approvals/list.zig` keyset shape predates this rule — do not copy it).
 - **Sparse fieldsets / `?include=` / `?fields=`:** not supported in v1. If you need to slim a payload, design a smaller endpoint. Don't invent.
 
 ### Bulk operations
@@ -561,67 +561,59 @@ When in doubt, mirror an existing handler:
 
 ## §8 — Handler signature contract
 
-Every HTTP handler in `agentsfleetd` follows this shape. Enforced by `make lint-zig` and the comptime wrappers in `src/agentsfleetd/http/handlers/hx.zig`.
+Every HTTP handler in `agentsfleetd` follows this shape. Enforced by `make lint-zig` and by the dispatcher in `src/agentsfleetd/http/server.zig::dispatchMatchedRoute()`, which builds the per-request arena, runs the middleware chain, constructs `Hx`, and calls the route's invoke shim (§7) — a handler never constructs any of this itself.
 
 ```zig
 pub fn innerMyEndpoint(hx: Hx, req: *httpz.Request, ...path_params) void {
     // 1. validate inputs
-    // 2. db / state work (use hx.db()/hx.releaseDb())
+    // 2. db / state work (acquire via hx.ctx.pool.acquire(), release via hx.ctx.pool.release())
     // 3. respond via hx.ok(...) or hx.fail(...)
 }
 ```
 
 ### Rules
 
-- **Name prefix `inner`** (never `handle`). The `invokeXxx` shim in `route_table_invoke.zig` is the only public entry — your function is the inner implementation it calls after middleware has populated `hx`.
+- **Name prefix `inner`** (never `handle`). The `invokeXxx` shim (§7 step 5) is the only public entry — your function is the inner implementation it calls after middleware has populated `hx`.
 - **First parameter: `hx: Hx`** — never `ctx: *Context`, `res: *Response`, `req_id: []const u8`, or an arena allocator. All of those live inside `hx`.
 - **Second parameter: `req: *httpz.Request`** — only if you actually read it (body, query, headers). Drop it if you only need path params.
-- **Path params come after `req`** — order matches the `Route` enum variant in `router.zig`.
+- **Path params come after `req`** — order matches the `Route` variant in `routes.zig` (§7 step 1).
 - **Return `void`.** Errors are written to the response; never return a Zig error.
 
 ### What NOT to do
 
 - ❌ `handleMyEndpoint(ctx, req, res)` — old signature; don't add new ones.
-- ❌ Building an `ArenaAllocator` inside the handler — `hx.alloc` is already request-scoped.
-- ❌ Calling `common.authenticate` — middleware already did this; use `hx.principal`.
+- ❌ Building an `ArenaAllocator` inside the handler — `hx.alloc` is already request-scoped (the dispatcher owns its lifetime).
 - ❌ `common.errorResponse(hx.res, ...)` — use `hx.fail(...)`.
 - ❌ `hx.res.json(body, .{})` or `res.status = 200; res.body = "{}"` — use `hx.ok(.ok, body)`. Acceptable only for SSE streams and Slack ack-and-drop.
 - ❌ Returning a Zig error from the handler — write to `hx.res` and return void.
 
 ### `Hx` struct reference
 
-`Hx` is defined in `src/agentsfleetd/http/handlers/hx.zig`. Five pointer-sized fields, passed by value:
+`Hx` is defined in `src/agentsfleetd/http/handlers/hx.zig`. Five fields, passed by value; three methods, each wrapping a distinct wire contract:
 
 ```zig
 pub const Hx = struct {
-    alloc:     std.mem.Allocator,       // request-scoped arena
-    principal: common.AuthPrincipal,    // populated by bearer/admin middleware
+    alloc:     std.mem.Allocator,       // request-scoped arena, built by the dispatcher
+    principal: common.AuthPrincipal,    // populated by bearer/runner middleware; zero-value for none-policy routes
     req_id:    []const u8,              // unique request ID
     ctx:       *common.Context,         // pool, queue, oidc, telemetry, app_url
     res:       *httpz.Response,         // response writer
 
-    pub fn db(self: Hx) !*pg.Conn;             // acquire from pool; caller must releaseDb
-    pub fn releaseDb(self: Hx, conn: *pg.Conn) void;
-    pub fn redis(self: Hx) *queue_redis.Client; // no allocation
-    pub fn ok(self: Hx, status: std.http.Status, body: anytype) void;
-    pub fn fail(self: Hx, code: []const u8, detail: []const u8) void;
+    pub fn ok(self: Self, status: std.http.Status, body: anytype) void;      // JSON envelope
+    pub fn fail(self: Self, code: []const u8, detail: []const u8) void;      // RFC 7807 error
+    pub fn noContent(self: Self) void;                                       // spec-compliant empty-body 204
 };
 ```
 
-Comptime wrappers used to register handlers:
+There is no `hx.db()`/`hx.releaseDb()`/`hx.redis()` — acquire the DB pool directly via `hx.ctx.pool.acquire()` / `hx.ctx.pool.release(conn)` (mirror `fleets/list.zig::innerListFleets`); for internal-500s and body-size checks call `common.internalDbError(hx.res, hx.req_id)` etc. directly (§5).
 
-| Wrapper | When |
-|---------|------|
-| `authenticated(inner)` | Standard Bearer-authed handler with no path params |
-| `authenticatedWithParam(inner)` | Handler with one path param (e.g. `agent_id`) |
-
-Handlers with two or more path params (e.g. `webhooks.zig`'s `agent_id` + `url_secret`) do NOT use the wrappers — they stay raw and call `common.authenticate` directly with their own logic.
+Auth is 100% middleware-chain-driven (§7) — there are no `authenticated()`/`authenticatedWithParam()` comptime wrappers to pick between by path-param count. Every handler, regardless of how many path params it takes, receives its populated `Hx` the same way: the dispatcher builds it after the middleware chain runs and passes it to the invoke shim.
 
 ### Guardrails on `hx.zig`
 
-- `hx.zig` must stay ≤ 150 lines. Methods are one-liners delegating to `common.zig`. No business logic in `hx.zig`.
+- `hx.zig` stays small — methods are one-liners delegating to `common.zig`. No business logic in `hx.zig`.
 - A new method on `Hx` is justified only when ≥2 in-tree call sites exist **at merge time** — both verifiable by `rg` from `main`. The PR description MUST list both call sites as `path/to/file.zig:line`. "Two handlers will need this soon" is not a justification; ship the second caller in the same PR or keep the helper local.
-- Zero `ArenaAllocator.init` calls in converted handler files. All arena setup lives inside the comptime wrappers.
+- Zero `ArenaAllocator.init` calls in handler files — the dispatcher (`server.zig::dispatchMatchedRoute()`) is the only place that owns the per-request arena's lifetime.
 
 ---
 
