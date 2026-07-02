@@ -44,6 +44,8 @@ cross-compile, pg-drain, and integration. `make` targets are the canonical gates
 | `API_BENCH_URL=https://api-dev.agentsfleet.net/healthz make bench` | After branch deploys to dev. |
 | Cross-compile `x86_64-linux` + `aarch64-linux` | Whenever `*.zig` touched. |
 | `make check-pg-drain` | Whenever `*.zig` touched. |
+| `/write-integration-test` (skill) | With `/write-unit-test` at VERIFY when the diff crosses module boundaries with real I/O; otherwise record `N/A — <reason>`. |
+| Acceptance e2e (product repo's live tier) | Diff touches a surface the live/acceptance tier covers — relevant acceptance suites green, or their opt-in skip matrix recorded. |
 
 `make test` never substitutes for tier 2/3. Tier 2 passing but tier 3 failing
 means state pollution — fix isolation before shipping.
@@ -87,6 +89,14 @@ lines verbatim. No "I ran it, trust me."
 ```
 
 A skipped target MUST be surfaced — never dressed up as "tests pass".
+
+## PR description results table
+
+Before opening/updating the PR at CHORE(close), the PR/MR description carries a
+✅/❌ results table covering the skill chain (`/write-unit-test` ·
+`/write-integration-test` or its recorded N/A · `/review`) and the verification
+lanes above — **all ✅ (or an explicit recorded N/A/skip) required**. A lane
+missing from the table counts as ❌.
 
 ## Emoji legend
 
