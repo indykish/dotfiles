@@ -13,7 +13,7 @@ Canonical reference for agentsfleet database schema patterns. All new tables **m
 - Each SQL file must be **≤100 lines** and **single-concern** (one table or one logical group).
 - Files are numbered sequentially: `001_core_foundation.sql`, `002_core_workflow.sql`, etc.
 - When splitting a file, slide subsequent file numbers to maintain order.
-- Every SQL file must be registered in `schema/embed.zig` (compile-time embed) and `src/cmd/common.zig` (migration version array).
+- Every SQL file must be registered in `schema/embed.zig` (compile-time embed) and `src/agentsfleetd/cmd/common.zig` (migration version array).
 - No-op stub files (e.g., columns folded into earlier files) are kept for version history but excluded from the migrations array.
 
 ## SQL Qualification
@@ -32,12 +32,12 @@ Canonical reference for agentsfleet database schema patterns. All new tables **m
 
 - **Column:** `uid`
 - **Type:** Universally Unique Identifier (UUID) `PRIMARY KEY`
-- **Generation:** Application-side UUID version 7 (UUIDv7) via `src/types/id_format.zig`, never `gen_random_uuid()`.
+- **Generation:** Application-side UUID version 7 (UUIDv7) via `src/agentsfleetd/types/id_format.zig`, never `gen_random_uuid()`.
 - **Constraint:** Every table must have a UUIDv7 CHECK constraint:
   ```sql
   CONSTRAINT ck_{table}_uid_uuidv7 CHECK (substring(uid::text from 15 for 1) = '7')
   ```
-- **Adding a new table:** Add a `generate{TableName}Id()` function to `src/types/id_format.zig`.
+- **Adding a new table:** Add a `generate{TableName}Id()` function to `src/agentsfleetd/types/id_format.zig`.
 - **API shape:** public API fields may continue to expose `id`, `tenant_id`, `workspace_id`, or other documented names. SQL should alias `uid` back to the public field name at the boundary instead of casually renaming client-facing payloads.
 
 ## Timestamps
