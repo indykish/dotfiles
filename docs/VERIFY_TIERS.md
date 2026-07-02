@@ -9,7 +9,7 @@
 | Tier | Command | When |
 |---|---|---|
 | 1 | `make test` | Every EXECUTE iteration; start of VERIFY. Unit-only — never substitutes for 2/3. |
-| 2 | `make test-integration` | Diff touches `src/http/**`, `src/db/**`, `src/agent/**`, `src/observability/**`, `*_integration_test.zig`, schema, migrations. Before COMMIT. |
+| 2 | `make test-integration` | Diff touches `src/agentsfleetd/http/**`, `src/agentsfleetd/db/**`, `src/agentsfleetd/fleet/**`, `src/agentsfleetd/observability/**`, `*_integration_test.zig`, schema, migrations. Before COMMIT. |
 | 3 | `make test-integration` | ≥1× per branch from clean state (after `make down`) before ship-ready. Mandatory when schema changes pre-v2.0. Tier 2 passing + 3 failing = state pollution; fix isolation. |
 
 ## Test delta — VERIFY ends by reporting coverage growth
@@ -29,13 +29,13 @@ Lacking:    <changed surfaces whose tests did not grow, or "none">
 
 | Gate | Command | When |
 |---|---|---|
-| Leak | `make memleak` | Server lifecycle (`src/http/**`, `src/cmd/serve.zig`), allocator wiring, cross-thread heap ownership. |
+| Leak | `make memleak` | Server lifecycle (`src/agentsfleetd/http/**`, `src/agentsfleetd/cmd/serve.zig`), allocator wiring, cross-thread heap ownership. |
 | Bench (local) | `make bench` | When the diff touches request-path code, allocator wiring, or startup/shutdown sequencing. |
 | Bench (dev) | `API_BENCH_URL=https://api-dev.agentsfleet.net/healthz make bench` | After deploy to dev. |
 
 Knobs (`make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY`, `_TIMEOUT_MS`, `_MAX_ERROR_RATE`, `_MAX_P95_MS`, `_MAX_RSS_GROWTH_MB`.
 
-**Memleak evidence:** paste final `make memleak` line into PR Session Notes OR cite CI URL. Branches touching `src/http/**`/`src/cmd/serve.zig`/allocator wiring → last 3 lines verbatim. No "trust me".
+**Memleak evidence:** paste final `make memleak` line into PR Session Notes OR cite CI URL. Branches touching `src/agentsfleetd/http/**`/`src/agentsfleetd/cmd/serve.zig`/allocator wiring → last 3 lines verbatim. No "trust me".
 
 ## Hygiene (always, before PR)
 

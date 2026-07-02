@@ -173,7 +173,7 @@ Greenfield (no existing pattern)? Say so explicitly and point at the `docs/archi
 
 - **`docs/greptile-learnings/RULES.md`** — universal repo discipline (always applies).
 - **`dispatch/write_zig.md`** — when the diff touches `*.zig` (name sections: pg-drain lifecycle, tagged-union results, multi-step `errdefer`, cross-compile).
-- **`docs/REST_API_DESIGN_GUIDELINES.md`** — when the diff touches `src/http/handlers/**` or `public/openapi/**` (name §: URL design, route registration, handler signature).
+- **`docs/REST_API_DESIGN_GUIDELINES.md`** — when the diff touches `src/agentsfleetd/http/handlers/**` or `public/openapi/**` (name §: URL design, route registration, handler signature).
 - **`docs/SCHEMA_CONVENTIONS.md`** — when the diff touches `schema/*.sql` or `schema/embed.zig`.
 - **`dispatch/write_ts_adhere_bun.md`** / **`docs/LOGGING_STANDARD.md`** / **`docs/LIFECYCLE_PATTERNS.md`** — when the relevant surface is touched.
 
@@ -213,7 +213,7 @@ Touch nothing a gate watches → "N/A — docs/markdown only."
 > **SOUL.md rule: before proposing architecture, find the reference codebase — there almost always is one.** Name it so the agent mirrors a known-good pattern instead of inventing. State the alignment, or justify the divergence.
 
 - **CLI** → the **"7 Pillars"** of CLI developer experience (vendored from the supabase-style `oss/cli`): command → handler → errors split; **handler purity** (no `console.log` / `process.exit` in handlers); **output as a service** (human vs JSON vs env rendering chosen by the renderer, not the handler); **structured JSON errors** with `suggestion`/`retry` fields; **3-tier test pyramid** (handler unit / in-process integration / subprocess e2e); **auto-JSON when stdout is piped** (LLM-native). State per CLI spec: which pillars this aligns with, and the reason for any divergence.
-- **API** → `docs/REST_API_DESIGN_GUIDELINES.md` + the closest existing handler under `src/http/handlers/`.
+- **API** → `docs/REST_API_DESIGN_GUIDELINES.md` + the closest existing handler under `src/agentsfleetd/http/handlers/`.
 - **Schema** → the nearest existing migration + `docs/SCHEMA_CONVENTIONS.md`.
 - **UI** → design-system primitives + `theme.css` tokens.
 

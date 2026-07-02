@@ -1,7 +1,7 @@
 # REST API Design Guidelines — `agentsfleet/agentsfleetd`
 
 **Status:** Canonical instruction set. Read this before adding, modifying, or removing any HTTP endpoint.
-**Trigger:** the global instruction `HTTP handler or OpenAPI changes → read docs/REST_API_DESIGN_GUIDELINES.md first` fires when the diff touches `src/http/handlers/**`, `public/openapi/**`, or any `route_*` file. If you're an agent reading this — you got here because that trigger fired. Follow this doc as a checklist, not as background reading.
+**Trigger:** the global instruction `HTTP handler or OpenAPI changes → read docs/REST_API_DESIGN_GUIDELINES.md first` fires when the diff touches `src/agentsfleetd/http/handlers/**`, `public/openapi/**`, or any `route_*` file. If you're an agent reading this — you got here because that trigger fired. Follow this doc as a checklist, not as background reading.
 
 This is a goal-oriented instruction set. Each rule states the goal it serves so you can apply judgment at the edge cases instead of memorizing exceptions.
 
@@ -38,14 +38,14 @@ Run this checklist as part of `CHORE(close)` (per `~/.claude/CLAUDE.md` lifecycl
 - [ ] **ETag/`If-Match`** wired for any resource with realistic concurrent edits (§4)
 - [ ] **Error responses** use the registry; `detail` follows hygiene rules (no IDs, no SQL, no paths, ≤200 chars) (§5)
 - [ ] **OpenAPI YAML** edited under `public/openapi/paths/<tag>.yaml`; tag is 1:1 with resource; file ≤400 lines (§6)
-- [ ] **Route registered** in all five places (§7)
+- [ ] **Route registered** in all six places (§7)
 - [ ] **Handler signature** matches `inner*(hx: Hx, req: *httpz.Request, ...)` (§8)
 - [ ] **Middleware policy** picked from the table; raw handlers carry first-10-lines comment (§7)
 - [ ] **Versioning** — added/renamed/removed surface listed in PR description; deprecation uses `Deprecation` + `Sunset` headers; new response fields declare `x-stability` (§9)
 - [ ] **Tests** — happy path + one error per `hx.fail` + idempotency double-PATCH + `Idempotency-Key` replay (where applicable) + ETag mismatch (§10)
 - [ ] **Logging** — sensitive ID values are DEBUG-only or carry `// log-id-allowed:` comment; secret-shaped fields are write-only or one-time-read (§11)
-- [ ] **`make openapi` clean** — bundle in sync, redocly lint passes (§6)
-- [ ] **`make test-auth` 200/200** — auth gate matrix unchanged (§10)
+- [ ] **`make check-openapi` clean** — bundle in sync, redocly lint, error-schema + URL-shape checks pass (§6)
+- [ ] **`make test-unit-agentsfleetd` clean** — `route_scopes.zig`'s exhaustive switch + `route_scopes_test.zig` assertions cover the auth gate matrix (§10)
 - [ ] **No file over 350 lines** (§10)
 - [ ] **`gitleaks detect` clean** (§10)
 
@@ -203,7 +203,7 @@ GET /products?status=active&sort=-created_at&starting_after=01HZQ...&limit=50
   - **Time ranges:** `?created_after=<ts_ms>&created_before=<ts_ms>`. Bracket grammar (`?created_at[gte]=...`) is forbidden.
   - **No boolean explosions.** Don't add `?include_x=true&include_y=true` — use `?include=x,y` with a documented enum of legal values, OR don't expose a knob.
 - **Sorting:** `sort=field` ascending; `sort=-field` descending. Single sort key per request — no multi-key.
-- **Pagination — Stripe-style keyset only.** Request: `?starting_after=<resource_id>&limit=<int>`. Response: `next_cursor: <resource_id> | null` (the field is named `next_cursor` even though the request param is `starting_after` — this matches the `parsePaginationParams` / `derivePaginationResult` helpers in `src/http/handlers/common.zig`). Default `limit=50`, max `limit=100`. To page forward, send the response's `next_cursor` value back as the next request's `starting_after`. **Forbidden:** page-based `?page=&page_size=` (the `api_keys/list.zig` shape is legacy — do not copy it); custom request-side `?cursor=` names (the `approvals/list.zig` keyset shape predates this rule — do not copy it). New endpoints MUST use the shared helper.
+- **Pagination — Stripe-style keyset only.** Request: `?starting_after=<resource_id>&limit=<int>`. Response: `next_cursor: <resource_id> | null` (the field is named `next_cursor` even though the request param is `starting_after` — this matches the `parsePaginationParams` / `derivePaginationResult` helpers in `src/agentsfleetd/http/handlers/common.zig`). Default `limit=50`, max `limit=100`. To page forward, send the response's `next_cursor` value back as the next request's `starting_after`. **Forbidden:** page-based `?page=&page_size=` (the `api_keys/list.zig` shape is legacy — do not copy it); custom request-side `?cursor=` names (the `approvals/list.zig` keyset shape predates this rule — do not copy it). New endpoints MUST use the shared helper.
 - **Sparse fieldsets / `?include=` / `?fields=`:** not supported in v1. If you need to slim a payload, design a smaller endpoint. Don't invent.
 
 ### Bulk operations
@@ -308,7 +308,7 @@ For any resource where concurrent edits are realistic (anything mutable that two
 
 ### Use the error registry
 
-The error-code registry (`src/errors/error_entries.zig`) owns the HTTP status, RFC 7807 `title`, and `docs_uri`. Your handler supplies only the code and a human-readable `detail`:
+The error-code registry (`src/agentsfleetd/errors/error_entries.zig`) owns the HTTP status, RFC 7807 `title`, and `docs_uri`. Your handler supplies only the code and a human-readable `detail`:
 
 ```zig
 hx.fail(ec.ERR_INVALID_REQUEST, "workspace_id must be a valid UUIDv7");
@@ -354,7 +354,7 @@ The title must be safe to render verbatim in a UI toast — think "what would I 
    - State: `"<noun> already exists"` / `"<noun> not found"` / `"<noun> expired"` — `Agent name already exists`, `token expired`.
    - Format help: `"<param>: use <format>"` — `invalid_since_format: use Go-style duration (15s, 30m, 2h, 7d) or RFC 3339 (YYYY-MM-DDTHH:MM:SSZ)`.
 
-When you write a new `hx.fail`, find the closest existing call site in `src/http/handlers/**` and copy its shape. Don't freelance.
+When you write a new `hx.fail`, find the closest existing call site in `src/agentsfleetd/http/handlers/**` and copy its shape. Don't freelance.
 
 ### Internal 500s — direct calls
 
@@ -393,7 +393,7 @@ Don't invent other extensions without amending this doc.
 
 ## §6 — OpenAPI editing
 
-**`public/openapi.json` is a build artifact.** Never edit it directly. Edits get wiped on `make openapi` and CI's bundle-in-sync gate fails the PR.
+**`public/openapi.json` is a build artifact.** Never edit it directly. Edits get wiped on `make check-openapi` and CI's bundle-in-sync gate fails the PR.
 
 The source of truth lives under `public/openapi/`:
 
@@ -410,11 +410,11 @@ public/openapi/
 ### Adding, renaming, or removing an endpoint
 
 1. Edit the relevant YAML under `public/openapi/paths/<tag>.yaml`.
-2. Add / rename / remove the corresponding `match()` arm in `src/http/router.zig`.
-3. Run `make openapi` — bundles YAML → JSON, runs Redocly lint, runs `check_openapi_errors.py`, runs `check_openapi_url_shape.py` (REST §1).
+2. Add / rename / remove the corresponding `match()` arm in `src/agentsfleetd/http/router.zig`.
+3. Run `make check-openapi` — bundles YAML → JSON, runs Redocly lint, runs `check_openapi_errors.py`, runs `check_openapi_url_shape.py` (REST §1).
 4. Commit YAML + bundled JSON + `router.zig` together. Splitting these across commits leaves CI red.
 
-**Router ↔ openapi.json parity is reviewer-enforced.** There is no mechanical gate cross-checking that every `router.match()` arm has a documented openapi path or vice versa. When you add, rename, or remove a route, both surfaces must move in the same diff and the reviewer must verify it. The previous Python parity gate (`audits/check_openapi_sync.py`) and its data file (`src/http/route_manifest.zig`) were retired in M61_002.
+**Router ↔ openapi.json parity is reviewer-enforced.** There is no mechanical gate cross-checking that every `router.match()` arm has a documented openapi path or vice versa. When you add, rename, or remove a route, both surfaces must move in the same diff and the reviewer must verify it. The previous Python parity gate (`audits/check_openapi_sync.py`) and its data file (`route_manifest.zig`, deleted) were retired in M61_002.
 
 **Agent-edit recipe:** see `public/openapi/AGENTS.md` for copy-paste-ready rename / append / remove / update-description workflows.
 
@@ -422,27 +422,34 @@ public/openapi/
 
 ## §7 — Registering a route
 
-Five places, in order. Steps 1–4 fail loudly at build/runtime; step 5 is reviewer-enforced — see §6 for the parity rule.
+Six places, in order. Steps 1–5 fail loudly at build/runtime; step 6 is reviewer-enforced — see §6 for the parity rule.
 
 | Skipped step | Failure mode |
 |---|---|
-| 1 (Route enum) | Compile error in `route_table.zig::specFor()` — the `.my_endpoint` arm references an undefined enum variant. |
+| 1 (`Route` variant) | Compile error in `route_table.zig::specFor()` — the `.my_endpoint` arm references an undefined enum variant. |
 | 2 (`match()` arm) | Runtime — your URL returns 404 even though the rest is wired; no compile error. |
-| 3 (`route_table.zig::specFor()`) | Compile error — exhaustive switch on `Route` enum is missing your arm. |
-| 4 (`route_table_invoke.zig` shim) | Compile error — `specFor` references `invoke.invokeMyEndpoint` which doesn't exist. |
-| 5 (OpenAPI YAML) | **No automated check.** Router ↔ openapi.json parity is reviewer-enforced (§6). Reviewer must confirm both surfaces moved in the same diff. |
+| 3 (`route_table.zig::specFor()`) | Compile error — exhaustive switch on `Route` union is missing your arm. |
+| 4 (`route_scopes.zig::requiredScopes()`) | Compile error — exhaustive switch on `Route` is missing your arm; the route can't be assigned a capability requirement until you do. |
+| 5 (invoke shim) | Compile error — `specFor` references `invoke.invokeMyEndpoint` which doesn't exist. |
+| 6 (OpenAPI YAML) | **No automated check.** Router ↔ openapi.json parity is reviewer-enforced (§6). Reviewer must confirm both surfaces moved in the same diff. |
 
 If you only see #2's silent-404 failure mode, you've forgotten the matcher even though the route compiles. Test the URL after wiring.
 
-1. **`src/http/router.zig`** — add a variant to the `Route` enum (with path params).
-2. **`src/http/router.zig::match()`** — add the path parser that returns your variant.
-3. **`src/http/route_table.zig::specFor()`** — map the variant to a `RouteSpec`:
+1. **`src/agentsfleetd/http/routes.zig`** — add a variant to the `Route` union (with path params). `router.zig` re-exports it as `router.Route`; every other consumer imports through that re-export unchanged.
+2. **`src/agentsfleetd/http/router.zig::match()`** — add the path parser that returns your variant.
+3. **`src/agentsfleetd/http/route_table.zig::specFor()`** — map the variant to a `RouteSpec`:
 
    ```zig
    .my_endpoint => .{ .middlewares = registry.bearer(), .invoke = invoke.invokeMyEndpoint },
    ```
 
-4. **`src/http/route_table_invoke.zig`** — add the invoke shim:
+4. **`src/agentsfleetd/http/route_scopes.zig::requiredScopes()`** — assign the capability requirement (an empty slice for authenticated-only, or `&NONE`/never-runs for a `none`-policy route):
+
+   ```zig
+   .my_endpoint => &MY_RESOURCE_WRITE,
+   ```
+
+5. **The invoke shim** — add `pub fn invokeMyEndpoint` to `route_table_invoke.zig` or the sibling file for your domain (`route_table_invoke_<domain>.zig`; each keeps `route_table_invoke.zig` under the RULE FLL line cap and is imported + re-exported from there):
 
    ```zig
    pub fn invokeMyEndpoint(hx: *Hx, req: *httpz.Request, route: router.Route) void {
@@ -451,14 +458,18 @@ If you only see #2's silent-404 failure mode, you've forgotten the matcher even 
    }
    ```
 
-5. **`public/openapi/paths/<tag>.yaml`** — add the endpoint (§6).
+6. **`public/openapi/paths/<tag>.yaml`** — add the endpoint (§6).
 
 ### Matcher style — segment-based, not substring-based
 
-All path matchers in `src/http/route_matchers.zig` operate on a canonical
-`Path` view: a stack-allocated array of segments parsed once at the dispatch
-boundary. Matchers compare by **segment count + segment[i] equality**.
-Disambiguation is shape-driven, not order-driven.
+All path matchers operate on a canonical `Path` view: a stack-allocated array
+of segments parsed once at the dispatch boundary. The matcher functions
+themselves live in `src/agentsfleetd/http/route_matchers.zig` plus sibling
+per-domain files (`route_matchers_connectors.zig`, `route_matchers_fleet.zig`,
+`route_matchers_runner.zig`, `route_matchers_billing.zig`,
+`route_matchers_webhook.zig`) — same RULE FLL split as the invoke shims.
+Matchers compare by **segment count + segment[i] equality**. Disambiguation is
+shape-driven, not order-driven.
 
 **Pattern (mandatory for any new matcher):**
 
@@ -502,30 +513,34 @@ body checks the API version.
 
 ### Middleware policy table — pick one at step 3
 
+The registry exposes exactly these six policies (`src/agentsfleetd/auth/middleware/mod.zig::MiddlewareRegistry`). Admin/operator capability is no longer a separate policy — it's data in the route→scope table (step 4), enforced by the single `require_scope` middleware that every authenticated chain composes with.
+
 | Policy | Use for |
 |--------|---------|
-| `auth_mw.MiddlewareRegistry.none` | Public endpoint; no auth, OR handler does its own (OAuth callbacks, webhook receivers) |
-| `registry.bearer()` | Standard user-facing endpoint; workspace-scoped Bearer token |
-| `registry.admin()` | Admin-only (internal telemetry, platform keys) |
-| `registry.operator()` | Operator role required |
+| `auth_mw.MiddlewareRegistry.none` | Public endpoint; no auth, OR handler does its own (OAuth/connector callbacks, webhook receivers, Slack events ingress) |
+| `registry.bearer()` | Standard user-facing endpoint; Bearer token or `agt_t` API key + capability gate. The former bearer/admin/operator/platformAdmin chains collapsed into this one policy — `route_scopes.zig::requiredScopes()` decides what the principal must hold |
+| `registry.runnerBearer()` | Runner-token (`agt_r`) machine principal + capability gate; used by the `/v1/runners/me/*` self-plane, which requires `runner:self` |
 | `registry.webhookHmac()` | Approval webhook (HMAC-signed body) |
-| `registry.slack()` | Slack events/interactions (Slack signature) |
+| `registry.webhookSig()` | Per-agent HMAC signature for webhooks routed to a fleet (no Bearer fallback) |
+| `registry.svix()` | Svix v1 multi-sig HMAC (Clerk) |
 
 Middleware runs BEFORE your handler: token verification, `hx.principal` population, and 401/403 short-circuits are already done when your `inner*` runs. For `none` policy routes, `hx.principal` is zero-valued — do not read it.
 
 ### Raw-handler exceptions
 
-Some endpoints bypass `authenticated()`. Each must carry an explanatory comment at the top of the file:
+Some endpoints register with the `none` middleware policy (step 3) and verify — or deliberately don't need to verify — inside the handler itself, instead of through a bearer/runner/HMAC chain. Each must carry an explanatory comment at the top of the file:
 
 | File | Reason | Comment |
 |------|--------|---------|
-| `webhooks.zig` | HMAC-verified, not Bearer | `// HMAC-verified — does not use hx.authenticated()` |
-| `github_callback.zig` | OAuth callback | `// OAuth callback — does not use hx.authenticated()` |
-| `health.zig` | Health endpoints | `// unauthenticated — health` |
-| `agent_relay.zig`, `runs/stream.zig` | Streaming | `// Streaming handler — does not use hx.authenticated()` |
-| `auth_sessions_http.zig` | Per-function (login/poll public, complete authed) | per-function comments |
+| `src/agentsfleetd/http/handlers/health.zig` (`healthz`/`readyz`/`metrics`), `src/agentsfleetd/http/handlers/model_caps.zig` | Unauthenticated by design — health/metrics/public capability catalogue | `// unauthenticated — health` (or equivalent) |
+| `src/agentsfleetd/http/handlers/auth/sessions.zig` | Per-function (create/poll/verify public; approve/delete are `registry.bearer()`-authed Clerk JWT, not raw) | per-function comments |
+| `src/agentsfleetd/http/handlers/auth/identity_events_clerk.zig` | Svix-signed `user.created` event, verified inline against `CLERK_WEBHOOK_SECRET` | `// Svix-verified — does not use bearer/HMAC middleware` |
+| `src/agentsfleetd/http/handlers/webhooks/grant_approval.zig` | Single-use Redis nonce, not HMAC or Bearer | `// Redis nonce-verified — see grant:nonce:{grant_id}` |
+| `src/agentsfleetd/http/handlers/connectors/callback.zig` (+ provider hooks `src/agentsfleetd/http/handlers/connectors/github/callback.zig`, `src/agentsfleetd/http/handlers/connectors/slack/callback.zig`) | Generic OAuth-callback dispatcher; verifies the signed `state` param inline before delegating to the provider hook | `// OAuth callback — verifies signed state, not bearer` |
+| `src/agentsfleetd/http/handlers/connectors/slack/events.zig` | Slack Events API ingress; Slack v0 request signature only (no Bearer fallback) | `// Slack v0 signature-verified — mirrors the webhook plane` |
+| `src/agentsfleetd/http/handlers/integration_grants/handler.zig` (`request_integration_grant`) | Fleet-key verified inline (`src/agentsfleetd/auth/api_key.zig`), not a Bearer/runner principal | `// Fleet-key verified — does not use bearer middleware` |
 
-If you write a new raw handler, add it to this table AND add a first-10-lines comment in the file explaining why it bypasses `hx.authenticated()`. A handler file lacking either an `hx.authenticated()` call OR an explanatory comment in its first 10 lines is a bug — not an oversight.
+If you write a new raw handler, add it to this table AND add a first-10-lines comment in the file explaining why it's registered with `none` and what verifies the caller instead. A `none`-policy handler file lacking either its own verification call OR an explanatory comment in its first 10 lines is a bug — not an oversight.
 
 ### Reference implementations
 
@@ -533,20 +548,20 @@ When in doubt, mirror an existing handler:
 
 | Pattern | Look at |
 |---------|---------|
-| Simple list/get | `agent_api.zig::innerListAgents` |
-| POST with body + validation | `agent_api.zig::innerCreateAgent` |
-| DELETE with idempotency | `agent_api.zig::innerDeleteAgent` |
-| Admin-only | `admin_platform_keys_http.zig::innerGetAdminPlatformKeys` |
-| Multi-method on one path (GET/PUT/DELETE) | `workspace_credentials_http.zig` |
-| Workspace auth + tenant context | `agent_telemetry.zig::innerAgentTelemetry` |
-| Webhook with inline auth | `webhooks.zig::innerReceiveWebhook` |
-| Streaming (SSE) | `agent_relay.zig::innerRelay` |
+| Simple list/get | `src/agentsfleetd/http/handlers/fleets/list.zig::innerListFleets` |
+| POST with body + validation | `src/agentsfleetd/http/handlers/fleets/create.zig::innerCreateFleet` |
+| DELETE with idempotency | `src/agentsfleetd/http/handlers/fleets/delete.zig::innerDeleteFleet` |
+| Admin-only | `src/agentsfleetd/http/handlers/admin/platform_keys.zig::innerGetAdminPlatformKeys` |
+| Multi-method on one path (GET/POST/PATCH/DELETE) | `src/agentsfleetd/http/handlers/fleets/credentials.zig` |
+| Workspace auth + tenant context | `src/agentsfleetd/http/handlers/workspaces/events.zig::innerListWorkspaceEvents` |
+| Webhook with inline auth | `src/agentsfleetd/http/handlers/webhooks/fleet.zig::innerReceiveWebhook` |
+| Streaming (SSE) | `src/agentsfleetd/http/handlers/fleets/events_stream.zig::innerEventsStream` |
 
 ---
 
 ## §8 — Handler signature contract
 
-Every HTTP handler in `agentsfleetd` follows this shape. Enforced by `make lint` and the comptime wrappers in `src/http/handlers/hx.zig`.
+Every HTTP handler in `agentsfleetd` follows this shape. Enforced by `make lint-zig` and the comptime wrappers in `src/agentsfleetd/http/handlers/hx.zig`.
 
 ```zig
 pub fn innerMyEndpoint(hx: Hx, req: *httpz.Request, ...path_params) void {
@@ -575,7 +590,7 @@ pub fn innerMyEndpoint(hx: Hx, req: *httpz.Request, ...path_params) void {
 
 ### `Hx` struct reference
 
-`Hx` is defined in `src/http/handlers/hx.zig`. Five pointer-sized fields, passed by value:
+`Hx` is defined in `src/agentsfleetd/http/handlers/hx.zig`. Five pointer-sized fields, passed by value:
 
 ```zig
 pub const Hx = struct {
@@ -682,18 +697,17 @@ Before opening a PR touching any handler:
 
 - [ ] `zig build` clean
 - [ ] `zig build test` passes
-- [ ] `make test-auth` passes (200/200) — auth gate matrix unchanged
+- [ ] `make test-unit-agentsfleetd` passes — `route_scopes.zig`'s exhaustive switch + `route_scopes_test.zig` cover the auth gate matrix
 - [ ] `make test-integration` passes (HTTP + DB + Redis E2E)
 - [ ] Cross-compile: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux`
-- [ ] `make lint` — all Zig gates pass (350-line file cap, `check-pg-drain`, zlint)
+- [ ] `make lint-zig` — all Zig gates pass (350-line file cap, `check-pg-drain`, zlint)
 - [ ] Handler file ≤ 350 lines; split if it grows
 - [ ] Integration test covers the happy path AND at least one error path per `hx.fail` call in the handler
 - [ ] PATCH endpoints have an idempotency test: same body issued twice → identical 200 + identical row state. Skip only if the spec's "Failure Modes" explicitly declares non-idempotent PATCH with a reason (§2)
 - [ ] POST endpoints accepting `Idempotency-Key` have a replay test: same key + same body → cached response; same key + different body → 4xx (§2)
 - [ ] Mutable resources have an ETag/`If-Match` test: stale `If-Match` → 412 with current `etag` returned (§4)
 - [ ] OpenAPI updated — endpoint definition, request/response schemas, error responses
-- [ ] `make openapi` — bundle in sync, redocly lint, router parity
-- [ ] `make check-openapi-errors` — every `hx.fail` code is in the OpenAPI's error responses
+- [ ] `make check-openapi` — bundle in sync, redocly lint, error-schema + URL-shape checks, router parity
 - [ ] `gitleaks detect` clean
 - [ ] No new file over 350 lines
 
