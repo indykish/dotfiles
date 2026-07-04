@@ -289,7 +289,7 @@ grep -qF 'dispatch/<entry>.md' "$AGENTS"       || { fail "memory discipline: dis
 #     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
-LIMIT=${AGENTS_MD_SIZE_LIMIT:-29696}  # 29 KB — bumped 2026-05-20 by 1024 B for Address tags + `agentsfleet` vocabulary
+LIMIT=${AGENTS_MD_SIZE_LIMIT:-30720}  # 30 KB — bumped 2026-07-04 by 1024 B for the docs/architecture/** CHORE(close) cross-reference
 if [[ $SIZE -le $LIMIT ]]; then
   pass "size $SIZE bytes (limit $LIMIT)"
 else
