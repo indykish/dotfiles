@@ -7,9 +7,11 @@
 #      Always BLOCK.
 #   2. REQUIRED-PRESENT + NO-PLACEHOLDER (positive space) — the determinism
 #      sections the agent-facing template mandates (PR Intent, Applicable Gates,
-#      Prior-Art, Metrics, Decomposition, tiered Test Spec, Discovery, …) must EXIST and be
-#      FILLED. A spec that omits them forces the executing agent to guess intent.
-#      This is the half that makes a spec "built for the agent".
+#      Prior-Art, Metrics, Decomposition, tiered Test Spec, Product Clarity,
+#      Discovery, …) must EXIST and be FILLED: no unfilled {slot} sentinels and
+#      no surviving "tpl:" guidance comments (template fill grammar). A spec
+#      that omits them forces the executing agent to guess intent. This is the
+#      half that makes a spec "built for the agent".
 #
 # Dispatch façade: dispatch/write_spec.md (SPEC TEMPLATE GATE)
 # Fires in: make lint (after audit-logging, before audit-error-codes).
@@ -63,8 +65,12 @@ fi
 
 # ---------------------------------------------------------------------------
 # Family 1 — Prohibited patterns from docs/TEMPLATE.md "Prohibited" section.
-# Each pattern: <regex>:<one-line description>:<severity>
-# Severity: BLOCK = exit 1; INFO = stdout note only. Patterns use ERE (egrep -E).
+# Each pattern: <severity>:<one-line description>:<regex> — the regex comes
+# LAST because it may contain colons (e.g. the [:|] label-row class); read(1)
+# assigns the remainder of the line to the final field, so the regex survives
+# intact. Descriptions must stay colon-free.
+# Severity: BLOCK = exit 1; INFO = stdout note only. Patterns use ERE (egrep -E)
+# only — no PCRE constructs like (?:...), which grep -E rejects.
 #
 # DESIGN NOTE — patterns are deliberately structural, not prose-level.
 # Bare regex like `\b\d+\s*days?\b` false-positives on legitimate prose
@@ -78,18 +84,18 @@ fi
 # This catches the actual drift class without churning real content.
 # ---------------------------------------------------------------------------
 PATTERNS=(
-  '^#+ .*Estimated [Ee]ffort:Estimated effort section heading:BLOCK'
-  '^#+ .*\b(Effort|Complexity|Sizing|Cost)\b\s*$:Effort/Complexity/Sizing section heading:BLOCK'
-  '^#+ .*\bScale\b.*estimate:Scale estimate section heading:BLOCK'
-  '^[-*]\s*~\s*[0-9]+\s*h\b:Tilde-bulleted hour estimate (e.g. "- ~2 h"):BLOCK'
-  '^[-*]\s*~\s*[0-9]+\s*(hours?|days?|min(utes?)?)\b:Tilde-bulleted time estimate:BLOCK'
-  '^\s*\*\*\s*(Effort|Estimate|Sizing|Complexity|Cost)\s*\*\*\s*[:|]:Effort/Estimate label row:BLOCK'
-  '^\s*\*\*\s*Owner\s*\*\*\s*[:|]:Owner label row:BLOCK'
-  '^\s*\*\*\s*Assigned to\s*\*\*\s*[:|]:Assigned-to label row:BLOCK'
-  '^\s*\*\*\s*(Due|Deadline)\s*\*\*\s*[:|]\s*[0-9]:Date-bound deadline label:BLOCK'
-  '^[-*\|]?\s*\*?\*?\s*[0-9]+\s*%\s*complete:Percentage-complete metric:BLOCK'
-  '\b(?:effort|estimate|takes?|spend)\b[^.]{0,40}\b[0-9]+\s*[-–]\s*[0-9]+\s*h\b:Hour-range estimate in effort context:BLOCK'
-  '\b(?:low|medium|high|small|large)\s*[/|-]\s*(?:effort|complexity)\b:Effort/complexity rating:BLOCK'
+  'BLOCK:Estimated effort section heading:^#+ .*Estimated [Ee]ffort'
+  'BLOCK:Effort/Complexity/Sizing section heading:^#+ .*\b(Effort|Complexity|Sizing|Cost)\b\s*$'
+  'BLOCK:Scale estimate section heading:^#+ .*\bScale\b.*estimate'
+  'BLOCK:Tilde-bulleted hour estimate (e.g. "- ~2 h"):^[-*]\s*~\s*[0-9]+\s*h\b'
+  'BLOCK:Tilde-bulleted time estimate:^[-*]\s*~\s*[0-9]+\s*(hours?|days?|min(utes?)?)\b'
+  'BLOCK:Effort/Estimate label row:^\s*\*\*\s*(Effort|Estimate|Sizing|Complexity|Cost)\s*(:\s*\*\*|\*\*\s*[:|])'
+  'BLOCK:Owner label row:^\s*\*\*\s*Owner\s*(:\s*\*\*|\*\*\s*[:|])'
+  'BLOCK:Assigned-to label row:^\s*\*\*\s*Assigned to\s*(:\s*\*\*|\*\*\s*[:|])'
+  'BLOCK:Date-bound deadline label:^\s*\*\*\s*(Due|Deadline)\s*(:\s*\*\*|\*\*\s*[:|])\s*[0-9]'
+  'BLOCK:Percentage-complete metric:^[-*\|]?\s*\*?\*?\s*[0-9]+\s*%\s*complete'
+  'BLOCK:Hour-range estimate in effort context:\b(effort|estimate|takes?|spend)\b[^.]{0,40}\b[0-9]+\s*[-–]\s*[0-9]+\s*h\b'
+  'BLOCK:Effort/complexity rating:\b(low|medium|high|small|large)\s*[/|-]\s*(effort|complexity)\b'
 )
 
 # Carve-outs — lines that look prohibited but are legitimate. Skip any match.
@@ -114,12 +120,16 @@ REQUIRED_SECTIONS=(
   '^#+ .*Invariants:Invariants'
   '^#+ .*Test Specification:Test Specification'
   '^#+ .*Acceptance (Criteria|Rubric):Acceptance Rubric (legacy heading Acceptance Criteria accepted)'
+  '^#+ .*Product Clarity:Product Clarity (authoring record)'
   '^#+ .*Discovery:Discovery (consult log)'
 )
 
 # Template residue — strings that exist ONLY in the unfilled template. Their
-# survival in a pending/active spec means the section was never filled.
+# survival in a pending/active spec means the section was never filled. The
+# "<!-- tpl:" marker is the template's fill grammar: every guidance comment is
+# deleted at authoring, so any survivor is residue by construction.
 PLACEHOLDER_SENTINELS=(
+  '<!-- tpl:'
   'Title — testable, not vague'
   'one-line reason}'
   'Slice title}'
@@ -134,7 +144,7 @@ scan_spec() {
   local spec="$1"
   local hits=0
   local pattern desc severity line content
-  while IFS=: read -r pattern desc severity; do
+  while IFS=: read -r severity desc pattern; do
     while IFS= read -r match; do
       [[ -z "$match" ]] && continue
       if grep -qE "$SAFE_LINES_RE" <<<"$match"; then

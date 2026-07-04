@@ -36,9 +36,10 @@ agent-facing template mandates the determinism sections the executing agent read
 to emit invariant output: PR Intent & comprehension handshake, Applicable Rules,
 Applicable Gates, Overview, Prior-Art / Reference Implementations, Files Changed,
 Decomposition & alternatives, Sections, Metrics & Observability, Interfaces,
-Failure Modes, Invariants, Test Specification, Acceptance Rubric (legacy heading `Acceptance Criteria` accepted), Discovery. A spec missing one — or
+Failure Modes, Invariants, Test Specification, Acceptance Rubric (legacy heading `Acceptance Criteria` accepted), Product Clarity (authoring record), Discovery. A spec missing one — or
 leaving template residue (`path/to/file.ext`, `test_<short_name>`,
-`{one-line reason}`) — forces the agent to guess intent.
+`{one-line reason}`, any surviving `tpl:` guidance comment — the template's fill
+grammar deletes them all at authoring) — forces the agent to guess intent.
 
 **Scope (no legacy carve-out).** Family 2 fires in `--staged` only — the spec
 being authored now (the agent's own output): BLOCK. Bulk scans (`--all` /
@@ -59,6 +60,7 @@ behave identically over the corpus and never break an existing spec.
 | `**Due:**` / `**Deadline:**` (with date) | Forbidden — use Priority. |
 | Missing a required determinism section in a **staged** spec | BLOCK — add it. |
 | Unfilled template residue in a **staged** spec | BLOCK — fill the section. |
+| Surviving `tpl:` guidance comment in a **staged** spec | BLOCK — delete it; the executor reads instance content only. |
 | Spec without the SPEC AUTHORING RULES banner | Informational — reminds future edits. |
 
 ## Required output (default — one line)

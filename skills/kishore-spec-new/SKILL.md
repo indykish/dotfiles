@@ -53,8 +53,9 @@ Determinism starts here. Before copying the template:
 - **PR title + intent** — what the merged PR is called (imperative, ≤72 chars) and the one-sentence user-facing *why*.
 - **Comprehension handshake** — restate the intent in my own words and list `ASSUMPTIONS I'M MAKING: …`. If my restatement and the requester's ask diverge, STOP and reconcile before drafting.
 - **Golden-path walk** — trace the concrete end-to-end (every lookup, data source, secret store). Any `[?]` left in the walk blocks the spec from leaving `pending/`.
+- **Product Clarity — Indy's ten product questions, answered in order** (successful user moment · preserved user behaviour · optimal-way check · rebuild-vs-iterate · what we build · what we do NOT build · fit with existing features · surface order · dashboard restraint · confused-user next step). They are answered BEFORE any implementation section is drafted; internal-only work may answer 8–10 as "N/A — no user surface" with the reason.
 
-→ Fills the template's **PR Intent & comprehension handshake** and **Overview**.
+→ Fills the template's **PR Intent & comprehension handshake**, **Overview**, and **Product Clarity (authoring record)**.
 
 ## Step 2 — Lock review-readiness (so the PR ships clean)
 
@@ -89,6 +90,8 @@ cp docs/TEMPLATE.md docs/v{N}/pending/M{N}_{WS}_P{P}_{CATEGORIES}_{NAME}.md
 
 If `docs/TEMPLATE.md` is missing in this repo, fall back to `~/Projects/dotfiles/docs/TEMPLATE.md`.
 
+**Fill grammar** — the template body is ordered for the *executing* agent (execution read order), not for authoring; fill sections in the order of Steps 1–3 above, not top-to-bottom. Replace every `{…}` slot with instance content, then **delete every `<!-- tpl: … -->` guidance comment** — the SPEC TEMPLATE GATE BLOCKs any survivor, unfilled slot sentinels, and missing required sections. The SPEC AUTHORING RULES banner is the one comment that stays.
+
 **Inputs** — Milestone `M{N}` (next free, sortable) · Workstream `{WS}` zero-padded (`001`…) · Priority (**P0** blocking · **P1** customer/operator-facing · **P2** tooling · **P3** deferrable) · Category set alphabetised (`API` Zig/Go · `CLI` agentsfleet/Node · `UI` Next.js · `OBS` Grafana · `SKILL` SKILL.md · `INFRA` Terraform) · Name UPPER_SNAKE_CASE ≤6 words describing the outcome (`BUN_VENDOR_UTILITIES`, not `BUMP_BUN_DEPS`) · Prototype tag (`v1.0.0`, `v2.0.0` — drives `docs/v1/` vs `docs/v2/`).
 
 **File naming:** `docs/v{N}/{pending|active|done}/M{Milestone}_{Workstream}_P{Priority}_{CATEGORIES}_{NAME}.md` (e.g. `docs/v2/pending/M52_001_P2_API_BUN_VENDOR_UTILITIES.md`). Do NOT rename existing legacy-form files under `docs/v1/` or `docs/v2/done/`.
@@ -111,6 +114,8 @@ If `docs/TEMPLATE.md` is missing in this repo, fall back to `~/Projects/dotfiles
 Before the spec leaves `pending/`, it must pass this checklist — the deterministic/invariant guarantee:
 
 - [ ] intent handshake done; golden-path walk has **no `[?]`**
+- [ ] **Product Clarity answered** — ten items, in order, `[?]`-free
+- [ ] **zero `tpl:` guidance comments remain** — the body carries only instance content
 - [ ] **Applicable Rules names specific greptile rule IDs**; Applicable Gates populated with satisfaction strategy
 - [ ] **Metrics & Observability declares events or explicitly says no product/operator signal changed**; any analytics/funnel playbook update is listed
 - [ ] **every Dimension has a Test**; **every Failure Mode has a negative test**; every Invariant is code-enforceable

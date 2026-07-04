@@ -1,46 +1,43 @@
 # Milestone Specification Template
 
-> **CANONICAL TEMPLATE — written for the executing agent (Oracle / Orly).**
-> Copy this into `docs/v{N}/pending/M{N}_{NNN}_{NAME}.md`, then fill every section.
-> Each section exists so the agent reads the **intent** and emits **deterministic, invariant** output — not so a human has a pretty document. If a section won't change what the agent does, it shouldn't be here.
-> Lifecycle: `AGENTS.md → Specification Standards`.
+> **CANONICAL TEMPLATE — two agents consume this file, in different ways.**
+> The **authoring agent** (via the `kishore-spec-new` skill) copies the body below the divider into `docs/v{N}/pending/M{N}_{NNN}_….md` and fills it — authoring order lives in the skill, not in this file. The **executing agent** reads the filled spec **top-to-bottom**: the body is physically ordered by execution need (understand → prepare → build → prove → record).
+> Enforced by `audits/spec-template.sh` (SPEC TEMPLATE GATE, façade `dispatch/write_spec.md`): required sections present, zero template residue, prohibited patterns absent. Lifecycle: `AGENTS.md → Specification Standards`.
 
 ---
 
-## What this template is
+## Fill grammar
 
-A milestone spec is a **goal rulebook** the executing agent plans and ships from *without playing 20-questions with the author*. It answers, in agent-actionable terms:
+Three markup classes appear below the divider. The gate tells them apart mechanically:
 
-- **Intent** — what Pull Request (PR) is this, and what does success look like as a test?
-- **Product behaviour** — whose moment is this, what stays unchanged, and which surfaces stay restrained?
-- **Surface** — which files, interfaces, gates, and invariants are in play?
-- **Prior art** — what existing code/pattern does the agent mirror (so it doesn't reinvent)?
-- **Alternatives** — why this shape, and not a larger refactor or a smaller patch?
-- **Proof** — which tests and commands prove the claims? The **Acceptance Rubric** is the single scoring surface.
+| Marker | Meaning | Fate in the filled spec |
+|---|---|---|
+| `{…}` | Fill slot — replace with instance content | Gone. Surviving slots are residue; the gate BLOCKs the known sentinels. |
+| `tpl:` guidance comment | How to fill the section — written for the authoring agent only | **Deleted after filling.** The gate BLOCKs any survivor. |
+| SPEC AUTHORING RULES banner comment | Standing constraints on the instance | The one comment that survives, verbatim. |
 
-It must NOT pin implementation detail that rots within a sprint: exact allocator/capacity, library version, line-by-line code, exact Structured Query Language (SQL) Data Definition Language (DDL), or import statements. The agent derives those from the repository.
+Everything else — headings, table skeletons, the standard rubric rows — is kept and filled. The result: the executing agent reads **100% instance content, zero template noise**, and the 320-line budget buys signal, not boilerplate.
 
-> **Pseudocode litmus.** If the spec names a version (`postcard 1.1`), a variable (`var ctx = …`), or a Data Definition Language (DDL) clause (`CREATE TABLE … DEFAULT 'foo'`), it's pseudocode — it will be wrong within a sprint. Replace with *"use the project's existing X"* + a pointer to where X lives. The middle path is **intent + invariants + tests + pointers**; the agent has agency on the rest.
+## What a spec pins — and refuses to pin
 
----
+A milestone spec is a **goal rulebook** the executing agent plans and ships from *without playing 20-questions with the author*. It pins **intent + invariants + tests + pointers**; the agent has agency on everything else. It must NOT pin implementation detail that rots within a sprint: allocator/capacity choices, library versions, line-by-line code, exact Structured Query Language (SQL) Data Definition Language (DDL), import statements — the agent derives those from the repository.
 
-## Anti-patterns (guardrails the agent rejects on sight)
+> **Pseudocode litmus.** If the spec names a version (`postcard 1.1`), a variable (`var ctx = …`), or a DDL clause (`CREATE TABLE … DEFAULT 'foo'`), it's pseudocode — it will be wrong within a sprint. Replace with *"use the project's existing X"* + a pointer to where X lives.
 
-> Surfaced near the top, because an author who finds them on line 173 has already drifted.
+## Anti-patterns (reject on sight)
 
-| # | Anti-pattern | Do instead | Why |
-|---|---|---|---|
-| 1 | Code blocks inside section bodies | Describe WHAT the slice delivers; pin precise behaviour as a Test (`test_x asserts foo() returns bar`). | Implementation lives in the codebase. Prose code drifts; tests don't. |
-| 2 | Listing every variable name | Point at an existing implementation to mirror. | Names are the agent's call; they'll match local style. |
-| 3 | SQL DDL line-by-line | Show table shape + constraints in prose. | The agent reads existing migrations and conforms. |
-| 4 | Pinning library versions | *"Use the existing Redis client"* + import pointer. | The package manifest is the source of truth. |
-| 5 | Step-by-step ordering ("Step 1… Step 2…") | Use **Sections** (value slices); let the agent sequence within. | Step lists become stale ordering; slices stay coherent. |
-| 6 | Writing test code in the spec | Name tests + assert behaviour in prose; the agent writes them. | Inline test code drifts the moment the framework changes. |
-| 7 | One rubric row per Dimension, or pasted evidence walls | 5–12 outcome rows; Graded = ✅/❌ + one decisive output line. | The rubric is a scoreboard, not a ledger — the Test Specification tracks Dimensions. |
+| # | Anti-pattern | Do instead |
+|---|---|---|
+| 1 | Code blocks inside section bodies | Describe WHAT the slice delivers; pin precise behaviour as a Test. Prose code drifts; tests don't. |
+| 2 | Listing every variable name | Point at an existing implementation to mirror; names match local style. |
+| 3 | SQL DDL line-by-line | Table shape + constraints in prose; the agent conforms to existing migrations. |
+| 4 | Pinning library versions | *"Use the existing Redis client"* + import pointer; the package manifest is the source of truth. |
+| 5 | Step-by-step ordering ("Step 1… Step 2…") | **Sections** (value slices); the agent sequences within. |
+| 6 | Test code in the spec | Name tests + assert behaviour in prose; the agent writes them in project style. |
+| 7 | One rubric row per Dimension, or pasted evidence walls | 5–12 outcome rows; Graded = ✅/❌ + one decisive output line. The Test Specification is the per-Dimension ledger. |
+| 8 | Template guidance surviving in the filled spec | Delete every `tpl:` comment; the executor reads instance content only. |
 
-Slipped into one? The fix is usually **move the detail to the implementing-agent prologue** (point at a file) or **delete it** (the agent figures it out).
-
----
+Slipped into one? The fix is usually **point at a file** (read-first pointer) or **delete the detail** (the agent figures it out).
 
 ## Hierarchy & terminology
 
@@ -53,18 +50,16 @@ v{N}.0.0 (Prototype)                  major release
             └── Dimension (3.1, 3.2…) verifiable sub-unit — the unit of DONE
 ```
 
-**Dimension** is the atomic, verifiable unit: **1 Dimension → 1 Test**, marked `DONE` individually in the same commit as its code. "Mark Dimensions DONE" (per `AGENTS.md`) resolves here. A Section is DONE when all its Dimensions are. Outcome-level grading lives in the **Acceptance Rubric** — one row per Section or failure class, never one per Dimension (the Test Specification is the per-Dimension ledger).
+**Dimension** is the atomic, verifiable unit: **1 Dimension → 1 Test**, marked `DONE` individually in the same commit as its code. "Mark Dimensions DONE" (per `AGENTS.md`) resolves here. A Section is DONE when all its Dimensions are. Outcome-level grading lives in the **Acceptance Rubric** — one row per Section or failure class, never one per Dimension.
 
 **Batch (B1, B2…)** — parallel execution group. Workstreams in the same batch run concurrently; batches are sequential (B2 starts after B1's gates clear).
 
 A milestone is not complete until evidence is captured: commands, logs, screenshots, or a recorded walkthrough.
 
----
-
 ## Status markers
 
 - `PENDING` — not started. `IN_PROGRESS` — being worked. `DONE` / ✅ — complete, verified, tested.
-- `DEFERRED` — designed/attempted and explicitly not shipped; lives in `done/` as a record. The **Discovery** section MUST capture the rationale and the reactivation conditions.
+- `DEFERRED` — designed/attempted and explicitly not shipped; lives in `done/` as a record. **Discovery** MUST capture the rationale and reactivation conditions.
 
 ## Prohibited (gate-enforced — `dispatch/write_spec.md`)
 
@@ -73,7 +68,7 @@ A milestone is not complete until evidence is captured: commands, logs, screensh
 
 ## Guardrails
 
-- **Length — hard upper bound 320 lines.** Typical specs 150–300. Past the bound before the Acceptance Rubric → scope is two specs sharing one file; split.
+- **Length — hard upper bound 320 lines for the filled spec** (after `tpl:` comment deletion). Typical specs 150–300. Past the bound before the Acceptance Rubric → scope is two specs sharing one file; split.
 - **Sections** — 3–9. **Workstreams** — ≤4 (5th cross-cutting only).
 - **File naming** — `docs/v{N}/{pending|active|done}/M{N}_{NNN}_P{Priority}_{CATEGORIES}_{NAME}.md` (e.g. `M40_001_P0_API_WORKER_SUBSTRATE.md`). Categories alphabetised.
 
@@ -82,13 +77,15 @@ A milestone is not complete until evidence is captured: commands, logs, screensh
 # Spec Body — Copy Everything Below This Line
 
 <!--
-SPEC AUTHORING RULES (load-bearing — do not delete):
-- No time/effort/hour/day estimates anywhere. No effort columns, complexity ratings,
-  percentage-complete, implementation dates, assigned owners.
-- Priority (P0/P1/P2/P3) is the only sizing signal; Dependencies are the only sequencing signal.
-- If a section below contradicts these rules, the rule wins — delete the section.
-- Enforced by SPEC TEMPLATE GATE (dispatch/write_spec.md) and audits/spec-template.sh,
-  which also assert the determinism-critical sections below are present and filled (not left as {placeholders}).
+SPEC AUTHORING RULES (load-bearing — the one comment that survives):
+- Body order = the executing agent's read order. Fill via the kishore-spec-new
+  skill (authoring order lives there); after filling, DELETE every "tpl:"
+  guidance comment — the SPEC TEMPLATE GATE blocks tpl residue, unfilled
+  {slots}, and missing required sections (audits/spec-template.sh --staged).
+- No time/effort/hour/day estimates anywhere. No effort columns, complexity
+  ratings, percentage-complete, implementation dates, assigned owners.
+- Priority (P0/P1/P2/P3) is the only sizing signal; Dependencies are the only
+  sequencing signal. A section that contradicts these rules loses — delete it.
 -->
 
 # M{Milestone}_{Workstream}: {Title — testable, not vague}
@@ -101,249 +98,208 @@ SPEC AUTHORING RULES (load-bearing — do not delete):
 **Priority:** P0 | P1 | P2 | P3 — {one-line reason}
 **Categories:** {API | CLI | UI | SKILL | DOCS | OBS | INFRA — alphabetised, one or more}
 **Batch:** B{1-4} — {parallel execution context}
-**Branch:** {feat/mNN-name — added when work begins}
+**Branch:** {feat/mNN-name — added at CHORE(open)}
+**Test Baseline:** set at CHORE(open) — `unit=<N> integration=<M>` via `make _lint_zig_test_depth`
 **Depends on:** {M{N}_{NNN} (one-line reason), …}
 **Provenance:** human-written | LLM-drafted ({model}, {date}) | agent-generated (pre-spec, {source doc})
+**Canonical architecture:** `docs/architecture/{relevant-doc}.md` §{N}
 
-> **Provenance is load-bearing.** The implementing agent calibrates trust by who wrote the spec. LLM-drafted specs get extra cross-checking against the codebase; human-written specs assume the author read the relevant code.
-
-**Canonical architecture:** `docs/architecture/{relevant-doc}.md` §{N} — the directory is the source of truth (Architecture Consult & Update Gate). Greenfield → say so and point at the doc that defines the shape.
-
----
-
-## Implementing agent — read these first
-
-> **Required prologue. 3–5 pointers.** Fewer than 3 = homework not done; the agent repeats it. More than 5 = a tutorial; trim. Point at existing code/docs to read BEFORE touching any file — this is where judgment is preserved without pseudocode.
-
-1. `path/to/file.ext` — {why this is the right pattern to mirror}
-2. `path/to/spec_or_doc.md` — {what canonical knowledge lives there}
-3. {external doc URL, if relevant} — {what convention to follow}
-
-Greenfield (no existing pattern)? Say so explicitly and point at the `docs/architecture/` doc that defines the shape.
-
-**Execution read order:** Overview → Files Changed → Applicable Rules & Gates → Sections → Acceptance Rubric. Product Clarity and Decomposition are authoring-time context — read once for intent; never re-litigated during EXECUTE.
-
----
-
-## PR Intent & comprehension handshake
-
-> The bridge from spec to the merged PR. Makes the agent confirm it understood intent *before* writing code.
-
-- **PR title (eventual):** {imperative, ≤72 chars — what the merged PR is called}
-- **Intent (one sentence):** {why this PR exists, in user-facing-outcome terms}
-- **Handshake (agent fills at PLAN, before EXECUTE):** the implementing agent restates the intent in its own words and lists the assumptions it is proceeding on (`ASSUMPTIONS I'M MAKING: …`). A mismatch between this restatement and the Intent above → STOP and reconcile before any edit.
-
----
-
-## Product Clarity (answer in order, at authoring)
-
-> Indy's product questions, in the order they must be answered — BEFORE the
-> implementation sections below are written. They exist so the authoring agent
-> (Orly) holds the product behaviour, not just the file list. One short paragraph
-> or list per item; a question that can't be answered yet is a `[?]` that blocks
-> the spec (golden-path rule, `AGENTS.md`).
-
-1. **Successful user moment** — the single observable moment that proves this
-   worked. Write it as a scene ("run N+1 opens and the agent already knows…"),
-   not a metric.
-2. **Preserved user behaviour** — what users do today that keeps working
-   unchanged. Breaking any of it is a redesign, not a feature.
-3. **Optimal-way check** — is this the most direct way to deliver moment #1?
-   Sketch the unconstrained-optimal shape; name the gap to it and why the gap is
-   acceptable now.
-4. **Rebuild-vs-iterate** — would a larger refactor serve better? Weigh against
-   the platform constants (`docs/architecture/direction.md`) and run-to-run
-   determinism; a refactor that trades determinism away is wrong by default.
-   Verdict here; full rationale in Decomposition & alternatives below.
-5. **What we build** — the shortest artifact list that delivers moment #1.
-6. **What we do NOT build** — adjacent scope rejected, one-line reason each.
-   Seed Out of Scope from this list.
-7. **Fit with existing features** — what this compounds with, and the one
-   feature it must not destabilize.
-8. **Surface order** — CLI-first, UI-first, or both. Repo default: CLI-first
-   (`agentsfleet`), UI later as a read-only view; justify divergence.
-9. **Dashboard restraint** — what the UI must hide until the signal behind it is
-   real: no controls before evidence, no quality claims before counters.
-10. **Confused-user next step** — when this confuses someone, what is their
-    self-serve move (a command, an error message, a doc)? If the answer is
-    "file a ticket," a surface is missing from item 5.
-
----
-
-## Applicable Rules
-
-> The rule files the agent re-reads BEFORE EXECUTE and re-checks during VERIFY. Without this list the agent has no anchored prompt to consult them at the right moment. Add specific rule IDs where scope is narrow — naming the exact greptile rule IDs the diff trips is what makes the resulting PR review-clean by construction.
-
-- **`docs/greptile-learnings/RULES.md`** — universal repo discipline (always applies).
-- **`dispatch/write_zig.md`** — when the diff touches `*.zig` (name sections: pg-drain lifecycle, tagged-union results, multi-step `errdefer`, cross-compile).
-- **`docs/REST_API_DESIGN_GUIDELINES.md`** — when the diff touches `src/agentsfleetd/http/handlers/**` or `public/openapi/**` (name §: URL design, route registration, handler signature).
-- **`docs/SCHEMA_CONVENTIONS.md`** — when the diff touches `schema/*.sql` or `schema/embed.zig`.
-- **`dispatch/write_ts_adhere_bun.md`** / **`docs/LOGGING_STANDARD.md`** / **`docs/LIFECYCLE_PATTERNS.md`** — when the relevant surface is touched.
-
-Fully greenfield with no project rules → write "Standard set only — `docs/greptile-learnings/RULES.md`; no other rule files apply."
-
----
-
-## Applicable Gates
-
-> Which Action-Triggered Guards (`AGENTS.md` dispatch index) this PR WILL trip, and how each stays clean. Pre-declaring them means the agent plans for them — it doesn't rediscover them mid-EXECUTE and stall. Rules ≠ Gates: rules are knowledge to read; gates are guards that fire on edits.
-
-| Gate | Fires? | Satisfaction strategy |
-|------|--------|-----------------------|
-| ZIG GATE | yes/no — {why} | {e.g. cross-compile both linux targets; read dispatch/write_zig.md} |
-| PUB / Struct-Shape | yes/no | {shape verdict per new pub surface} |
-| File & Function Length (≤350/≤50/≤70) | yes/no | {split plan if a file approaches the cap} |
-| UFS (repeated/semantic literals) | yes/no | {named constants; cross-runtime identifier shared verbatim} |
-| UI Substitution / DESIGN TOKEN | yes/no | {design-system primitive; theme.css token} |
-| LOGGING / LIFECYCLE / ERROR REGISTRY / SCHEMA | yes/no | {per applicable surface} |
-
-Touch nothing a gate watches → "N/A — docs/markdown only."
+<!-- tpl: Provenance is load-bearing — the implementing agent calibrates trust by
+who wrote the spec: LLM-drafted gets extra cross-checking against the codebase;
+human-written assumes the author read the relevant code. Canonical architecture:
+the docs/architecture/ directory is the source of truth (Architecture Consult &
+Update Gate); greenfield → point at the doc that defines the shape. -->
 
 ---
 
 ## Overview
 
-**Goal (testable):** one sentence that could be a test name. Bad: "Implement streaming." Good: "Server-Sent Events (SSE) handler streams Redis pubsub messages as `text/event-stream` with stable ordering and reconnection, p95 latency under 200ms."
+**Goal (testable):** {one sentence that could be a test name}
+**Problem:** {observable symptoms, in user-facing terms}
+**Solution summary:** {one paragraph — what changes, at what layer, what the user-visible outcome is}
 
-**Problem:** observable symptoms in user-facing terms ("operators can't see the agent's tool calls in real time"), not implementation language ("we don't have a foo handler").
+<!-- tpl: Goal — bad: "Implement streaming." Good: "Server-Sent Events (SSE)
+handler streams Redis pubsub messages as text/event-stream with stable ordering
+and reconnection, p95 latency under 200ms." Problem — symptoms ("operators can't
+see the agent's tool calls in real time"), never implementation language ("we
+don't have a foo handler"). Implementation steps belong in Sections, not here. -->
 
-**Solution summary:** one paragraph — what changes, at what layer, what the user-visible outcome is. Implementation steps belong in Sections, not here.
+## PR Intent & comprehension handshake
 
----
+- **PR title (eventual):** {imperative, ≤72 chars — what the merged Pull Request (PR) is called}
+- **Intent (one sentence):** {why this PR exists, in user-facing-outcome terms}
+- **Handshake** — the implementing agent fills this at PLAN, before EXECUTE: restate the Intent in its own words and list `ASSUMPTIONS I'M MAKING: …`. A mismatch between the restatement and the Intent above → STOP and reconcile before any edit.
 
-## Prior-Art / Reference Implementations
+## Implementing agent — read these first
 
-> **SOUL.md rule: before proposing architecture, find the reference codebase — there almost always is one.** Name it so the agent mirrors a known-good pattern instead of inventing. State the alignment, or justify the divergence.
+1. `{path/to/file.ext}` — {why this is the right pattern to mirror}
+2. `{path/to/spec_or_doc.md}` — {what canonical knowledge lives there}
+3. {external doc URL, if relevant} — {what convention to follow}
 
-- **CLI** → the **"7 Pillars"** of CLI developer experience (vendored from the supabase-style `oss/cli`): command → handler → errors split; **handler purity** (no `console.log` / `process.exit` in handlers); **output as a service** (human vs JSON vs env rendering chosen by the renderer, not the handler); **structured JSON errors** with `suggestion`/`retry` fields; **3-tier test pyramid** (handler unit / in-process integration / subprocess e2e); **auto-JSON when stdout is piped** (LLM-native). State per CLI spec: which pillars this aligns with, and the reason for any divergence.
-- **API** → `docs/REST_API_DESIGN_GUIDELINES.md` + the closest existing handler under `src/agentsfleetd/http/handlers/`.
-- **Schema** → the nearest existing migration + `docs/SCHEMA_CONVENTIONS.md`.
-- **UI** → design-system primitives + `theme.css` tokens.
-
-Name the reference path and one line on alignment/divergence. Greenfield → "no prior art; shape defined in `docs/architecture/{doc}.md`."
-
----
+<!-- tpl: 3–5 pointers. Fewer than 3 = authoring homework not done (the executing
+agent repeats it); more than 5 = a tutorial (trim). This is where judgment is
+preserved without pseudocode: point at code/docs to read BEFORE touching any
+file. Greenfield (no existing pattern)? Say so explicitly and point at the
+docs/architecture/ doc that defines the shape. -->
 
 ## Files Changed (blast radius)
 
-> Every file created, modified, or deleted. Scopes file-length gates, orphan sweeps, and review effort. The agent may only edit files in this table without explicit override.
-
 | File | Action | Why |
 |------|--------|-----|
-| `path/to/file.ext` | CREATE / EDIT / DELETE | one line — what changes about this file's role |
+| `path/to/file.ext` | CREATE / EDIT / DELETE | {one line — what changes about this file's role} |
 
-> **Anti-pattern:** don't list line numbers or function names (they drift). List FILES and ROLES.
+<!-- tpl: Every file created, modified, or deleted. Scopes the length gates,
+orphan sweeps, and review effort; per AGENTS.md the executing agent may only
+edit files in this table without explicit override. List FILES and ROLES —
+never line numbers or function names (they drift). Teardown/rename/flip specs
+open with a blast-radius grep first: git grep -rn -w '<token>' from repo root,
+no path filter (dispatch/write_spec.md, Authoring discipline). -->
 
----
+## Applicable Rules
 
-## Decomposition & alternatives (patch vs refactor)
+- **`docs/greptile-learnings/RULES.md`** — {specific rule IDs this diff trips: e.g. UFS, NDC, NLR, ORP, FLL}
+- {per-surface rule file} — {why it applies to this diff}
 
-> **Indy's rule: don't ship a mud-patch when the problem wants a refactor — and don't refactor when a patch is right.** Match solution-size to problem-size, and surface the call to Indy *before* approval rather than discovering it mid-PR.
+<!-- tpl: The rule files the executing agent re-reads BEFORE EXECUTE and
+re-checks during VERIFY. Name the exact rule IDs the diff will trip — generic
+"follow RULES.md" earns a greptile finding; named IDs are obeyed by
+construction. Per-surface menu: dispatch/write_zig.md (*.zig — pg-drain,
+tagged-union results, errdefer, cross-compile) · docs/REST_API_DESIGN_GUIDELINES.md
+(handlers/OpenAPI — name the §) · docs/SCHEMA_CONVENTIONS.md (schema/*.sql,
+schema/embed.zig) · dispatch/write_ts_adhere_bun.md / docs/LOGGING_STANDARD.md /
+docs/LIFECYCLE_PATTERNS.md (when touched). Fully greenfield → write "Standard
+set only — docs/greptile-learnings/RULES.md; no other rule files apply." -->
 
-- **Chosen shape:** {why this Section/Workstream split — the decomposition rationale}
-- **Alternatives considered:** {≥1 — e.g. "the larger refactor that unifies X and Y" or "the minimal patch touching only Z" — and why it was rejected for now}
-- **Patch-vs-refactor verdict:** this is a **{patch | refactor}** because {reason}. If a larger refactor is the right long game but out of scope here, name the follow-up spec rather than silently mud-patching.
+## Applicable Gates
 
----
+| Gate | Fires? | Satisfaction strategy |
+|------|--------|-----------------------|
+| ZIG GATE | {yes/no — why} | {e.g. cross-compile both linux targets} |
+| PUB / Struct-Shape | {yes/no} | {shape verdict per new pub surface} |
+| File & Function Length (≤350/≤50/≤70) | {yes/no} | {split plan if a file approaches the cap} |
+| UFS (repeated/semantic literals) | {yes/no} | {named constants; cross-runtime identifier shared verbatim} |
+| UI Substitution / DESIGN TOKEN | {yes/no} | {design-system primitive; theme.css token} |
+| LOGGING / LIFECYCLE / ERROR REGISTRY / SCHEMA | {yes/no} | {per applicable surface} |
+
+<!-- tpl: Which Action-Triggered Guards (AGENTS.md dispatch index) this PR WILL
+trip, and how each stays clean — pre-declared so the agent plans for them
+instead of stalling mid-EXECUTE. Rules ≠ Gates: rules are knowledge to read;
+gates are guards that fire on edits. Touch nothing a gate watches → replace the
+table with "N/A — docs/markdown only." -->
+
+## Prior-Art / Reference Implementations
+
+- **Reference:** {path / codebase} — {one line on alignment, or the justified divergence}
+
+<!-- tpl: SOUL.md rule — before proposing architecture, find the reference
+codebase; there almost always is one. Name it so the agent mirrors a known-good
+pattern instead of inventing. Menu: Command-Line Interface (CLI) → the "7
+Pillars" of CLI developer experience (vendored supabase-style oss/cli): command
+→ handler → errors split; handler purity (no console.log / process.exit in
+handlers); output as a service (human vs JSON vs env rendering chosen by the
+renderer); structured JSON errors with suggestion/retry fields; 3-tier test
+pyramid (handler unit / in-process integration / subprocess e2e); auto-JSON when
+stdout is piped (LLM-native) — state which pillars this spec aligns with and any
+divergence. API → docs/REST_API_DESIGN_GUIDELINES.md + the closest existing
+handler. Schema → the nearest migration + docs/SCHEMA_CONVENTIONS.md. UI →
+design-system primitives + theme.css tokens. Greenfield → "no prior art; shape
+defined in docs/architecture/{doc}.md." -->
 
 ## Sections (implementation slices)
 
-> Each Section: WHAT one slice delivers and WHY (not how). Decompose into numbered **Dimensions** — the verifiable sub-units that map 1:1 to Tests and Acceptance Criteria, and that get marked DONE.
-
 ### §1 — {Slice title}
 
-What this slice delivers in goal terms; why it must exist; what it unblocks. Non-obvious choice → name it: **Implementation default:** `<choice>` because `<reason>` (the agent picks the default unless it has evidence to deviate).
+{What this slice delivers in goal terms; why it must exist; what it unblocks. Non-obvious choice → **Implementation default:** `{choice}` because `{reason}`.}
 
 - **Dimension 1.1** — {smallest verifiable behaviour} → Test `test_…`
 - **Dimension 1.2** — {…} → Test `test_…`
 
-### §2 — {Next slice}
+### §2 — {Slice title}
 
-Same shape.
+{Same shape.}
 
-> **Good:** "§3 — Replay idempotency. Receiver dedupes on the delivery UUID. Implementation default: 24h dedupe window matching the upstream retry window; storage is a Redis key with TTL — the agent picks the key shape from existing dedupe patterns. Dimension 3.1 → `test_dedupes_within_window`; 3.2 → `test_evicts_after_ttl`."
-> **Bad:** "§3 — Use `redis.SET("webhook:dedupe:"+id,"1","NX","EX",86400)` and check the return." — pseudocode; the agent reads the existing dedupe pattern and writes the call.
-
----
-
-## Metrics & Observability
-
-> Every realized spec must declare what product or operational signal it adds, or explicitly say why none is added.
-> User-facing or operator-facing behaviour should prefer the project's analytics architecture doc: root page telemetry
-> for views, typed event registries for actions, journey timers for funnels, and authenticated identity linking when the
-> product has a signed-in user. Do this before tests so the agent proves event names, funnel timing, and privacy bounds.
-> The implementing agent revisits this table after implementation and again during `/review`; missing action events,
-> funnel timers, heatmap context, or feature-flag exposure events are implementation gaps, not notes for later.
-
-| Metric / event | Owner | Fires when | Properties allowed | Privacy guard | Test proof |
-|----------------|-------|------------|--------------------|---------------|------------|
-| `{event_name}` | product / ops / not applicable | {exact user or system action} | {coarse product context, resource id, duration, outcome} | {no raw email/password/token/One-Time Password (OTP)/Secure Shell (SSH) key material} | `{test_name}` |
-
-Use `not applicable — no product/operator signal changes` only for internal-only cleanup. If a workflow already emits analytics,
-state whether this spec adds, renames, or intentionally leaves those events unchanged. If any funnel changes, update the
-project's analytics/funnel playbook in the same Pull Request (PR); if the playbook does not change, Discovery records
-`Metrics review: no analytics/funnel playbook update required` with the reason.
-
----
+<!-- tpl: Each Section: WHAT one slice delivers and WHY (not how); numbered
+Dimensions map 1:1 to Tests and get marked DONE in the same commit as their
+code. The agent picks each Implementation default unless it has evidence to
+deviate. Good: "§3 — Replay idempotency. Receiver dedupes on the delivery id.
+Implementation default: 24h dedupe window matching the upstream retry window;
+storage is a Redis key with a Time To Live (TTL) — the agent picks the key
+shape from existing dedupe patterns. Dimension 3.1 → test_dedupes_within_window;
+3.2 → test_evicts_after_ttl." Bad: "§3 — Use redis.SET(\"webhook:dedupe:\"+id,
+\"1\",\"NX\",\"EX\",86400) and check the return." — pseudocode; the agent reads
+the existing dedupe pattern and writes the call. -->
 
 ## Interfaces
 
-> Lock the interface — public functions, endpoints, data shapes other code depends on. This is the surface the agent must NOT change without amending the spec.
-
 ```
-{HTTP endpoints, request/response shapes, internal signatures}
+{HTTP endpoints, request/response shapes, internal signatures other code depends on}
 ```
 
-Specify input/output/error shapes. Use a real example payload where shape isn't self-evident. Write the interface, not the implementation.
-
----
+<!-- tpl: Lock the interface — the surface the agent must NOT change without
+amending the spec. Specify input/output/error shapes; use a real example
+payload where shape isn't self-evident. Write the interface, not the
+implementation. -->
 
 ## Failure Modes
-
-> Every failure path the agent must handle. Each row → a negative/integration test below.
 
 | Mode | Cause | Handling (system response + what the caller observes) |
 |------|-------|--------------------------------------------------------|
 | {short name} | {trigger} | {response + observable} |
 
-Cover at minimum: timeout, malformed input, auth failure, network blip, race, replay, exceeded quota, dependency unavailable.
-
----
+<!-- tpl: Every failure path the agent must handle; each row → a negative/
+integration test in the Test Specification. Cover at minimum: timeout,
+malformed input, auth failure, network blip, race, replay, exceeded quota,
+dependency unavailable. -->
 
 ## Invariants
 
-> Each MUST be enforceable by code (compiler, lint, comptime assertion, runtime check) — NOT by review discipline. If a human can violate it silently, it's not an invariant.
-
 1. {Invariant} — {how it's enforced}
-2. {Invariant} — {how it's enforced}
 
-No guardrails of this kind → "N/A — no invariants."
+<!-- tpl: Each MUST be enforceable by code (compiler, lint, comptime assertion,
+runtime check) — NOT by review discipline. If a human can violate it silently,
+it's not an invariant. None → "N/A — no invariants." -->
 
----
+## Metrics & Observability
+
+| Metric / event | Owner | Fires when | Properties allowed | Privacy guard | Test proof |
+|----------------|-------|------------|--------------------|---------------|------------|
+| `{event_name}` | {product / ops / not applicable} | {exact user or system action} | {coarse product context, resource id, duration, outcome} | {no raw email/password/token/One-Time Password (OTP)/Secure Shell (SSH) key material} | `{test_name}` |
+
+<!-- tpl: Every realized spec declares what product or operational signal it
+adds, or explicitly why none: internal-only cleanup → the single row "not
+applicable — no product/operator signal changes". Prefer the project's
+analytics architecture doc (root page telemetry for views, typed event
+registries for actions, journey timers for funnels, authenticated identity
+linking). If a workflow already emits analytics, state whether this spec adds,
+renames, or leaves those events unchanged; if any funnel changes, update the
+analytics/funnel playbook in the same PR — otherwise Discovery records
+"Metrics review: no analytics/funnel playbook update required" with the reason.
+The implementing agent revisits this table after implementation and during
+/review; missing action events, funnel timers, or feature-flag exposure events
+are implementation gaps, not notes for later. -->
 
 ## Test Specification (tiered)
 
-> **Prose-and-assertions only. No test code.** One row per **Dimension**. Bound to the `write-unit-test` skill: pick the tier; cover ≥50% negative paths; every Failure Mode row and Metrics row gets a test. Hard-to-describe behaviour in prose ⇒ the Goal is fuzzy — fix the Goal, not this table.
-
-**Tiers** (the implementing agent writes the actual test in project style):
-
-- **unit** — `write-unit-test` categories Behaviour / Failure / Invariant. Pure logic, handlers, boundaries (empty, null, max, malformed, unicode).
-- **integration** — `write-unit-test` Integration category. Real stack, mock only at system boundaries; deterministic failure injection for each Failure Mode.
-- **e2e** — for any **user-facing Category (CLI / UI / API)**, at least one **user-centric scenario** via `test-e2e*` walking the real path end-to-end (subprocess CLI / real HTTP request / rendered UI). A unit test is not a substitute.
-
 | Dimension | Tier | Test | Asserts (concrete inputs → expected output) |
 |-----------|------|------|---------------------------------------------|
-| 3.1 | unit / integration / e2e | `test_<short_name>` | {one-line behavioural claim} |
+| 1.1 | {unit / integration / e2e} | `test_<short_name>` | {one-line behavioural claim} |
 
-Also include: **regression** tests (pre-existing behaviour that must not change — "N/A — greenfield" if none) and **idempotency/replay** tests (any retry semantics). Non-self-evident input shape → point at a fixture (`samples/fixtures/m{N}-fixtures/{name}.json`); don't inline JSON.
-
----
+<!-- tpl: Prose-and-assertions only — no test code. One row per Dimension;
+bound to the /write-unit-test skill; ≥50% negative paths; every Failure Mode
+row and every Metrics row gets a test. Tiers: unit (pure logic, handlers,
+boundaries — empty/null/max/malformed/unicode) · integration (real stack, mock
+only at system boundaries, deterministic failure injection per Failure Mode) ·
+end-to-end (e2e) — any user-facing Category (CLI / UI / API) gets at least one
+user-centric scenario via test-e2e* walking the real path (subprocess CLI /
+real HTTP request / rendered UI); a unit test is not a substitute. Also
+include regression rows (pre-existing behaviour that must not change — "N/A —
+greenfield" if none) and idempotency/replay rows (any retry semantics).
+Non-self-evident input shape → point at a fixture
+(samples/fixtures/m{N}-fixtures/{name}.json); don't inline JSON. Hard-to-
+describe behaviour in prose ⇒ the Goal is fuzzy — fix the Goal, not this
+table. -->
 
 ## Acceptance Rubric (single scoring surface)
-
-> Replaces separate acceptance-criteria / eval-command / evidence sections — there is no other scoreboard. **5–12 rows after pruning**: one per Section outcome, failure class, or hygiene gate — never one per Dimension (that ledger is the Test Specification). Keep the standard rows whose surface is touched; delete the rest. Authoring fills every column except **Graded**; VERIFY fills **Graded**.
->
-> **Expected litmus:** every Expected is mechanically checkable — an exit code, a literal substring, or a match count. Can't write it that way? The criterion is fuzzy — fix the criterion, not the grading.
 
 | # | Criterion (observable outcome) | Verify (copy-paste) | Expected | Priority | Graded (VERIFY) |
 |---|--------------------------------|---------------------|----------|----------|-----------------|
@@ -359,67 +315,95 @@ Also include: **regression** tests (pre-existing behaviour that must not change 
 | S8 | No oversize source file | `git diff --name-only origin/main \| grep -v '\.md$' \| xargs wc -l 2>/dev/null \| awk '$1>350 && $2!="total"'` | no output | P0 | |
 | S9 | Orphan sweep | Dead Code Sweep greps | 0 matches | P0 | |
 
-**Grading protocol (VERIFY):**
+**Grading protocol (VERIFY):** run the Verify command verbatim; grade ONLY from its output. Graded = ✅/❌ + the one decisive output line (`342 passed`); long evidence goes to PR Session Notes with a pointer here. **Ship gate:** every row graded, every P0 ✅ → eligible for CHORE(close); any ❌ or empty cell → return to EXECUTE; a P1 ❌ ships only with an Indy-acked deferral quote in Discovery.
 
-1. Run the Verify command verbatim; grade ONLY from its output — never from having read the code or "just fixed it".
-2. Graded = ✅/❌ plus the one decisive output line (`342 passed`). Never paste blocks; long evidence goes to PR Session Notes with a pointer here.
-3. **Ship gate:** every row graded, every P0 ✅ → eligible for CHORE(close). Any ❌ or empty cell → return to EXECUTE. A P1 ❌ ships only with an Indy-acked deferral quote in Discovery.
+<!-- tpl: The single scoring surface — no other scoreboard. 5–12 rows after
+pruning: one per Section outcome, failure class, or hygiene gate — never one
+per Dimension (that ledger is the Test Specification). Keep the standard S-rows
+whose surface is touched; delete the rest. Expected litmus: every Expected is
+mechanically checkable — an exit code, a literal substring, or a match count;
+can't write it that way → the criterion is fuzzy — fix the criterion, not the
+grading. Authoring fills every column except Graded; VERIFY fills Graded. -->
 
-### Behaviour evals (delete unless the diff changes prompt/model/agent behaviour)
+### Behaviour evals
 
-- **Grounding rule:** {one sentence the output must never violate — e.g. "responses cite only retrieved rows, never invented identifiers"}
+- **Grounding rule:** {one sentence the output must never violate}
 - **Golden set:** `samples/fixtures/{path}` — {N} cases across {3–5 coverage axes, incl. the nightmare case}. A failure found in the wild becomes a new case; the set only grows.
 - **Ship threshold:** grounding 100% · task pass ≥{N}% · 0 critical failures on {nightmare case}. Each threshold is one rubric row with the command that computes it.
 - **Fallback:** below threshold or low confidence → {named recoverable behaviour}; fabricated output is a P0 ❌.
 
----
+<!-- tpl: Delete this whole sub-section unless the diff changes prompt/model/
+agent behaviour. Grounding-rule example: "responses cite only retrieved rows,
+never invented identifiers." -->
 
 ## Dead Code Sweep
-
-> Mandatory when the spec deletes or replaces files.
 
 **1. Orphaned files — deleted from disk and git.**
 
 | File to delete | Verify |
 |----------------|--------|
-| `path/to/old_file.ext` | `test ! -f path/to/old_file.ext` |
+| `{path/to/old_file.ext}` | `test ! -f {path/to/old_file.ext}` |
 
-**2. Orphaned references — zero remaining imports/uses.** For every deleted file and removed/renamed public symbol, grep the repo; non-zero = stale.
+**2. Orphaned references — zero remaining imports/uses.**
 
 | Deleted symbol/import | Grep | Expected |
 |-----------------------|------|----------|
-| `old_symbol` | `grep -rn "old_symbol" src/ \| head` | 0 matches |
+| `{old_symbol}` | `grep -rn "{old_symbol}" src/ \| head` | 0 matches |
 
-No deletions → "N/A — no files deleted."
-
----
-
-## Discovery (consult log)
-
-> **Empty at creation.** Append as the work surfaces consults and decisions — this is the spec's running record where deferrals and skill outcomes are proven.
-
-- **Consults** — Architecture / Legacy-Design / gate-flag triage: the question asked + Indy's decision.
-- **Metrics review** — events added, extra events found during `/review`, and analytics/funnel playbook update or explicit no-change reason.
-- **Skill chain outcomes** — `/write-unit-test`, `/review`, `/review-pr`, `kishore-babysit-prs` results (iteration counts, findings dispositioned).
-- **Deferrals** — every "deferred to follow-up" needs an **Indy-acked verbatim quote** here, format `> Indy (YYYY-MM-DD HH:MM): "<quote>" — context: <which item, why>`. An agent-unilateral deferral is **incomplete scope, not deferral**, and blocks CHORE(close) until the item lands or the quote is captured.
-
----
-
-## Skill-Driven Review Chain (mandatory)
-
-> Three skills gate implementation-complete → PR-merged, in order. Each one's output is recorded in **Discovery (consult log)** above.
-
-| When | Skill | What it does | Required output |
-|------|-------|--------------|-----------------|
-| After implementation, before CHORE(close) | `/write-unit-test` | Audits diff coverage vs this Test Specification. Catches happy-path-only, missing negatives, fixture drift. | Clean. Iteration count + final coverage in Discovery. |
-| After tests pass, before CHORE(close) | `/review` | Adversarial diff review vs this spec, `docs/architecture/`, REST guide (HTTP), `dispatch/write_zig.md` (Zig), Failure Modes, Invariants, and Metrics coverage. | Clean OR every finding dispositioned; missing metrics update code, tests, and the analytics/funnel playbook before close. |
-| After `gh pr create` | `/review-pr` | Review-comments the open PR against the immutable diff (squash artifacts, post-rebase races, codegen drift). | Comments addressed (fixup/amend) before human review/merge. |
-
-Skipping any one violates CHORE(close). Skill unavailable (MCP down) → document the skip in Discovery AND the PR description with a timestamp and a "rerun before merge" note.
-
----
+<!-- tpl: Mandatory when the spec deletes or replaces files: for every deleted
+file and removed/renamed public symbol, grep the repo; non-zero = stale. Use
+the same word-boundary pattern as the discovery grep. No deletions → replace
+both tables with "N/A — no files deleted." -->
 
 ## Out of Scope
 
 - {Item explicitly not in this spec — points at a follow-up spec or "future work"}
-- {Item}
+
+---
+
+<!-- tpl: The two sections below are the AUTHORING RECORD — written before the
+implementation sections above, read once by the executing agent at PLAN for
+intent, and never re-litigated during EXECUTE. They sit last so the executor's
+working sections stay front-loaded. -->
+
+## Product Clarity (authoring record)
+
+1. **Successful user moment** — {the single observable moment that proves this worked — a scene, not a metric}
+2. **Preserved user behaviour** — {what users do today that keeps working unchanged; breaking any of it is a redesign}
+3. **Optimal-way check** — {is this the most direct way to deliver moment #1? name the gap to the unconstrained-optimal shape and why it's acceptable now}
+4. **Rebuild-vs-iterate** — {would a larger refactor serve better? verdict here; rationale in Decomposition below. A refactor that trades run-to-run determinism away is wrong by default}
+5. **What we build** — {the shortest artifact list that delivers moment #1}
+6. **What we do NOT build** — {adjacent scope rejected, one-line reason each — seeds Out of Scope}
+7. **Fit with existing features** — {what this compounds with; the one feature it must not destabilize}
+8. **Surface order** — {CLI-first (repo default), UI-first, or both; justify divergence}
+9. **Dashboard restraint** — {what the UI must hide until the signal behind it is real: no controls before evidence, no quality claims before counters}
+10. **Confused-user next step** — {the self-serve move (a command, an error message, a doc); "file a ticket" means a surface is missing from item 5}
+
+<!-- tpl: Indy's product questions, answered in order at authoring BEFORE the
+implementation sections are written — so the authoring agent holds the product
+behaviour, not just the file list. One short paragraph or list item each. A
+question that can't be answered yet is a [?] that blocks the spec (golden-path
+rule, AGENTS.md). Internal-only work: answer 1–7 compactly; 8–10 may be "N/A —
+no user surface" with the reason. -->
+
+## Decomposition & alternatives (patch vs refactor)
+
+- **Chosen shape:** {why this Section/Workstream split — the decomposition rationale}
+- **Alternatives considered:** {≥1 — the larger refactor or the smaller patch — and why rejected for now}
+- **Patch-vs-refactor verdict:** this is a **{patch | refactor}** because {reason}. {If a larger refactor is the right long game but out of scope, name the follow-up spec rather than silently mud-patching.}
+
+<!-- tpl: Indy's rule — don't ship a mud-patch when the problem wants a
+refactor, and don't refactor when a patch is right. Match solution-size to
+problem-size; surface the call BEFORE approval, not mid-PR. Weigh against the
+platform constants (docs/architecture/direction.md). -->
+
+## Discovery (consult log)
+
+- **Consults** — Architecture / Legacy-Design / gate-flag triage: the question asked + Indy's decision.
+- **Metrics review** — events added, extra events found during `/review`, analytics/funnel playbook update or the explicit no-change reason.
+- **Skill-chain outcomes** — `/write-unit-test`, `/review`, `/review-pr`, `kishore-babysit-prs` results (order per `AGENTS.md` CHORE(close); iteration counts, findings dispositioned).
+- **Deferrals** — every "deferred to follow-up" needs an **Indy-acked verbatim quote** here, format `> Indy (YYYY-MM-DD HH:MM): "<quote>" — context: <which item, why>`. An agent-unilateral deferral is **incomplete scope, not deferral**, and blocks CHORE(close) until the item lands or the quote is captured.
+
+<!-- tpl: Empty at creation (keep the four bullet headers). This is the spec's
+running record — where deferrals and skill outcomes are proven as the work
+proceeds. -->
