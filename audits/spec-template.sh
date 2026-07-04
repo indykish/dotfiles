@@ -113,7 +113,7 @@ REQUIRED_SECTIONS=(
   '^#+ .*Failure Modes:Failure Modes'
   '^#+ .*Invariants:Invariants'
   '^#+ .*Test Specification:Test Specification'
-  '^#+ .*Acceptance Criteria:Acceptance Criteria'
+  '^#+ .*Acceptance (Criteria|Rubric):Acceptance Rubric (legacy heading Acceptance Criteria accepted)'
   '^#+ .*Discovery:Discovery (consult log)'
 )
 
@@ -126,6 +126,8 @@ PLACEHOLDER_SENTINELS=(
   'path/to/file.ext'
   'test_<short_name>'
   'why this is the right pattern to mirror'
+  '{outcome the user can observe}'
+  '{exit 0 / substring / 0 matches}'
 )
 
 scan_spec() {

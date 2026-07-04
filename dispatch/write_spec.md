@@ -36,7 +36,7 @@ agent-facing template mandates the determinism sections the executing agent read
 to emit invariant output: PR Intent & comprehension handshake, Applicable Rules,
 Applicable Gates, Overview, Prior-Art / Reference Implementations, Files Changed,
 Decomposition & alternatives, Sections, Metrics & Observability, Interfaces,
-Failure Modes, Invariants, Test Specification, Acceptance Criteria, Discovery. A spec missing one — or
+Failure Modes, Invariants, Test Specification, Acceptance Rubric (legacy heading `Acceptance Criteria` accepted), Discovery. A spec missing one — or
 leaving template residue (`path/to/file.ext`, `test_<short_name>`,
 `{one-line reason}`) — forces the agent to guess intent.
 
@@ -82,10 +82,11 @@ satisfies the check on the same hook run. `--staged` is the opt-in narrowing mod
 Incident-derived rules the deterministic half can't check — apply while writing the spec, not after:
 
 - **Validate intent against the repo, not the words.** Grep the codebase for the existing meaning of the spec's key nouns ("e2e", "acceptance", "live") before encoding them. The **duplicate-target smell**: a new target/recipe that comes out byte-identical to an existing one means the abstraction is wrong — STOP and surface (M74_004 made `live-e2e-all` identical to `test-integration`). And verify lanes in the real CI environment — a green local `docker compose` run proves nothing about a compose-less CI container.
-- **Teardown / rename / flip specs open with a blast-radius grep.** `git grep -rn -w '<token>'` from repo root, no path or file-type filter; every surviving hit lands in Files Changed with production and test files separated. Word-boundary, never quoted-literal (YAML / multiline-string refs carry no quotes); grep filenames as tokens, never path-anchored (same-directory `@import("foo.zig")` has no path prefix); separate true targets from same-spelling-different-meaning hits (skill ref vs repo slug). The spec's invariant/Eval greps must use the same pattern as the discovery grep. (Incidents: M34_001, M62_001, M75_001.)
+- **Teardown / rename / flip specs open with a blast-radius grep.** `git grep -rn -w '<token>'` from repo root, no path or file-type filter; every surviving hit lands in Files Changed with production and test files separated. Word-boundary, never quoted-literal (YAML / multiline-string refs carry no quotes); grep filenames as tokens, never path-anchored (same-directory `@import("foo.zig")` has no path prefix); separate true targets from same-spelling-different-meaning hits (skill ref vs repo slug). The spec's invariant/rubric greps must use the same pattern as the discovery grep. (Incidents: M34_001, M62_001, M75_001.)
 - **Grep-gate carve-outs for English.** A `\b(word)\b` zero-match gate overreaches when the word has a common English meaning ("run" is the usual offender). Encode the intent as enumerated product phrases (`run interrupt`, `spec init`, `gate loop`); when a literal gate fires on legitimate English, amend the spec — don't contort the prose.
 - **No pre-/post-milestone or "production today" framing while pre-launch** — there is no production baseline to anchor a current-vs-future split against. Describe the target design as *the* design; mark a superseded model neutrally ("this file describes the single-process model; the M80 split supersedes it"), never as "pre-M80 / operational truth".
 - **Security-boundary or backend-heavy follow-ups get their own spec + PR.** RBAC, secret reveal, account/tenant deletion, auth webhooks, new endpoints/scheduled jobs/billing policy — they carry a different review profile (AUTH chain, focused diff, own greptile pass) and never fold into a UI-polish PR, even after a "just fold it in". Small pure-UI items bundle fine; restoring a folded spec to `pending/` is cheap.
+- **Rubric rows are outcomes, not Dimensions.** The Acceptance Rubric is the spec's single scoring surface: 5–12 rows (Section outcomes, failure classes, hygiene gates); every Expected mechanically checkable (exit code / literal substring / match count); Graded = ✅/❌ + one decisive output line. Per-Dimension proof lives in the Test Specification; evidence walls and per-Dimension rubric rows are violations.
 
 ## Family
 

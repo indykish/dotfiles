@@ -16,7 +16,7 @@ A milestone spec is a **goal rulebook** the executing agent plans and ships from
 - **Surface** — which files, interfaces, gates, and invariants are in play?
 - **Prior art** — what existing code/pattern does the agent mirror (so it doesn't reinvent)?
 - **Alternatives** — why this shape, and not a larger refactor or a smaller patch?
-- **Proof** — which tests and commands prove the claims?
+- **Proof** — which tests and commands prove the claims? The **Acceptance Rubric** is the single scoring surface.
 
 It must NOT pin implementation detail that rots within a sprint: exact allocator/capacity, library version, line-by-line code, exact Structured Query Language (SQL) Data Definition Language (DDL), or import statements. The agent derives those from the repository.
 
@@ -36,6 +36,7 @@ It must NOT pin implementation detail that rots within a sprint: exact allocator
 | 4 | Pinning library versions | *"Use the existing Redis client"* + import pointer. | The package manifest is the source of truth. |
 | 5 | Step-by-step ordering ("Step 1… Step 2…") | Use **Sections** (value slices); let the agent sequence within. | Step lists become stale ordering; slices stay coherent. |
 | 6 | Writing test code in the spec | Name tests + assert behaviour in prose; the agent writes them. | Inline test code drifts the moment the framework changes. |
+| 7 | One rubric row per Dimension, or pasted evidence walls | 5–12 outcome rows; Graded = ✅/❌ + one decisive output line. | The rubric is a scoreboard, not a ledger — the Test Specification tracks Dimensions. |
 
 Slipped into one? The fix is usually **move the detail to the implementing-agent prologue** (point at a file) or **delete it** (the agent figures it out).
 
@@ -52,7 +53,7 @@ v{N}.0.0 (Prototype)                  major release
             └── Dimension (3.1, 3.2…) verifiable sub-unit — the unit of DONE
 ```
 
-**Dimension** is the atomic, verifiable unit: **1 Dimension → 1 Test → 1 Acceptance Criterion**, marked `DONE` individually in the same commit as its code. "Mark Dimensions DONE" (per `AGENTS.md`) resolves here. A Section is DONE when all its Dimensions are.
+**Dimension** is the atomic, verifiable unit: **1 Dimension → 1 Test**, marked `DONE` individually in the same commit as its code. "Mark Dimensions DONE" (per `AGENTS.md`) resolves here. A Section is DONE when all its Dimensions are. Outcome-level grading lives in the **Acceptance Rubric** — one row per Section or failure class, never one per Dimension (the Test Specification is the per-Dimension ledger).
 
 **Batch (B1, B2…)** — parallel execution group. Workstreams in the same batch run concurrently; batches are sequential (B2 starts after B1's gates clear).
 
@@ -72,7 +73,7 @@ A milestone is not complete until evidence is captured: commands, logs, screensh
 
 ## Guardrails
 
-- **Length — hard upper bound 320 lines.** Typical specs 150–300. Past the bound before Verification Evidence → scope is two specs sharing one file; split.
+- **Length — hard upper bound 320 lines.** Typical specs 150–300. Past the bound before the Acceptance Rubric → scope is two specs sharing one file; split.
 - **Sections** — 3–9. **Workstreams** — ≤4 (5th cross-cutting only).
 - **File naming** — `docs/v{N}/{pending|active|done}/M{N}_{NNN}_P{Priority}_{CATEGORIES}_{NAME}.md` (e.g. `M40_001_P0_API_WORKER_SUBSTRATE.md`). Categories alphabetised.
 
@@ -119,6 +120,8 @@ SPEC AUTHORING RULES (load-bearing — do not delete):
 3. {external doc URL, if relevant} — {what convention to follow}
 
 Greenfield (no existing pattern)? Say so explicitly and point at the `docs/architecture/` doc that defines the shape.
+
+**Execution read order:** Overview → Files Changed → Applicable Rules & Gates → Sections → Acceptance Rubric. Product Clarity and Decomposition are authoring-time context — read once for intent; never re-litigated during EXECUTE.
 
 ---
 
@@ -336,39 +339,38 @@ Also include: **regression** tests (pre-existing behaviour that must not change 
 
 ---
 
-## Acceptance Criteria
+## Acceptance Rubric (single scoring surface)
 
-> Each verifiable by a command or output inspection. Not "works correctly" — a command.
+> Replaces separate acceptance-criteria / eval-command / evidence sections — there is no other scoreboard. **5–12 rows after pruning**: one per Section outcome, failure class, or hygiene gate — never one per Dimension (that ledger is the Test Specification). Keep the standard rows whose surface is touched; delete the rest. Authoring fills every column except **Graded**; VERIFY fills **Graded**.
+>
+> **Expected litmus:** every Expected is mechanically checkable — an exit code, a literal substring, or a match count. Can't write it that way? The criterion is fuzzy — fix the criterion, not the grading.
 
-- [ ] {Criterion} — verify: `{command}`
-- [ ] {Criterion} — verify: `{command}`
+| # | Criterion (observable outcome) | Verify (copy-paste) | Expected | Priority | Graded (VERIFY) |
+|---|--------------------------------|---------------------|----------|----------|-----------------|
+| R1 | {outcome the user can observe} (§1) | `{command}` | {exit 0 / substring / 0 matches} | P0 | |
+| R2 | Diff stays inside Files Changed | `git diff --name-only origin/main` | 0 paths missing from the Files Changed table | P0 | |
+| S1 | Unit tests pass | `make test` | exit 0 | P0 | |
+| S2 | Lint clean | `make lint` | exit 0 | P0 | |
+| S3 | Integration passes (HTTP/schema/Redis touched) | `make test-integration` | exit 0 | P0 | |
+| S4 | e2e walks the user path (user-facing Category) | `{test-e2e command}` | exit 0 | P0 | |
+| S5 | No leaks (allocator wiring touched) | `make memleak` | exit 0 | P0 | |
+| S6 | Cross-compile (Zig touched) | `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` | exit 0 | P0 | |
+| S7 | No secrets | `gitleaks detect` | exit 0 | P0 | |
+| S8 | No oversize source file | `git diff --name-only origin/main \| grep -v '\.md$' \| xargs wc -l 2>/dev/null \| awk '$1>350 && $2!="total"'` | no output | P0 | |
+| S9 | Orphan sweep | Dead Code Sweep greps | 0 matches | P0 | |
 
-Standard set (apply when relevant):
+**Grading protocol (VERIFY):**
 
-- [ ] `make lint` clean · `make test` passes
-- [ ] `make test-integration` passes (HTTP/schema/Redis touched)
-- [ ] `make memleak` clean (allocator wiring touched)
-- [ ] Cross-compile clean: `zig build -Dtarget=x86_64-linux && zig build -Dtarget=aarch64-linux` (Zig touched)
-- [ ] `gitleaks detect` clean · no file over 350 lines added
+1. Run the Verify command verbatim; grade ONLY from its output — never from having read the code or "just fixed it".
+2. Graded = ✅/❌ plus the one decisive output line (`342 passed`). Never paste blocks; long evidence goes to PR Session Notes with a pointer here.
+3. **Ship gate:** every row graded, every P0 ✅ → eligible for CHORE(close). Any ❌ or empty cell → return to EXECUTE. A P1 ❌ ships only with an Indy-acked deferral quote in Discovery.
 
----
+### Behaviour evals (delete unless the diff changes prompt/model/agent behaviour)
 
-## Eval Commands (post-implementation)
-
-> Copy-pasteable. ALL must pass before opening a PR. Adapt to the primary language; omit what doesn't apply.
-
-```bash
-# E1: {short description}
-{command} && echo "PASS" || echo "FAIL"
-# E2: Build  — {project build command}
-# E3: Tests  — {test command}
-# E4: Lint   — make lint 2>&1 | grep -E "✓|FAIL"
-# E5: Cross-compile (Zig only) — zig build -Dtarget=x86_64-linux 2>&1 | tail -3
-# E6: Gitleaks — gitleaks detect 2>&1 | tail -3
-# E7: 350-line gate (exempts .md) —
-git diff --name-only origin/main | grep -v '\.md$' | xargs wc -l 2>/dev/null | awk '$1 > 350 {print "OVER: "$2": "$1}'
-# E8: Orphan sweep (empty = pass) — grep -rn "{old_symbol}" src/ | head
-```
+- **Grounding rule:** {one sentence the output must never violate — e.g. "responses cite only retrieved rows, never invented identifiers"}
+- **Golden set:** `samples/fixtures/{path}` — {N} cases across {3–5 coverage axes, incl. the nightmare case}. A failure found in the wild becomes a new case; the set only grows.
+- **Ship threshold:** grounding 100% · task pass ≥{N}% · 0 critical failures on {nightmare case}. Each threshold is one rubric row with the command that computes it.
+- **Fallback:** below threshold or low confidence → {named recoverable behaviour}; fabricated output is a P0 ❌.
 
 ---
 
@@ -414,22 +416,6 @@ No deletions → "N/A — no files deleted."
 | After `gh pr create` | `/review-pr` | Review-comments the open PR against the immutable diff (squash artifacts, post-rebase races, codegen drift). | Comments addressed (fixup/amend) before human review/merge. |
 
 Skipping any one violates CHORE(close). Skill unavailable (MCP down) → document the skip in Discovery AND the PR description with a timestamp and a "rerun before merge" note.
-
----
-
-## Verification Evidence
-
-> Filled during VERIFY. Proves spec claims are met.
-
-| Check | Command | Result | Pass? |
-|-------|---------|--------|-------|
-| Unit tests | `make test` | {paste snippet} | |
-| Integration tests | `make test-integration` | {paste snippet} | |
-| e2e (user-centric) | `{test-e2e command}` | {paste snippet} | |
-| Lint | `make lint` | {paste snippet} | |
-| Cross-compile (Zig) | `zig build -Dtarget=x86_64-linux` | {paste snippet} | |
-| Gitleaks | `gitleaks detect` | {paste snippet} | |
-| Dead code sweep | `grep -rn {symbol} src/` | {paste snippet} | |
 
 ---
 

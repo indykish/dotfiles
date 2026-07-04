@@ -35,7 +35,7 @@ The three outcomes every step below serves:
 
 - **Deterministic / invariant** — the agent plans and builds with no `[?]`; every claim is a test; every invariant is enforced by code, not review discipline.
 - **Review-clean** — the code it produces trips no greptile finding, because the spec pre-commits to the exact `RULES.md` rule IDs and gates the diff touches.
-- **Reported** — Discovery (consult log), Verification Evidence, and skill-chain outcomes are populated as the work proceeds.
+- **Reported** — Discovery (consult log), the Acceptance Rubric's Graded column, and skill-chain outcomes are populated as the work proceeds.
 
 ## Triggers
 
@@ -71,9 +71,10 @@ This is the step that prevents greptile findings — the spec becomes a pre-comm
 - Decompose **Sections** into numbered **Dimensions** (3.1, 3.2 …) — the unit of DONE. **Every Dimension → one Test** (tiered: unit/integration/e2e per `/write-unit-test`; any user-facing Category gets a user-centric `test-e2e*` scenario).
 - **Every Failure Mode → a negative test.** **Every Invariant → enforced by code** (compiler, lint, comptime assertion, runtime check) — never by review discipline.
 - **Every Metrics row → event/test proof.** User-facing or operator-facing specs declare product/operator signals, privacy guards, and analytics/funnel playbook updates; internal-only cleanup explicitly says no signal changed.
-- **Reporting spine** — **Discovery (consult log)** carries consults, skill-chain outcomes, and Indy-acked deferral quotes; **Verification Evidence** carries the VERIFY paste-outs. Both empty at creation, populated as work proceeds.
+- **Rubric = 5–12 outcome rows** — one per Section outcome, failure class, or hygiene gate (never per Dimension); each with a copy-paste Verify command and a mechanically checkable Expected (exit code / literal substring / match count). Standard rows come pre-filled in the template — prune to the touched surface.
+- **Reporting spine** — **Discovery (consult log)** carries consults, skill-chain outcomes, and Indy-acked deferral quotes; the **Acceptance Rubric's Graded column** carries the VERIFY verdicts (✅/❌ + one decisive output line each). Both empty at creation, populated as work proceeds.
 
-→ Fills **Sections (+ Dimensions)**, **Metrics & Observability**, **Failure Modes**, **Invariants**, **Test Specification (tiered)**, **Acceptance Criteria**, **Discovery**, **Verification Evidence**.
+→ Fills **Sections (+ Dimensions)**, **Metrics & Observability**, **Failure Modes**, **Invariants**, **Test Specification (tiered)**, **Acceptance Rubric**, **Discovery**.
 
 ## Step 4 — Mechanics (the easy part)
 
@@ -114,7 +115,7 @@ Before the spec leaves `pending/`, it must pass this checklist — the determini
 - [ ] **Metrics & Observability declares events or explicitly says no product/operator signal changed**; any analytics/funnel playbook update is listed
 - [ ] **every Dimension has a Test**; **every Failure Mode has a negative test**; every Invariant is code-enforceable
 - [ ] Prior-Art reference named (or "greenfield — shape in `docs/architecture/`")
-- [ ] reporting sections present (Discovery, Verification Evidence)
+- [ ] reporting sections present (Discovery; Acceptance Rubric with Graded column empty)
 - [ ] `bash audits/spec-template.sh --staged` is clean (it BLOCKs missing required sections and unfilled `{placeholders}`)
 
 Then commit in the current authoring context:
