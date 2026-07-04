@@ -13,7 +13,7 @@ This doc binds **whoever ships the change** — Kishore directly, OR an agent ac
 
 - **The agent** runs the Quick checklist below as part of `CHORE(close)` and the §10 pre-PR gate, opens the PR via `gh pr create`, and answers `kishore-babysit-prs` review feedback. The agent is the primary enforcer.
 - **Kishore** opens the PR directly when working without an agent. Same checklist applies.
-- **A reviewer** (human or `/review`/`/review-pr`) checks the PR against this doc adversarially. A red box on the checklist that's not justified in the PR description is grounds to block merge.
+- **A reviewer** (human or `/review`) checks the PR against this doc adversarially. A red box on the checklist that's not justified in the PR description is grounds to block merge.
 
 When this doc says "you" it means the agent or the human author — same rules either way. When it says "MUST" it means a missing or wrong implementation blocks merge; "SHOULD" means deviate only with a one-line rationale in the PR description.
 

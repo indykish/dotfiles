@@ -168,9 +168,11 @@ actual docs page. The changelog entry is necessary and never sufficient.
 **Collapsing two near-named steps because they share a stem.** Indy had to
 spell out in the rules that the local pre-commit `/review` (skill-chain
 step 2, no Pull Request yet) is *not* interchangeable with the post-PR
-`/review-pr` (step 3) — because I'd treated "I reviewed it" as covering
+`/review-pr` (step 3, since retired — Jul 2026: it duplicated `/review`'s
+checklist without ever posting to the PR, and `kishore-babysit-prs` already
+covers post-push triage) — because I'd treated "I reviewed it" as covering
 both. The general lesson: when two tools or stages share a stem (`/review`
-vs `/review-pr`, the `verify` lifecycle stage vs `make verify`), treat them
+vs a sibling step, the `verify` lifecycle stage vs `make verify`), treat them
 as distinct until I've checked, not the same until proven otherwise.
 
 ---

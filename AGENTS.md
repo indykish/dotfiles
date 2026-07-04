@@ -92,7 +92,7 @@ A fact with no firing gate and no doc home is dropped on purpose, or it is a mis
 
 ## Auto-mode autonomy
 
-Default gates commit/push/PR on explicit ask. **Auto mode + forward-looking start instruction** ("start on M40"/"ship it"/"drive to PR") = standing authorization. **Granted without re-asking** (auto mode + active spec OR start instruction): `git commit` (focused, conventional, gitleaks-clean), `git push origin <feature-branch>` (non-force), `gh pr create` (after CHORE(close)), `gh pr review` via `/review-pr`. **Action-triggered guards still block** — autonomy bypasses none. **Investigation framing:** "look at this"/"what's going on"/"review this" = investigate, not authorize. Drive forward only on action verbs.
+Default gates commit/push/PR on explicit ask. **Auto mode + forward-looking start instruction** ("start on M40"/"ship it"/"drive to PR") = standing authorization. **Granted without re-asking** (auto mode + active spec OR start instruction): `git commit` (focused, conventional, gitleaks-clean), `git push origin <feature-branch>` (non-force), `gh pr create` (after CHORE(close)). **Action-triggered guards still block** — autonomy bypasses none. **Investigation framing:** "look at this"/"what's going on"/"review this" = investigate, not authorize. Drive forward only on action verbs.
 
 ---
 
@@ -210,10 +210,9 @@ Required when spec involved — after last COMMIT, before PR. Also runs when par
 |---|---|---|---|
 | 1 | VERIFY | `/write-unit-test` | Already ran — confirm clean. |
 | 2 | Before CHORE(close) commits | `/review` | Adversarial diff review vs spec, architecture, REST guide (HTTP), `dispatch/write_zig.md` (Zig), Failure Modes/Invariants. Address or document deferrals. |
-| 3 | After CHORE(close) + `gh pr create` | `/review-pr` | Comments via `gh pr review`. Address before human review/merge. |
-| 4 | After every push | `kishore-babysit-prs` | Polls greptile per cadence, walks every review id, triages P0/P1 vs RULES.md, fixes+replies+reschedules. Stops on two consecutive empty polls. Never `gh pr checks --watch` for greptile. |
+| 3 | After every push | `kishore-babysit-prs` | Polls greptile per cadence, walks every review id, triages P0/P1 vs RULES.md, fixes+replies+reschedules. Stops on two consecutive empty polls. Never `gh pr checks --watch` for greptile. |
 
-Skills required. Skipping = violation. **Step 2 runs the *local* `/review` (pre-commit, no PR) — not the post-PR `/review-pr` (step 3); the two are not interchangeable.** MCP down → PR Session Notes: *"`/review` skipped — MCP unavailable <ts>; rerun before merge."*
+Skills required. Skipping = violation. **Step 2 runs the *local* `/review` (pre-commit, no PR) — the diff review happens once, before the push; `kishore-babysit-prs` (step 3) is the post-push arm, triaging what reviewers actually post rather than re-running the same checklist.** MCP down → PR Session Notes: *"`/review` skipped — MCP unavailable <ts>; rerun before merge."*
 
 **Required outputs:** all Dimensions/Sections `DONE` (or `IN_PROGRESS` if parked); spec moved `docs/v*/active/`→`docs/v*/done/` (iff fully complete); new `<Update>` in `~/Projects/docs/changelog.mdx` (template + version-bump matrix in `~/Projects/dotfiles/skills/release-template.md` — re-source each release, never paraphrase) **AND — re-reading the spec — the affected `~/Projects/docs/` pages revised to match (endpoints/CLI/flags/behavior); a changelog `<Update>` alone is insufficient when documented behavior changes**; PR `## Session notes` with decisions, assumptions, dead ends, deferrals, `/write-unit-test` + `/review` outcomes, `kishore-babysit-prs` final report; orphan sweep complete (RULE ORP); ephemeral handoff docs deleted (`docs/**/HANDOFF_*.md`, `docs/**/handoff*.md`, `HANDOFF.md` at any depth — they brief the next agent, never the PR); **pre-commit `git status -uall` audit — every modified/untracked/conflict-resolved/hook-managed file is staged into the CHORE(close) commit or documented-as-excluded with reason in the commit body; `git status` MUST be empty post-commit before opening/updating the PR;** working tree clean before PR open/update; version sync (`VERSION` touched → `make sync-version`, commit propagated `build.zig.zon`/`agentsfleet/package.json`/`agentsfleet/src/cli.js`; `make check-version` passes).
 

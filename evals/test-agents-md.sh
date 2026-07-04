@@ -127,9 +127,9 @@ expect_fail "trigger surface bites when an extension is dropped" \
   "trigger surface missing extension: .sql" \
   "perl -pi -e 's/\.sql//g' AGENTS.md"
 
-expect_fail "skill-chain bites when /review-pr is removed from CHORE(close)" \
+expect_fail "skill-chain bites when kishore-babysit-prs is removed from CHORE(close)" \
   "skill chain not in order" \
-  "perl -ni -e 'print unless m{/review-pr}' AGENTS.md"
+  "perl -ni -e 'print unless m{kishore-babysit-prs}' AGENTS.md"
 
 expect_fail "always-forbidden bites when the no-verify ban is removed" \
   "always-forbidden item missing: no-verify" \

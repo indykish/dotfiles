@@ -75,7 +75,7 @@ that need reading comprehension. Together they prove the ruleset still holds
 - An override path quietly widens ("user-only" → "auto-mode covers"); autonomy
   creep.
 - The always-forbidden list shrinks (e.g. someone removes `gitleaks` enforcement).
-- The skill-chain order shuffles (`/review-pr` before `/review`).
+- The skill-chain order shuffles (`kishore-babysit-prs` before `/review`).
 - The HARNESS VERIFY block stops listing a dispatch row.
 - `audits/agents-md.md` itself loses scenarios.
 

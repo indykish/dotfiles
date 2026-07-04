@@ -10,7 +10,7 @@ duplicating it. The deterministic checks run in the **product repo** (`make lint
 **Signal legend:**
 
 - ⚪ delegated — the REST checklist is enforced in the product repo (agentsfleet),
-  by `make lint` + adversarial `/review`/`/review-pr` against the guide. Dotfiles
+  by `make lint` + adversarial `/review` against the guide. Dotfiles
   carries only the routing + the discipline that the guide is a *checklist, not
   background reading*.
 

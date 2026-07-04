@@ -110,7 +110,7 @@ NAMED_SCENARIOS=(
   "UI"                       # Scenario 4 (covers UI/Zig/TS/JS/shell/CI)
   "Handover"                 # Scenario 5
   "Verification lifecycle"   # Scenario 6
-  "/review-pr"               # Scenario 7
+  "kishore-babysit-prs"      # Scenario 7
   "/write-unit-test"         # Scenario 8
   "Hot-fix"                  # Scenario 9
   "Dotfiles"                 # Scenario 10

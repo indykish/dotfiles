@@ -86,7 +86,7 @@ done
 [[ $missing_bans -eq 0 ]] && pass "always-forbidden list (${#FORBIDDEN_KEYS[@]} bans present)"
 
 # ---------------------------------------------------------------------------
-# 5. Skill-chain order — /write-unit-test → /review → /review-pr → babysit.
+# 5. Skill-chain order — /write-unit-test → /review → babysit.
 #    Anchored to within the CHORE(close) section so a stray earlier mention
 #    cannot satisfy the check.
 # ---------------------------------------------------------------------------
@@ -95,12 +95,11 @@ awk '
   /^### |^## /                            { if (in_section) in_section=0 }
   in_section && /\/write-unit-test/  && !a { a=NR }
   in_section && /\/review[^-]/       && a && !b { b=NR }
-  in_section && /\/review-pr/        && b && !c { c=NR }
-  in_section && /kishore-babysit-prs/&& c && !d { d=NR }
-  END { exit (a && b && c && d && a<b && b<c && c<d) ? 0 : 1 }
+  in_section && /kishore-babysit-prs/&& b && !c { c=NR }
+  END { exit (a && b && c && a<b && b<c) ? 0 : 1 }
 ' "$AGENTS" \
   && pass "skill-chain ordering (anchored to CHORE(close))" \
-  || fail "skill chain not in order within CHORE(close): /write-unit-test → /review → /review-pr → kishore-babysit-prs"
+  || fail "skill chain not in order within CHORE(close): /write-unit-test → /review → kishore-babysit-prs"
 
 # ---------------------------------------------------------------------------
 # 6. HARNESS VERIFY rows — every gate keyword in the verdict block (HARNESS_KEYS).

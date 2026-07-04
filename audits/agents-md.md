@@ -114,13 +114,12 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 6.9 | Does CHORE(open) record a `Test Baseline:` line (unit + integration counts from `make _lint_zig_test_depth`) in the spec header? | YES |
 | 6.10 | Does VERIFY end with a Test Delta row (growth vs the CHORE(open) baseline) plus a lacking-areas verdict, with zero/negative unit delta on a code-adding diff requiring justification or a return to EXECUTE? | YES |
 
-### Scenario 7 — Reviewing / `/review-pr` of a specification
+### Scenario 7 — Review discipline before merge
 
 | # | Question | Expected |
 |---|---|---|
-| 7.1 | Is the skill chain order `/write-unit-test` → `/review` → `/review-pr` → `kishore-babysit-prs` preserved? | YES |
+| 7.1 | Is the skill chain order `/write-unit-test` → `/review` → `kishore-babysit-prs` preserved? | YES |
 | 7.2 | Is `/review` required **before** CHORE(close) commits? | YES |
-| 7.3 | Is `/review-pr` required **after** CHORE(close) + `gh pr create`? | YES |
 | 7.4 | Does `kishore-babysit-prs` run after every push and stop only on two consecutive empty polls? | YES |
 | 7.5 | Is using `gh pr checks --watch` for greptile explicitly disallowed? | YES |
 | 7.6 | If an MCP-backed skill is unavailable, must PR Session Notes record the skip + a "rerun before merge" note? | YES |
@@ -353,7 +352,7 @@ Scenario verdicts:
 | 4  | Editing UI/Zig/TS/JS/shell/CI files     | <N/M YES>       |
 | 5  | Handover pickup                         | <N/M YES>       |
 | 6  | Verification lifecycle                  | <N/M YES>       |
-| 7  | Review / /review-pr                     | <N/M YES>       |
+| 7  | Review discipline before merge           | <N/M YES>       |
 | 8  | /write-unit-test with human steering    | <N/M YES>       |
 | 9  | Hot-fix / emergency                     | <N/M YES>       |
 | 10 | Dotfiles / docs-repo                    | <N/M YES>       |
