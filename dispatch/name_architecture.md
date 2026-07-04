@@ -72,8 +72,22 @@ ARCH: grounded in <topic-file>:<§X.Y> | proposal: <one-line> | status: <extends
 
 When the doc directly answers, no output is required.
 
-## CHORE(close) check
+## CHORE(close) check — both doc homes
 
-Every M-spec branch that touched flow-defining code produces a non-empty
-`git diff origin/main..HEAD -- docs/architecture/`. Else PR Session Notes documents
-why nothing architectural changed.
+Architecture truth has TWO homes with different audiences; an architecture-touching
+branch settles both before the Pull Request (PR) opens:
+
+- **Product repo `docs/architecture/**`** (internal design truth). Every M-spec
+  branch that touched flow-defining code produces a non-empty
+  `git diff origin/main..HEAD -- docs/architecture/`. Else PR Session Notes
+  documents why nothing architectural changed.
+- **Docs project `~/Projects/docs/`** (user-facing, `docs.agentsfleet.net`). When
+  the change alters documented user-facing behaviour (endpoints, Command-Line
+  Interface (CLI) surface, flags, flows users see), the affected pages are
+  revised per the CHORE(close) required
+  outputs in `AGENTS.md` — a changelog `<Update>` alone is insufficient.
+  Internal-only reshaping with no documented-behaviour change → no docs-project
+  edit, and Session Notes say so.
+
+Updating one home and not the other is the failure mode this section names: the
+internal doc drifts from what users are told, or vice versa.

@@ -683,6 +683,28 @@ Every triggered consult is logged in the active spec's **Discovery** section, or
 
 NLR is the cleanup-on-touch arm; NLG bans new legacy framing pre-v2.0.0; this guard covers the harder judgment calls ("should this whole subsystem exist") that need the user's input.
 
+## Comment Voice — New to the Codebase, Familiar with the Goal
+
+> [JUDGMENT → NEW:CMT]
+
+Indy's standing instruction (Jul 2026): write comments for a reader who is **new
+to the codebase but familiar with the goal of the project**. That reader knows
+WHAT the product does and why it exists; they don't know where things live, which
+invariants bind, or why this file deviates from the obvious approach.
+
+- **Explain the local WHY** — the constraint, invariant, or cross-module
+  interplay the code alone can't show (*"drained before deinit because the pool
+  recycles the conn"*, not *"call drain then deinit"*).
+- **Name the non-obvious neighbours** — when correctness depends on a sibling
+  file, registry, or cross-runtime pairing, say so by path/symbol. That map is
+  exactly what a codebase-newcomer lacks.
+- **Don't narrate the language or restate the line** (*"increment i"*), and
+  **don't re-explain the product goal** the reader already has.
+- **Review-context comments stay banned** — nothing about what changed, which
+  spec asked for it (MILESTONE-ID gate), or why the diff is correct; that is
+  PR/Session-Notes material, not code. Acronym expansion applies inside comments
+  (`AGENTS.md` §Owner & Style).
+
 ## Mid-Task Repo-Wide Flips Need a Blast-Radius Grep
 
 > [JUDGMENT → NEW:BLAST]
