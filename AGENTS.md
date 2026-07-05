@@ -106,6 +106,8 @@ Default gates commit/push/PR on explicit ask. **Auto mode + forward-looking star
 
 One per active stream. Stay inside; no edits outside, no reads from siblings. Merge only after VERIFY. `git checkout main && git branch feat/mNN-name && git worktree add ../agentsfleet-mNN-name feat/mNN-name && cd ../agentsfleet-mNN-name && bun install && (cd cli && bun install && bun run build)`. The root `bun install` hydrates the workspace (`ui/packages/*`); `cli/` is its own Bun project needing install + build (`test-unit-agentsfleet` spawns the built `cli/dist/bin/agentsfleet.js`). Post-merge: `git worktree remove ../agentsfleet-mNN-name`.
 
+**Mid-stream spec → ask before hydrating (default: same tree).** When a spec is created while already inside an active worktree, **ask Indy** whether to hydrate a fresh worktree or continue in the current one — do not silently spin one up. Indy leans **same tree**: a second worktree fragments the outcome across branches/PRs, costs a full `bun install` + build, and adds another PR to babysit. The mandate is to **complete the outcome in place**, not to ceremonially isolate every spec. Fold the new scope into the current spec/PR (extend it — reopen `done/`→`active/` if already closed) unless the new work is genuinely disjoint AND Indy opts into a separate tree.
+
 ---
 
 ## Action-Triggered Guards
