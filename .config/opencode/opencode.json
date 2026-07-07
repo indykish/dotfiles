@@ -219,7 +219,7 @@
       "name": "Z.ai Coding Plan",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "baseURL": "https://api.z.ai/api/paas/v4",
+        "baseURL": "https://api.z.ai/api/coding/paas/v4",
         "headers": {
           "Authorization": "Bearer {env:ZAI_API_TOKEN}"
         }
