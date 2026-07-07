@@ -214,6 +214,19 @@
           "name": "GLM 5.2"
         }
       }
+    },
+    "zai-coding-plan": {
+      "name": "Z.ai Coding Plan",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://api.z.ai/api/paas/v4",
+        "apiKey": "{env:ZAI_API_TOKEN}"
+      },
+      "models": {
+        "glm-5.2": {
+          "name": "GLM 5.2 (Z.ai Coding Plan)"
+        }
+      }
     }
   }
 }
