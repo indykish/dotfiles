@@ -220,7 +220,9 @@
       "npm": "@ai-sdk/openai-compatible",
       "options": {
         "baseURL": "https://api.z.ai/api/paas/v4",
-        "apiKey": "{env:ZAI_API_TOKEN}"
+        "headers": {
+          "Authorization": "Bearer {env:ZAI_API_TOKEN}"
+        }
       },
       "models": {
         "glm-5.2": {
