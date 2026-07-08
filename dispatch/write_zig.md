@@ -473,6 +473,25 @@ Rules:
 - On early exit (parse failure, missing row), just `return` — the `defer` handles drain + deinit.
 - `check-pg-drain` lint still runs but now targets only `PgQuery.from()` call sites.
 
+## SQL Statement Modules
+
+> [DETERMINISTIC → SQLMOD]
+
+New production Zig modules must not define SQL statement text inline. Put query
+text in a domain-local `sql.zig` and import it from the state/handler/service
+module. This mirrors `src/agentsfleetd/fleet_bundle/sql.zig`: table names and
+query statements stay grepable in one place, while the public module owns row
+mapping, allocator ownership, and error translation.
+
+Rules:
+- `sql.zig` owns SQL statement constants (`SELECT_*`, `INSERT_*`, `UPDATE_*`,
+  `DELETE_*`, `*_SQL`, `*_QUERY`) and multiline SQL bodies.
+- The parent module imports the SQL module and calls `conn.query(sql.NAME, ...)`
+  or `conn.exec(sql.NAME, ...)`.
+- Tests may keep setup/teardown SQL inline; fixture readability matters there.
+- Existing production modules with inline SQL are legacy shape until touched for
+  extraction, but any new production module with inline SQL fails the dispatch.
+
 ## Build Verification: `make`, Not `zig build`
 
 > [DETERMINISTIC → XCOMPILE]
