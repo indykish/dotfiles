@@ -47,7 +47,7 @@ zig_sql_module_gate() {
     path="$TARGET_ROOT/$f"; [ -f "$path" ] || path="$f"; [ -f "$path" ] || continue
     base="$(basename "$f")"
     case "$base" in
-      sql.zig|*_test.zig) continue ;;
+      sql.zig|*_test.zig|test_fixtures_*.zig) continue ;;
     esac
 
     is_new=0
