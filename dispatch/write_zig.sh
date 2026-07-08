@@ -57,7 +57,6 @@ zig_sql_module_gate() {
     elif ! git -C "$TARGET_ROOT" ls-files --error-unmatch "$f" >/dev/null 2>&1; then
       is_new=1
     fi
-    [ "$is_new" -eq 1 ] || continue
 
     if [ "$is_new" -eq 1 ]; then
       line="$(zig_sql_definition_hit "$path")"
