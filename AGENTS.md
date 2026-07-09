@@ -122,6 +122,8 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 
 **Legacy-workaround family** — four rules together: **RULE NDC** (no dead code at write time, `docs/greptile-learnings/RULES.md`), **RULE NLR** (touch-it-fix-it cleanup), **RULE NLG** (no new legacy framing pre-`2.0.0`), **Legacy-Design Consult Guard** (user A/B/C consult before patching/keeping/testing legacy). Workarounds prohibited at authoring time, cleaned on touch, never silently retained.
 
+**No compatibility aliases.** Old command verbs, flag aliases, route wrappers, env aliases, and fallback spellings are legacy shims. Add none unless Indy explicitly asks in-session.
+
 | Trigger — when you… | Dispatch | Latent façade carries · override |
 |---|---|---|
 | write `*.zig` | `write_zig` | `dispatch/write_zig.md` — consolidated Zig discipline (ZIG / PUB / LIFECYCLE gates): memory safety, init/deinit lifecycle + `errdefer` placement, pub-surface shape verdict (`FILE SHAPE DECISION` skip needs user's explicit ask — auto-mode does NOT cover), tagged-union results, file ≤ 350 / fn ≤ 50 / method ≤ 70, cross-compile both linux targets · `ZIG GATE` / `PUB GATE` / `LIFECYCLE GATE: SKIPPED per user override (reason: ...)`. |

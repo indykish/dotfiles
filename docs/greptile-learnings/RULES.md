@@ -909,7 +909,7 @@ const handleConfirm = useCallback(async () => {
 
 ## RULE NLG — No legacy compat shims pre-v2.0.0
 
-**Rule:** Until `VERSION` reaches `2.0.0`, the codebase has no external consumers and no published API. Every interface change extends the existing surface in place — never via a `V2`-suffixed twin, parallel "legacy" path, `if (legacy_caller)` branch, or backward-compat fallback. When an RPC, route, struct, table, or config key needs more fields, edit the existing one and update every caller in the same commit. When a behavior is replaced, delete the old code path, do not leave it `orelse` reachable. The Schema Table Removal Guard's "teardown-rebuild era" framing applies to every interface, not just SQL.
+**Rule:** Until `VERSION` reaches `2.0.0`, the codebase has no external consumers and no published API. Every interface change extends the existing surface in place — never via a `V2`-suffixed twin, parallel "legacy" path, `if (legacy_caller)` branch, command-line alias for an old verb or flag, or backward-compat fallback. When an RPC, route, struct, table, command, flag, or config key changes, edit the existing one and update every caller in the same commit. When a behavior is replaced, delete the old code path, do not leave it `orelse` reachable. The Schema Table Removal Guard's "teardown-rebuild era" framing applies to every interface, not just SQL.
 
 **Why:** Pre-alpha duplicates rot faster than any documentation. Every `CreateExecutionV2`, every `if (caller_is_legacy)` arm, every "we'll keep the old one for now" hedge becomes a phantom contract that nobody owns and every future spec has to reason about. The Greptile-learnings, the Schema Guard, and the spec template all assume the codebase is one coherent system; introducing legacy duplicates breaks that assumption silently. Post-v2.0.0 we earn the right to versioning ceremonies; before then, the cost of a duplicate is paid by every reader.
 
@@ -920,6 +920,7 @@ const handleConfirm = useCallback(async () => {
 - Removing a behavior → delete the function, the call sites, and any dispatch arm that selected it. Tests of the removed path go too.
 - Schema removals already covered by the Schema Table Removal Guard (rm file, rm `@embedFile`, rm migration array entry) — that's this rule applied to SQL.
 - Legacy-Design Consult Guard still fires when you find a *pre-existing* legacy shim left over from the v1→v2 teardown. This rule says: don't create new ones.
+- Command-line renames follow the same rule: if the product verb moves to `create`, do not add `add` as an alias. If a flag or command spelling changes, use the new spelling only unless Indy explicitly asks for a compatibility alias in the same session.
 
 **Override syntax:** `RULE NLG: SKIPPED per user override (reason: ...)` immediately preceding the edit. Override requires a concrete external consumer that can't be migrated in the same commit — vanishingly rare pre-v2.0.0.
 

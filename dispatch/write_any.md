@@ -580,7 +580,7 @@ If any of these patterns is in play, surface it via the NLR DECISION block. The 
 
 **Family:** Legacy-control. Sibling rules: **RULE NDC**, **RULE NLR**, **Legacy-Design Consult Guard**. **Source:** `docs/greptile-learnings/RULES.md` RULE NLG.
 
-**Triggers:** introducing any new `legacy_*` name, `V2`-twin type, `if (legacy_caller)` branch, backward-compat shim, "rejecting legacy X" prose, or violation tracking-list while `cat VERSION` < `2.0.0`.
+**Triggers:** introducing any new `legacy_*` name, `V2`-twin type, `if (legacy_caller)` branch, backward-compat shim, command-line alias for an old verb or flag, "rejecting legacy X" prose, or violation tracking-list while `cat VERSION` < `2.0.0`.
 
 **Override:** `RULE NLG: SKIPPED per user override (reason: ...)` immediately preceding the edit. **User-invokable only.** Requires a concrete external consumer that can't migrate same-commit (vanishingly rare pre-v2.0.0).
 
@@ -595,6 +595,7 @@ While `cat VERSION` < `2.0.0`, the project has no external consumers and no publ
 - No `V2`-suffixed twin types.
 - No backward-compat shims.
 - No "rejecting legacy X" prose in specs/docs/commit messages.
+- No old command verbs or flag aliases retained beside the new form unless Indy explicitly asks in the same session.
 
 Edit interfaces in place; update every caller in the same commit. Name errors by *what is wrong*, not *when it was wrong* (e.g. `runtime_keys_outside_block`, not `legacy_top_level_runtime`).
 
