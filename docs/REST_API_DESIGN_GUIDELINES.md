@@ -552,7 +552,7 @@ When in doubt, mirror an existing handler:
 | POST with body + validation | `src/agentsfleetd/http/handlers/fleets/create.zig::innerCreateFleet` |
 | DELETE with idempotency | `src/agentsfleetd/http/handlers/fleets/delete.zig::innerDeleteFleet` |
 | Admin-only | `src/agentsfleetd/http/handlers/admin/platform_keys.zig::innerGetAdminPlatformKeys` |
-| Multi-method on one path (GET/POST/PATCH/DELETE) | `src/agentsfleetd/http/handlers/fleets/credentials.zig` |
+| Multi-method on one path (GET/POST/PATCH/DELETE) | `src/agentsfleetd/http/handlers/fleets/secrets.zig` |
 | Workspace auth + tenant context | `src/agentsfleetd/http/handlers/workspaces/events.zig::innerListWorkspaceEvents` |
 | Webhook with inline auth | `src/agentsfleetd/http/handlers/webhooks/fleet.zig::innerReceiveWebhook` |
 | Streaming (SSE) | `src/agentsfleetd/http/handlers/fleets/events_stream.zig::innerEventsStream` |
