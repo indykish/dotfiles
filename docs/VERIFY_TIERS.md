@@ -8,7 +8,7 @@
 
 | Tier | Command | When |
 |---|---|---|
-| 1 | `make test` | Every EXECUTE iteration; start of VERIFY. Unit-only — never substitutes for 2/3. |
+| 1 | `make test-unit-all` | Every EXECUTE iteration; start of VERIFY. Unit-only — never substitutes for 2/3. Zig-only fast loop: `make test-unit-agentsfleetd`. |
 | 2 | `make test-integration` | Diff touches `src/agentsfleetd/http/**`, `src/agentsfleetd/db/**`, `src/agentsfleetd/fleet/**`, `src/agentsfleetd/observability/**`, `*_integration_test.zig`, schema, migrations. Before COMMIT. |
 | 3 | `make test-integration` | ≥1× per branch from clean state (after `make down`) before ship-ready. Mandatory when schema changes pre-v2.0. Tier 2 passing + 3 failing = state pollution; fix isolation. |
 
@@ -39,7 +39,7 @@ Knobs (`make/test-bench.mk`): `API_BENCH_METHOD`, `_DURATION_SEC`, `_CONCURRENCY
 
 ## Hygiene (always, before PR)
 
-`make lint` (hard); `make check-pg-drain` + cross-compile `x86_64-linux` + `aarch64-linux` (any `*.zig` touched); cross-layer orphan sweep (RULE ORP — every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files); `gitleaks detect` before any Zig-including commit; 350-line / 50-fn-line check via:
+`make lint-all` (hard); `make _lint_zig_pg_drain` (also folded into `make lint-all` via `lint-zig`) + cross-compile `x86_64-linux` + `aarch64-linux` (any `*.zig` touched); cross-layer orphan sweep (RULE ORP — every renamed/deleted symbol → 0 hits across schema/Zig/JS/tests/docs in non-historical files); `gitleaks detect` before any Zig-including commit; 350-line / 50-fn-line check via:
 
 ```bash
 git diff --name-only origin/main \
