@@ -30,6 +30,7 @@ every code a dispatch `.sh` emits resolves to exactly one row here.
 | TST-NAM | TeST NAMing (milestone-free) |
 | PUB | Pub Surface & Struct-Shape |
 | DRAIN | pg.Conn drain-before-deinit |
+| SQLMOD | SQL statements live in domain sql.zig |
 | DEINIT | init/deinit lifecycle pairing |
 | ARCH | Architecture consult before naming |
 | XCOMPILE | Cross-compile both linux targets |

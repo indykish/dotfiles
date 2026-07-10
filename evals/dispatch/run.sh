@@ -35,6 +35,8 @@ SPECS=(
   "msid_violation.zig|write_any|src/msid_violation.zig|1|MSID"
   "deinit_ok.zig|write_zig|src/deinit_ok.zig|0|DEINIT"
   "deinit_missing.zig|write_zig|src/deinit_missing.zig|1|DEINIT"
+  "sqlmod_ok.zig|write_zig|src/sqlmod_ok.zig|0|SQLMOD"
+  "sqlmod_violation.zig|write_zig|src/sqlmod_violation.zig|1|SQLMOD"
 )
 
 pass=0
