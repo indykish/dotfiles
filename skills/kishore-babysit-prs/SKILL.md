@@ -7,6 +7,11 @@ description: |
   greptile-triage.md, suppresses against per-project + global
   greptile-history.md, and stops on two consecutive empty polls.
 
+  Also gates "done" on CI: each cycle it polls the PR/MR check runs, fixes any
+  failure caused by your own changes, and only reports done when CI is green.
+  And it triages greptile's PR/MR-level SUMMARY feedback (the review body + the
+  top-level "description reply" comment), not only the line-level threads.
+
   Forge-aware: GitHub (gh / Pull Request) and GitLab (glab / Merge Request),
   detected from `git remote`.
 
@@ -83,6 +88,44 @@ Both forges' bots are filtered by author name matching `greptile` (or the
 project's configured review bot — see the per-project history `bot:` note if
 present).
 
+## STEP 0.75 — CI checks must go green (poll + fix)
+
+Greptile is not the only async signal: the PR/MR's **CI check runs** land on
+their own schedule and are part of "done". The loop is not finished until CI is
+green **and** the review bot is quiet. This is the one place `gh pr checks`
+(NOT `--watch`) is the right tool — it observes *check runs*, which is exactly
+what CI is. (The "never `gh pr checks --watch` for greptile" rule stands:
+greptile posts review comments, not checks, so `pr checks` never sees it. CI
+jobs are the opposite — `pr checks` is precisely how you see them.)
+
+Each cycle, after the review-thread walk, poll CI and act by cause:
+
+### GitHub
+
+```bash
+gh pr checks "$PR_NUMBER" --json name,state,bucket,link 2>/dev/null \
+  | jq -r '.[] | "\(.bucket)\t\(.state)\t\(.name)\t\(.link)"'   # bucket ∈ pass|fail|pending|skipping|cancel
+```
+
+### GitLab
+
+```bash
+glab ci status 2>/dev/null \
+  || glab api "projects/$PROJ_ENC/merge_requests/$MR_IID/pipelines" \
+       | jq -r '.[0] | "\(.status)\t\(.web_url)"'               # status ∈ success|failed|running|canceled|pending
+```
+
+| CI state | Action |
+|---|---|
+| all `pass`/`skipping` (GitLab `success`) | Record `ci=green`. A done-declaration is now allowed (if greptile is also quiet). |
+| any `pending`/`running` | Record `ci=pending`; re-poll on the cadence. **Never declare done while a check is still running.** |
+| any `fail`/`cancel` **from your changes** | In-scope finding you OWN — treat like a greptile fix. Fetch the failing log (`gh run view <run-id> --log-failed`, run id from the check `link`; GitLab `glab ci trace <job-id>`), fix the code, re-verify with the relevant `make` target, commit, push, re-poll. |
+| any `fail` **NOT from your changes** (pre-existing red, infra flake, unrelated job) | Surface to the user with job name + link. Do **not** fix blindly, do **not** edit CI config. Pause the done-declaration until they decide. |
+
+CI failures caused by your commit are not "surface and wait" — they are the
+same contract as a greptile P0: diagnose, fix the code (never the CI config),
+push, and re-poll until green.
+
 ## Triggers
 
 - After `gh pr create` / `glab mr create` for a feature branch.
@@ -95,10 +138,11 @@ present).
 Per cycle, print one line (`PR` on GitHub, `MR` on GitLab):
 
 ```
-BABYSIT <PR|MR> #<n> @ <SHA>: poll <i> | reviews=<count> | new=<m> | actioned=<k> | next=<delay>
+BABYSIT <PR|MR> #<n> @ <SHA>: poll <i> | reviews=<count> | new=<m> | actioned=<k> | ci=<green|pending|red> | next=<delay>
 ```
 
-`actioned` = findings whose code fix landed in this cycle.
+`actioned` = findings whose code fix landed in this cycle (greptile OR CI).
+`ci` = the aggregate check-run state from STEP 0.75.
 
 ## Cadence (backoff)
 
@@ -132,6 +176,18 @@ for rid in $REVIEW_IDS; do
   # Reply: gh api -X POST "repos/$REPO/pulls/$PR_NUMBER/comments/<cid>/replies" -f body="..."
   :
 done
+
+# ALSO triage greptile's SUMMARY feedback — it puts actionable findings in two
+# places the line-comment walk above misses:
+#   (1) the review BODY (the review's own summary text), and
+#   (2) the top-level PR issue comment (greptile's "description reply" / summary,
+#       often with collapsible per-file sections listing concerns inline).
+# Run each through greptile-triage.md exactly like a line comment.
+gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+  --jq '.[] | select(.user.login|test("greptile";"i")) | select(.body != "") | .body'
+gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+  --jq '.[] | select(.user.login|test("greptile";"i")) | {id, body}'
+# Reply to a summary issue comment: gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" -f body="..."
 ```
 
 ### GitLab (`FORGE=gitlab`)
@@ -156,6 +212,13 @@ for tid in $THREAD_IDS; do
   # Reply: glab api -X POST "projects/$PROJ_ENC/merge_requests/$MR_IID/discussions/$tid/notes" -f body="..."
   :
 done
+
+# ALSO triage greptile's SUMMARY feedback — the MR-level notes greptile posts
+# outside a positioned discussion thread (the "description reply" / overview
+# note, often with inline per-file concerns). Run each through greptile-triage.md.
+glab api "projects/$PROJ_ENC/merge_requests/$MR_IID/notes" \
+  --jq '.[] | select(.author.username|test("greptile";"i")) | select(.type == null) | {id, body}'
+# Reply to a summary note: glab api -X POST "projects/$PROJ_ENC/merge_requests/$MR_IID/notes" -f body="..."
 ```
 
 ### History paths (forge-independent)
@@ -210,10 +273,15 @@ The categories are a fixed set: `race-condition`, `null-check`, `error-handling`
 
 ## Stop conditions
 
-- **Two consecutive empty polls** (no new reviews/threads) → stop, report done.
+- **Done = two consecutive empty polls AND CI green.** Both must hold: no new
+  reviews/threads/summary findings for two polls **and** STEP 0.75 reports
+  `ci=green`. A quiet bot with a still-`pending` or red CI is NOT done — keep
+  polling on the cadence.
 - **PR/MR merged or closed** → stop, report.
-- **CI red and not from your changes** → surface to the user; pause
-  polling until they decide.
+- **CI red FROM your changes** → fix it (STEP 0.75): diagnose, fix the code,
+  push, re-poll. Not a stop condition — it's work to do.
+- **CI red and NOT from your changes** → surface to the user; pause the
+  done-declaration until they decide.
 - **User says stop / pause** → print one final
   `BABYSIT <PR|MR> #<n>: paused per user` line and stop.
 
@@ -224,9 +292,10 @@ At end of each cycle:
 ```
 BABYSIT REPORT — <PR|MR> #<n> @ <SHA>
   Polls run: <i>
-  Reviews seen: <count>
+  Reviews seen: <count>  (line: <l>, summary/description: <s>)
   Findings actioned: <k> (P0: <a>, P1: <b>)
   Findings deferred: <d> (with reasons)
+  CI: <green | pending: <job…> | red: <job> — <fixed SHA | surfaced to user>>
   Rules added/updated: <list of RULE refs>  # via triage helper's history-write
   Next poll: in <delay>s OR stopped (<reason>)
 ```
