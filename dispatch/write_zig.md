@@ -622,6 +622,158 @@ These are recommended patterns surfaced from the Bun Zig codebase audit. They im
 
 **Adding to `src/lib/` is gated (reason-then-approval).** Promoting a module into `src/lib/` widens the shared surface, so it is not an agent-unilateral move. Before creating a new `src/lib/<name>/`: (1) state the reason — which ≥2 build graphs consume it, and why it must be shared rather than duplicated or kept domain-local; (2) propose it to the owner with that reason; (3) create it only on approval. Helpers shared *within a single binary* stay under that domain's `common/` (e.g. `src/<domain>/common/`), not `src/lib/`.
 
+## Allocator model — ghostty-derived, rules A1–A6
+
+> [container]
+
+Mined from ghostty (`~/Projects/oss/ghostty/src/`) in the M126 adversarial review and
+directed by Indy into six citable rules. Each rule codifies a ghostty (or in-repo) exemplar —
+name the exemplar when you apply the rule (RULE GRD). These are the rules an editing agent
+breaks by *omission*: the daemon's liveness sweeper leaked precisely because it diverged from
+the A2 ladder its two sibling sweepers followed.
+
+### A1 — Backing allocator chosen once in `main`, threaded as a parameter
+
+> [JUDGMENT → ARCH]
+
+One backing allocator is selected at process start and passed down as a parameter; Zig code
+paths never reach a global to allocate. Debug/test builds pick the leak-checking General
+Purpose Allocator (GPA); release picks the C allocator. Global state never holds the allocator
+for a Zig path.
+**Exemplar:** ghostty `global.zig:74-96` (allocator selection at `main`, Valgrind detected at
+runtime). In-repo: `agentsfleetd/main.zig` and `runner/daemon/worker_pool.zig` own the GPA;
+everything below takes `alloc` as an argument.
+
+### A2 — errdefer ladder: one errdefer immediately after each acquisition
+
+> [DETERMINISTIC → DEINIT]
+
+Every init that acquires more than one resource places an `errdefer` directly after each
+fallible acquisition; block-scoped `errdefer`s collapse to one composite `errdefer` after an
+ownership handoff; `errdefer comptime unreachable` after the last fallible op makes the commit
+region compiler-proven atomic. Never batch errdefers at the bottom, and never build a struct
+literal with multiple `try dupe*()` calls (an earlier field leaks when a later one fails).
+**Exemplar:** ghostty `PageList.MemoryPool.init:85-102` (per-acquisition ladder),
+`Surface.zig:616-664` (block-scoped composite handoff). In-repo: `reclaim_sweeper` /
+`approval_gate_sweeper` are the correct shape; the M126_001 fix brought `liveness_sweeper` back
+onto the ladder. The `deinit-pairs` audit enforces the pairing mechanically.
+
+### A3 — Leaf structures unmanaged; only lifecycle roots store an allocator
+
+> [JUDGMENT → TGU]
+
+Leaf structures take `alloc` per call and store nothing; only lifecycle roots (servers, pools,
+long-lived caches) keep an `alloc` field. A leaf that stores an allocator it does not own is a
+lifetime bug waiting to fire. Pairs with "Allocator Ownership in Structs" below — that rule is
+the two-pattern menu; this one says a *leaf* gets the caller-owned pattern.
+**Exemplar:** ghostty leaf structs (`Tabstops`, decode results) take `alloc` per call while
+roots (`Surface`, `App`) hold it.
+
+### A4 — Arena as the ownership unit
+
+> [JUDGMENT → ARCH]
+
+An arena is the ownership unit for a config-shaped object or a transient operation: one
+`_arena` field per config/request object (deinit is a single call), a scratch arena per
+transient op, and arena-in-message when a payload crosses a thread boundary. Reload is
+build-new / replay / swap / deinit-old; recover the parent via `arena.child_allocator`. Do not
+use an arena to mask a missing free in a reusable helper (Allocator Choice Gate).
+**Exemplar:** ghostty `Config.zig:3757-3815` (`_arena` per config), `Surface.zig:1405-1418` →
+`renderer/generic.zig:652,803` (arena-in-message cross-thread transfer).
+
+### A5 — Ownership stated in fixed phrases; `self.* = undefined` in every deinit
+
+> [DETERMINISTIC → TODO-CHECK]
+
+Every allocating public fn states ownership in one of the fixed phrases **"caller must free"**
+or **"takes ownership"** — grepable, uniform, no synonyms. Every `deinit` poisons with
+`self.* = undefined` after freeing, so a use-after-deinit traps instead of reading stale
+fields. Callers own their arguments; a callee clones only what it keeps. The phrase and poison
+checks are mechanized by the roster-scoped repo lint (blocking inside the discipline roster,
+advisory outside) in `lint-zig.py`.
+**Exemplar:** ghostty ownership phrases on every allocating pub fn (`App.zig:135-137`,
+caller-owns-arguments), `self.* = undefined` poisoning in every deinit.
+
+### A6 — Multi-step init carries tripwire fail points + a loop-all-failpoints test
+
+> [DETERMINISTIC → TODO-CHECK]
+
+Every multi-step init in the discipline roster carries comptime-erased tripwire fail points
+(zero production cost) and a test that loops `for (std.meta.tags(FailPoint))` injecting
+`error.OutOfMemory` under `std.testing.allocator`, asserting the errdefer chain freed
+everything **and** that state rolled back. This is the failure-injection shape ghostty uses in
+place of `checkAllAllocationFailures`.
+**Exemplar:** ghostty `src/tripwire.zig` (~290 lines, `enabled = builtin.is_test`, inline
+call convention), `Tabstops.zig:255-271` + `PageList.zig:5503-5527` (state-rollback asserts).
+In-repo: `src/lib/tripwire/tripwire.zig` (vendored in M126_001).
+
+## Concurrency discipline — ghostty-derived, rules C1–C5
+
+> [container]
+
+The five concurrency rules the review found agentsfleet held only by implicit convention while
+ghostty holds them structurally. Name the exemplar when you apply the rule (RULE GRD); the
+durable model is `docs/architecture/concurrency.md` in the product repo.
+
+### C1 — Cross-thread channels are Single-Producer Single-Consumer; the receiver frees
+
+> [JUDGMENT → NEW:CONC]
+
+A channel that crosses a thread boundary declares its single producer and single consumer
+(Single-Producer Single-Consumer, SPSC). Payloads carry their own allocator; the receiver
+frees, in a `defer` at the top of the handler. Pin `@sizeOf(Message)` with a test. C1 binds
+*new* channels — migrating an existing channel is a separate judgment with the architecture
+doc as input.
+**Exemplar:** ghostty `datastruct/blocking_queue.zig` (SPSC + wakeup handle),
+`datastruct/message_data.zig` + `termio/message.zig:110-113` (receiver-frees, size pinned).
+
+### C2 — Shutdown is stop-signal → join → deinit, never free-on-timeout
+
+> [JUDGMENT → NEW:CONC]
+
+Shutdown signals stop, joins the worker, and only then deinits shared state — a dying consumer
+keeps draining until ordered to stop, and nothing shared is freed while either thread can still
+touch it. A bounded drain that *times out* must not then free state a straggler still reads
+(the class of bug M126_001 fixed in the streaming teardown). Use `common.Event` (Zig 0.16
+removed `std.Thread.ResetEvent`) for the deterministic stop→join handshake in tests.
+**Exemplar:** ghostty `Surface.zig:772-798` (stop→join→deinit), `termio/Thread.zig:226-233`
+(drain-until-stop). In-repo: `cmd/serve_shutdown.zig` (M126_001 ordering fix).
+
+### C3 — No blocking push/write while holding a lock the consumer needs
+
+> [JUDGMENT → NEW:CONC]
+
+Never do a blocking push or socket write while holding a lock the consumer needs to make
+progress: try instantly, else notify + unlock + block + relock. Lock state is an explicit
+parameter, not an ambient assumption. A blocking Transport Layer Security (TLS) write held
+under a hub mutex pins the reader thread and every subscribe until Transmission Control
+Protocol keepalive kills the connection — a watchdog-bounded send under a dedicated wire lock
+is the fix.
+**Exemplar:** ghostty `termio/mailbox.zig:61-93`, `Termio.zig:400-410`
+(instant-try-else-notify, `MutexState` enum parameter). In-repo: `events/subscription_hub.zig`
+wire discipline (M126_001).
+
+### C4 — One documented mutex per shared aggregate, stating exactly what it protects
+
+> [JUDGMENT → NEW:CONC]
+
+Each shared aggregate has exactly one mutex with a doc comment naming precisely what it
+protects and any ordering constraint; `lock(); defer unlock();` adjacent. Copy out into an
+arena inside the tightest critical section, then compute unlocked. Every mutex in the
+discipline roster carries this invariant comment — the repo lint counts declarations against
+documented invariants.
+**Exemplar:** ghostty `renderer/State.zig:10-14` (mutex + explicit "protects" invariant).
+
+### C5 — Thread-confined state is the default, marked as such
+
+> [JUDGMENT → NEW:CONC]
+
+State touched by exactly one thread needs no lock — but say so: a `// only touched by thread X`
+comment on the field, and a `*Locked` suffix on any fn that must be entered with the lock held.
+Silence forces the next editor to re-derive the confinement or add a redundant lock.
+**Exemplar:** ghostty `Termio.zig:759-764` (thread-confined comment), `*Locked` fn-name-suffix
+convention.
+
 ## Merged from dissolved gate cards
 
 > [container]

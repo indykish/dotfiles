@@ -128,6 +128,7 @@ NAMED_SCENARIOS=(
   "Pre-commit audit scope"   # Scenario 22
   "Agent comprehension"      # Scenario 23
   "Memory routing"           # Scenario 24
+  "Allocator & concurrency discipline"  # Scenario 25
 )
 
 # Check 14 — the Rule-extension protocol must enumerate all four wiring steps.

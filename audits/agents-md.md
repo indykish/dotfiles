@@ -285,6 +285,29 @@ memory file — the exact drift the `## Memory Discipline` section exists to pre
 | 24.4 | Is a durable architecture fact homed in the product repo's `docs/architecture/*.md`, not memory? | YES |
 | 24.5 | If a fact has no firing gate and no doc home, is the correct move to add the rule (Rule extension protocol) or drop it — never to create a memory file? | YES |
 
+### Scenario 25 — Allocator & concurrency discipline (ghostty-derived rules A1–A6 / C1–C5)
+
+The M126 adversarial review mined ghostty's Allocator and concurrency practice into eleven
+citable rules in `dispatch/write_zig.md`. These questions force *reading the façade rule
+bodies* (per 23.1 — quote the façade, not the index), because their failure mode is an
+editing agent that omits the discipline the way the liveness sweeper diverged from its
+siblings.
+
+| # | Question | Expected |
+|---|---|---|
+| 25.1 (A1) | Does `dispatch/write_zig.md` rule A1 require the backing allocator to be chosen once in `main` and threaded as a parameter, with global state never holding the allocator for a Zig path? | YES |
+| 25.2 (A2) | Does rule A2 require an `errdefer` immediately after each fallible acquisition in a multi-step init (never batched at the bottom), with `errdefer comptime unreachable` after the last fallible op? | YES |
+| 25.3 (A3) | Does rule A3 require leaf structures to take `alloc` per call and store nothing, reserving a stored `alloc` field for lifecycle roots only? | YES |
+| 25.4 (A4) | Does rule A4 make an arena the ownership unit (`_arena` per config/request object, scratch arena per transient op, arena-in-message across a thread boundary) and forbid using an arena to mask a missing free in a reusable helper? | YES |
+| 25.5 (A5) | Does rule A5 require ownership stated in the fixed phrases "caller must free" / "takes ownership" on every allocating public fn plus `self.* = undefined` poisoning in every deinit — with the phrase/poison checks blocking inside the discipline roster and advisory outside? | YES |
+| 25.6 (A6) | Does rule A6 require every multi-step init in the roster to carry comptime-erased tripwire fail points and a loop-all-failpoints test under `std.testing.allocator` asserting both that the errdefer chain freed everything and that state rolled back? | YES |
+| 25.7 (C1) | Does rule C1 require cross-thread channels to be Single-Producer Single-Consumer (SPSC), with the payload carrying its own allocator and the receiver freeing in a `defer` at the top of the handler? | YES |
+| 25.8 (C2) | Does rule C2 define shutdown as stop-signal → join → deinit, explicitly forbidding freeing shared state on a drain timeout while a straggler thread can still touch it? | YES |
+| 25.9 (C3) | Does rule C3 forbid a blocking push/socket-write while holding a lock the consumer needs (try-instant, else notify + unlock + block + relock), with lock state an explicit parameter? | YES |
+| 25.10 (C4) | Does rule C4 require exactly one documented mutex per shared aggregate whose doc comment names precisely what it protects, with `lock(); defer unlock();` adjacent? | YES |
+| 25.11 (C5) | Does rule C5 make thread-confined state the default, marked by a "only touched by thread X" comment and a `*Locked` suffix on lock-required entry points? | YES |
+| 25.12 (GRD) | Does every A1–A6 / C1–C5 rule in `dispatch/write_zig.md` carry an exemplar cite (ghostty or in-repo) per RULE GRD, so each rule is traceable to the source it was mined from? | YES |
+
 ## LLM-eval layer (Scenario 23 enforcement)
 
 The deterministic audit proves the rules are *present*; it cannot prove an
