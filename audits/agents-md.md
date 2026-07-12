@@ -89,6 +89,8 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.20 (Doc read) | For every Edit/Write whose file pattern matches a row in the EXECUTE doc-reads table, does DOC READ GATE require a `📖 DOC READ: <path>` proof-line — either citing §N applied OR the cited-skip variant — before the edit? | YES |
 | 4.21 (Doc read) | Is the `📖 DOC READ:` proof-line required **per-edit** (not once per session, not once per file across multiple edits)? | YES |
 | 4.22 (Doc read) | Are auto-mode and "I read this earlier in the session" both invalid grounds to skip the proof-line? | YES |
+| 4.23 (Documentation) | Before published Markdown JSX (MDX), reusable snippets, customer readme, or public OpenAPI prose, must the agent read `dispatch/write_documentation.md` and `docs/DOCUMENTATION_RULES.md` before any narrower guide? | YES |
+| 4.24 (Documentation) | Are page, snippet, generated API, and changelog scopes distinct, with repository-owned pre-commit checks enforcing the mechanical rules? | YES |
 
 ### Scenario 5 — Picking up a handover
 

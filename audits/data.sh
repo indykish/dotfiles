@@ -32,7 +32,7 @@ EXPECTED_LABELS=(
   "size"
 )
 
-# Check 1 (dispatch inventory) + check 9b (dispatch parity) — the 10 dispatch
+# Check 1 (dispatch inventory) + check 9b (dispatch parity) — dispatch
 # entries that replaced the 20 dissolved gate cards. Source of truth for both
 # the inventory loop in agents-md.sh and check_dispatch_parity
 # (audits/parity-dispatch.sh). Each name has a dispatch/<name>.md and a row in
@@ -41,7 +41,7 @@ EXPECTED_LABELS=(
 REQUIRED_DISPATCH=(
   "write_zig" "write_ts_adhere_bun" "write_sql" "write_any"
   "write_spec" "write_http" "write_auth" "write_changelog"
-  "verify" "name_architecture" "edit_rules"
+  "write_documentation" "verify" "name_architecture" "edit_rules"
 )
 
 # Check 2 — every source/config language has at least one mention.
@@ -75,6 +75,7 @@ DOTFILES_RESIDENT=(
   "docs/REST_API_DESIGN_GUIDELINES.md"
   "docs/LOGGING_STANDARD.md"
   "docs/LIFECYCLE_PATTERNS.md"
+  "docs/DOCUMENTATION_RULES.md"
   "docs/greptile-learnings/RULES.md"
   "dispatch/write_zig.md"
   "dispatch/write_ts_adhere_bun.md"
@@ -84,6 +85,7 @@ DOTFILES_RESIDENT=(
   "dispatch/write_http.md"
   "dispatch/write_auth.md"
   "dispatch/write_changelog.md"
+  "dispatch/write_documentation.md"
   "dispatch/verify.md"
   "dispatch/name_architecture.md"
   "dispatch/edit_rules.md"

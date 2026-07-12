@@ -1,5 +1,10 @@
 # Dispatch Architecture — operating-model (v3, EXECUTED)
 
+> Documentation prerequisite: read
+> [`DOCUMENTATION_RULES.md`](./DOCUMENTATION_RULES.md) before editing this file.
+> This internal explanation is not a published Markdown JSX (MDX) page, so page front matter and
+> skeleton rules do not apply. Plain-language and acronym rules do.
+
 Date: Jun 04, 2026 (proposed) · Jun 05, 2026 (Stage-2 executed)
 Status: **v3 EXECUTED** — the Stage-2 atomic switchover landed on
 `feat/resolver-architecture` (PR #18): the 20 `docs/gates/` cards + `ZIG_RULES.md`

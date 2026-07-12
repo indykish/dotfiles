@@ -1,6 +1,7 @@
 # write_changelog.md — changelog-voice dispatch (LATENT façade)
 
-This is the prose the AGENT reads **before writing any `<Update>` entry in the
+This is the prose the AGENT reads after `write_documentation.md` and
+`docs/DOCUMENTATION_RULES.md`, **before writing any `<Update>` entry in the
 changelog** (`~/Projects/docs/changelog.mdx`). Like `verify` and
 `name_architecture`, it has **no deterministic `.sh` half** — voice is a judgment
 call no script can grade. It is a pure **🔵 judgment** dispatch: the agent reads
@@ -15,7 +16,7 @@ reference is `docs/CHANGELOG_VOICE.md` (Mintlify-style) — read it before writi
   own-branch flow per AGENTS.md Operational defaults); dotfiles carries only the
   voice discipline.
 
-## Trigger — read `docs/CHANGELOG_VOICE.md` before
+## Trigger — read `docs/DOCUMENTATION_RULES.md`, then `docs/CHANGELOG_VOICE.md`
 
 Fires before adding or editing an `<Update>` block in `changelog.mdx`, or any
 user-visible release note. Internal-only changes get **no** changelog entry — the
