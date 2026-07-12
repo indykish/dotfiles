@@ -128,12 +128,23 @@ for agent_config in "${AGENTS[@]}"; do
         continue
     fi
     
-    # Run gstack's proper setup for this agent
+    # Run gstack's proper setup for this agent.
+    # Cap with timeout so a hung Playwright Chromium download (bun/node stall on
+    # the CDN's HTTP/2 stream completion) can't block update-ai-tools forever;
+    # the warn branch below lets the rest of the flow continue on bounded failure.
     info "Setting up gstack for $host_flag..."
-    if ./setup --host "$host_flag"; then
+    if command -v timeout >/dev/null 2>&1; then
+        GSTACK_TIMEOUT=600
+    else
+        GSTACK_TIMEOUT=0
+    fi
+    if [ "$GSTACK_TIMEOUT" -gt 0 ] && timeout "$GSTACK_TIMEOUT" ./setup --host "$host_flag"; then
+        ok "gstack setup complete for $host_flag"
+    elif [ "$GSTACK_TIMEOUT" -eq 0 ] && ./setup --host "$host_flag"; then
         ok "gstack setup complete for $host_flag"
     else
-        warn "gstack setup failed for $host_flag"
+        rc=$?
+        warn "gstack setup failed for $host_flag (exit ${rc}; timed out after ${GSTACK_TIMEOUT}s if rc=124)"
     fi
 done
 
