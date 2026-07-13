@@ -12,9 +12,9 @@ git config core.hooksPath .githooks    # arms pre-commit + pre-push (one-time, p
 
 The `core.hooksPath` line wires the AGENTS.md invariance suite into every
 commit and push from this clone. Without it, `.githooks/` is just files —
-git keeps using `.git/hooks/` (sample stubs only). Re-run on every fresh
-clone or worktree. See [audits/agents-md.md](audits/agents-md.md) for the
-contract; run `make audit` any time to verify it by hand.
+git keeps using `.git/hooks/` (sample stubs only), so re-run it on every
+fresh clone or worktree. See [audits/agents-md.md](audits/agents-md.md) for
+the rules; run `make audit` any time to verify them by hand.
 
 ## How the rules work (in plain terms)
 
@@ -24,8 +24,8 @@ handed only the one page that applies.
 
 Think of it like a front desk: you say "I'm about to write some Zig," and it gives
 you exactly the Zig rules — not the whole binder. Each of those pages lives in
-[`dispatch/`](dispatch/), and where a rule can be checked by a machine, a small
-script runs it automatically.
+[`dispatch/`](dispatch/); where a rule can be checked by a machine, a script
+enforces it on every edit.
 
 | If you're about to… | The agent reads… |
 |---|---|
@@ -41,11 +41,10 @@ script runs it automatically.
 One command — `make audit` — keeps the rulebook honest: it fails loudly if this
 list, the files on disk, and the agent's own checklist ever fall out of sync.
 
-> **Want the full story?** The *why* behind this design — the latent/deterministic
-> "façade pair" per topic, the 🟢/🔴/🔵/⚪ signal tags, the parity guarantees, and
-> the migration that produced it — is written up in detail in
-> [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md). The exact,
-> machine-checked list of entries lives in [`audits/data.sh`](audits/data.sh).
+> **Want the full story?** [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md)
+> explains the design — latent "façade pairs", 🟢/🔴/🔵/⚪ signal tags, parity
+> guarantees, and the migration. The machine-checked list of entries lives in
+> [`audits/data.sh`](audits/data.sh).
 
 The instructions below assume you are in the `~/Projects/dotfiles` directory.
 
@@ -76,13 +75,17 @@ sudo sysctl -w kern.maxproc=16384 kern.maxprocperuid=8192
 # Verify
 sysctl kern.maxproc kern.maxprocperuid
 ```
+```text
+kern.maxproc: 16384
+kern.maxprocperuid: 8192
+```
 
 Optional — bump the shell ulimit too so new shells inherit higher caps
 without waiting for re-login from a sysctl-only change:
 
 ```bash
 echo 'ulimit -u 8192'   >> ~/.zshenv
-echo 'ulimit -n 65536'  >> ~/.zshenv  # bonus — bumps fd limit (useful for zig/postgres)
+echo 'ulimit -n 65536'  >> ~/.zshenv  # bonus — bumps file descriptor (fd) limit (useful for zig/postgres)
 ```
 
 Existing shells need `exec zsh` (or a new tab) to pick this up.
@@ -157,7 +160,7 @@ update-skills   # updates gstack, then links the unified skills overlay + openco
 ```
 
 ### Secrets (1Password)
-Environment files are provisioned by `provision-env-1password` from 1Password vaults:
+`provision-env-1password` creates environment files from 1Password vaults:
 - `ZMB_LOCAL_ENV` → `~/.config/agentsfleet/.env`
 - `E2E_WORK` → `~/.config/e2e/.env`
 
