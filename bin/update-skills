@@ -114,6 +114,24 @@ fi
 info "Running gstack setup for detected agents..."
 cd "$GSTACK_DIR"
 
+# Ensure Playwright Chromium is usable BEFORE the per-agent ./setup loop, so a
+# missing/half-installed browser — or the bun/node Content Delivery Network (CDN)
+# stream-completion hang — can't stall setup. gstack's own installer uses bunx,
+# which hangs; install-playwright-chromium falls back to a curl fetch that
+# completes reliably. Runs once here so all host setups skip the download.
+PW_INSTALL="$DOTFILES/bin/install-playwright-chromium"
+[ -x "$PW_INSTALL" ] || PW_INSTALL="$HOME/bin/install-playwright-chromium"
+if [ -x "$PW_INSTALL" ]; then
+    if "$PW_INSTALL" --check >/dev/null 2>&1; then
+        ok "Playwright Chromium launches OK; gstack setup will skip download"
+    else
+        warn "Playwright Chromium missing/broken — running curl fallback"
+        "$PW_INSTALL" || warn "curl fallback failed; gstack setup may re-attempt (capped by timeout below)"
+    fi
+else
+    warn "install-playwright-chromium not found; relying on gstack's (timeout-capped) bunx installer"
+fi
+
 for agent_config in "${AGENTS[@]}"; do
     IFS=':' read -r host_flag config_dir skills_subdir <<< "$agent_config"
     

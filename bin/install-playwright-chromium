@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# install-playwright-chromium — install Playwright's Chromium + headless shell
+# via curl, bypassing the bun/node HTTP/2 stream-completion stall against the
+# Playwright Content Delivery Network (CDN). Both runtimes receive all bytes
+# then hang forever waiting for the stream FIN; curl closes cleanly and
+# finishes in seconds.
+#
+# Reads gstack's playwright-core/browsers.json to pick the exact revision +
+# browserVersion, so it adapts automatically when gstack bumps Playwright.
+# Darwin (mac-arm64 / mac-x64) only — other platforms fall back to gstack setup.
+set -euo pipefail
+
+ok()   { printf '\033[32m✔\033[0m %s\n' "$1"; }
+info() { printf '\033[34mℹ\033[0m %s\n' "$1"; }
+warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
+
+usage() {
+  cat <<'EOF'
+install-playwright-chromium — fetch Playwright Chromium via curl (bypasses the
+bun/node CDN stream-completion hang).
+
+Usage: install-playwright-chromium [--gstack-dir <path>] [--check]
+
+--gstack-dir   path to the gstack checkout (default: ~/.local/share/gstack)
+--check        exit 0 if Chromium launches OK; exit 1 otherwise (no install)
+EOF
+}
+
+GSTACK_DIR="${GSTACK_DIR:-$HOME/.local/share/gstack}"
+CHECK_ONLY=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --gstack-dir) GSTACK_DIR="$2"; shift 2 ;;
+    --check) CHECK_ONLY=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) warn "unknown arg: $1"; usage; exit 2 ;;
+  esac
+done
+
+BROWSERS_JSON="$GSTACK_DIR/node_modules/playwright-core/browsers.json"
+[ -f "$BROWSERS_JSON" ] || { warn "playwright-core/browsers.json not found at $BROWSERS_JSON"; exit 1; }
+[ -d "$GSTACK_DIR/node_modules/playwright" ] || { warn "playwright not installed in $GSTACK_DIR; run gstack setup once first"; exit 1; }
+
+# Launch Chromium exactly the way gstack's ensure_playwright_browser does, so the
+# verdict matches what ./setup will see. Prefer bun (gstack's runtime), fall back
+# to node (Windows path / bun-less boxes).
+can_launch() {
+  if command -v bun >/dev/null 2>&1; then
+    ( cd "$GSTACK_DIR" && bun --eval 'import { chromium } from "playwright"; const b = await chromium.launch(); await b.close();' ) >/dev/null 2>&1
+  elif command -v node >/dev/null 2>&1; then
+    ( cd "$GSTACK_DIR" && node --input-type=module -e 'import { chromium } from "playwright"; const b = await chromium.launch(); await b.close();' ) >/dev/null 2>&1
+  else
+    return 2
+  fi
+}
+
+if [ "$CHECK_ONLY" -eq 1 ]; then
+  if can_launch; then ok "Playwright Chromium launches OK"; exit 0; fi
+  warn "Playwright Chromium does not launch — run install-playwright-chromium (no --check) to fix via curl"
+  exit 1
+fi
+
+# Resolve revision + Chrome-for-Testing version from browsers.json.
+json_get() { node -e "const j=require('$BROWSERS_JSON'); const c=j.browsers.find(b=>b.name==='$1'); process.stdout.write(String(c.$2))"; }
+META_REVISION="$(json_get chromium revision)"
+META_VERSION="$(json_get chromium browserVersion)"
+[ -n "$META_REVISION" ] && [ -n "$META_VERSION" ] || { warn "could not parse revision/browserVersion from browsers.json"; exit 1; }
+
+# Resolve cache dir (respect PLAYWRIGHT_BROWSERS_PATH) and platform.
+if [ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]; then
+  CACHE_DIR="$PLAYWRIGHT_BROWSERS_PATH"
+elif [ "$(uname -s)" = "Darwin" ]; then
+  CACHE_DIR="$HOME/Library/Caches/ms-playwright"
+else
+  CACHE_DIR="$HOME/.cache/ms-playwright"
+fi
+
+case "$(uname -s)/$(uname -m)" in
+  Darwin/arm64)
+    PF_DIR="mac-arm64"; CHROME_ZIP="chrome-mac-arm64.zip"; SHELL_ZIP="chrome-headless-shell-mac-arm64.zip" ;;
+  Darwin/x86_64)
+    PF_DIR="mac-x64"; CHROME_ZIP="chrome-mac-x64.zip"; SHELL_ZIP="chrome-headless-shell-mac-x64.zip" ;;
+  *)
+    warn "curl fallback supports Darwin only (got $(uname -s)/$(uname -m)); run 'cd \"$GSTACK_DIR\" && bunx playwright install chromium' manually"
+    exit 1 ;;
+esac
+
+command -v unzip >/dev/null 2>&1 || { warn "unzip is required but not installed"; exit 1; }
+
+BASE="https://cdn.playwright.dev/builds/cft/$META_VERSION/$PF_DIR"
+
+install_zip() {
+  local label="$1" url="$2" dest="$3"
+  local tmp
+  tmp="$(mktemp "${TMPDIR:-/tmp}/pwcurl.XXXXXX")"
+  info "Fetching $label via curl..."
+  if ! curl -fL --retry 3 --retry-delay 2 --max-time 280 -o "$tmp" "$url"; then
+    rm -f "$tmp"
+    warn "curl failed: $url"
+    return 1
+  fi
+  rm -rf "$dest"
+  mkdir -p "$dest"
+  ( cd "$dest" && unzip -q -o "$tmp" )
+  rm -f "$tmp"
+  ok "$label installed ($(du -sh "$dest" 2>/dev/null | cut -f1))"
+}
+
+info "Installing Playwright Chromium $META_VERSION (revision $META_REVISION) via curl into $CACHE_DIR"
+install_zip "chromium ($META_VERSION)" "$BASE/$CHROME_ZIP" "$CACHE_DIR/chromium-$META_REVISION" || exit 1
+install_zip "chromium-headless-shell ($META_VERSION)" "$BASE/$SHELL_ZIP" "$CACHE_DIR/chromium_headless_shell-$META_REVISION" || exit 1
+
+if can_launch; then
+  ok "Playwright Chromium ready (curl bypass)"
+  exit 0
+fi
+warn "Files installed but launch check failed — inspect $CACHE_DIR and confirm bun/node can import playwright"
+exit 1
