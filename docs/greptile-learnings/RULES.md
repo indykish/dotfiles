@@ -1006,3 +1006,17 @@ Cite the most-specific source of truth by **file path** in the new doc (in the s
 
 **Tags:** css, tailwind-v4, design-system, layering, design-tokens
 **Ref:** PR #308 (May 08, 2026), greptile P2. The W1 token rewrite shipped 12 self-referencing forwards (`--font-sans`, `--font-mono`, 10× `--spacing-*`, `--ease-snap`). Greptile flagged the latent risk: works today via cascade-priority luck, breaks silently on a future Tailwind layer change. Fix: rename Layer 0 sources to `--ff-*` / `--sp-*` / `--easing-*` and update the forwards in theme.css.
+
+## RULE PTK — Membership tests against wire-derived keys use `Object.hasOwn`, never `in`
+
+**Why:** The `in` operator walks the prototype chain. Every JavaScript object inherits `constructor`, `toString`, `hasOwnProperty`, `valueOf`, `__proto__` and friends from `Object.prototype`, so `"constructor" in {}` is `true`. When the key comes off the wire — a status, a kind, a provider name, any server-chosen string — an attacker-free but merely *unrecognised* value that happens to collide with a prototype member answers `true` to `in`, is treated as a KNOWN key, and skips the fallback branch. The bug is worst precisely in the code written to be total: a rollup that buckets an unknown status into `unknown` will instead route `constructor` into a known bucket, corrupt the arithmetic (`byStatus.constructor += 1` coerces a function to a string), and break the very reconciliation the `unknown` bucket exists to guarantee.
+
+**How to apply:**
+- Any membership test whose key is not a compile-time literal uses `Object.hasOwn(obj, key)` (or a `Map`, or `Object.create(null)` for the bag).
+- `in` is fine only when the key is a literal you wrote, or the object is a class instance whose prototype you are deliberately probing.
+- The tell: `if (someWireValue in someRecord)`. If the left operand crossed the network, it is this rule.
+- Test it with the actual prototype members — `constructor`, `toString`, `hasOwnProperty`, `__proto__` — not just an invented "unknown" string. An `it.each` over those four is the pin; a test using only `"hibernating"` passes on the broken code.
+- **Cite as `RULE PTK`** when flagging.
+
+**Tags:** typescript, correctness, prototype-chain, wire-data, totality
+**Ref:** PR #519 (Jul 14, 2026), greptile P2 (re-ranked to correctness). `countFleets` in `ui/packages/app/lib/fleet-rollup.ts` — the function M130 added *specifically* to make the dashboard rollup total over `AGENTSFLEET_STATUS` — tested `fleet.status in byStatus`. A fleet whose status was `constructor` counted as known, so the totals stopped reconciling in the one place built to prove they always would. Fix: `Object.hasOwn`, pinned by an `it.each` over four `Object.prototype` members that fails 4/4 on the old check.
