@@ -6,7 +6,7 @@ DOTFILES="$HOME/Projects/dotfiles"
 DOTFILES_SKILLS="$DOTFILES/skills"
 UNIFIED_SKILLS="$DOTFILES/.unified-skills"
 GSTACK_DIR="$HOME/.local/share/gstack"
-GSTACK_REPO="git@github.com:garrytan/gstack.git"
+GSTACK_REPO="https://github.com/garrytan/gstack.git"
 
 # Agent configurations: "host_flag:config_dir:skills_subdir"
 # skills_subdir is relative to config_dir.
@@ -93,13 +93,100 @@ doctor_overlay() {
     ok "No copied GStack tree remains in $UNIFIED_SKILLS"
 }
 
+# ─── Playwright Chromium (curl fallback) ──────────────────────────────
+# gstack's ./setup installs Chromium via 'bunx playwright install chromium',
+# which hangs: both bun and node receive all bytes from the Playwright Content
+# Delivery Network (CDN) then stall on HTTP/2 stream completion because the
+# final frame never arrives. curl fetches the same zips reliably.
+# ensure_playwright_chromium runs once so all host setups skip the download.
+pw_can_launch() {
+    if command -v bun >/dev/null 2>&1; then
+        ( cd "$GSTACK_DIR" && bun --eval 'import { chromium } from "playwright"; const b = await chromium.launch(); await b.close();' ) >/dev/null 2>&1
+    elif command -v node >/dev/null 2>&1; then
+        ( cd "$GSTACK_DIR" && node -e "const { chromium } = require('playwright'); (async () => { const b = await chromium.launch(); await b.close(); })()" ) >/dev/null 2>&1
+    else
+        return 2
+    fi
+}
+
+_pw_json_get() {
+    bun -e "const j=require('$BROWSERS_JSON'); const c=j.browsers.find(b=>b.name==='$1'); process.stdout.write(String(c.$2))"
+}
+
+pw_install_zip() {
+    local label="$1" url="$2" dest="$3" tmp
+    tmp="$(mktemp "${TMPDIR:-/tmp}/pwcurl.XXXXXX")"
+    info "Fetching $label via curl..."
+    if ! curl -fL --retry 3 --retry-delay 2 --max-time 280 -o "$tmp" "$url"; then
+        rm -f "$tmp"
+        warn "curl failed: $url"
+        return 1
+    fi
+    rm -rf "$dest"
+    mkdir -p "$dest"
+    ( cd "$dest" && unzip -q -o "$tmp" )
+    rm -f "$tmp"
+    ok "$label installed ($(du -sh "$dest" 2>/dev/null | cut -f1))"
+}
+
+# Heal Playwright Chromium via curl when the launch check fails. No-op (ok) when
+# the browser already launches, so normal runs pay only one quick launch check.
+ensure_playwright_chromium() {
+    BROWSERS_JSON="$GSTACK_DIR/node_modules/playwright-core/browsers.json"
+    if [ ! -f "$BROWSERS_JSON" ] || [ ! -d "$GSTACK_DIR/node_modules/playwright" ]; then
+        warn "playwright not installed in gstack yet; skipping curl preflight (setup will install)"
+        return 0
+    fi
+    if pw_can_launch; then
+        ok "Playwright Chromium launches OK; gstack setup will skip download"
+        return 0
+    fi
+    warn "Playwright Chromium missing/broken — running curl fallback"
+
+    local meta_rev meta_ver cache_dir pf_dir chrome_zip shell_zip base
+    meta_rev="$(_pw_json_get chromium revision)"
+    meta_ver="$(_pw_json_get chromium browserVersion)"
+    [ -n "$meta_rev" ] && [ -n "$meta_ver" ] || { warn "could not parse browsers.json; skipping"; return 1; }
+
+    if [ -n "${PLAYWRIGHT_BROWSERS_PATH:-}" ]; then
+        cache_dir="$PLAYWRIGHT_BROWSERS_PATH"
+    elif [ "$(uname -s)" = "Darwin" ]; then
+        cache_dir="$HOME/Library/Caches/ms-playwright"
+    else
+        cache_dir="$HOME/.cache/ms-playwright"
+    fi
+
+    case "$(uname -s)/$(uname -m)" in
+        Darwin/arm64)  pf_dir="mac-arm64"; chrome_zip="chrome-mac-arm64.zip";          shell_zip="chrome-headless-shell-mac-arm64.zip" ;;
+        Darwin/x86_64) pf_dir="mac-x64";   chrome_zip="chrome-mac-x64.zip";            shell_zip="chrome-headless-shell-mac-x64.zip" ;;
+        *) warn "curl fallback supports Darwin only; gstack setup will try bunx (timeout-capped)"; return 1 ;;
+    esac
+    command -v unzip >/dev/null 2>&1 || { warn "unzip required but not installed"; return 1; }
+
+    base="https://cdn.playwright.dev/builds/cft/$meta_ver/$pf_dir"
+    info "Installing Playwright Chromium $meta_ver (revision $meta_rev) via curl into $cache_dir"
+    pw_install_zip "chromium ($meta_ver)"             "$base/$chrome_zip" "$cache_dir/chromium-$meta_rev"             || return 1
+    pw_install_zip "chromium-headless-shell ($meta_ver)" "$base/$shell_zip" "$cache_dir/chromium_headless_shell-$meta_rev" || return 1
+
+    if pw_can_launch; then
+        ok "Playwright Chromium ready (curl fallback)"
+        return 0
+    fi
+    warn "Files installed but launch check failed — inspect $cache_dir"
+    return 1
+}
+
 if [ "$DOCTOR_ONLY" -eq 1 ]; then
     doctor_overlay
     ok "Skills doctor passed"
     exit 0
 fi
 
-# 1. Clone/update gstack to proper XDG Base Directory location.
+command -v bun >/dev/null 2>&1 || fail "bun is required; install it before running update-skills"
+GSTACK_TIMEOUT_BIN="$(command -v timeout || command -v gtimeout || true)"
+[ -n "$GSTACK_TIMEOUT_BIN" ] || fail "timeout or gtimeout is required; install GNU coreutils before running update-skills"
+
+# 1. Clone or update gstack in its standard user-data location.
 info "Installing gstack to $GSTACK_DIR..."
 if [ -d "$GSTACK_DIR/.git" ]; then
     cd "$GSTACK_DIR" && git pull --ff-only
@@ -114,23 +201,16 @@ fi
 info "Running gstack setup for detected agents..."
 cd "$GSTACK_DIR"
 
+# Install package dependencies before the browser preflight. A fresh clone has
+# no Playwright metadata yet, and gstack setup would otherwise reach its hanging
+# bunx browser download before this script could apply the curl fallback.
+bun install --frozen-lockfile 2>/dev/null || bun install
+
 # Ensure Playwright Chromium is usable BEFORE the per-agent ./setup loop, so a
-# missing/half-installed browser — or the bun/node Content Delivery Network (CDN)
-# stream-completion hang — can't stall setup. gstack's own installer uses bunx,
-# which hangs; install-playwright-chromium falls back to a curl fetch that
-# completes reliably. Runs once here so all host setups skip the download.
-PW_INSTALL="$DOTFILES/bin/install-playwright-chromium"
-[ -x "$PW_INSTALL" ] || PW_INSTALL="$HOME/bin/install-playwright-chromium"
-if [ -x "$PW_INSTALL" ]; then
-    if "$PW_INSTALL" --check >/dev/null 2>&1; then
-        ok "Playwright Chromium launches OK; gstack setup will skip download"
-    else
-        warn "Playwright Chromium missing/broken — running curl fallback"
-        "$PW_INSTALL" || warn "curl fallback failed; gstack setup may re-attempt (capped by timeout below)"
-    fi
-else
-    warn "install-playwright-chromium not found; relying on gstack's (timeout-capped) bunx installer"
-fi
+# missing/half-installed browser — or the bun/node CDN stream-completion hang —
+# can't stall setup. See ensure_playwright_chromium for the curl fallback. The
+# 600s timeout on each ./setup below is the backstop.
+ensure_playwright_chromium || warn "curl preflight failed; gstack setup may re-attempt (capped by timeout below)"
 
 for agent_config in "${AGENTS[@]}"; do
     IFS=':' read -r host_flag config_dir skills_subdir <<< "$agent_config"
@@ -151,14 +231,8 @@ for agent_config in "${AGENTS[@]}"; do
     # the CDN's HTTP/2 stream completion) can't block update-ai-tools forever;
     # the warn branch below lets the rest of the flow continue on bounded failure.
     info "Setting up gstack for $host_flag..."
-    if command -v timeout >/dev/null 2>&1; then
-        GSTACK_TIMEOUT=600
-    else
-        GSTACK_TIMEOUT=0
-    fi
-    if [ "$GSTACK_TIMEOUT" -gt 0 ] && timeout "$GSTACK_TIMEOUT" ./setup --host "$host_flag"; then
-        ok "gstack setup complete for $host_flag"
-    elif [ "$GSTACK_TIMEOUT" -eq 0 ] && ./setup --host "$host_flag"; then
+    GSTACK_TIMEOUT=600
+    if "$GSTACK_TIMEOUT_BIN" "$GSTACK_TIMEOUT" ./setup --host "$host_flag"; then
         ok "gstack setup complete for $host_flag"
     else
         rc=$?
