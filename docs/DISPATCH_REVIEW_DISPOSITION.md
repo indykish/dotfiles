@@ -37,7 +37,7 @@ Severity: P0 9R/10P · P1 10R/6P · P2 2R/1P.
 | 15 | P0 | gate-dissolution | Cross-cutting non-language gates have no coherent home in a per-language facade model — and  | resolved | §0, §5 |
 | 16 | P0 | gate-dissolution | "merge-then-delete, nothing unique dies" has no proving mechanism — the coherence audit chec | partial | §13, §14, §2, §6.5, §9 |
 | 17 | P0 | yellow-mechanism | Dissolving docs/gates/ detonates the deterministic invariance audit — every gate-parity, gat | resolved | §0, §13, §8, §9 |
-| 18 | P0 | yellow-mechanism | 🟡 JUDGMENT has zero machine backstop and the one prose backstop (HARNESS VERIFY) has no row  | partial | §0, §1, §11, §16 |
+| 18 | P0 | yellow-mechanism | 🟡 JUDGMENT has zero machine backstop and the one prose backstop (CONFORM) has no row  | partial | §0, §1, §11, §16 |
 | 19 | P0 | yellow-mechanism | DOTFILES_RESIDENT + cross-reference + cross-agent-eval all pin docs/ZIG_RULES.md & BUN_RULES | resolved | §8, §9 |
 | 20 | P1 | cross-repo | §11 cross-repo blast-radius enumeration is materially incomplete — it omits the audit/eval/s | resolved | §0, §10, §11, §13, §6.3, §8 |
 | 21 | P1 | cross-repo | The negative-test harness (test-audit) copies and asserts on specific gate bodies that the d | resolved | §13, §8, §9 |
@@ -63,4 +63,3 @@ Severity: P0 9R/10P · P1 10R/6P · P2 2R/1P.
 a skeptic agent (try-to-refute pass); excluding them is the quality filter, not
 an oversight. As Stage 0 reworks the code + adds the eval/audit scripts, the
 partial rows flip to resolved.
-

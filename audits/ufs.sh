@@ -2,7 +2,7 @@
 # ufs.sh — enforce RULE UFS (Unified Form for Symbols) across the worktree.
 #
 # Dispatch façade: dispatch/write_any.md (UFS Gate)
-# Fires in: make lint, HARNESS VERIFY.
+# Fires in: make lint, CONFORM.
 #
 # Generic detection — no manifest of known literals, so the audit scales
 # as the codebase grows. Three classes of violation:

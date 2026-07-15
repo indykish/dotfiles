@@ -9,13 +9,13 @@ warn() { printf '\033[33m⚠\033[0m %s\n' "$1"; }
 usage() {
   cat <<'EOF'
 update-ai-tools — update Artificial Intelligence (AI) coding command-line tools,
-then relink local dotfiles, update skills, and link agent instructions.
+then relink local dotfiles, update skills, and refresh global agent instructions.
 
 Usage: update-ai-tools [--doctor]
 
 Runs tool updaters for: claude, opencode, amp, and @openai/codex.
-Then runs: link-bin-dotfiles, update-skills, and link-agents-md. Each delegate
-runs its own doctor/postflight check before this script exits.
+Then runs `link-bin-dotfiles` and `update-skills`, followed by repository rules
+status. Each delegate runs its own postflight check before this script exits.
 --doctor verifies delegate state without updating tools.
 EOF
 }
@@ -25,7 +25,7 @@ case "${1:-}" in
   --doctor)
     ~/bin/link-bin-dotfiles --doctor
     ~/bin/update-skills --doctor
-    ~/bin/link-agents-md --doctor
+    ~/bin/oracle-rules doctor --all
     exit 0
     ;;
 esac
@@ -68,9 +68,9 @@ info "🔄 Running update-skills to keep skills updated..."
 ~/bin/update-skills
 
 echo ""
-info "🔗 Running link-agents-md to link AGENTS.md ruleset into project repos and agent home dirs..."
-if [[ -x "$HOME/bin/link-agents-md" ]]; then
-  ~/bin/link-agents-md
+info "🔎 Reporting repository rules snapshot status..."
+if [[ -x "$HOME/bin/oracle-rules" ]]; then
+  ~/bin/oracle-rules status --all
 else
-  warn "link-agents-md not found in ~/bin/ — run link-bin-dotfiles first"
+  warn "oracle-rules not found in ~/bin/ — run link-bin-dotfiles first"
 fi

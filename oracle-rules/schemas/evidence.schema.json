@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "profile", "source_commit", "registry_digest", "result", "checks", "llm_result", "created_at"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "profile": {"type": "string"},
+    "source_commit": {"type": "string"},
+    "registry_digest": {"type": "string"},
+    "result": {"enum": ["pass", "fail"]},
+    "checks": {"type": "array"},
+    "llm_result": {"enum": ["pass", "not-required"]},
+    "created_at": {"type": "string"}
+  },
+  "additionalProperties": false
+}

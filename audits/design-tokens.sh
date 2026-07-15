@@ -3,7 +3,7 @@
 # ui/packages/{app,website}/**/*.tsx.
 #
 # Dispatch façade: dispatch/write_ts_adhere_bun.md (Design Tokens / DESIGN TOKEN GATE)
-# Fires in: HARNESS VERIFY (via `make harness-verify`).
+# Fires in: CONFORM (via `make harness-verify` in `agentsfleet`).
 #
 # Rejects arbitrary Tailwind classes when an equivalent design-system
 # token utility exists in ui/packages/design-system/src/theme.css.

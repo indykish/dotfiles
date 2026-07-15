@@ -103,7 +103,7 @@ Run the helper directly for the first setup:
 The helper links `~/.tmux.conf` and these commands into `~/bin`:
 
 - `link-bin-dotfiles`
-- `link-agents-md`
+- `oracle-rules`
 - `update-skills`
 - `provision-env-1password`
 - `update-ai-tools`
@@ -180,9 +180,8 @@ The current shell is replaced by a new Zsh process.
 
 ### 5. Install the shared agent skills
 
-> **Warning:** `update-skills` replaces the instruction file in each installed
-> agent home with a link to this repository. Back up an existing `CLAUDE.md` or
-> `AGENTS.md` file before continuing.
+> **Warning:** `update-skills` replaces only instruction links already owned by
+> this dotfiles repository. It refuses an unexpected real file or external link.
 
 ```bash
 update-skills
@@ -201,7 +200,7 @@ This command:
    cap per agent.
 5. Rebuilds `.unified-skills/` from gstack and local skills.
 6. Links the shared skills directory into installed agents.
-7. Links `AGENTS.md` into each installed agent's home directory.
+7. Renders the global Oracle rules and links them into each installed agent's home directory.
 8. Links the OpenCode settings file.
 
 If an agent already has a real `skills` directory, the helper moves it to a
@@ -216,51 +215,112 @@ update-skills --doctor
 
 Successful output ends with `✔ Skills doctor passed`.
 
-### 6. Link the rules into project repositories
+### 6. Generate the global agent instructions
 
-First inspect the target list:
-
-```bash
-link-agents-md --list
-```
-
-The list shows the linked files, the target repositories, and the agent home
-links. The paths vary by machine.
-
-By default, the helper targets `~/Projects/agentsfleet` and
-`~/Projects/cache-kit.rs`, including their unlocked Git worktrees. It links the
-rulebook, dispatch pages, selected documentation, and checks into each target.
-
-Run the default setup only if those are the repositories you want to change:
+Validate the registry, render the global profile, and link installed agents:
 
 ```bash
-link-agents-md
+oracle-rules validate
+oracle-rules render --profile global --output ~/Projects/dotfiles/oracle-rules/generated/global
+oracle-rules link-agent-homes
+oracle-rules link-agent-homes --check
 ```
 
-The helper checks its own links at the end of a run, so successful output ends
-with `✔ agents doctor passed`.
+The link command supports Claude, Codex, OpenCode, and Amp when their home
+directories exist. It retargets an older link only when that link already
+resolves inside this dotfiles repository. It refuses every real file and
+external symbolic link.
 
-To target different repositories, pass their absolute paths through
-`KISHORES_TARGETS`:
+A later global rules change reaches installed agents after the global render;
+the stable agent-home links do not need recreation. `update-skills` performs
+the render and link steps as part of its normal run.
+
+### 7. Initialize rules in a new repository
+
+Choose a profile from `oracle-rules/profiles/`, then add the repository path and
+profile to `oracle-rules/repositories.json`. Existing profiles cover
+`agentsfleet`, Rust cache-kit repositories, Mintlify documentation, dotfiles,
+and global-only behavior.
+
+Replace `<NAME>` with the repository key, `<PROFILE>` with the profile filename
+without `.json`, and `<PROJECT>` with the directory name under `~/Projects`.
+
+Validate and commit the registry entry in dotfiles:
 
 ```bash
-KISHORES_TARGETS="$HOME/Projects/<PROJECT_ONE> $HOME/Projects/<PROJECT_TWO>" link-agents-md
+cd ~/Projects/dotfiles
+oracle-rules validate
+git add oracle-rules/repositories.json
+git commit -m "chore(governance): register <NAME> rules profile"
+git push origin master
 ```
 
-Replace `<PROJECT_ONE>` and `<PROJECT_TWO>` with directory names under
-`~/Projects`. The helper skips missing targets and regular files that it would
-otherwise replace. It removes dangling links into this dotfiles clone unless
-you pass `--no-prune`.
-
-Verify the selected targets without changing them:
+Start from a clean repository:
 
 ```bash
-KISHORES_TARGETS="$HOME/Projects/<PROJECT_ONE> $HOME/Projects/<PROJECT_TWO>" link-agents-md --doctor
+cd ~/Projects/<PROJECT>
+git status --short
+oracle-rules init --profile <PROFILE> --repository "$(pwd)"
 ```
 
-Successful output ends with `✔ agents doctor passed`.
+Edit `AGENTS.project.md` with repository commands, terminology, architecture
+triggers, and local safety rules. Commit the two repository-owned inputs before
+synchronizing:
 
-### 7. Write local secret files (optional)
+```bash
+git add AGENTS.project.md .oracle/profile.json
+git commit -m "chore(governance): initialize oracle rules"
+```
+
+Return to dotfiles and generate the tracked snapshot:
+
+```bash
+cd ~/Projects/dotfiles
+oracle-rules sync --repository <NAME>
+```
+
+Synchronization writes `AGENTS.md`, selected dispatch pages and checks,
+`.oracle/profile.json`, `.oracle/managed-files.json`, and
+`.oracle/ruleset.lock`. Review and commit those files in the target repository,
+then verify the lock:
+
+```bash
+cd ~/Projects/<PROJECT>
+git status --short
+git add -A
+git commit -m "chore(governance): sync oracle rules"
+cd ~/Projects/dotfiles
+oracle-rules doctor --repository <NAME>
+```
+
+For an existing repository that still uses dotfiles symbolic links, first move
+its repository-specific instructions into `AGENTS.project.md` and commit that
+file. Once the tree is clean, `oracle-rules sync --repository <NAME>` replaces
+only managed links with ordinary snapshot files. It never visits sibling
+worktrees.
+
+### 8. Propagate later rules updates
+
+Global agent-home rules and project snapshots intentionally use different
+update paths:
+
+```bash
+oracle-rules render --profile global --output ~/Projects/dotfiles/oracle-rules/generated/global
+oracle-rules link-agent-homes
+oracle-rules status --all
+oracle-rules sync --repository <NAME>
+```
+
+The first two commands update installed agents immediately. `status --all`
+reports which registered repositories need a snapshot update. Each `sync` is
+explicit and requires a clean target tree, so a global edit cannot silently
+change an active branch or worktree.
+
+The `agentsfleet` profile keeps `make harness-verify`. Its profile maps that
+repository command to the `CONFORM` lifecycle stage. `VERIFY` remains the
+separate behavior-proof stage, followed by `REVIEW`.
+
+### 9. Write local secret files (optional)
 
 The secret helper writes:
 
@@ -287,20 +347,21 @@ provision-env-1password --doctor
 
 Successful output ends with `✔ env doctor passed`.
 
-### 8. Verify the repository rules
+### 10. Verify the repository rules
 
 ```bash
 make audit
 ```
 
-The audit checks rule invariants, dispatch coverage, and deterministic dispatch
-evaluations. A successful run ends with `ALL CHECKS PASSED` and passing dispatch
-evaluation summaries.
+The audit validates the registry and profiles, runs focused unit tests, proves
+byte-stable generation, checks rule invariants, and runs dispatch evaluations.
 
 ## How the agent rules work
 
-[`AGENTS.md`](AGENTS.md) is the root operating model. It defines safety rules,
-the development lifecycle, verification requirements, and the dispatch index.
+[`oracle-rules/core/operating-model.md`](oracle-rules/core/operating-model.md) is
+the canonical global operating model. Profiles select rule packs and repository
+commands. The renderer produces [`AGENTS.md`](AGENTS.md) for this repository,
+the global agent-home file, and tracked consumer snapshots.
 
 The dispatch index sends an agent to the smallest relevant rule page before an
 edit or claim:
@@ -320,6 +381,9 @@ Machine-checkable rules have scripts or fixtures under [`audits/`](audits/) and
 [`evals/`](evals/). `make audit` detects missing pages, stale indexes, and rule
 checks that no longer match their documentation.
 
+Read [`docs/ORACLE_RULES_ARCHITECTURE.md`](docs/ORACLE_RULES_ARCHITECTURE.md)
+for registry, profile, synchronization, refusal, and evidence details.
+
 Read [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md) for the
 full dispatch design.
 
@@ -327,7 +391,8 @@ full dispatch design.
 
 | Path | Contents |
 |---|---|
-| [`AGENTS.md`](AGENTS.md) | Root operating model for coding agents. |
+| [`AGENTS.md`](AGENTS.md) | Generated dotfiles-profile instructions. |
+| [`oracle-rules/`](oracle-rules/) | Canonical operating model, registry, profiles, renderer, schemas, fixtures, and generated global rules. |
 | [`SOUL.md`](SOUL.md) | Orly's working style and collaboration notes. |
 | [`dispatch/`](dispatch/) | Rule pages selected by the work an agent is about to do. |
 | [`audits/`](audits/) | Shell checks and review questionnaires. |
@@ -346,15 +411,16 @@ full dispatch design.
 ## Routine maintenance
 
 Update all supported AI coding tools, relink dotfiles, refresh skills, and
-relink agent rules:
+refresh global agent rules:
 
 ```bash
 update-ai-tools
 ```
 
 The helper updates `claude`, `opencode`, `amp`, and `@openai/codex` when they
-are installed. It then runs `link-bin-dotfiles`, `update-skills`, and
-`link-agents-md`, so successful output ends with `✔ agents doctor passed`.
+are installed. It then runs `link-bin-dotfiles`, `update-skills`, renders the
+global rules, verifies agent-home links, and reports repository snapshot status.
+It does not synchronize consumer repositories.
 
 Run all three read-only checks at any time:
 
@@ -367,12 +433,12 @@ You can also run each doctor on its own:
 ```bash
 link-bin-dotfiles --doctor
 update-skills --doctor
-link-agents-md --doctor
+oracle-rules link-agent-homes --check
+oracle-rules doctor --all
 ```
 
-The doctors print `✔ dotfiles doctor passed`, `✔ Skills doctor passed`, and
-`✔ agents doctor passed`. Each doctor exits with a non-zero status when it
-finds a missing or incorrect link.
+The doctors print their checked paths and exit with a non-zero status when they
+find a missing link, changed managed file, or stale ruleset lock.
 
 ## Optional macOS process limits
 

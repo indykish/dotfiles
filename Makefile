@@ -1,11 +1,14 @@
-.PHONY: audit test-audit llmevals signoff \
+.PHONY: audit test-audit llmevals \
         dispatch-coverage dispatch-evals dispatch-parity
 
 # Run the deterministic audit chain (all green):
-#   1. agents-md.sh          — AGENTS.md invariance + dispatch parity (script layer).
-#   2. dispatch-coverage.sh  — dispatch façade-pair coherence (6.3 + 6.4).
-#   3. evals/dispatch/run.sh — prose-pinned deterministic façade evals.
+#   1. Registry and profile validation.
+#   2. Oracle rules unit tests and byte-stable rendering.
+#   3. AGENTS.md invariance and dispatch checks.
 audit:
+	@bin/oracle-rules validate
+	@PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=oracle-rules/src python3 -m unittest discover -s oracle-rules/tests -p 'test_*.py'
+	@bin/oracle-rules verify --all
 	@bash audits/agents-md.sh
 	@bash evals/dispatch/coverage.sh
 	@bash evals/dispatch/run.sh
@@ -31,11 +34,10 @@ test-audit:
 dispatch-parity:
 	@bash evals/test-dispatch-parity.sh
 
-# Cross-agent LLM eval signoff (audits/agents-md.md Scenario 23): each
+# Cross-agent Large Language Model (LLM) evaluation (Scenario 23): each
 # installed agent (claude/codex/amp/opencode) answers the frozen golden-set;
 # verdicts graded by exact match. Live LLM calls — costs tokens on every
-# agent. Resumable (journalled); writes .agents-llmevals-signoff on
-# all-gradable-agents-pass.
+# agent. The run is resumable through a machine-local journal.
 #
 # One entry point. The live run validates fixtures + reports availability as a
 # mandatory preamble (run.sh:188) before any spend. For the zero-token
@@ -44,14 +46,3 @@ dispatch-parity:
 #   make llmevals CHECK=1  — validate fixtures + availability only, no live calls
 llmevals:
 	@bash evals/llms/run.sh $(if $(CHECK),--check)
-
-# Write the AGENTS_INVARIANCE sign-off file against current HEAD.
-# Only run this AFTER answering every audits/agents-md.md question with YES.
-# The pre-push hook reads .agents-invariance-signoff to allow contract pushes.
-signoff:
-	@printf '%s  %s  PASS\n' \
-	  "$$(git rev-parse --short HEAD)" \
-	  "$$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-	  > .agents-invariance-signoff
-	@echo "wrote .agents-invariance-signoff:"
-	@cat .agents-invariance-signoff

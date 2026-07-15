@@ -5,7 +5,7 @@
 # files (every other call site must reference the registry symbol).
 #
 # Dispatch façade: dispatch/write_any.md (Error Registry Gate)
-# Fires in: HARNESS VERIFY (via `make harness-verify`).
+# Fires in: CONFORM (via `make harness-verify` in `agentsfleet`).
 #
 # TECHNICAL DEBT (acknowledged on migration to dotfiles, 2026-05-11):
 # The script hard-codes:

@@ -8,7 +8,7 @@
 # input, same verdict, no calendar/branch dependence.
 #
 #   dispatch/write_zig.sh <file.zig> [...]   # explicit targets (EXECUTE)
-#   dispatch/write_zig.sh --staged           # staged *.zig (HARNESS VERIFY, pre-commit)
+#   dispatch/write_zig.sh --staged           # staged *.zig (CONFORM, pre-commit)
 #
 # Layering:  AGENTS.md → write_zig.md (latent) → write_zig.sh (this) → audits/*.sh
 # Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script)

@@ -1,0 +1,9 @@
+{
+  "files": [
+    ".oracle/managed-files.json",
+    ".oracle/profile.json",
+    "AGENTS.md"
+  ],
+  "profile": "global",
+  "schema_version": 1
+}

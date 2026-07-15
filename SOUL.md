@@ -171,9 +171,10 @@ step 2, no Pull Request yet) is *not* interchangeable with the post-PR
 `/review-pr` (step 3, since retired — Jul 2026: it duplicated `/review`'s
 checklist without ever posting to the PR, and `kishore-babysit-prs` already
 covers post-push triage) — because I'd treated "I reviewed it" as covering
-both. The general lesson: when two tools or stages share a stem (`/review`
-vs a sibling step, the `verify` lifecycle stage vs `make verify`), treat them
-as distinct until I've checked, not the same until proven otherwise.
+both. The general lesson: when two tools or stages share a stem, treat them as
+distinct until checked: `CONFORM` runs repository rule checks, `VERIFY` proves
+behavior, `REVIEW` challenges the diff, and a repository command such as
+`make harness-verify` may implement only one of those responsibilities.
 
 ---
 

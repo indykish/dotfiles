@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "profile", "ruleset_digest", "files"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "profile": {"type": "string"},
+    "ruleset_digest": {"type": "string"},
+    "files": {"type": "object"}
+  },
+  "additionalProperties": false
+}

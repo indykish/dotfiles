@@ -82,7 +82,7 @@ _**ui/ carve-out = manual duty.** `audits/ufs.sh` skips `ui/packages/*/{src,app,
   - **String literals used in ≥2 sites become a named const.** "It's just a label" is not an exception. Wire-format enum values (`"platform"`, `"self_managed"`, `"receive"`, `"stage"`) MUST be defined once as a SCREAMING_SNAKE const-as-namespace (`PROVIDER_MODE.platform`, `CHARGE_TYPE.receive`) and referenced everywhere else — including test fixtures, mock returns, and assertion arguments. Inline string repeats are a rule violation even if TypeScript narrows them.
   - **Numeric literals carrying semantic meaning become a named const** even at the first use site. Examples that always need a name: conversion factors (`NANOS_PER_USD`, `MS_PER_SECOND`, `BYTES_PER_MIB`), thresholds (`LOW_BALANCE_THRESHOLD_NANOS`, `MAX_RETRY_COUNT`), magic offsets, sub-cent rates. Bare digits like `1_000_000_000` in a `nanos / 1_000_000_000` expression are a smell — the unit suffix names the operation, but the constant names *what the divisor is*. Carve-out: **pin tests** where the literal IS the contract (`expect(formatDollars(4_710_000_000)).toBe("$4.71")`) — those keep the literal, with a `// pin test: literal is the contract` comment.
   - **Cross-runtime constants must be named identically** across Zig, TS, and JS (same SCREAMING_SNAKE identifier; case-only diff allowed for language idioms). When a constant exists in one runtime, the matching one in any sibling runtime carries the same name. `NANOS_PER_USD` is the canonical example: `pub const NANOS_PER_USD` in Zig, `export const NANOS_PER_USD` in TS, `export const NANOS_PER_USD` in JS — never `NANOS_PER_DOLLAR` in one and `NANOS_PER_USD` in another.
-  - **Self-audit at HARNESS VERIFY.** Before declaring done, grep the diff for repeat string literals and bare-numeric divisors/multipliers — every hit either becomes a named const or earns the `// pin test` carve-out comment. Spec dimensions that introduce a new wire-format value, conversion factor, or threshold must define the constant in PLAN, not EXECUTE.
+  - **Self-audit at CONFORM.** Before declaring done, grep the diff for repeat string literals and bare-numeric divisors/multipliers — every hit either becomes a named const or earns the `// pin test` carve-out comment. Spec dimensions that introduce a new wire-format value, conversion factor, or threshold must define the constant in PLAN, not EXECUTE.
 
 ## §3 · Import discipline
 
@@ -439,7 +439,7 @@ audits/design-tokens.sh --staged  # opt-in narrowing for iterative dev
 
 The script lives in the project repo at `audits/design-tokens.sh` (symlinked from `~/Projects/dotfiles/audits/`). It prints `file:line` + suggested token utility for every blocking violation and exits 1 on any.
 
-A clean run is required before HARNESS VERIFY can advance.
+A clean run is required before CONFORM can advance.
 
 The project repo is also expected to wire the audit into `make/quality.mk` `_website_lint` and `_app_lint` targets so `make lint` catches regressions:
 
@@ -476,7 +476,7 @@ Three reasons:
 
 2. **Inline override.** Some `-[...]` classes are intentional and irreplaceable (bespoke grids, `calc(...)`, status-dot sizes). The comment-based override fits the existing gate idiom and gives reviewers a paper trail of *why* each arbitrary stayed.
 
-3. **HARNESS VERIFY integration.** Gates are the canonical end-of-turn audit point. Lint rules surface in editor noise but miss the agentic lifecycle. The gate's pre-edit one-liner + end-of-turn self-audit puts the discipline in the model's hot path.
+3. **CONFORM integration.** Gates are the canonical end-of-turn audit point. Lint rules surface in editor noise but miss the agentic lifecycle. The gate's pre-edit one-liner + end-of-turn self-audit puts the discipline in the model's hot path.
 
 #### When tokens are missing
 

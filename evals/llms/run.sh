@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Cross-agent LLM-eval signoff for AGENTS.md (audits/agents-md.md Scenario
-# 23). This is an LLM evaluation harness: the deterministic audit proves the
+# Cross-agent Large Language Model (LLM) evaluation for AGENTS.md
+# (audits/agents-md.md Scenario 23). The deterministic audit proves the
 # rules are PRESENT; it can't prove an agent READING them complies — the
 # hallucination class. This closes that gap: a frozen golden-set of
 # question→expected-verdict fixtures is answered by EACH installed agent
@@ -11,9 +11,9 @@
 #
 # Modes: --check (validate fixtures + availability, no live calls) · --smoke
 # (one fixture/agent) · --agent <name> · --threshold <N> (default 100) ·
-# --fresh (ignore journal) · (default) full set × every agent. Signoff written
-# to .agents-llmevals-signoff (gitignored) when every gradable agent meets
-# threshold; absent/credit-blocked agents are logged, never silently skipped.
+# --fresh (ignore journal) · (default) full set × every agent. The command exits
+# successfully when every gradable agent meets the threshold; absent or
+# credit-blocked agents are logged, never silently skipped.
 
 set -uo pipefail
 
@@ -21,7 +21,6 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 AGENTS="$ROOT/AGENTS.md"
 DISPATCH_DIR="$ROOT/dispatch"
 FIXTURES="$ROOT/evals/llms/fixtures.jsonl"
-SIGNOFF="$ROOT/.agents-llmevals-signoff"
 JOURNAL_DIR="$ROOT/.llmevals-journal"
 CALL_TIMEOUT="${LLMEVALS_TIMEOUT:-${COMPREHENSION_TIMEOUT:-180}}"
 
@@ -178,7 +177,7 @@ list_available() {
 }
 
 # ---------------------------------------------------------------------------
-printf '%s🧠 AGENTS.md cross-agent LLM eval%s  (mode=%s threshold=%s%%)\n\n' "$B$BO" "$X" "$MODE" "$THRESHOLD"
+printf '%s🧠 AGENTS.md cross-agent Large Language Model (LLM) evaluation%s  (mode=%s threshold=%s%%)\n\n' "$B$BO" "$X" "$MODE" "$THRESHOLD"
 
 [[ -f "$FIXTURES" ]] || { echo "${R}FAIL${X}: fixtures missing: $FIXTURES" >&2; exit 2; }
 validate_fixtures || { echo "${R}FAIL${X}: fixture validation failed" >&2; exit 2; }
@@ -215,7 +214,7 @@ while IFS=$'\t' read -r id v; do QTEXT["$id"]="$v";  done < <(fixtures_field q)
 # agent's verdict is journalled the moment it completes, keyed to HEAD + the
 # fixtures hash, so a re-run skips finished agents instead of re-spending tokens.
 # A drifted ruleset/fixtures changes RUNKEY → stale journal is ignored. --fresh
-# forces a clean run. Journal is gitignored (per-machine, like the signoff).
+# forces a clean run. Journal is gitignored and machine-local.
 HEAD_SHA="$(cd "$ROOT" && git rev-parse --short HEAD 2>/dev/null || echo nogit)"
 FIX_HASH="$( (md5 -q "$FIXTURES" 2>/dev/null || md5sum "$FIXTURES" 2>/dev/null | cut -d' ' -f1) )"
 RUNKEY="${HEAD_SHA}-${FIX_HASH}-t${THRESHOLD}"
@@ -289,23 +288,16 @@ done
 echo; echo "${BO}Summary:${X} $REPORT"
 
 if [[ "$MODE" == "smoke" ]]; then
-  echo "${Y}smoke mode${X}: plumbing validated; no signoff written."
+  echo "${Y}smoke mode${X}: plumbing validated."
   [[ $OVERALL_OK -eq 1 ]] && exit 0 || exit 1
 fi
 
-# Signoff requires: full run, all agents, every GRADED agent passed, AND at
-# least one agent actually graded (so an all-unavailable run can't sign off).
 if [[ "$MODE" == "full" && -z "$ONLY_AGENT" && $OVERALL_OK -eq 1 ]]; then
   if [[ $GRADED -eq 0 ]]; then
-    echo "${R}🔴 no agent could be graded (all unavailable) — no signoff${X}"
+    echo "${R}🔴 no agent could be graded; all were unavailable${X}"
     exit 1
   fi
-  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  sha="$(cd "$ROOT" && git rev-parse --short HEAD 2>/dev/null || echo nogit)"
-  printf '%s  %s  PASS  graded=%d  %s%s\n' "$sha" "$ts" "$GRADED" "$REPORT" \
-    "${UNAVAIL:+ unavailable:$UNAVAIL}" > "$SIGNOFF"
-  echo "${G}✅ LLM-eval signoff written${X}: $SIGNOFF"
-  cat "$SIGNOFF"
+  echo "${G}✅ live comprehension passed${X}: graded=$GRADED $REPORT"
   [[ -n "$RUN_JDIR" ]] && rm -rf "$RUN_JDIR"   # run complete — clear its journal
   exit 0
 fi

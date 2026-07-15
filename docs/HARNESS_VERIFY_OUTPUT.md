@@ -1,6 +1,7 @@
-# HARNESS VERIFY — Required output block
+# CONFORM — Required output block
 
-> Parent: [`../AGENTS.md`](../AGENTS.md) §HARNESS VERIFY.
+> Parent: [`../AGENTS.md`](../AGENTS.md) §CONFORM. This file retains its name
+> because `agentsfleet` retains the repository command `make harness-verify`.
 
 Runs after EXECUTE, before VERIFY. Aggregates every gate verdict; lifecycle cannot advance without enumerating the audit. Any "fail" / remaining violations → return to EXECUTE.
 
@@ -12,14 +13,14 @@ Single awk over `git diff -U0 HEAD`, replaces 4 separate self-audits. For every 
 - Emit `PUB:` hits when `*.zig` and line matches `^\+(pub | *pub fn | *[A-Z][a-zA-Z]+,$)`.
 - Emit `UI:` hits when under `ui/packages/app/**.{tsx,jsx}` and line contains `<(section|button|input|dialog|article|nav|header|form)\b`.
 
-Non-empty = address before HARNESS VERIFY passes.
+Non-empty = address before CONFORM passes.
 
 ## Required output
 
 Verdict cells use ✅ pass · ⚪ n/a · 🔴 fail · 🟡 violations addressed.
 
 ```
-🚧 HARNESS VERIFY: <branch>
+🚧 CONFORM: <branch>
 | Gate                 | Verdict                       |
 | FILE SHAPE           | ✅ pass | ⚪ n/a               |
 | PUB GATE             | ✅ pass | ⚪ n/a               |

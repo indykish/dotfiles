@@ -1,42 +1,16 @@
 #!/usr/bin/env bash
-# Pre-commit hook for dotfiles.
-# - When AGENTS.md is staged, runs audits/agents-md.sh and blocks
-#   the commit if any invariant regressed.
-# - For all other commits, this hook is a no-op (fast path).
-#
-# Enable once with:
-#     git -C ~/Projects/dotfiles config core.hooksPath .githooks
-#
-# Bypass intentionally is a one-off:
-#     SKIP_AGENTS_AUDIT=1 git commit ...
-# Do NOT use --no-verify (banned by the operating model).
-
 set -uo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
-if git diff --cached --name-only | grep -qE '^(AGENTS\.md|audits/agents-md\.(md|sh)|audits/data\.sh|audits/parity-dispatch\.sh|dispatch/.*\.md|audits/fixtures/.*\.diff)$'; then
-  if [[ "${SKIP_AGENTS_AUDIT:-0}" = "1" ]]; then
-    echo "pre-commit: SKIP_AGENTS_AUDIT=1 — bypassing AGENTS.md audit (one-off)" >&2
-  else
-    echo "pre-commit: AGENTS.md or its audit changed — running audits/agents-md.sh" >&2
-    if ! bash "$ROOT/audits/agents-md.sh"; then
-      cat >&2 <<'MSG'
+GOVERNANCE_PATTERN='^(AGENTS\.md|README\.md|Makefile|oracle-rules/|dispatch/|audits/(agents-md|data|parity-dispatch)|evals/|docs/(EXECUTE_DOC_READS|ORACLE_RULES_ARCHITECTURE|HARNESS_VERIFY_OUTPUT)\.md|\.githooks/)'
 
-pre-commit: AGENTS.md invariance regressed.
-
-Fix the FAIL: lines above, then re-stage and re-commit.
-
-If you also changed AGENTS.md semantics, run audits/agents-md.md
-through an LLM agent before merging — the script catches mechanical
-regressions; the questionnaire catches reading-comprehension ones.
-
-To bypass for a one-off (and only with reason in the commit message):
-    SKIP_AGENTS_AUDIT=1 git commit ...
-MSG
-      exit 1
-    fi
+if git diff --cached --name-only | grep -qE "$GOVERNANCE_PATTERN"; then
+  echo "pre-commit: governance changed — running make audit" >&2
+  if ! make audit; then
+    echo "pre-commit: governance audit failed" >&2
+    exit 1
   fi
 fi
 

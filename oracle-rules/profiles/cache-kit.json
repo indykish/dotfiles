@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "name": "cache-kit",
+  "packs": [
+    "universal.authoring",
+    "language.rust",
+    "language.shell",
+    "domain.documentation"
+  ],
+  "commands": {
+    "conform": [
+      ["cargo", "fmt", "--all", "--", "--check"],
+      ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"]
+    ],
+    "verify.unit": [["make", "test"]],
+    "verify.build": [["make", "build"]]
+  }
+}

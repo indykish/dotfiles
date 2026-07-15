@@ -187,7 +187,7 @@ write_zig.md §Tagged unions for result types:
 write_zig.sh:  dispatch_judgment "TGU" "result w/ failure modes? union(enum)…"
 eval:  evals/llms — scenario asserts union(enum), not optional struct
 run:  TGU 🔵 DECIDE — result w/ failure modes? union(enum), not optional-field
-→ agent decides, states verdict in chat; HARNESS VERIFY audits the attestation.
+→ agent decides, states verdict in chat; CONFORM audits the attestation.
 ```
 
 ## 5 · Dispatch set + gate disposition (all 20 mapped — no homeless gate)
@@ -303,7 +303,7 @@ A card is not deleted until its delta-landed assertion is green. Preserve any
 | Plane | When | Invocation |
 |---|---|---|
 | Latent | EXECUTE, about to write | agent reads `write_zig.md`; runs `write_zig.sh <file>` (scoped to the touched file, NOT `--all`) |
-| Anchor | HARNESS VERIFY (end-of-turn) | `write_zig.sh --staged`; 🔴 → back to EXECUTE; 🔵 → state verdict |
+| Anchor | CONFORM (end-of-turn) | `write_zig.sh --staged`; 🔴 → back to EXECUTE; 🔵 → state verdict |
 | Backstop | COMMIT | **`.githooks/pre-commit`** (core.hooksPath, confirmed) runs `dispatch/*.sh --staged` — **dotfiles repo only;** product repos keep the 8 leaf audits (Reading A, §10.7) |
 | Audit | pre-push + `make audit` | `dispatch-coverage.sh` + `merge-coverage.sh` wired into the SAME chain as `agents-md.sh` |
 | Evals | pre-push + `make` | `dispatch-evals/run.sh` + (opt-in) `make llmevals` |
@@ -470,7 +470,7 @@ makes the *attestation* auditable rather than pure honor-system:
 - Add a **JUDGMENT row to `HARNESS_VERIFY_OUTPUT.md`** (`HARNESS_KEYS` in
   `data.sh:62-67`). **Honest scope:** the audit check is `grep -qF "$kw"
   AGENTS.md` (`agents-md.sh:117`) — it verifies the row *exists* in the prose
-  (so HARNESS VERIFY always lists a judgment line), NOT that a *specific turn*
+  (so CONFORM always lists a judgment line), NOT that a *specific turn*
   answered its `🔵`. Per-turn answering is **not machine-checked** — claiming
   otherwise was the overclaim the coverage pass flagged.
 - **The machine backstop is the deferred ledger, not this row.** A turn-scoped
@@ -553,7 +553,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 | Unique gate prose lost on merge | `merge-coverage.sh` blocks deletion until delta lands (§6.5) |
 | `llmevals` dies on empty `docs/gates/` under `set -e` | `build_context` repointed to `dispatch/` in Stage 2 (§6.2, §8) |
 | Dispatch never reaches `agentsfleet` | added to `link-agents-md`; dispatch ship into product repos (§10) |
-| `🔵` judgment silently ignored | HARNESS VERIFY JUDGMENT row audited; LLM-judge eval samples adherence (§11) |
+| `🔵` judgment silently ignored | CONFORM JUDGMENT row audited; Large Language Model (LLM) judge evaluation samples adherence (§11) |
 | Glyph ambiguity | `🟡` and `🔵` disjoint, pinned by invariance question (§3.1) |
 | Backstop never runs on fresh clone | wired to `.githooks/` (core.hooksPath), not `.git/hooks/` (§7) |
 

@@ -2,7 +2,7 @@
 # logging.sh — flag log-emit drift against LOGGING_STANDARD.md.
 #
 # Dispatch façade: dispatch/write_any.md (Logging Gate)
-# Fires in: HARNESS VERIFY (via `make harness-verify`).
+# Fires in: CONFORM (via `make harness-verify` in `agentsfleet`).
 #
 # TECHNICAL DEBT (acknowledged on migration to dotfiles, 2026-05-11):
 # The script hard-codes:

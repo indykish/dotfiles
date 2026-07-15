@@ -14,7 +14,7 @@ FIXTURES="$ROOT/audits/fixtures"
 FAIL=0
 
 # Expectation tables (EXPECTED_LABELS, REQUIRED_GATES, EXTS, FORBIDDEN_KEYS,
-# HARNESS_KEYS, DOTFILES_RESIDENT, LIFECYCLE_HEADERS, NAMED_SCENARIOS,
+# CONFORM_KEYS, DOTFILES_RESIDENT, LIFECYCLE_HEADERS, NAMED_SCENARIOS,
 # RULE_EXTENSION_STEPS, AWK_PROG) live in the sibling data file — split out
 # to keep this audit under the LENGTH GATE cap. Data drift is itself caught
 # by the gate-parity + named-scenario-parity checks below.
@@ -102,13 +102,13 @@ awk '
   || fail "skill chain not in order within CHORE(close): /write-unit-test → /review → kishore-babysit-prs"
 
 # ---------------------------------------------------------------------------
-# 6. HARNESS VERIFY rows — every gate keyword in the verdict block (HARNESS_KEYS).
+# 6. CONFORM rows — every gate keyword in the verdict block (CONFORM_KEYS).
 # ---------------------------------------------------------------------------
 missing_rows=0
-for kw in "${HARNESS_KEYS[@]}"; do
-  grep -qF "$kw" "$AGENTS" || { fail "HARNESS VERIFY row missing: $kw"; missing_rows=1; }
+for kw in "${CONFORM_KEYS[@]}"; do
+  grep -qF "$kw" "$AGENTS" || { fail "CONFORM row missing: $kw"; missing_rows=1; }
 done
-[[ $missing_rows -eq 0 ]] && pass "HARNESS VERIFY coverage (${#HARNESS_KEYS[@]} rows present)"
+[[ $missing_rows -eq 0 ]] && pass "CONFORM coverage (${#CONFORM_KEYS[@]} rows present)"
 
 # ---------------------------------------------------------------------------
 # 7. Cross-references — dotfiles-resident docs must exist (DOTFILES_RESIDENT
@@ -117,9 +117,7 @@ done
 # ---------------------------------------------------------------------------
 broken_refs=0
 for doc in "${DOTFILES_RESIDENT[@]}"; do
-  if grep -qF "$doc" "$AGENTS"; then
-    [[ -f "$ROOT/$doc" ]] || { fail "dotfiles-resident ref missing: $doc"; broken_refs=1; }
-  fi
+  [[ -f "$ROOT/$doc" ]] || { fail "dotfiles-resident ref missing: $doc"; broken_refs=1; }
 done
 [[ $broken_refs -eq 0 ]] && pass "cross-references (dotfiles-resident docs exist)"
 
@@ -235,7 +233,7 @@ for hook in "$PRE_COMMIT" "$PRE_PUSH"; do
   if [[ ! -f "$hook" ]]; then
     fail "hook missing: .githooks/$name"; hook_fail=1; continue
   fi
-  grep -qF "AGENTS.md"  "$hook" || { fail "$name missing AGENTS.md trigger reference"; hook_fail=1; }
+  grep -qE 'AGENTS(\\)?\.md' "$hook" || { fail "$name missing AGENTS.md trigger reference"; hook_fail=1; }
   grep -qF "dispatch/"  "$hook" || { fail "$name missing dispatch/ trigger reference"; hook_fail=1; }
 done
 [[ $hook_fail -eq 0 ]] && pass "hook triggers (.githooks/pre-commit + pre-push both gate AGENTS.md + dispatch/)"
@@ -286,10 +284,10 @@ grep -qF 'dispatch/<entry>.md' "$AGENTS"       || { fail "memory discipline: dis
 
 # ---------------------------------------------------------------------------
 # 16. Size cap — soft guard against drift back to bloat.
-#     Default is 25 KB (post-split AGENTS.md is ~24 KB); override via env.
+#     Generated metadata is included in the measured file.
 # ---------------------------------------------------------------------------
 SIZE=$(wc -c < "$AGENTS" | tr -d ' ')
-LIMIT=${AGENTS_MD_SIZE_LIMIT:-30720}  # 30 KB — bumped 2026-07-04 by 1024 B for the docs/architecture/** CHORE(close) cross-reference
+LIMIT=${AGENTS_MD_SIZE_LIMIT:-32768}
 if [[ $SIZE -le $LIMIT ]]; then
   pass "size $SIZE bytes (limit $LIMIT)"
 else

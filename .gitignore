@@ -5,6 +5,8 @@ build/
 .env
 .env.local
 *.log
+__pycache__/
+*.pyc
 .DS_Store
 *.bak*
 **/*.bak*
@@ -14,5 +16,6 @@ gstack/
 .agents-invariance-signoff
 .agents-llmevals-signoff
 .agents-comprehension-signoff
+.oracle/evidence.json
 .llmevals-journal/
 .claude/scheduled_tasks.lock

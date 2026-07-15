@@ -7,7 +7,7 @@
 # subset and emits ONE verdict block.
 #
 #   dispatch/write_any.sh <file> [...]   # explicit targets (EXECUTE)
-#   dispatch/write_any.sh --staged       # staged source (HARNESS VERIFY, pre-commit)
+#   dispatch/write_any.sh --staged       # staged source (CONFORM, pre-commit)
 #
 # Layering:  AGENTS.md → write_any.md (latent) → write_any.sh (this) → audits/*.sh
 # Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script) · ⚪ delegated

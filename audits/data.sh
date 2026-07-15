@@ -17,7 +17,7 @@ EXPECTED_LABELS=(
   "override syntax"
   "always-forbidden list"
   "skill-chain ordering"
-  "HARNESS VERIFY coverage"
+  "CONFORM coverage"
   "cross-references"
   "audit fixture: dirty diff"
   "audit fixture: clean diff"
@@ -42,6 +42,7 @@ REQUIRED_DISPATCH=(
   "write_zig" "write_ts_adhere_bun" "write_sql" "write_any"
   "write_spec" "write_http" "write_auth" "write_changelog"
   "write_documentation" "verify" "name_architecture" "edit_rules"
+  "write_rust" "write_python" "write_shell" "write_mdx"
 )
 
 # Check 2 — every source/config language has at least one mention.
@@ -57,8 +58,8 @@ FORBIDDEN_KEYS=(
   "core paths"              # install-process launches in core paths
 )
 
-# Check 6 — every gate's keyword appears in the HARNESS VERIFY verdict block.
-HARNESS_KEYS=(
+# Check 6 — every gate's keyword appears in the CONFORM verdict block.
+CONFORM_KEYS=(
   "FILE SHAPE" "PUB GATE" "LENGTH GATE" "MILESTONE-ID GATE"
   "ZIG GATE" "UI GATE" "DESIGN TOKEN GATE"
   "SCHEMA GUARD" "GREPTILE GATE"
@@ -76,9 +77,14 @@ DOTFILES_RESIDENT=(
   "docs/LOGGING_STANDARD.md"
   "docs/LIFECYCLE_PATTERNS.md"
   "docs/DOCUMENTATION_RULES.md"
+  "docs/ORACLE_RULES_ARCHITECTURE.md"
   "docs/greptile-learnings/RULES.md"
   "dispatch/write_zig.md"
   "dispatch/write_ts_adhere_bun.md"
+  "dispatch/write_rust.md"
+  "dispatch/write_python.md"
+  "dispatch/write_shell.md"
+  "dispatch/write_mdx.md"
   "dispatch/write_sql.md"
   "dispatch/write_any.md"
   "dispatch/write_spec.md"
@@ -96,8 +102,9 @@ LIFECYCLE_HEADERS=(
   "### CHORE (open)"
   "### PLAN"
   "### EXECUTE"
-  "### HARNESS VERIFY"
+  "### CONFORM"
   "### VERIFY"
+  "### REVIEW"
   "### DOCUMENT"
   "### COMMIT"
   "### CHORE (close)"
@@ -111,7 +118,7 @@ NAMED_SCENARIOS=(
   "human spots and steers"   # Scenario 3
   "UI"                       # Scenario 4 (covers UI/Zig/TS/JS/shell/CI)
   "Handover"                 # Scenario 5
-  "Verification lifecycle"   # Scenario 6
+  "Conformance and verification lifecycle"  # Scenario 6
   "kishore-babysit-prs"      # Scenario 7
   "/write-unit-test"         # Scenario 8
   "Hot-fix"                  # Scenario 9
@@ -131,6 +138,7 @@ NAMED_SCENARIOS=(
   "Agent comprehension"      # Scenario 23
   "Memory routing"           # Scenario 24
   "Allocator & concurrency discipline"  # Scenario 25
+  "Rules propagation"        # Scenario 26
 )
 
 # Check 14 — the Rule-extension protocol must enumerate all four wiring steps.

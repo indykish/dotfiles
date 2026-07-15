@@ -1,0 +1,23 @@
+{
+  "files": [
+    ".oracle/managed-files.json",
+    ".oracle/profile.json",
+    "AGENTS.md",
+    "audits/agents-md.md",
+    "audits/logging.sh",
+    "audits/msid-ui.sh",
+    "audits/ufs.sh",
+    "dispatch/edit_rules.md",
+    "dispatch/lib.sh",
+    "dispatch/write_any.md",
+    "dispatch/write_any.sh",
+    "dispatch/write_documentation.md",
+    "dispatch/write_mdx.md",
+    "dispatch/write_python.md",
+    "dispatch/write_rust.md",
+    "dispatch/write_shell.md",
+    "docs/DOCUMENTATION_RULES.md"
+  ],
+  "profile": "dotfiles",
+  "schema_version": 1
+}

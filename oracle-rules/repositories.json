@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "repositories": {
+    "dotfiles": {
+      "path": "~/Projects/dotfiles",
+      "profile": "dotfiles"
+    },
+    "agentsfleet": {
+      "path": "~/Projects/agentsfleet",
+      "profile": "agentsfleet"
+    },
+    "cache-kit": {
+      "path": "~/Projects/cache-kit.rs",
+      "profile": "cache-kit"
+    },
+    "docs": {
+      "path": "~/Projects/docs",
+      "profile": "mintlify-docs"
+    }
+  }
+}

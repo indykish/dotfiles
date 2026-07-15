@@ -459,9 +459,9 @@ For routine info (e.g. "noop: nothing to do"), write to stderr in human mode and
 3. **Pre-edit self-check** before adding any new `hx.fail` / `hx.ok(.ignored=)` / `writeError` / `process.exit` / `return error.X`: `git diff -U0` and confirm every `+` line that emits a response or terminal state has a corresponding `+` `log.*` (Zig) or `+` `writeError`/`writeLine(ctx.stderr` (JS) line in the same function.
 4. **At commit time:** run the GREPTILE GATE block (see `AGENTS.md`). RULE OBS is verified per file in the diff.
 
-### Post-execution verification (HARNESS VERIFY block)
+### Post-execution conformance (CONFORM block)
 
-RULE OBS is a self-audit, not a separate `make` target — it runs at HARNESS VERIFY (the same phase as MILESTONE-ID and PUB GATE). Before reporting any work complete, run this grep on your own diff and confirm zero violations:
+RULE OBS is a self-audit, not a separate `make` target — it runs at CONFORM alongside MILESTONE-ID and PUB GATE. Before reporting any work complete, run this grep on your own diff and confirm zero violations:
 
 ```bash
 # Zig: every newly-added hx.fail / hx.ok-with-discriminant / common.internal*Error
@@ -477,7 +477,7 @@ RULE OBS is a self-audit, not a separate `make` target — it runs at HARNESS VE
 #
 # For each match: open the file, locate the enclosing function, and confirm
 # at least one `+` line within the same function emits a log/stderr message.
-# If not: add it before declaring done. The HARNESS VERIFY block reports
+# If not: add it before declaring done. The CONFORM block reports
 # the result as `RULE OBS: clean | N violations: <file:line>...`.
 ```
 

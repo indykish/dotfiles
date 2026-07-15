@@ -1,11 +1,12 @@
-# AGENTS.md Invariance Suite
+# Oracle rules invariance suite
 
-A two-layer ruleset that proves AGENTS.md still holds the line after edits:
+A three-part proof that generated `AGENTS.md` still holds the line after edits:
 
 1. **Deterministic layer** — `audits/agents-md.sh` (mechanical, fast, runs in `pre-commit`).
-2. **Prompt-invariance layer** — this file. An LLM agent reads AGENTS.md and answers every question below. Every answer must be **YES**. A NO means the ruleset regressed.
+2. **Prompt-invariance layer** — this file. A Large Language Model (LLM) agent reads `AGENTS.md` and answers every question below. Every answer must be **YES**. A NO means the ruleset regressed.
+3. **Evidence layer** — `oracle-rules verify --all --write-evidence` records the source commit, registry digest, profile checks, and prompt result.
 
-You run this suite **before** any AGENTS.md change AND **after** the change. Both runs must produce the same all-YES result. A pass that flips to NO is the precise definition of a broken invariant.
+Run this suite before and after an operating-model change. Both runs must produce the same all-YES result. A pass that flips to NO is a broken invariant.
 
 ---
 
@@ -91,6 +92,10 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.22 (Doc read) | Are auto-mode and "I read this earlier in the session" both invalid grounds to skip the proof-line? | YES |
 | 4.23 (Documentation) | Before published Markdown JSX (MDX), reusable snippets, customer readme, or public OpenAPI prose, must the agent read `dispatch/write_documentation.md` and `docs/DOCUMENTATION_RULES.md` before any narrower guide? | YES |
 | 4.24 (Documentation) | Are page, snippet, generated API, and changelog scopes distinct, with repository-owned pre-commit checks enforcing the mechanical rules? | YES |
+| 4.25 (Rust) | Do `*.rs` edits route to `dispatch/write_rust.md`, with ownership, error variants, feature combinations, and deterministic contention tests preserved? | YES |
+| 4.26 (Python) | Do `*.py` edits route to `dispatch/write_python.md`, with parse-boundary validation and context-managed resources? | YES |
+| 4.27 (Shell) | Do `*.sh` edits route to `dispatch/write_shell.md`, with quoted expansions, array arguments, cleanup, and compatibility requirements? | YES |
+| 4.28 (Markdown JSX) | Do `*.mdx` edits route to `dispatch/write_mdx.md`, with structure, link, accessibility, and Mintlify-isolation requirements? | YES |
 
 ### Scenario 5 — Picking up a handover
 
@@ -101,12 +106,12 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 5.3 | If the spec is in `active/`, is CHORE(close) the mandatory next action after any COMMIT? | YES |
 | 5.4 | If unexpected changes appear in files the agent is editing, must the agent stop and ask (not overwrite as stale)? | YES |
 
-### Scenario 6 — Verification lifecycle (HARNESS VERIFY → VERIFY)
+### Scenario 6 — Conformance and verification lifecycle
 
 | # | Question | Expected |
 |---|---|---|
-| 6.1 | Does HARNESS VERIFY enumerate every gate as a row in its verdict block? | YES |
-| 6.2 | Does any "fail" / remaining violation in HARNESS VERIFY return the lifecycle to EXECUTE (no advance)? | YES |
+| 6.1 | Does CONFORM enumerate every gate as a row in its verdict block and invoke the active profile's `conform` commands? | YES |
+| 6.2 | Does any remaining violation in CONFORM return the lifecycle to EXECUTE without advancing? | YES |
 | 6.3 | Is `/write-unit-test` the FIRST verify action, with skipping = CHORE(close) violation? | YES |
 | 6.4 | Are `make lint` + `make test` always required (tier 1)? | YES |
 | 6.5 | Is `make test-integration` required when diff touches HTTP/schema/DB/Redis or `_integration_test.zig`? | YES |
@@ -121,7 +126,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | # | Question | Expected |
 |---|---|---|
 | 7.1 | Is the skill chain order `/write-unit-test` → `/review` → `kishore-babysit-prs` preserved? | YES |
-| 7.2 | Is `/review` required **before** CHORE(close) commits? | YES |
+| 7.2 | Is REVIEW an explicit stage after VERIFY and before DOCUMENT, with `/review` required there when a spec is active? | YES |
 | 7.4 | Does `kishore-babysit-prs` run after every push and stop only on two consecutive empty polls? | YES |
 | 7.5 | Is using `gh pr checks --watch` for greptile explicitly disallowed? | YES |
 | 7.6 | If an MCP-backed skill is unavailable, must PR Session Notes record the skip + a "rerun before merge" note? | YES |
@@ -174,10 +179,10 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 | # | Question | Expected |
 |---|---|---|
-| 13.1 | When the agent itself edits `AGENTS.md`, `audits/agents-md.md`, or any dispatch entry under `dispatch/` in this session, does the Invariance Suite Gate (the `edit_rules` dispatch) fire and require running the questionnaire before declaring done? | YES |
+| 13.1 | When the agent edits `oracle-rules/**`, generated `AGENTS.md`, `audits/agents-md.md`, governance hooks, or any dispatch entry, does `edit_rules` require the audit and questionnaire before declaring done? | YES |
 | 13.2 | Is the agent forbidden from self-overriding the Invariance Suite Gate? (Only the user may bypass at push time via `SKIP_INVARIANCE_PUSH=1`.) | YES |
-| 13.3 | Does the sign-off line format `<short-sha>  <UTC-timestamp>  PASS` tie to the post-commit HEAD SHA? | YES |
-| 13.4 | Does the pre-push hook block when sign-off SHA ≠ HEAD, result ≠ `PASS`, or mtime > 24 h? | YES |
+| 13.3 | Does generated evidence bind the source commit, registry digest, profile results, and prompt-comprehension result? | YES |
+| 13.4 | Does the pre-push hook run live prompt evaluation for semantic governance changes and regenerate evidence against the pushed commit? | YES |
 
 ### Scenario 14 — Communication discipline
 
@@ -218,15 +223,15 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | # | Question | Expected |
 |---|---|---|
 | 18.1 | Must `gitleaks` pass before any `git commit` / `git push`? | YES |
-| 18.2 | Is the rule "one worktree per active stream — no edits outside, no reads from siblings, merge only after VERIFY" preserved? | YES |
+| 18.2 | Is the rule "one worktree per active stream — no edits outside, no reads from siblings, merge only after REVIEW and the final commit" preserved? | YES |
 | 18.3 | Are cross-worktree edits explicitly forbidden without explicit user approval? | YES |
 
-### Scenario 19 — HARNESS VERIFY combined audit
+### Scenario 19 — CONFORM combined audit
 
 | # | Question | Expected |
 |---|---|---|
-| 19.1 | Does HARNESS VERIFY include a combined awk pass over `git diff -U0 HEAD` that emits `MS-ID:`, `PUB:`, and `UI:` hits — replacing four separate self-audits? | YES |
-| 19.2 | Is non-empty awk output a violation that MUST be addressed before HARNESS VERIFY passes? | YES |
+| 19.1 | Does CONFORM include a combined awk pass over `git diff -U0 HEAD` that emits `MS-ID:`, `PUB:`, and `UI:` hits? | YES |
+| 19.2 | Is non-empty awk output a violation that must be addressed before CONFORM passes? | YES |
 
 ### Scenario 20 — Rule extension protocol
 
@@ -234,7 +239,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 20.1 | Does AGENTS.md document a "Rule extension protocol" requiring 4 same-diff steps when introducing a new rules file (`docs/<TOPIC>_RULES.md`) or dispatch entry (`dispatch/<entry>.md`)? | YES |
 | 20.2 | Does the protocol require: (a) doc-reads table row, (b) audits/agents-md.md question, (c) `DOTFILES_RESIDENT` audit entry, (d) `make audit` passing before commit? | YES |
-| 20.3 | Does the Invariance Suite Gate fire on any commit landing the protocol's edits, with sign-off mandatory before push? | YES |
+| 20.3 | Does the Invariance Suite Gate fire on any commit landing the protocol's edits, with generated evidence mandatory before push? | YES |
 
 ### Scenario 21 — Gate-flag triage discipline
 
@@ -253,7 +258,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 22.3 | Does `msid-ui.sh` (renamed from `combined.sh` after the PUB clause moved to zlint + agent chat-output discipline) remain the lone diff-shaped audit (still default `--staged`) — because its sub-checks (MS-ID / UI substitution) assert on *added* lines, not file state, and `git diff --cached` reads the index? | YES |
 | 22.4 | Does every dispatch façade that absorbed a converted full-codebase leaf audit (`dispatch/write_any.md` ← logging/error-registry/UFS, `dispatch/write_ts_adhere_bun.md` ← design-token, `dispatch/write_zig.md` ← lifecycle/deinit, `dispatch/write_spec.md` ← spec-template) carry a "Scope (M70)" section documenting full-codebase semantics + the M68 `02c1f3cf` forcing function? | YES |
 
-### Scenario 23 — Agent comprehension robustness (anti-hallucination, LLM-eval enforced)
+### Scenario 23 — Agent comprehension robustness
 
 This scenario exists because the most likely failure of the operating model is
 not a missing rule — it's the *agent misreading a rule that is present*.
@@ -269,8 +274,8 @@ The questions force *proof of reading* over *recall*.
 | 23.4 | When two rules fire on the same edit (e.g. PUB + LIFECYCLE on `pub fn init`, or a spec that contradicts a rule), must the agent apply **both**/escalate rather than silently picking one? | YES |
 | 23.5 | For an auto-mode / override question, must the agent trace the full conditional chain (auto-mode AND (active-spec OR start-instruction); action-triggered guards still block) rather than collapsing it to "auto mode = yes"? | YES |
 | 23.6 | Is the negative-test harness (`evals/test-agents-md.sh`) required to pass — proving each deterministic check still *bites* — whenever `audits/agents-md.sh` itself changes? | YES |
-| 23.7 | Is Scenario 23 enforced by a live, cross-agent LLM-eval runner (`evals/llms/run.sh`, `make llmevals`) that feeds the frozen golden-set (`evals/llms/fixtures.jsonl`) to EVERY installed agent (claude, codex, amp, opencode) and grades each `VERDICT:` by exact match — with a per-agent threshold and absent agents logged, never silently skipped? | YES |
-| 23.8 | When the LLM-eval runner is unavailable (no agent CLIs) or the golden-set changes, is the dry validator `make llmevals CHECK=1` (fixtures well-formed + availability, no live calls) the minimum that must still pass? | YES |
+| 23.7 | Is Scenario 23 enforced by a live, cross-agent comprehension runner (`evals/llms/run.sh`, `make llmevals`) that feeds the frozen golden-set to every installed agent and grades each `VERDICT:` by exact match? | YES |
+| 23.8 | When the live runner is unavailable or the golden-set changes, is `make llmevals CHECK=1` the minimum dry validation? | YES |
 
 ### Scenario 24 — Memory routing (auto-memory retired)
 
@@ -310,11 +315,22 @@ siblings.
 | 25.11 (C5) | Does rule C5 make thread-confined state the default, marked by a "only touched by thread X" comment and a `*Locked` suffix on lock-required entry points? | YES |
 | 25.12 (GRD) | Does every A1–A6 / C1–C5 rule in `dispatch/write_zig.md` carry an exemplar cite (ghostty or in-repo) per RULE GRD, so each rule is traceable to the source it was mined from? | YES |
 
-## LLM-eval layer (Scenario 23 enforcement)
+### Scenario 26 — Rules propagation
+
+| # | Question | Expected |
+|---|---|---|
+| 26.1 | Is `oracle-rules/registry.json` the canonical profile and pack registry, with `oracle-rules/core/operating-model.md` as the global operating-model source? | YES |
+| 26.2 | Do agent-home links point to `oracle-rules/generated/global/AGENTS.md`, making a new global render immediately visible to installed agents? | YES |
+| 26.3 | Are project rules ordinary tracked snapshots with `.oracle/ruleset.lock`, rather than symbolic links into dotfiles? | YES |
+| 26.4 | Does repository synchronization require a clean tree and `AGENTS.project.md`, and refuse sibling-worktree mutation? | YES |
+| 26.5 | Does the `agentsfleet` profile map CONFORM to `make harness-verify` while VERIFY remains behavior proof? | YES |
+| 26.6 | Does `README.md` document initialization, explicit synchronization, status, and doctor commands for new repositories? | YES |
+
+## Comprehension layer
 
 The deterministic audit proves the rules are *present*; it cannot prove an
 agent *reading* them complies — the hallucination / won't-follow class. The
-LLM-eval layer closes that gap:
+comprehension layer closes that gap:
 
 - **Golden-set** — `evals/llms/fixtures.jsonl`: frozen
   question → expected `YES`/`NO` verdict + the justifying rule, each targeting
@@ -332,21 +348,23 @@ LLM-eval layer closes that gap:
   divergence between models flags an *ambiguous rule* (a doc bug) as much as a
   non-compliant model. Absent / credit-blocked agents are logged + excluded
   from the gate, never silently dropped.
-- **Signoff** — `.agents-llmevals-signoff` (gitignored) is written only
-  when every gradable agent clears the threshold.
+- **Evidence** — the pre-push hook passes the live result to
+  `oracle-rules verify --all --write-evidence`, which binds it to the current
+  source commit and registry digest.
 
 ---
 
-## Step 3 — Write the sign-off file
+## Step 3 — Generate evidence
 
-After all questions answer YES and the report below has been produced, write a sign-off line to `.agents-invariance-signoff` (gitignored). The pre-push hook reads this to allow the push.
+After all questions answer YES and the report below is complete, generate the
+machine-readable evidence file:
 
 ```bash
-printf '%s  %s  PASS\n' "$(git rev-parse --short HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  > .agents-invariance-signoff
+oracle-rules verify --all --write-evidence --llm-result pass
 ```
 
-Sign-off format: `<short-sha>  <UTC-timestamp>  <PASS|FAIL>`. The hook accepts `PASS` only when the SHA matches HEAD and the file is < 24 h old.
+The evidence is local and ignored by Git. The pre-push hook regenerates it
+against the exact commit being pushed.
 
 ## Step 4 — Tabulated audit report
 
@@ -363,7 +381,7 @@ AGENTS.md INVARIANCE REPORT — <commit sha> — <UTC timestamp>
 
 Dispatch entries:     <count> / 10       (list any missing)
 Rules referenced:     <count> / 13       (list any missing)
-Lifecycle stages:     <count> / 8        (CHORE(open), PLAN, EXECUTE, HARNESS VERIFY, VERIFY, DOCUMENT, COMMIT, CHORE(close))
+Lifecycle stages:     <count> / 9        (CHORE(open), PLAN, EXECUTE, CONFORM, VERIFY, REVIEW, DOCUMENT, COMMIT, CHORE(close))
 Always-forbidden:     <count> / 6        (list any missing)
 Skill chain order:    <ordered | broken>
 Cross-refs:           <ok | broken: list>
@@ -376,14 +394,27 @@ Scenario verdicts:
 | 3  | Executing, human steers                 | <N/M YES>       |
 | 4  | Editing UI/Zig/TS/JS/shell/CI files     | <N/M YES>       |
 | 5  | Handover pickup                         | <N/M YES>       |
-| 6  | Verification lifecycle                  | <N/M YES>       |
-| 7  | Review discipline before merge           | <N/M YES>       |
+| 6  | Conformance and verification            | <N/M YES>       |
+| 7  | Review discipline before merge          | <N/M YES>       |
 | 8  | /write-unit-test with human steering    | <N/M YES>       |
 | 9  | Hot-fix / emergency                     | <N/M YES>       |
 | 10 | Dotfiles / docs-repo                    | <N/M YES>       |
 | 11 | Schema / migration                      | <N/M YES>       |
 | 12 | Auto-mode boundary                      | <N/M YES>       |
+| 13 | Ruleset changes                         | <N/M YES>       |
+| 14 | Communication discipline                | <N/M YES>       |
+| 15 | Architecture-edit ordering              | <N/M YES>       |
+| 16 | Credentials and vault                   | <N/M YES>       |
+| 17 | Database discipline                     | <N/M YES>       |
+| 18 | Commit and worktree isolation           | <N/M YES>       |
+| 19 | CONFORM combined audit                  | <N/M YES>       |
+| 20 | Rule extension protocol                 | <N/M YES>       |
+| 21 | Gate-flag triage                        | <N/M YES>       |
 | 22 | Pre-commit audit scope (M70)            | <N/M YES>       |
+| 23 | Agent comprehension                     | <N/M YES>       |
+| 24 | Memory routing                          | <N/M YES>       |
+| 25 | Allocator and concurrency discipline    | <N/M YES>       |
+| 26 | Rules propagation                       | <N/M YES>       |
 
 OVERALL: PASS | FAIL — <reason if fail>
 ```
@@ -392,21 +423,23 @@ OVERALL: PASS | FAIL — <reason if fail>
 
 ## Wiring it into `pre-commit`
 
-The dotfiles `.githooks/pre-commit` calls `audits/agents-md.sh` directly when AGENTS.md is in the staged set. This is fast, deterministic, and needs no LLM.
+The dotfiles `.githooks/pre-commit` runs `make audit` when generated rules,
+canonical sources, profiles, dispatch pages, audits, or governance hooks are
+staged. It is fast and deterministic.
 
-The Step-2 prompt-invariance run is **agent-invoked**, not hooked, because:
+The Step-2 questionnaire is read during the edit. The live golden-set runner is
+hooked only for semantic governance changes because:
 
 - It needs an LLM, which means latency, cost, and credentials in the hook environment.
-- It only adds value when AGENTS.md itself changed (which is rare).
+- It only adds value when operating-model semantics change.
 - Step 1 already catches the regressions a script can catch; Step 2 catches the regressions that need reading comprehension.
 
-Recommended workflow when you edit AGENTS.md:
+Required workflow when you edit Oracle rules:
 
 1. Run Step 1 (`bash audits/agents-md.sh`).
-2. Open this file in a Claude Code / Oracle / Codex session and instruct: *"Read AGENTS.md and answer every question in audits/agents-md.md."*
-3. The agent emits the Step-3 report. All-YES → commit. Any NO → fix AGENTS.md first.
-
-If you want Step 2 enforced in `pre-push` rather than ad-hoc, see `.githooks/pre-push.example`.
+2. Answer every question in this file against the generated `AGENTS.md` and dispatch pages.
+3. Emit the report. All-YES permits commit; any NO returns to the edit.
+4. Let pre-push run the live golden-set and generate commit-bound evidence.
 
 ---
 
@@ -416,7 +449,7 @@ When the operating model grows (new gate, new rule, new lifecycle wrinkle):
 
 1. Add to `audits/agents-md.sh` if the invariant is mechanically checkable.
 2. Add to this file as a new question if the invariant needs reading comprehension.
-3. Update `REQUIRED_DISPATCH` / `HARNESS_KEYS` / `FORBIDDEN_KEYS` arrays in `audits/data.sh` as appropriate.
+3. Update `REQUIRED_DISPATCH` / `CONFORM_KEYS` / `FORBIDDEN_KEYS` arrays in `audits/data.sh` as appropriate.
 4. Run both layers and check in the new baseline.
 
 The cost of this suite is bounded by these arrays. If they grow without bound, the suite is leaking complexity — split AGENTS.md before adding more invariants.

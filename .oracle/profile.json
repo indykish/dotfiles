@@ -1,0 +1,33 @@
+{
+  "commands": {
+    "conform": [
+      [
+        "make",
+        "audit"
+      ]
+    ],
+    "verify.unit": [
+      [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "oracle-rules/tests",
+        "-p",
+        "test_*.py"
+      ]
+    ]
+  },
+  "name": "dotfiles",
+  "packs": [
+    "universal.authoring",
+    "language.rust",
+    "language.python",
+    "language.shell",
+    "language.mdx",
+    "domain.documentation",
+    "workflow.governance"
+  ],
+  "schema_version": 1
+}

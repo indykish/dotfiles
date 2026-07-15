@@ -27,7 +27,7 @@ See [`docs/DISPATCH_ARCHITECTURE.md`](../docs/DISPATCH_ARCHITECTURE.md) §3 for 
 
 Triggers on every `Edit`/`Write` to a source file in any language: `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.py`, `*.rs`, `*.go`, `*.sh`, `*.sql` (outside `vendor/`, `node_modules/`, `third_party/`, `.zig-cache/`, `dist/`, `build/`, `.next/`). Fires alongside — never instead of — the per-language façade. `.md` and everything under `docs/**` are exempt from the length sub-gate (see the card below).
 
-**Per-file lens.** This is the EXECUTE/HARNESS-VERIFY early-warning: it dispatches over the source files actually touched or `--staged`, so a turn that stages no in-scope source short-circuits with nothing to check. The full-tree audits (`audit-ufs` etc.) still fire unconditionally via the product repo's `make harness-verify` — the dispatch is the per-edit lens, not the codebase-wide backstop.
+**Per-file lens.** This is the EXECUTE/CONFORM early-warning: it dispatches over the source files actually touched or `--staged`, so a turn that stages no in-scope source short-circuits with nothing to check. The full-tree audits (`audit-ufs` etc.) still fire unconditionally via the product repo's conformance command — `make harness-verify` in `agentsfleet` — so the dispatch is the per-edit lens, not the codebase-wide backstop.
 
 **"Green deferred" defers only the build gate.** When the user grants "free to break, green later" on a multi-slice cutover, the per-edit gates in this façade (UFS, LENGTH, and the language façade's PUB / LIFECYCLE / BUFFER) still run on every Write/Edit — with no compile until late convergence they are the *only* correctness signal, and a big-bang build will not retro-catch speculative `pub`s, re-spelled literals, or missing `errdefer`s (M80 B3 drifted exactly this way).
 
@@ -229,7 +229,7 @@ If any match, **strip the reference before saving.** Rewrite to describe the cod
 
 > [DETERMINISTIC → MSID]
 
-Covered by the combined awk audit in AGENTS.md HARNESS VERIFY section.
+Covered by the combined awk audit in the AGENTS.md CONFORM section.
 
 ### Error Registry Gate (ERROR REGISTRY GATE)
 
@@ -319,7 +319,7 @@ ERROR REGISTRY GATE: <file>
 > [DETERMINISTIC → UFS]
 
 
-**Family:** Constant discipline. **Source:** `AGENTS.md` (HARNESS VERIFY enforcement) + `dispatch/write_ts_adhere_bun.md §2` + `dispatch/write_zig.md` "RULE UFS" clauses.
+**Family:** Constant discipline. **Source:** `AGENTS.md` (CONFORM enforcement) + `dispatch/write_ts_adhere_bun.md §2` + `dispatch/write_zig.md` "RULE UFS" clauses.
 
 **Triggers** — every `Edit`/`Write` to source files under `src/`, `ui/packages/*/src/`, `ui/packages/*/app/`, `ui/packages/*/lib/`, `ui/packages/*/components/`, `ui/packages/*/pages/`, `ui/packages/*/tests/`, `agentsfleet/src/`, `agentsfleet/test/` matching `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`. Excluded: `vendor/`, `third_party/`, `.zig-cache/`, `node_modules/`, `*.tsbuildinfo`.
 
@@ -384,11 +384,11 @@ The previous `--diff` (`BASE...HEAD`) default was retired with M70. The forcing 
 
 `--all` is accepted as a back-compat alias for the default. `--diff` is rejected with exit 2 + a pointer to this section.
 
-#### Self-audit (end-of-turn / HARNESS VERIFY)
+#### Self-audit (end-of-turn / CONFORM)
 
 > [DETERMINISTIC → UFS]
 
-`audits/ufs.sh` is invoked at HARNESS VERIFY by the agent. Convention follows the sibling audit scripts (`logging.sh`, `error-codes.sh`, `deinit-pairs.sh`, `spec-template.sh`) — none of them wire into `make lint`; the agent runs each as part of the gate ceremony, with the result feeding the HARNESS VERIFY table. The script is generic — no manifest of known literals — so it scales as the codebase grows:
+`audits/ufs.sh` is invoked at CONFORM by the agent. Convention follows the sibling audit scripts (`logging.sh`, `error-codes.sh`, `deinit-pairs.sh`, `spec-template.sh`) — none of them wire into `make lint`; the agent runs each as part of the gate ceremony, with the result feeding the CONFORM table. The script is generic — no manifest of known literals — so it scales as the codebase grows:
 
 ```bash
 bash audits/ufs.sh          # full-codebase scan (default and only mode)
@@ -404,7 +404,7 @@ The script emits a violations table. Empty table = pass. Each row is one of:
 
 Violations resolve by either (1) extracting to a named const + replacing all sites, (2) adding the constant in the missing sibling runtime same-commit, or (3) adding the `// pin test: literal is the contract` comment.
 
-#### HARNESS VERIFY row
+#### CONFORM row
 
 > [DETERMINISTIC → UFS]
 
@@ -418,7 +418,7 @@ Violations resolve by either (1) extracting to a named const + replacing all sit
 
 > [DETERMINISTIC → UFS]
 
-Indy's M66_001 §3 tail surfaced the failure clearly: `RULE UFS` lived as a single bullet in the former Bun rules §2 with no audit, no HARNESS VERIFY row, and no per-edit ceremony. Across an 800-LOC session the agent introduced ~20 inline literals (`"platform"`, `"self_managed"`, `"receive"`, `"stage"`, `mode: "byok"`, `1e9`, `1_000_000_000`, etc.) that the rule already covered but no mechanism caught. The rule is fine; the enforcement was missing. This gate adds the enforcement.
+Indy's M66_001 §3 tail surfaced the failure clearly: `RULE UFS` lived as a single bullet in the former Bun rules §2 with no audit, no CONFORM row, and no per-edit ceremony. Across an 800-LOC session the agent introduced ~20 inline literals (`"platform"`, `"self_managed"`, `"receive"`, `"stage"`, `mode: "byok"`, `1e9`, `1_000_000_000`, etc.) that the rule already covered but no mechanism caught. The rule is fine; the enforcement was missing. This gate adds the enforcement.
 
 ### Greptile Gate (GREPTILE GATE)
 

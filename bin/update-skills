@@ -29,7 +29,7 @@ into Claude, Codex, OpenCode, and Amp.
 
 Usage: update-skills [--doctor]
 
-Also links OpenCode config and AGENTS.md / CLAUDE.md instruction files for each
+Also links OpenCode config and the generated global instructions for each
 installed agent.
 --doctor verifies the generated overlay and installed agent links only.
 EOF
@@ -178,6 +178,7 @@ ensure_playwright_chromium() {
 
 if [ "$DOCTOR_ONLY" -eq 1 ]; then
     doctor_overlay
+    "$DOTFILES/bin/oracle-rules" link-agent-homes --check
     ok "Skills doctor passed"
     exit 0
 fi
@@ -299,18 +300,12 @@ for agent_config in "${AGENTS[@]}"; do
     ln -snf "$UNIFIED_SKILLS" "$agent_skills_dir"
     ok "Linked $agent_skills_dir → $UNIFIED_SKILLS"
     
-    # Symlink AGENTS.md / CLAUDE.md
-    agent_name="$(basename "$config_dir")"
-    if [ "$agent_name" = ".claude" ]; then
-        rm -f "$config_dir/CLAUDE.md"
-        ln -snf "$DOTFILES/AGENTS.md" "$config_dir/CLAUDE.md"
-        ok "Linked $config_dir/CLAUDE.md → $DOTFILES/AGENTS.md"
-    else
-        rm -f "$config_dir/AGENTS.md"
-        ln -snf "$DOTFILES/AGENTS.md" "$config_dir/AGENTS.md"
-        ok "Linked $config_dir/AGENTS.md → $DOTFILES/AGENTS.md"
-    fi
 done
+
+"$DOTFILES/bin/oracle-rules" render \
+    --profile global \
+    --output "$DOTFILES/oracle-rules/generated/global" >/dev/null
+"$DOTFILES/bin/oracle-rules" link-agent-homes
 
 # 5. Link opencode.json config (XDG Base Directory location)
 info "Linking opencode.json..."

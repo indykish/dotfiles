@@ -35,8 +35,8 @@ bad() { printf '%s✗ %s%s\n' "$R" "$*" "$X" >&2; BAD=$((BAD + 1)); }
 # The audit derives ROOT from its own location, so a copied script run from
 # the sandbox treats the sandbox as ROOT — no env override needed.
 #
-# Model-B end state: AGENTS.md carries the 10-row dispatch table, dispatch/
-# holds the 10 façades, docs/gates/ does NOT exist (parity asserts it empty).
+# Model-B end state: AGENTS.md carries the dispatch table, dispatch/ holds the
+# matching façades, and docs/gates/ does not exist.
 make_sandbox() {
   local sb; sb="$(mktemp -d)"
   cp "$SRC_ROOT/AGENTS.md" "$sb/"
@@ -49,7 +49,8 @@ make_sandbox() {
   cp "$SRC_ROOT"/audits/fixtures/*.diff    "$sb/audits/fixtures/"
   cp "$SRC_ROOT"/dispatch/*.md             "$sb/dispatch/"
   local d
-  for d in TEMPLATE REST_API_DESIGN_GUIDELINES LOGGING_STANDARD LIFECYCLE_PATTERNS; do
+  for d in TEMPLATE REST_API_DESIGN_GUIDELINES LOGGING_STANDARD \
+           LIFECYCLE_PATTERNS DOCUMENTATION_RULES ORACLE_RULES_ARCHITECTURE; do
     cp "$SRC_ROOT/docs/$d.md" "$sb/docs/" 2>/dev/null
   done
   cp "$SRC_ROOT/docs/greptile-learnings/RULES.md" "$sb/docs/greptile-learnings/"
@@ -136,11 +137,11 @@ expect_fail "always-forbidden bites when the no-verify ban is removed" \
   "perl -pi -e 's/no-verify/no_verify_GONE/g' AGENTS.md"
 
 expect_fail "lifecycle bites when a stage header is removed" \
-  "lifecycle stage missing: ### VERIFY" \
-  "perl -pi -e 's/^### VERIFY\$/### XVERIFY/' AGENTS.md"
+  "lifecycle stage missing: ### REVIEW" \
+  "perl -pi -e 's/^### REVIEW\$/### XREVIEW/' AGENTS.md"
 
-expect_fail "HARNESS VERIFY bites when a verdict row keyword is removed" \
-  "HARNESS VERIFY row missing: SCHEMA GUARD" \
+expect_fail "CONFORM bites when a verdict row keyword is removed" \
+  "CONFORM row missing: SCHEMA GUARD" \
   "perl -pi -e 's/SCHEMA GUARD/SCHEMA_GUARD_X/g' AGENTS.md"
 
 # Isolated parity mutation: ADD a scenario header without adding a keyword to

@@ -1,0 +1,10 @@
+{
+  "files": {
+    ".oracle/managed-files.json": "ea31969b5a0b79e13a2c9330e15acdff27f0e597f966ef4ef0293d16f4798660",
+    ".oracle/profile.json": "96169bcd995083b64b882c6e3b944d9fbad9a20e9bf07c65f0fabf3a9dfe724d",
+    "AGENTS.md": "dd48ed27e815154111dc28d0de2c34893edd8f25586554a6e5500f0d12ca576e"
+  },
+  "profile": "global",
+  "ruleset_digest": "4aaf5475ac6b4cab9edaf8238dbd4bd8ca5b72162b034160e1f706a9ca2b8e8d",
+  "schema_version": 1
+}

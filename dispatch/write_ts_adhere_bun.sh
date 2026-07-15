@@ -8,7 +8,7 @@
 # input, same verdict, no calendar/branch dependence.
 #
 #   dispatch/write_ts_adhere_bun.sh <file.ts> [...]   # explicit targets (EXECUTE)
-#   dispatch/write_ts_adhere_bun.sh --staged          # staged TS/JS (HARNESS VERIFY, pre-commit)
+#   dispatch/write_ts_adhere_bun.sh --staged          # staged TS/JS (CONFORM, pre-commit)
 #
 # Layering:  AGENTS.md → write_ts_adhere_bun.md (latent) → write_ts_adhere_bun.sh (this) → audits/*.sh
 # Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script) · ⚪ delegated

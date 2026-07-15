@@ -18,7 +18,7 @@ Usage: link-bin-dotfiles [--doctor]
 Links:
   ~/.tmux.conf
   ~/bin/link-bin-dotfiles
-  ~/bin/link-agents-md
+  ~/bin/oracle-rules
   ~/bin/update-skills
   ~/bin/provision-env-1password
   ~/bin/update-ai-tools
@@ -47,7 +47,7 @@ DOTFILE_LINKS=(
 
 BIN_LINKS=(
   "bin/link-bin-dotfiles:$HOME/bin/link-bin-dotfiles"
-  "bin/link-agents-md:$HOME/bin/link-agents-md"
+  "bin/oracle-rules:$HOME/bin/oracle-rules"
   "bin/update-skills:$HOME/bin/update-skills"
   "bin/provision-env-1password:$HOME/bin/provision-env-1password"
   "bin/update-ai-tools:$HOME/bin/update-ai-tools"
@@ -59,6 +59,7 @@ LEGACY_BIN_LINKS=(
   "$HOME/bin/sync-skills"
   "$HOME/bin/sync-op"
   "$HOME/bin/upgrade-ai-tools"
+  "$HOME/bin/link-agents-md"
 )
 
 canonical_path() {

@@ -7,7 +7,7 @@
 # dispatches here; everything below is deterministic and re-runnable.
 #
 #   dispatch/write_sql.sh <schema/file.sql> [...]   # explicit targets (EXECUTE)
-#   dispatch/write_sql.sh --staged                  # staged schema/*.sql (HARNESS VERIFY, pre-commit)
+#   dispatch/write_sql.sh --staged                  # staged schema/*.sql (CONFORM, pre-commit)
 #
 # Layering:  AGENTS.md → write_sql.md (latent) → write_sql.sh (this) → audits/*.sh
 # Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script) · ⚪ delegated

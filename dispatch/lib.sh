@@ -8,7 +8,7 @@
 #
 # Three entry points, one source of truth (each dispatch sources this):
 #   EXECUTE        dispatch/<lang>.sh <file>      per-edit, latent early-warning
-#   HARNESS VERIFY dispatch/<lang>.sh --staged    end-of-turn aggregate (the anchor)
+#   CONFORM dispatch/<lang>.sh --staged    end-of-turn aggregate (the anchor)
 #   COMMIT         pre-commit → dispatch/<lang>.sh --staged   mechanical backstop
 #
 # Signal semantics (printed in every row — see DISPATCH_ARCHITECTURE.md, Signal semantics):
@@ -35,7 +35,7 @@
 set -euo pipefail
 
 # DISPATCH_HOME — where the dispatch scripts physically live. Follows a
-# link-agents-md symlink back to dotfiles, so it always locates lib.sh + the leaf
+# oracle-rules snapshot, so it always locates lib.sh + the leaf
 # helpers correctly. This is NOT the repo being checked.
 DISPATCH_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DISPATCH_SCRIPTS="$DISPATCH_HOME/audits"
