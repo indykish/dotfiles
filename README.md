@@ -215,9 +215,9 @@ update-skills --doctor
 
 Successful output ends with `✔ Skills doctor passed`.
 
-### 6. Generate the global agent instructions
+### 6. Update global agent instructions
 
-Validate the registry, render the global profile, and link installed agents:
+Run these commands after changing global rules:
 
 ```bash
 oracle-rules validate
@@ -226,99 +226,55 @@ oracle-rules link-agent-homes
 oracle-rules link-agent-homes --check
 ```
 
-The link command supports Claude, Codex, OpenCode, and Amp when their home
-directories exist. It retargets an older link only when that link already
-resolves inside this dotfiles repository. It refuses every real file and
-external symbolic link.
+The stable links update Claude, Codex, OpenCode, and Amp. The command refuses
+real agent-home files and links outside this repository.
 
-A later global rules change reaches installed agents after the global render;
-the stable agent-home links do not need recreation. `update-skills` performs
-the render and link steps as part of its normal run.
+### 7. Set up a repository
 
-### 7. Initialize rules in a new repository
+Use `<NAME>` for the registry key, `<PROFILE>` for a profile filename without
+`.json`, and `<PROJECT>` for a directory under `~/Projects`.
 
-Choose a profile from `oracle-rules/profiles/`, then add the repository path and
-profile to `oracle-rules/repositories.json`. Existing profiles cover
-`agentsfleet`, Rust cache-kit repositories, Mintlify documentation, dotfiles,
-and global-only behavior.
+1. Add the repository path and profile to `oracle-rules/repositories.json`.
+   Validate, commit, and push that dotfiles change.
+2. Start from a clean target repository and create its local inputs:
 
-Replace `<NAME>` with the repository key, `<PROFILE>` with the profile filename
-without `.json`, and `<PROJECT>` with the directory name under `~/Projects`.
+   ```bash
+   cd ~/Projects/<PROJECT>
+   oracle-rules init --profile <PROFILE> --repository "$(pwd)"
+   ```
 
-Validate and commit the registry entry in dotfiles:
+3. Replace the placeholder in `AGENTS.project.md`. Commit that file with
+   `.oracle/profile.json`.
+4. Generate and verify the tracked snapshot:
 
-```bash
-cd ~/Projects/dotfiles
-oracle-rules validate
-git add oracle-rules/repositories.json
-git commit -m "chore(governance): register <NAME> rules profile"
-git push origin master
-```
+   ```bash
+   cd ~/Projects/dotfiles
+   oracle-rules sync --repository <NAME>
+   oracle-rules doctor --repository <NAME>
+   ```
 
-Start from a clean repository:
+5. Review and commit the generated files in the target repository.
 
-```bash
-cd ~/Projects/<PROJECT>
-git status --short
-oracle-rules init --profile <PROFILE> --repository "$(pwd)"
-```
+`init` and `sync` require a clean registered checkout. Remove or commit
+untracked legacy links first. Never run them in sibling worktrees. New
+worktrees inherit snapshots from Git. Existing worktrees merge or rebase the
+updated default branch.
 
-Edit `AGENTS.project.md` with repository commands, terminology, architecture
-triggers, and local safety rules. Commit the two repository-owned inputs before
-synchronizing:
+### 8. Propagate rules updates
+
+Global rules update through section 6. Repository snapshots update explicitly:
 
 ```bash
-git add AGENTS.project.md .oracle/profile.json
-git commit -m "chore(governance): initialize oracle rules"
-```
-
-Return to dotfiles and generate the tracked snapshot:
-
-```bash
-cd ~/Projects/dotfiles
-oracle-rules sync --repository <NAME>
-```
-
-Synchronization writes `AGENTS.md`, selected dispatch pages and checks,
-`.oracle/profile.json`, `.oracle/managed-files.json`, and
-`.oracle/ruleset.lock`. Review and commit those files in the target repository,
-then verify the lock:
-
-```bash
-cd ~/Projects/<PROJECT>
-git status --short
-git add -A
-git commit -m "chore(governance): sync oracle rules"
-cd ~/Projects/dotfiles
-oracle-rules doctor --repository <NAME>
-```
-
-For an existing repository that still uses dotfiles symbolic links, first move
-its repository-specific instructions into `AGENTS.project.md` and commit that
-file. Once the tree is clean, `oracle-rules sync --repository <NAME>` replaces
-only managed links with ordinary snapshot files. It never visits sibling
-worktrees.
-
-### 8. Propagate later rules updates
-
-Global agent-home rules and project snapshots intentionally use different
-update paths:
-
-```bash
-oracle-rules render --profile global --output ~/Projects/dotfiles/oracle-rules/generated/global
-oracle-rules link-agent-homes
 oracle-rules status --all
 oracle-rules sync --repository <NAME>
 ```
 
-The first two commands update installed agents immediately. `status --all`
-reports which registered repositories need a snapshot update. Each `sync` is
-explicit and requires a clean target tree, so a global edit cannot silently
-change an active branch or worktree.
+Commit each updated snapshot in its repository. `agentsfleet` keeps
+`make harness-verify`, mapped to `CONFORM`; `VERIFY` and `REVIEW` remain
+separate responsibilities.
 
-The `agentsfleet` profile keeps `make harness-verify`. Its profile maps that
-repository command to the `CONFORM` lifecycle stage. `VERIFY` remains the
-separate behavior-proof stage, followed by `REVIEW`.
+See [Oracle rules architecture](docs/ORACLE_RULES_ARCHITECTURE.md) for profiles,
+locks, refusal rules, evidence, and lifecycle command mapping.
 
 ### 9. Write local secret files (optional)
 
