@@ -118,7 +118,7 @@ EOF
 # not unavailability — that's a real non-answer.
 is_unavailable() {
   LC_ALL=C tr -cd '[:print:]\n' < "$1" \
-    | grep -qiE '402|paid credits|require.*credits|quota|rate.?limit|unauthorized|not (logged in|authenticated)|invalid api key|please (log ?in|sign ?in)'
+    | grep -qiE '402|paid credits|require.*credits|daily free usage limit|purchase additional credits|quota|rate.?limit|unauthorized|not (logged in|authenticated)|invalid api key|please (log ?in|sign ?in)'
 }
 
 extract_verdict() {
