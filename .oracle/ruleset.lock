@@ -2,7 +2,7 @@
   "files": {
     ".oracle/managed-files.json": "d72d5b9490c9870e1c34606f0ba0817422d2a2f9221e31da3bb5e4aa968a697e",
     ".oracle/profile.json": "36be259b977fd03f8b9b1e4555190d42cb42a5ceb4a1cf4c49ca311d723339b4",
-    "AGENTS.md": "c4ff33487ab78dc160ba1926e64a98e3fe44d878495788bb7511b2cd397e4dda",
+    "AGENTS.md": "fe4951a2702c00432236b6a0c2bb7b39d4b3188ab991200b3b080a735932d823",
     "audits/agents-md.md": "a1ca271612436b6952327012dbffa40f64d7fa1d7090a884d490f5a8d80cbf40",
     "audits/logging.sh": "f75bd9cf8ff875b326230aa30eed7dcb518befb3b35dfaaa10aac06944f0fa87",
     "audits/msid-ui.sh": "3c8dbc8d01421ab5a997813859e1262c770043edff8d194ec139a6cd35e16318",
@@ -19,6 +19,6 @@
     "docs/DOCUMENTATION_RULES.md": "805a6bf0239d07c280d1a1fb1bfe5075108c178d8f42ad9646d0e0b3253f27b6"
   },
   "profile": "dotfiles",
-  "ruleset_digest": "3cc27da5ba110876b1f6b4df770fbcb7809572938801038d308de7c1473cf670",
+  "ruleset_digest": "9b2893cb3e428c62a3c9afd86a7fbf15b4ab57a9419f18cb4533556ff3af8595",
   "schema_version": 1
 }

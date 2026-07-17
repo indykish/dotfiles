@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE_PATH="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE_PATH" ]; do
+    SOURCE_DIR="$(cd -P "$(dirname "$SOURCE_PATH")" && pwd)"
+    SOURCE_PATH="$(readlink "$SOURCE_PATH")"
+    case "$SOURCE_PATH" in
+        /*) ;;
+        *) SOURCE_PATH="$SOURCE_DIR/$SOURCE_PATH" ;;
+    esac
+done
+
+ROOT="$(cd -P "$(dirname "$SOURCE_PATH")/.." && pwd)"
 export PYTHONPATH="$ROOT/oracle-rules/src${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONDONTWRITEBYTECODE=1
 exec python3 -m oracle_rules.cli --root "$ROOT" "$@"

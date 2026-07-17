@@ -5,6 +5,7 @@ set -euo pipefail
 DOTFILES="$HOME/Projects/dotfiles"
 DOTFILES_SKILLS="$DOTFILES/skills"
 UNIFIED_SKILLS="$DOTFILES/.unified-skills"
+SYSTEM_SKILLS="$UNIFIED_SKILLS/.system"
 GSTACK_DIR="$HOME/.local/share/gstack"
 GSTACK_REPO="https://github.com/garrytan/gstack.git"
 
@@ -88,7 +89,12 @@ doctor_overlay() {
     doctor_file "$HOME/.claude/skills/design-shotgun/SKILL.md"
     doctor_file "$HOME/.claude/skills/kishore-spec-new/SKILL.md"
 
-    stale_entry="$(find "$UNIFIED_SKILLS" -mindepth 1 -maxdepth 1 ! -type l -print -quit)"
+    if [ -e "$SYSTEM_SKILLS" ] || [ -L "$SYSTEM_SKILLS" ]; then
+        [ -d "$SYSTEM_SKILLS" ] || fail "Reserved system skills entry must be a directory: $SYSTEM_SKILLS"
+        ok "Reserved agent-managed system skills directory: $SYSTEM_SKILLS"
+    fi
+
+    stale_entry="$(find "$UNIFIED_SKILLS" -mindepth 1 -maxdepth 1 ! -type l ! -path "$SYSTEM_SKILLS" -print -quit)"
     [ -z "$stale_entry" ] || fail "Unexpected non-symlink entry in generated overlay: $stale_entry"
     ok "No copied GStack tree remains in $UNIFIED_SKILLS"
 }
