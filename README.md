@@ -103,7 +103,7 @@ Run the helper directly for the first setup:
 The helper links `~/.tmux.conf` and these commands into `~/bin`:
 
 - `link-bin-dotfiles`
-- `oracle-rules`
+- `orly`
 - `update-skills`
 - `provision-env-1password`
 - `update-ai-tools`
@@ -220,70 +220,56 @@ Successful output ends with `✔ Skills doctor passed`.
 Run this command from `~/Projects/dotfiles` after changing global rules:
 
 ```bash
-oracle-rules validate && oracle-rules render --profile global --output oracle-rules/generated/global && oracle-rules link-agent-homes && oracle-rules link-agent-homes --check
+orly sync --global
 ```
 
-Successful output ends with:
+Expected output:
 
 ```text
-🟢 agent-home instructions use the generated global rules
+🟢 global: updated rules and 4 agent-home links
 ```
 
-The stable links serve Claude, Codex, OpenCode, and Amp. The command refuses
-real files and links outside this repository.
+The links serve Claude, Codex, OpenCode, and Amp. Orly refuses regular files and
+links outside this repository.
 
 ### 7. Set up a repository
 
-Use `<REPOSITORY_NAME>` for the registry key. Use `<PROFILE_NAME>` for a
-profile filename without `.json`. Use `<PROJECT_DIRECTORY>` for a directory
-under `~/Projects`.
+Add the repository path and profile to `orly/repositories.json`, then run:
 
-1. Add the repository path and profile to `oracle-rules/repositories.json`.
-2. Validate, commit, and push the dotfiles change:
+```bash
+orly adopt <REPOSITORY_NAME>
+```
 
-   ```bash
-   oracle-rules validate
-   ```
+Expected output is `🟢 <REPOSITORY_NAME>: adopted <PROFILE_NAME> (<N> files)`.
+Orly preserves a regular `AGENTS.md` as `AGENTS.project.md`, then composes it
+with common rules and the selected profile packs. Review and commit the result
+in the target repository.
 
-   Successful output is `oracle-rules: registry and profiles valid`.
-3. Start from a clean target repository and create its local inputs:
-
-   ```bash
-   cd ~/Projects/<PROJECT_DIRECTORY> && oracle-rules init --profile <PROFILE_NAME> --repository "$(pwd)"
-   ```
-
-   Output lists each created file with an `initialized:` prefix.
-4. Replace the placeholder in `AGENTS.project.md`. Commit that file with
-   `.oracle/profile.json`.
-5. Generate and check the tracked snapshot from `~/Projects/dotfiles`:
-
-   ```bash
-   oracle-rules sync --repository <REPOSITORY_NAME> && oracle-rules doctor --repository <REPOSITORY_NAME>
-   ```
-
-   Output lists synced files, then reports that managed files match the lock.
-6. Run the target repository's checks. Review and commit the generated files.
-
-`init` and `sync` require a clean registered checkout. Remove or commit
-untracked legacy links first. Never run them in sibling worktrees. New
-worktrees inherit snapshots from Git. Existing worktrees merge or rebase the
-updated default branch. Sync stops if a generated rule names a missing file.
+Adoption requires a clean registered checkout. It refuses external symbolic
+links, unmanaged destinations, sibling worktrees, and partial snapshots.
 
 ### 8. Propagate rules updates
 
-Complete section 6 for global changes. Then list repository snapshots:
+Update every clean registered repository:
 
 ```bash
-oracle-rules status --all
+orly sync --all
 ```
 
-Output contains one `current` or `update-required` row per repository. For each
-`update-required` row, repeat steps 5 and 6 in section 7.
+Check without changing files:
+
+```bash
+orly doctor --all
+```
+
+New worktrees inherit the tracked snapshot. Existing worktrees receive it when
+they merge or rebase the updated default branch. A dirty repository is reported
+and left untouched.
 
 `agentsfleet` keeps `make harness-verify` as its repository rule check.
 Verification and review remain separate lifecycle stages.
 
-See [Oracle rules architecture](docs/ORACLE_RULES_ARCHITECTURE.md) for profiles,
+See [Orly architecture](docs/ORLY_ARCHITECTURE.md) for profiles,
 locks, refusal rules, evidence, and lifecycle command mapping.
 
 ### 9. Write local secret files (optional)
@@ -316,15 +302,18 @@ Successful output ends with `✔ env doctor passed`.
 ### 10. Verify the repository rules
 
 ```bash
+cd ~/Projects/dotfiles/orly && bun install --frozen-lockfile
+cd ~/Projects/dotfiles
 make audit
 ```
 
-The audit validates the registry and profiles, runs focused unit tests, proves
-byte-stable generation, checks rule invariants, and runs dispatch evaluations.
+Bun reports installed dependencies. The audit validates the registry and
+profiles, runs focused unit tests, proves byte-stable generation, checks rule
+invariants, and runs dispatch evaluations.
 
 ## How the agent rules work
 
-[`oracle-rules/core/operating-model.md`](oracle-rules/core/operating-model.md) is
+[`orly/core/operating-model.md`](orly/core/operating-model.md) is
 the canonical global operating model. Profiles select rule packs and repository
 commands. The renderer produces [`AGENTS.md`](AGENTS.md) for this repository,
 the global agent-home file, and tracked consumer snapshots.
@@ -347,7 +336,7 @@ Machine-checkable rules have scripts or fixtures under [`audits/`](audits/) and
 [`evals/`](evals/). `make audit` detects missing pages, stale indexes, and rule
 checks that no longer match their documentation.
 
-Read [`docs/ORACLE_RULES_ARCHITECTURE.md`](docs/ORACLE_RULES_ARCHITECTURE.md)
+Read [`docs/ORLY_ARCHITECTURE.md`](docs/ORLY_ARCHITECTURE.md)
 for registry, profile, synchronization, refusal, and evidence details.
 
 Read [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md) for the
@@ -358,7 +347,7 @@ full dispatch design.
 | Path | Contents |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Generated dotfiles-profile instructions. |
-| [`oracle-rules/`](oracle-rules/) | Canonical operating model, registry, profiles, renderer, schemas, fixtures, and generated global rules. |
+| [`orly/`](orly/) | Bun and TypeScript command, operating model, profiles, schemas, fixtures, and generated global rules. |
 | [`SOUL.md`](SOUL.md) | Orly's working style and collaboration notes. |
 | [`dispatch/`](dispatch/) | Rule pages selected by the work an agent is about to do. |
 | [`audits/`](audits/) | Shell checks and review questionnaires. |

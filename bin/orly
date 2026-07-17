@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE_PATH="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE_PATH" ]; do
+    SOURCE_DIRECTORY="$(cd -P "$(dirname "$SOURCE_PATH")" && pwd)"
+    SOURCE_PATH="$(readlink "$SOURCE_PATH")"
+    case "$SOURCE_PATH" in
+        /*) ;;
+        *) SOURCE_PATH="$SOURCE_DIRECTORY/$SOURCE_PATH" ;;
+    esac
+done
+
+ROOT="$(cd -P "$(dirname "$SOURCE_PATH")/.." && pwd)"
+exec bun "$ROOT/orly/src/cli.ts" --root "$ROOT" "$@"

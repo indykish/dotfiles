@@ -15,7 +15,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   else
     files="$(git diff --name-only "$remote_sha..$local_sha")"
   fi
-  if grep -qE '^(oracle-rules/(core|packs|profiles)/|oracle-rules/(registry|repositories)\.json|AGENTS\.md|SOUL\.md|dispatch/.*\.md|audits/agents-md\.md|evals/llms/fixtures\.jsonl|docs/(EXECUTE_DOC_READS|ORACLE_RULES_ARCHITECTURE|HARNESS_VERIFY_OUTPUT)\.md|\.githooks/(pre-commit|pre-push)|Makefile)$' <<<"$files"; then
+  if grep -qE '^(orly/(core|packs|profiles|src)/|orly/(registry|repositories)\.json|AGENTS\.md|SOUL\.md|dispatch/.*\.md|audits/agents-md\.md|evals/llms/fixtures\.jsonl|docs/(EXECUTE_DOC_READS|ORLY_ARCHITECTURE|HARNESS_VERIFY_OUTPUT)\.md|\.githooks/(pre-commit|pre-push)|Makefile)$' <<<"$files"; then
     semantic_change=1
   fi
 done
@@ -33,5 +33,5 @@ else
   llm_result="not-required"
 fi
 
-bin/oracle-rules verify --all --write-evidence --llm-result "$llm_result" || exit 1
+bin/orly verify --all --write-evidence --llm-result "$llm_result" || exit 1
 exit 0

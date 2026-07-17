@@ -50,7 +50,7 @@ make_sandbox() {
   cp "$SRC_ROOT"/dispatch/*.md             "$sb/dispatch/"
   local d
   for d in TEMPLATE REST_API_DESIGN_GUIDELINES LOGGING_STANDARD \
-           LIFECYCLE_PATTERNS DOCUMENTATION_RULES ORACLE_RULES_ARCHITECTURE; do
+           LIFECYCLE_PATTERNS DOCUMENTATION_RULES ORLY_ARCHITECTURE; do
     cp "$SRC_ROOT/docs/$d.md" "$sb/docs/" 2>/dev/null
   done
   cp "$SRC_ROOT/docs/greptile-learnings/RULES.md" "$sb/docs/greptile-learnings/"

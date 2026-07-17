@@ -4,7 +4,7 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
-GOVERNANCE_PATTERN='^(AGENTS\.md|README\.md|Makefile|oracle-rules/|dispatch/|audits/(agents-md|data|parity-dispatch)|evals/|docs/(EXECUTE_DOC_READS|ORACLE_RULES_ARCHITECTURE|HARNESS_VERIFY_OUTPUT)\.md|\.githooks/)'
+GOVERNANCE_PATTERN='^(AGENTS\.md|README\.md|Makefile|orly/|dispatch/|audits/(agents-md|data|parity-dispatch)|evals/|docs/(EXECUTE_DOC_READS|ORLY_ARCHITECTURE|HARNESS_VERIFY_OUTPUT)\.md|\.githooks/)'
 
 if git diff --cached --name-only | grep -qE "$GOVERNANCE_PATTERN"; then
   echo "pre-commit: governance changed — running make audit" >&2

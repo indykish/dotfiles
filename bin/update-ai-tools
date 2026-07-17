@@ -25,7 +25,7 @@ case "${1:-}" in
   --doctor)
     ~/bin/link-bin-dotfiles --doctor
     ~/bin/update-skills --doctor
-    ~/bin/oracle-rules doctor --all
+    ~/bin/orly doctor --all
     exit 0
     ;;
 esac
@@ -69,8 +69,8 @@ info "🔄 Running update-skills to keep skills updated..."
 
 echo ""
 info "🔎 Reporting repository rules snapshot status..."
-if [[ -x "$HOME/bin/oracle-rules" ]]; then
-  ~/bin/oracle-rules status --all
+if [[ -x "$HOME/bin/orly" ]]; then
+  ~/bin/orly doctor --all
 else
-  warn "oracle-rules not found in ~/bin/ — run link-bin-dotfiles first"
+  warn "orly not found in ~/bin/ — run link-bin-dotfiles first"
 fi

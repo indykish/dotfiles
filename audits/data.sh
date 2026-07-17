@@ -77,7 +77,7 @@ DOTFILES_RESIDENT=(
   "docs/LOGGING_STANDARD.md"
   "docs/LIFECYCLE_PATTERNS.md"
   "docs/DOCUMENTATION_RULES.md"
-  "docs/ORACLE_RULES_ARCHITECTURE.md"
+  "docs/ORLY_ARCHITECTURE.md"
   "docs/greptile-learnings/RULES.md"
   "dispatch/write_zig.md"
   "dispatch/write_ts_adhere_bun.md"

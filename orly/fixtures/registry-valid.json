@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "core_documents": ["orly/core/operating-model.md"],
+  "packs": {
+    "fixture": {
+      "extensions": [],
+      "managed_files": []
+    }
+  },
+  "rules": [
+    {
+      "key": "fixture.judgment",
+      "state": "active",
+      "decision": "judgment",
+      "pack": "fixture"
+    }
+  ]
+}

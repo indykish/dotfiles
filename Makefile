@@ -6,9 +6,10 @@
 #   2. Oracle rules unit tests and byte-stable rendering.
 #   3. AGENTS.md invariance and dispatch checks.
 audit:
-	@bin/oracle-rules validate
-	@PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=oracle-rules/src python3 -m unittest discover -s oracle-rules/tests -p 'test_*.py'
-	@bin/oracle-rules verify --all
+	@bin/orly validate
+	@cd orly && bun run typecheck && bun test src
+	@bin/orly verify --all
+	@bash audits/ufs.sh --all
 	@bash audits/agents-md.sh
 	@bash evals/dispatch/coverage.sh
 	@bash evals/dispatch/run.sh

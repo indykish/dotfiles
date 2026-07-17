@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "core_documents": [
+    "orly/core/operating-model.md"
+  ],
+  "packs": {
+    "universal.authoring": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/write_any.md", "target": "dispatch/write_any.md"},
+        {"source": "dispatch/write_any.sh", "target": "dispatch/write_any.sh"},
+        {"source": "dispatch/lib.sh", "target": "dispatch/lib.sh"},
+        {"source": "audits/ufs.sh", "target": "audits/ufs.sh"},
+        {"source": "audits/logging.sh", "target": "audits/logging.sh"},
+        {"source": "audits/msid-ui.sh", "target": "audits/msid-ui.sh"},
+        {"source": "docs/greptile-learnings/RULES.md", "target": "docs/greptile-learnings/RULES.md"}
+      ]
+    },
+    "language.zig": {
+      "extensions": [".zig"],
+      "managed_files": [
+        {"source": "dispatch/write_zig.md", "target": "dispatch/write_zig.md"},
+        {"source": "dispatch/write_zig.sh", "target": "dispatch/write_zig.sh"},
+        {"source": "audits/deinit-pairs.sh", "target": "audits/deinit-pairs.sh"},
+        {"source": "audits/sql-mod.sh", "target": "audits/sql-mod.sh"},
+        {"source": "docs/LIFECYCLE_PATTERNS.md", "target": "docs/LIFECYCLE_PATTERNS.md"}
+      ]
+    },
+    "language.typescript": {
+      "extensions": [".ts", ".tsx"],
+      "managed_files": [
+        {"source": "dispatch/write_ts_adhere_bun.md", "target": "dispatch/write_ts_adhere_bun.md"},
+        {"source": "dispatch/write_ts_adhere_bun.sh", "target": "dispatch/write_ts_adhere_bun.sh"}
+      ]
+    },
+    "language.javascript": {
+      "extensions": [".js", ".jsx"],
+      "managed_files": [
+        {"source": "dispatch/write_ts_adhere_bun.md", "target": "dispatch/write_ts_adhere_bun.md"},
+        {"source": "dispatch/write_ts_adhere_bun.sh", "target": "dispatch/write_ts_adhere_bun.sh"}
+      ]
+    },
+    "language.rust": {
+      "extensions": [".rs"],
+      "managed_files": [
+        {"source": "orly/packs/language/rust/rules.md", "target": "dispatch/write_rust.md"}
+      ]
+    },
+    "language.python": {
+      "extensions": [".py"],
+      "managed_files": [
+        {"source": "orly/packs/language/python/rules.md", "target": "dispatch/write_python.md"}
+      ]
+    },
+    "language.shell": {
+      "extensions": [".sh"],
+      "managed_files": [
+        {"source": "orly/packs/language/shell/rules.md", "target": "dispatch/write_shell.md"}
+      ]
+    },
+    "language.mdx": {
+      "extensions": [".mdx"],
+      "managed_files": [
+        {"source": "orly/packs/language/mdx/rules.md", "target": "dispatch/write_mdx.md"}
+      ]
+    },
+    "domain.sql": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/write_sql.md", "target": "dispatch/write_sql.md"},
+        {"source": "dispatch/write_sql.sh", "target": "dispatch/write_sql.sh"},
+        {"source": "docs/SCHEMA_CONVENTIONS.md", "target": "docs/SCHEMA_CONVENTIONS.md"}
+      ]
+    },
+    "domain.http": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/write_http.md", "target": "dispatch/write_http.md"},
+        {"source": "docs/REST_API_DESIGN_GUIDELINES.md", "target": "docs/REST_API_DESIGN_GUIDELINES.md"}
+      ]
+    },
+    "domain.auth": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/write_auth.md", "target": "dispatch/write_auth.md"}
+      ]
+    },
+    "domain.documentation": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/write_documentation.md", "target": "dispatch/write_documentation.md"},
+        {"source": "docs/DOCUMENTATION_RULES.md", "target": "docs/DOCUMENTATION_RULES.md"}
+      ]
+    },
+    "domain.changelog": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/write_changelog.md", "target": "dispatch/write_changelog.md"},
+        {"source": "docs/CHANGELOG_VOICE.md", "target": "docs/CHANGELOG_VOICE.md"}
+      ]
+    },
+    "domain.architecture": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/name_architecture.md", "target": "dispatch/name_architecture.md"}
+      ]
+    },
+    "workflow.specifications": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/write_spec.md", "target": "dispatch/write_spec.md"},
+        {"source": "docs/TEMPLATE.md", "target": "docs/TEMPLATE.md"},
+        {"source": "audits/spec-template.sh", "target": "audits/spec-template.sh"}
+      ]
+    },
+    "workflow.governance": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "dispatch/edit_rules.md", "target": "dispatch/edit_rules.md"},
+        {"source": "audits/agents-md.md", "target": "audits/agents-md.md"},
+        {"source": "docs/ORLY_ARCHITECTURE.md", "target": "docs/ORLY_ARCHITECTURE.md"}
+      ]
+    },
+    "product.agentsfleet": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "audits/cross-tier-rates.sh", "target": "audits/cross-tier-rates.sh"},
+        {"source": "audits/design-tokens.sh", "target": "audits/design-tokens.sh"},
+        {"source": "audits/error-codes.sh", "target": "audits/error-codes.sh"},
+        {"source": "docs/EXECUTE_DOC_READS.md", "target": "docs/EXECUTE_DOC_READS.md"},
+        {"source": "docs/HARNESS_VERIFY_OUTPUT.md", "target": "docs/HARNESS_VERIFY_OUTPUT.md"},
+        {"source": "docs/LOGGING_STANDARD.md", "target": "docs/LOGGING_STANDARD.md"},
+        {"source": "dispatch/verify.md", "target": "dispatch/verify.md"},
+        {"source": "docs/VERIFY_TIERS.md", "target": "docs/VERIFY_TIERS.md"}
+      ]
+    }
+  },
+  "rules": [
+    {
+      "key": "governance.registry.valid",
+      "state": "active",
+      "decision": "mechanical",
+      "pack": "workflow.governance",
+      "checker": ["bin/orly", "validate"],
+      "fixtures": {
+        "pass": ["orly/fixtures/registry-valid.json"],
+        "fail": ["orly/fixtures/registry-invalid.json"]
+      }
+    },
+    {
+      "key": "governance.render.stable",
+      "state": "active",
+      "decision": "mechanical",
+      "pack": "workflow.governance",
+      "checker": ["bin/orly", "verify", "--all"],
+      "fixtures": {
+        "pass": ["orly/src/render.test.ts"],
+        "fail": ["orly/fixtures/tampered-lock.json"]
+      }
+    },
+    {
+      "key": "repository.conform",
+      "state": "active",
+      "decision": "repository",
+      "pack": "universal.authoring",
+      "command": "conform"
+    }
+  ]
+}

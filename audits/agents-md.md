@@ -4,7 +4,7 @@ A three-part proof that generated `AGENTS.md` still holds the line after edits:
 
 1. **Deterministic layer** — `audits/agents-md.sh` (mechanical, fast, runs in `pre-commit`).
 2. **Prompt-invariance layer** — this file. A Large Language Model (LLM) agent reads `AGENTS.md` and answers every question below. Every answer must be **YES**. A NO means the ruleset regressed.
-3. **Evidence layer** — `oracle-rules verify --all --write-evidence` records the source commit, registry digest, profile checks, and prompt result.
+3. **Evidence layer** — `orly verify --all --write-evidence` records the source commit, registry digest, profile checks, and prompt result.
 
 Run this suite before and after an operating-model change. Both runs must produce the same all-YES result. A pass that flips to NO is a broken invariant.
 
@@ -179,7 +179,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 | # | Question | Expected |
 |---|---|---|
-| 13.1 | When the agent edits `oracle-rules/**`, generated `AGENTS.md`, `audits/agents-md.md`, governance hooks, or any dispatch entry, does `edit_rules` require the audit and questionnaire before declaring done? | YES |
+| 13.1 | When the agent edits `orly/**`, generated `AGENTS.md`, `audits/agents-md.md`, governance hooks, or any dispatch entry, does `edit_rules` require the audit and questionnaire before declaring done? | YES |
 | 13.2 | Is the agent forbidden from self-overriding the Invariance Suite Gate? (Only the user may bypass at push time via `SKIP_INVARIANCE_PUSH=1`.) | YES |
 | 13.3 | Does generated evidence bind the source commit, registry digest, profile results, and prompt-comprehension result? | YES |
 | 13.4 | Does the pre-push hook run live prompt evaluation for semantic governance changes and regenerate evidence against the pushed commit? | YES |
@@ -319,8 +319,8 @@ siblings.
 
 | # | Question | Expected |
 |---|---|---|
-| 26.1 | Is `oracle-rules/registry.json` the canonical profile and pack registry, with `oracle-rules/core/operating-model.md` as the global operating-model source? | YES |
-| 26.2 | Do agent-home links point to `oracle-rules/generated/global/AGENTS.md`, making a new global render immediately visible to installed agents? | YES |
+| 26.1 | Is `orly/registry.json` the canonical profile and pack registry, with `orly/core/operating-model.md` as the global operating-model source? | YES |
+| 26.2 | Do agent-home links point to `orly/generated/global/AGENTS.md`, making a new global render immediately visible to installed agents? | YES |
 | 26.3 | Are project rules ordinary tracked snapshots with `.oracle/ruleset.lock`, rather than symbolic links into dotfiles? | YES |
 | 26.4 | Does repository synchronization require a clean tree and `AGENTS.project.md`, and refuse sibling-worktree mutation? | YES |
 | 26.5 | Does the `agentsfleet` profile map CONFORM to `make harness-verify` while VERIFY remains behavior proof? | YES |
@@ -349,7 +349,7 @@ comprehension layer closes that gap:
   non-compliant model. Absent / credit-blocked agents are logged + excluded
   from the gate, never silently dropped.
 - **Evidence** — the pre-push hook passes the live result to
-  `oracle-rules verify --all --write-evidence`, which binds it to the current
+  `orly verify --all --write-evidence`, which binds it to the current
   source commit and registry digest.
 
 ---
@@ -360,7 +360,7 @@ After all questions answer YES and the report below is complete, generate the
 machine-readable evidence file:
 
 ```bash
-oracle-rules verify --all --write-evidence --llm-result pass
+orly verify --all --write-evidence --llm-result pass
 ```
 
 The evidence is local and ignored by Git. The pre-push hook regenerates it
