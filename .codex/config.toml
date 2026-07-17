@@ -1,4 +1,3 @@
-model = "gpt-5.3-codex"
 model_reasoning_effort = "high"
 tool_output_token_limit = 25000
 # Leave room for native compaction near the 272–273k context window.
@@ -7,9 +6,6 @@ tool_output_token_limit = 25000
 model_auto_compact_token_limit = 233000
 suppress_unstable_features_warning = true
 web_search = "cached"
-
-[notice.model_migrations]
-"gpt-5.2-codex" = "gpt-5.3-codex"
 
 [features]
 multi_agent = true
