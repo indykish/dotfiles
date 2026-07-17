@@ -12,6 +12,11 @@ from .model import (
     load_json,
     sha256_file,
 )
+from .references import (
+    SnapshotReferenceError,
+    reference_closure_errors,
+    render_profile_text,
+)
 
 
 GENERATED_HEADER = """<!--
@@ -49,6 +54,11 @@ class Renderer:
                 normalized_file_mode(source_path),
             )
             rendered_paths.append(target_path)
+
+        if profile_name != "global":
+            closure_errors = reference_closure_errors(output_root, rendered_paths)
+            if closure_errors:
+                raise RulesValidationError("\n".join(closure_errors))
 
         oracle_dir = output_root / ".oracle"
         profile_path = oracle_dir / "profile.json"
@@ -157,8 +167,18 @@ class Renderer:
                 profile=profile_name, ruleset_digest=self.model.profile_digest(profile_name)
             ).rstrip()
         ]
+        selected_packs = set(profile["packs"])
+        if profile_name == "global":
+            selected_packs = set(self.model.registry["packs"])
+        known_packs = set(self.model.registry["packs"])
         for document in self.model.registry["core_documents"]:
-            sections.append((self.model.root / document).read_text(encoding="utf-8").strip())
+            content = (self.model.root / document).read_text(encoding="utf-8")
+            try:
+                sections.append(
+                    render_profile_text(content, selected_packs, known_packs, document)
+                )
+            except SnapshotReferenceError as error:
+                raise RulesValidationError(str(error)) from error
         sections.append(self._pack_table(profile))
         sections.append(self._command_table(profile))
         if project_root:
@@ -170,6 +190,9 @@ class Renderer:
     def _pack_table(self, profile: dict[str, Any]) -> str:
         rows = ["# Selected rule packs", "", "| Pack | Extensions |", "|---|---|"]
         packs = self.model.registry["packs"]
+        if set(profile["packs"]) == set(packs):
+            rows.append("| All registered packs | Full source inventory |")
+            return "\n".join(rows)
         for pack_name in profile["packs"]:
             extensions = ", ".join(packs[pack_name]["extensions"]) or "path or action trigger"
             rows.append(f"| `{pack_name}` | {extensions} |")

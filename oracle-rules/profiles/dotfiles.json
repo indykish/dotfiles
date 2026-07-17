@@ -3,12 +3,22 @@
   "name": "dotfiles",
   "packs": [
     "universal.authoring",
+    "language.zig",
+    "language.typescript",
+    "language.javascript",
     "language.rust",
     "language.python",
     "language.shell",
     "language.mdx",
+    "domain.sql",
+    "domain.http",
+    "domain.auth",
     "domain.documentation",
-    "workflow.governance"
+    "domain.changelog",
+    "domain.architecture",
+    "workflow.specifications",
+    "workflow.governance",
+    "product.agentsfleet"
   ],
   "commands": {
     "conform": [["make", "audit"]],

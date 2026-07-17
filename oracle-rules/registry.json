@@ -117,7 +117,8 @@
       "extensions": [],
       "managed_files": [
         {"source": "dispatch/edit_rules.md", "target": "dispatch/edit_rules.md"},
-        {"source": "audits/agents-md.md", "target": "audits/agents-md.md"}
+        {"source": "audits/agents-md.md", "target": "audits/agents-md.md"},
+        {"source": "docs/ORACLE_RULES_ARCHITECTURE.md", "target": "docs/ORACLE_RULES_ARCHITECTURE.md"}
       ]
     },
     "product.agentsfleet": {
@@ -129,6 +130,7 @@
         {"source": "docs/EXECUTE_DOC_READS.md", "target": "docs/EXECUTE_DOC_READS.md"},
         {"source": "docs/HARNESS_VERIFY_OUTPUT.md", "target": "docs/HARNESS_VERIFY_OUTPUT.md"},
         {"source": "docs/LOGGING_STANDARD.md", "target": "docs/LOGGING_STANDARD.md"},
+        {"source": "dispatch/verify.md", "target": "dispatch/verify.md"},
         {"source": "docs/VERIFY_TIERS.md", "target": "docs/VERIFY_TIERS.md"}
       ]
     }

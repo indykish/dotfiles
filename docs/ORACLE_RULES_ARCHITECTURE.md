@@ -26,6 +26,22 @@ oracle-rules/registry.json
 snapshot. Generated files are ordinary tracked files, never cross-repository
 symbolic links.
 
+## Reference closure
+
+Every repository snapshot is reference-closed: each relative Markdown link and
+each `dispatch/*.md` target named by generated prose resolves inside that
+repository. Profile markers remove operating-model rows and blocks whose packs
+are not selected. Pack façades remain self-contained canonical files rather than
+depending on dotfiles-only design documents.
+
+The `dotfiles` source profile deliberately selects the full pack inventory so its
+invariance audit exercises every route. Consumer profiles remain selective.
+
+Rendering fails before writing a lock when a selected snapshot contains a
+missing or escaping reference. The `global` profile is the deliberate exception:
+it is an agent-home routing overlay whose targets are supplied by the active
+repository snapshot, not a repository snapshot itself.
+
 ## Propagation
 
 Global agent-home instructions update in place after:

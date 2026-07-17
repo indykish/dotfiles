@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from oracle_rules.model import RulesModel, RulesValidationError, load_json
+from oracle_rules.references import SnapshotReferenceError, render_profile_text
 from oracle_rules.render import Renderer
 
 
@@ -35,6 +36,14 @@ class RendererTests(unittest.TestCase):
         self.assertIn("EXECUTE → CONFORM → VERIFY → REVIEW", agents)
         self.assertIn("`make harness-verify`", agents)
 
+    def test_full_source_profile_uses_compact_pack_table(self) -> None:
+        with tempfile.TemporaryDirectory() as output_dir:
+            output_root = Path(output_dir)
+            self.renderer.render("dotfiles", output_root)
+            agents = (output_root / "AGENTS.md").read_text(encoding="utf-8")
+
+        self.assertIn("| All registered packs | Full source inventory |", agents)
+
     def test_agentsfleet_dispatch_paths_match_the_operating_model(self) -> None:
         with tempfile.TemporaryDirectory() as output_dir:
             output_root = Path(output_dir)
@@ -43,7 +52,38 @@ class RendererTests(unittest.TestCase):
             self.assertTrue(
                 (output_root / "dispatch/write_ts_adhere_bun.md").is_file()
             )
+            self.assertTrue((output_root / "dispatch/verify.md").is_file())
+            self.assertTrue(
+                (output_root / "docs/ORACLE_RULES_ARCHITECTURE.md").is_file()
+            )
+            self.assertFalse((output_root / "dispatch/write_rust.md").exists())
+            self.assertFalse((output_root / "dispatch/write_mdx.md").exists())
             self.assertFalse((output_root / "dispatch/write_typescript.md").exists())
+
+            agents = (output_root / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertNotIn("dispatch/write_rust.md", agents)
+            self.assertNotIn("dispatch/write_mdx.md", agents)
+
+    def test_every_repository_profile_snapshot_is_reference_closed(self) -> None:
+        for profile_name in sorted(self.model.profiles):
+            if profile_name == "global":
+                continue
+            with self.subTest(profile=profile_name):
+                with tempfile.TemporaryDirectory() as output_dir:
+                    self.renderer.render(profile_name, Path(output_dir))
+
+    def test_unknown_operating_model_pack_marker_is_rejected(self) -> None:
+        content = "before\n<!-- oracle-packs:language.unknown -->\nafter\n"
+
+        with self.assertRaisesRegex(
+            SnapshotReferenceError, "unknown oracle pack marker: language.unknown"
+        ):
+            render_profile_text(
+                content,
+                {"language.zig"},
+                set(self.model.registry["packs"]),
+                "fixture.md",
+            )
 
     def test_agentsfleet_snapshot_contains_repository_rule_dependencies(self) -> None:
         expected_paths = {

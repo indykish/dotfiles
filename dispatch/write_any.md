@@ -15,7 +15,8 @@ This is the prose the AGENT reads before writing ANY source file (`*.zig` / `*.t
 - `> [JUDGMENT → <CODE>]` — no script can decide; the agent decides at write time against the prose.
 - `> [container]` — a non-enforcement wrapper heading (e.g. "Merged from dissolved gate cards"); its tagged subsections carry the real codes, and the coherence audit (§6.3) skips it.
 
-See [`docs/DISPATCH_ARCHITECTURE.md`](../docs/DISPATCH_ARCHITECTURE.md) §3 for the tag grammar and semantic-anchor model.
+The tag grammar and semantic-anchor model are defined by the tagged sections and
+deterministic façade in this snapshot.
 
 ---
 
@@ -183,8 +184,8 @@ LOGGING GATE: <file>
 > [DETERMINISTIC → LOG]
 
 - `docs/LOGGING_STANDARD.md` — full standard, including §10A tightenings.
-- `dispatch/write_zig.md` — Zig discipline umbrella; §7 of the standard depends on it.
-- `dispatch/write_ts_adhere_bun.md` §10 — bans `console.log` in TS/JS source. This gate enforces.
+- Selected language façades carry their language-specific logging discipline;
+  this gate supplies the shared checks.
 - the Error Registry Gate section of this façade — pairs with this gate on `error_code=` audits.
 
 ### Milestone-ID Gate (MILESTONE ID)
@@ -319,7 +320,8 @@ ERROR REGISTRY GATE: <file>
 > [DETERMINISTIC → UFS]
 
 
-**Family:** Constant discipline. **Source:** `AGENTS.md` (CONFORM enforcement) + `dispatch/write_ts_adhere_bun.md §2` + `dispatch/write_zig.md` "RULE UFS" clauses.
+**Family:** Constant discipline. **Source:** `AGENTS.md` conformance enforcement
++ the selected language façade's Uniform Free Strings (UFS) clauses.
 
 **Triggers** — every `Edit`/`Write` to source files under `src/`, `ui/packages/*/src/`, `ui/packages/*/app/`, `ui/packages/*/lib/`, `ui/packages/*/components/`, `ui/packages/*/pages/`, `ui/packages/*/tests/`, `agentsfleet/src/`, `agentsfleet/test/` matching `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`. Excluded: `vendor/`, `third_party/`, `.zig-cache/`, `node_modules/`, `*.tsbuildinfo`.
 
@@ -710,4 +712,4 @@ invariants bind, or why this file deviates from the obvious approach.
 
 > [JUDGMENT → NEW:BLAST]
 
-Before flipping or removing any identifier/value referenced beyond the file in hand — a skill ref, package name, template slug, config key — run `git grep -rn -w '<token>'` from the repo root with **no path filter**, even for a "one-line change". Word-boundary, never quoted-literal (YAML and multiline-string refs carry no quotes). Separate true targets from same-spelling-different-meaning hits (a skill ref vs the GitHub repo slug) and update every true hit in the same diff. Grepping only the "obvious" files is the trap: M75_001 flipped an installer slug while a doc *edited in the same PR* still advertised the old one. The spec-authoring twin (teardown/rename specs) lives in `dispatch/write_spec.md`.
+Before flipping or removing any identifier/value referenced beyond the file in hand — a skill ref, package name, template slug, config key — run `git grep -rn -w '<token>'` from the repo root with **no path filter**, even for a "one-line change". Word-boundary, never quoted-literal (YAML and multiline-string refs carry no quotes). Separate true targets from same-spelling-different-meaning hits (a skill ref vs the GitHub repo slug) and update every true hit in the same diff. Grepping only the "obvious" files is the trap: an installer rename can leave a simultaneously edited document advertising the old slug. A selected specification façade applies the same rule to teardown and rename specs.

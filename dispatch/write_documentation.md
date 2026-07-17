@@ -38,7 +38,5 @@ Before committing, cite the applied Documentation (DOC) rule identifiers:
 ## Family
 
 - `docs/DOCUMENTATION_RULES.md` — general customer-documentation rules.
-- `dispatch/write_changelog.md` → `docs/CHANGELOG_VOICE.md` — narrower changelog
-  archive and voice rules.
-- `dispatch/write_http.md` → `docs/REST_API_DESIGN_GUIDELINES.md` — narrower API
-  design rules.
+- Selected changelog and HTTP packs provide their narrower archive, voice, and
+  API design rules.

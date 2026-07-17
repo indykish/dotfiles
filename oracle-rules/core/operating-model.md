@@ -24,7 +24,12 @@ Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
 
 ## Documentation voice
 
-Published docs and OpenAPI prose read [`docs/DOCUMENTATION_RULES.md`](./docs/DOCUMENTATION_RULES.md) first via `write_documentation`. Changelog entries then read `write_changelog` + [`docs/CHANGELOG_VOICE.md`](./docs/CHANGELOG_VOICE.md); history stays archived and load-bearing facts stay intact.
+<!-- oracle-packs:start domain.documentation -->
+Published docs and OpenAPI prose read [`docs/DOCUMENTATION_RULES.md`](./docs/DOCUMENTATION_RULES.md) first via `write_documentation`.
+<!-- oracle-packs:end -->
+<!-- oracle-packs:start domain.changelog -->
+Changelog entries then read `write_changelog` + [`docs/CHANGELOG_VOICE.md`](./docs/CHANGELOG_VOICE.md); history stays archived and load-bearing facts stay intact.
+<!-- oracle-packs:end -->
 
 ## Confusion Management
 
@@ -80,7 +85,8 @@ A fact with no firing gate and no doc home is dropped on purpose, or it is a mis
 - Before commit/push: `gitleaks` must pass.
 - **Vault (1Password `op`).** Resolve secrets via the `op` CLI, never hand-paste/log. Named vaults: `ops`, `ZMB_LOCAL_DEV`, `ZMB_CD_DEV`, `ZMB_CD_PROD`.
 - No new `make` targets without a distinct caller (CI job, spec-mandated gate, or a workflow existing targets can't express) — check `make/*.mk` for an existing fit first; prefer extending over near-duplicate wrappers.
-- `*.zig` → read `dispatch/write_zig.md`; ZIG GATE fires. Auth-flow (`src/auth/**`, `ui/packages/app/lib/auth/**`, token-minting handlers, credential-typed spec dimensions): read `docs/AUTH.md` first.
+- `*.zig` → read `dispatch/write_zig.md`; ZIG GATE fires. <!-- oracle-packs:language.zig -->
+- Auth-flow (`src/auth/**`, `ui/packages/app/lib/auth/**`, token-minting handlers, credential-typed spec dimensions) → read `docs/AUTH.md` first. <!-- oracle-packs:domain.auth -->
 - `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make check-pg-drain`. Use `conn.exec()` for no-rows.
 - Local Docker `ENOSPC`: `~/bin/mac-cleanup.sh`, verify `docker system df`, retry.
 - Cross-repo patterns under `$HOME/Projects/` (check before inventing): `marketplace_api` Python · `e2e-observability-platform` Rust · `cache-kit.rs` Rust · `docs` MDX · `agentsfleet` Zig/TypeScript · `docs.megam.io` TypeScript · `www.megam.io` TypeScript · `rioos.megam.io` TypeScript · `posthog-zig` Zig · `oss/bun` Zig · `oss/nullclaw` Zig · `oss/exonum` Rust · `oss/signoz` TypeScript/Go · `dotfiles` Shell/MDX.
@@ -96,6 +102,7 @@ Default gates commit/push/PR on explicit ask. **Auto mode + forward-looking star
 
 ---
 
+<!-- oracle-packs:start product.agentsfleet -->
 ## Bootstrap & milestone gates
 
 - **Priming:** (1) Human runs `playbooks/founding/01_bootstrap/001_playbook.md`. (2) Agent runs `./playbooks/founding/02_preflight/00_gate.sh` (green before next). (3) Agent runs `playbooks/founding/03_priming_infra/001_playbook.md`. Milestones only after PRIMING_INFRA verified.
@@ -107,6 +114,7 @@ Default gates commit/push/PR on explicit ask. **Auto mode + forward-looking star
 One per active stream. Stay inside; no edits outside, no reads from siblings. Merge only after REVIEW and the final commit. `git checkout main && git branch feat/mNN-name && git worktree add ../agentsfleet-mNN-name feat/mNN-name && cd ../agentsfleet-mNN-name && bun install && (cd cli && bun install && bun run build)`. The root `bun install` hydrates the workspace (`ui/packages/*`); `cli/` is its own Bun project needing install + build (`test-unit-agentsfleet` spawns the built `cli/dist/bin/agentsfleet.js`). Post-merge: `git worktree remove ../agentsfleet-mNN-name`.
 
 **Mid-stream spec → ask before hydrating (default: same tree).** When a spec is created while already inside an active worktree, **ask Indy** whether to hydrate a fresh worktree or continue in the current one — do not silently spin one up. Indy leans **same tree**: a second worktree fragments the outcome across branches/PRs, costs a full `bun install` + build, and adds another PR to babysit. The mandate is to **complete the outcome in place**, not to ceremonially isolate every spec. Fold the new scope into the current spec/PR (extend it — reopen `done/`→`active/` if already closed) unless the new work is genuinely disjoint AND Indy opts into a separate tree.
+<!-- oracle-packs:end -->
 
 ---
 
@@ -126,25 +134,26 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 
 | Trigger — when you… | Dispatch | Latent façade carries · override |
 |---|---|---|
-| write `*.zig` | `write_zig` | `dispatch/write_zig.md` — consolidated Zig discipline (ZIG / PUB / LIFECYCLE gates): memory safety, init/deinit lifecycle + `errdefer` placement, pub-surface shape verdict (`FILE SHAPE DECISION` skip needs user's explicit ask — auto-mode does NOT cover), tagged-union results, file ≤ 350 / fn ≤ 50 / method ≤ 70, cross-compile both linux targets · `ZIG GATE` / `PUB GATE` / `LIFECYCLE GATE: SKIPPED per user override (reason: ...)`. |
-| write `*.ts`/`*.tsx`/`*.js`/`*.jsx` | `write_ts_adhere_bun` | `dispatch/write_ts_adhere_bun.md` — consolidated Bun/TS discipline + UI Component Substitution + DESIGN TOKEN gates: TS FILE SHAPE DECISION at PLAN, `const`/import/Bun-primitive discipline, raw-HTML → design-system primitive, `*-[...]` arbitrary → token utility · `UI GATE` / `DESIGN TOKEN GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover; reason must cite a concrete external constraint. |
-| write `*.rs` | `write_rust` | `dispatch/write_rust.md` — ownership, small justified `unsafe` blocks, preserved error variants, feature combinations, and deterministic concurrency tests · 🔵 judgment-only. |
-| write `*.py` | `write_python` | `dispatch/write_python.md` — standard-library parsing, context-managed resources, boundary validation, and specific exceptions · 🔵 judgment-only. |
-| write `*.sh` | `write_shell` | `dispatch/write_shell.md` — quoted expansions, array arguments, temporary-file cleanup, no untrusted `eval`, and repository shell compatibility · 🔵 judgment-only. |
-| write `*.mdx` | `write_mdx` | `dispatch/write_mdx.md` — Markdown JSX structure, front matter, links, code fences, image descriptions, and Mintlify isolation · 🔵 judgment-only. |
-| write `schema/*.sql` | `write_sql` | `dispatch/write_sql.md` — schema / migration rules + Schema Table Removal Guard (`DROP`/`ALTER` / `schema/embed.zig` / migration-array edits), STS/NSQ/SGR/ITF SQL rules · `SCHEMA GUARD: SKIPPED per user override (reason: ...)`. |
-| write **any** source file | `write_any` | `dispatch/write_any.md` — cross-cutting authoring invariants: File & Function Length, LOGGING, MILESTONE-ID (`M[0-9]+_[0-9]+`), ERROR REGISTRY (`UZ-XXX-NNN`), UFS named-constants, GREPTILE end-of-turn read, legacy-workaround family (NLR/NLG/Legacy-Design) · `LENGTH` / `LOGGING` / `MILESTONE ID` / `UFS GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover. |
-| write a spec under `docs/v*/…` | `write_spec` | `dispatch/write_spec.md` — required + prohibited spec sections (SPEC TEMPLATE GATE), `docs/TEMPLATE.md` shape · `SPEC TEMPLATE GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover; reason must cite concrete external constraint. |
-| write `src/http/handlers/**` / OpenAPI | `write_http` | `dispatch/write_http.md` — REST API design rules; reads `docs/REST_API_DESIGN_GUIDELINES.md` before · ⚪ delegated (product repo). |
-| write auth-flow / token-minting files | `write_auth` | `dispatch/write_auth.md` — auth invariants; reads the product repo's `docs/AUTH.md` before · ⚪ delegated (product repo). |
-| write published docs / OpenAPI prose | `write_documentation` | `dispatch/write_documentation.md` → `docs/DOCUMENTATION_RULES.md` before narrower guides; page, fragment, API, and changelog scopes differ · ⚪ delegated to repository pre-commit checks. |
-| write a changelog `<Update>` (`changelog.mdx`) | `write_changelog` | `dispatch/write_changelog.md` — Mintlify-style changelog voice (one headline, no marketing words, `**Bold lead-noun**` bullets, load-bearing facts kept, history append-only); reads `docs/CHANGELOG_VOICE.md` · 🔵 judgment-only. |
-| claim "tests pass / ready / shipping" | `verify` | `dispatch/verify.md` — verification tiers (`make` canonical; package-scoped runners are **not** verification), done-message glyph format · 🔵 judgment-only, `VERIFY GATE: <target> skipped per environment constraint (reason: ...)` only when genuinely unrunnable. |
-| name a stream/channel/Redis namespace/queue/RPC/Postgres schema, or describe a flow | `name_architecture` | `dispatch/name_architecture.md` — architecture-consult discipline; grep relevant `docs/architecture/` (chat brainstorming counts) · **no override** — doc wins until reconciled. |
-| edit the governance (`oracle-rules/**`, generated `AGENTS.md`, `dispatch/`, audits, hooks) | `edit_rules` | `dispatch/edit_rules.md` — runs `make audit`, the `audits/agents-md.md` questionnaire, live comprehension evaluation when semantics change, and generated evidence · **no override** from the agent (user-only push: `SKIP_INVARIANCE_PUSH=1`). |
+| write `*.zig` | `write_zig` | `dispatch/write_zig.md` — consolidated Zig discipline (ZIG / PUB / LIFECYCLE gates): memory safety, init/deinit lifecycle + `errdefer` placement, pub-surface shape verdict (`FILE SHAPE DECISION` skip needs user's explicit ask — auto-mode does NOT cover), tagged-union results, file ≤ 350 / fn ≤ 50 / method ≤ 70, cross-compile both linux targets · `ZIG GATE` / `PUB GATE` / `LIFECYCLE GATE: SKIPPED per user override (reason: ...)`. | <!-- oracle-packs:language.zig -->
+| write `*.ts`/`*.tsx`/`*.js`/`*.jsx` | `write_ts_adhere_bun` | `dispatch/write_ts_adhere_bun.md` — consolidated Bun/TS discipline + UI Component Substitution + DESIGN TOKEN gates: TS FILE SHAPE DECISION at PLAN, `const`/import/Bun-primitive discipline, raw-HTML → design-system primitive, `*-[...]` arbitrary → token utility · `UI GATE` / `DESIGN TOKEN GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover; reason must cite a concrete external constraint. | <!-- oracle-packs:language.typescript,language.javascript -->
+| write `*.rs` | `write_rust` | `dispatch/write_rust.md` — ownership, small justified `unsafe` blocks, preserved error variants, feature combinations, and deterministic concurrency tests · 🔵 judgment-only. | <!-- oracle-packs:language.rust -->
+| write `*.py` | `write_python` | `dispatch/write_python.md` — standard-library parsing, context-managed resources, boundary validation, and specific exceptions · 🔵 judgment-only. | <!-- oracle-packs:language.python -->
+| write `*.sh` | `write_shell` | `dispatch/write_shell.md` — quoted expansions, array arguments, temporary-file cleanup, no untrusted `eval`, and repository shell compatibility · 🔵 judgment-only. | <!-- oracle-packs:language.shell -->
+| write `*.mdx` | `write_mdx` | `dispatch/write_mdx.md` — Markdown JSX structure, front matter, links, code fences, image descriptions, and Mintlify isolation · 🔵 judgment-only. | <!-- oracle-packs:language.mdx -->
+| write `schema/*.sql` | `write_sql` | `dispatch/write_sql.md` — schema / migration rules + Schema Table Removal Guard (`DROP`/`ALTER` / `schema/embed.zig` / migration-array edits), STS/NSQ/SGR/ITF SQL rules · `SCHEMA GUARD: SKIPPED per user override (reason: ...)`. | <!-- oracle-packs:domain.sql -->
+| write **any** source file | `write_any` | `dispatch/write_any.md` — cross-cutting authoring invariants: File & Function Length, LOGGING, MILESTONE-ID (`M[0-9]+_[0-9]+`), ERROR REGISTRY (`UZ-XXX-NNN`), UFS named-constants, GREPTILE end-of-turn read, legacy-workaround family (NLR/NLG/Legacy-Design) · `LENGTH` / `LOGGING` / `MILESTONE ID` / `UFS GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover. | <!-- oracle-packs:universal.authoring -->
+| write a spec under `docs/v*/…` | `write_spec` | `dispatch/write_spec.md` — required + prohibited spec sections (SPEC TEMPLATE GATE), `docs/TEMPLATE.md` shape · `SPEC TEMPLATE GATE: SKIPPED per user override (reason: ...)`; auto-mode does NOT cover; reason must cite concrete external constraint. | <!-- oracle-packs:workflow.specifications -->
+| write `src/http/handlers/**` / OpenAPI | `write_http` | `dispatch/write_http.md` — REST API design rules; reads `docs/REST_API_DESIGN_GUIDELINES.md` before · ⚪ delegated (product repo). | <!-- oracle-packs:domain.http -->
+| write auth-flow / token-minting files | `write_auth` | `dispatch/write_auth.md` — auth invariants; reads the product repo's `docs/AUTH.md` before · ⚪ delegated (product repo). | <!-- oracle-packs:domain.auth -->
+| write published docs / OpenAPI prose | `write_documentation` | `dispatch/write_documentation.md` → `docs/DOCUMENTATION_RULES.md` before narrower guides; page, fragment, API, and changelog scopes differ · ⚪ delegated to repository pre-commit checks. | <!-- oracle-packs:domain.documentation -->
+| write a changelog `<Update>` (`changelog.mdx`) | `write_changelog` | `dispatch/write_changelog.md` — Mintlify-style changelog voice (one headline, no marketing words, `**Bold lead-noun**` bullets, load-bearing facts kept, history append-only); reads `docs/CHANGELOG_VOICE.md` · 🔵 judgment-only. | <!-- oracle-packs:domain.changelog -->
+| claim "tests pass / ready / shipping" | `verify` | `dispatch/verify.md` — verification tiers (`make` canonical; package-scoped runners are **not** verification), done-message glyph format · 🔵 judgment-only, `VERIFY GATE: <target> skipped per environment constraint (reason: ...)` only when genuinely unrunnable. | <!-- oracle-packs:product.agentsfleet -->
+| name a stream/channel/Redis namespace/queue/RPC/Postgres schema, or describe a flow | `name_architecture` | `dispatch/name_architecture.md` — architecture-consult discipline; grep relevant `docs/architecture/` (chat brainstorming counts) · **no override** — doc wins until reconciled. | <!-- oracle-packs:domain.architecture -->
+| edit the governance (`oracle-rules/**`, generated `AGENTS.md`, `dispatch/`, audits, hooks) | `edit_rules` | `dispatch/edit_rules.md` — runs `make audit`, the `audits/agents-md.md` questionnaire, live comprehension evaluation when semantics change, and generated evidence · **no override** from the agent (user-only push: `SKIP_INVARIANCE_PUSH=1`). | <!-- oracle-packs:workflow.governance -->
 
 ---
 
+<!-- oracle-packs:start workflow.specifications -->
 ## Specification Standards
 
 **Canonical template:** [`docs/TEMPLATE.md`](./docs/TEMPLATE.md) — each project repo carries its own copy here. Never look for `project_spec.md`.
@@ -162,6 +171,7 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 | Every commit during implementation | Mark completed Dimensions/Sections `DONE` same commit as the code. |
 | All work complete, before PR | CHORE(close). |
 | Branch with spec in `active/` after any COMMIT | CHORE(close) is mandatory next action. |
+<!-- oracle-packs:end -->
 
 ---
 
@@ -173,9 +183,11 @@ Non-trivial (full lifecycle) if it: touches >1 file · new abstraction · data m
 
 **With spec:** `CHORE(open) → PLAN → EXECUTE → CONFORM → VERIFY → REVIEW → DOCUMENT → COMMIT → CHORE(close)`. **Without spec** (bug fix/config/refactor): `PLAN → EXECUTE → CONFORM → VERIFY → REVIEW → DOCUMENT → COMMIT`. CHORE bookends iff work creates/continues a spec under `docs/v*/{active,pending}/`.
 
+<!-- oracle-packs:start workflow.specifications -->
 ### CHORE (open)
 
 Spec `pending/`→`active/`; `Status: IN_PROGRESS`; `Branch:` set; **`Test Baseline:` recorded** — run `make _lint_zig_test_depth` and copy the counts into the spec header as `**Test Baseline:** unit=<N> integration=<M>` (VERIFY's Test Delta row compares against it; `docs/VERIFY_TIERS.md` §Test delta); committed. Worktree created, CWD inside (verify `pwd` + `git worktree list`). No code yet.
+<!-- oracle-packs:end -->
 
 ### PLAN
 
@@ -185,7 +197,10 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 
 ### EXECUTE
 
-**Doc reads by trigger:** see [`docs/EXECUTE_DOC_READS.md`](./docs/EXECUTE_DOC_READS.md) for the full trigger-to-doc mapping. Always re-read `docs/greptile-learnings/RULES.md` on sub-task shape change; spec's "Applicable Rules" list is canonical; missing rules — standard set is floor + surface omission. DOC READ GATE per edit — emit a `📖 DOC READ: <path>` proof-line per triggered doc, citing §N applied or skip-with-reason.
+Read every document named by the selected dispatch before editing its trigger surface.
+<!-- oracle-packs:start product.agentsfleet -->
+The full `agentsfleet` trigger map lives in [`docs/EXECUTE_DOC_READS.md`](./docs/EXECUTE_DOC_READS.md). Always re-read `docs/greptile-learnings/RULES.md` on sub-task shape change; the spec's "Applicable Rules" list is canonical. DOC READ GATE per edit emits a `📖 DOC READ: <path>` proof-line per triggered document, citing the applied section or a skip reason.
+<!-- oracle-packs:end -->
 
 Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes to `~/Projects/docs/` need explicit per-session ask.
 
@@ -195,11 +210,17 @@ Edit only approved scope; no opportunistic refactors. Stay in active worktree. C
 
 ### CONFORM
 
-Runs after EXECUTE, before VERIFY. It invokes the active profile's `conform` commands and aggregates every gate verdict. The `agentsfleet` profile deliberately maps this stage to `make harness-verify`; the command name stays repository-local. Its full output block and combined end-of-turn awk audit details live in [`docs/HARNESS_VERIFY_OUTPUT.md`](./docs/HARNESS_VERIFY_OUTPUT.md). Required rows include FILE SHAPE, PUB GATE, LENGTH GATE, MILESTONE-ID GATE, ZIG GATE, UI GATE, DESIGN TOKEN GATE, UFS GATE, SCHEMA GUARD, GREPTILE GATE, Architecture consult, Coverage, /write-unit-test. Any 🔴 → return to EXECUTE; the lifecycle does NOT advance.
+Runs after EXECUTE, before VERIFY. It invokes the active profile's `conform` commands and aggregates every gate verdict. Any 🔴 returns to EXECUTE; the lifecycle does not advance.
+<!-- oracle-packs:start product.agentsfleet -->
+The `agentsfleet` profile deliberately maps this stage to `make harness-verify`; the command name stays repository-local. Its full output block and combined end-of-turn awk audit details live in [`docs/HARNESS_VERIFY_OUTPUT.md`](./docs/HARNESS_VERIFY_OUTPUT.md). Required rows include FILE SHAPE, PUB GATE, LENGTH GATE, MILESTONE-ID GATE, ZIG GATE, UI GATE, DESIGN TOKEN GATE, UFS GATE, SCHEMA GUARD, GREPTILE GATE, Architecture consult, Coverage, and `/write-unit-test`.
+<!-- oracle-packs:end -->
 
 ### VERIFY
 
-Verification Gate defines the output block; what to actually run lives in [`docs/VERIFY_TIERS.md`](./docs/VERIFY_TIERS.md) — correctness tiers (1=`make test`, 2/3=`make test-integration`), performance/leak (`make memleak`, `make bench`), hygiene (`make lint`, `make check-pg-drain`, cross-compile both linux targets, `gitleaks`, orphan sweep, 350-line check). **FIRST: `/write-unit-test`** — audits diff coverage vs spec's Test Specification (or changed surface when no spec); skipping = CHORE(close) violation. **LAST: the Test Delta row** — re-run `make _lint_zig_test_depth` and report unit/integration growth vs the spec's CHORE(open) `Test Baseline:` line plus a lacking-areas verdict (`docs/VERIFY_TIERS.md` §Test delta); zero/negative unit delta on a code-adding diff → justify or return to EXECUTE. Memleak evidence pasted into PR Session Notes (or cite CI URL). After refactors, list newly dead code before removing.
+Run the active profile's verification commands from the repository-command table. Package-scoped commands do not replace a listed repository command.
+<!-- oracle-packs:start product.agentsfleet -->
+The `agentsfleet` output block and exact tiers live in [`docs/VERIFY_TIERS.md`](./docs/VERIFY_TIERS.md). **FIRST: `/write-unit-test`** audits diff coverage. **LAST: the Test Delta row** compares against the CHORE(open) baseline; zero or negative unit growth on a code-adding diff needs justification or a return to EXECUTE. Paste memory-leak evidence into PR Session Notes or cite its Continuous Integration (CI) URL. After refactors, list newly dead code before removing it.
+<!-- oracle-packs:end -->
 
 ### REVIEW
 
@@ -213,6 +234,7 @@ Update user-visible docs for behavior/process changes. Changelog only for user-v
 
 Focused, conventional, no unrelated files. PR metadata via `gh`/`glab`. Mark Dimensions `DONE`. No amend unless requested. No destructive ops. Outside auto mode → explicit ask; inside auto mode + active-spec or start-instruction → proceeds.
 
+<!-- oracle-packs:start workflow.specifications -->
 ### CHORE (close)
 
 Required when spec involved — after last COMMIT, before PR. Also runs when parking midway (mark completed DONE, in-progress as `IN_PROGRESS`).
@@ -232,3 +254,4 @@ Skills required. Skipping = violation. **Step 2 runs the *local* `/review` (pre-
 **Deferral discipline.** Any claim that a spec Section/Dimension was "deferred to follow-up" — in `HANDOFF.md`, PR description, Session Notes, or chat — requires an **Indy-acked verbatim quote** in PR Session Notes (or spec Discovery). Format: `> Indy (YYYY-MM-DD HH:MM): "<verbatim ack>" — context: <which item, why>`. Agent-unilateral deferral = incomplete scope, not deferral; CHORE(close) blocks until the item lands or the quote is captured. **HANDOFF.md is a faithful state report** — a pickup agent reading a HANDOFF claiming items were deferred without ack-quotes must treat them as in-scope and surface the contradiction to Kishore before continuing.
 
 **Pre-PR gates** (besides skill chain): spec in `docs/v*/done/` in diff (skip iff parked); `changelog.mdx` has new `<Update>` in diff (skip iff internal-only or parked); `Status: DONE` but spec not in `done/` → do not open PR; `make check-version` passes; branch contains `origin/main` HEAD (rebase pre-push / merge post-push — never force-push an open PR branch).
+<!-- oracle-packs:end -->

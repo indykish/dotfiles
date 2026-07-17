@@ -15,7 +15,8 @@ This is the prose the AGENT reads before writing any `*.zig` file. It pairs with
 - `> [JUDGMENT → <CODE>]` — no script can decide; the agent decides at write time against the prose.
 - `> [container]` — a non-enforcement wrapper heading (e.g. "Merged from dissolved gate cards"); its tagged subsections carry the real codes, and the coherence audit (§6.3) skips it.
 
-See [`docs/DISPATCH_ARCHITECTURE.md`](../docs/DISPATCH_ARCHITECTURE.md) §3 for the tag grammar and semantic-anchor model.
+The tag grammar and semantic-anchor model are defined by the tagged sections and
+deterministic façade in this snapshot.
 
 ---
 

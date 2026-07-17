@@ -2,7 +2,7 @@
   "files": {
     ".oracle/managed-files.json": "ea31969b5a0b79e13a2c9330e15acdff27f0e597f966ef4ef0293d16f4798660",
     ".oracle/profile.json": "96169bcd995083b64b882c6e3b944d9fbad9a20e9bf07c65f0fabf3a9dfe724d",
-    "AGENTS.md": "0277415ca8b08e75d1e3c7f390b2cd94d3cfc3430fd618561f93bc9c220b13a3"
+    "AGENTS.md": "684a4b82cf200804f2cc5c5d04a46b443bb2befd942465107e17da7d4e754680"
   },
   "modes": {
     ".oracle/managed-files.json": "0644",
@@ -10,6 +10,6 @@
     "AGENTS.md": "0644"
   },
   "profile": "global",
-  "ruleset_digest": "b428b1569ce172cbb1d3e3cb1a518dafa8aedb131a11add678b0630687ec43cc",
+  "ruleset_digest": "834ed1bfc6660eb99d367e13ba20d4c206adc4a27ae4b3619f19e00855713a01",
   "schema_version": 1
 }

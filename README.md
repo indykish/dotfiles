@@ -217,61 +217,71 @@ Successful output ends with `✔ Skills doctor passed`.
 
 ### 6. Update global agent instructions
 
-Run these commands after changing global rules:
+Run this command from `~/Projects/dotfiles` after changing global rules:
 
 ```bash
-oracle-rules validate
-oracle-rules render --profile global --output ~/Projects/dotfiles/oracle-rules/generated/global
-oracle-rules link-agent-homes
-oracle-rules link-agent-homes --check
+oracle-rules validate && oracle-rules render --profile global --output oracle-rules/generated/global && oracle-rules link-agent-homes && oracle-rules link-agent-homes --check
 ```
 
-The stable links update Claude, Codex, OpenCode, and Amp. The command refuses
-real agent-home files and links outside this repository.
+Successful output ends with:
+
+```text
+🟢 agent-home instructions use the generated global rules
+```
+
+The stable links serve Claude, Codex, OpenCode, and Amp. The command refuses
+real files and links outside this repository.
 
 ### 7. Set up a repository
 
-Use `<NAME>` for the registry key, `<PROFILE>` for a profile filename without
-`.json`, and `<PROJECT>` for a directory under `~/Projects`.
+Use `<REPOSITORY_NAME>` for the registry key. Use `<PROFILE_NAME>` for a
+profile filename without `.json`. Use `<PROJECT_DIRECTORY>` for a directory
+under `~/Projects`.
 
 1. Add the repository path and profile to `oracle-rules/repositories.json`.
-   Validate, commit, and push that dotfiles change.
-2. Start from a clean target repository and create its local inputs:
+2. Validate, commit, and push the dotfiles change:
 
    ```bash
-   cd ~/Projects/<PROJECT>
-   oracle-rules init --profile <PROFILE> --repository "$(pwd)"
+   oracle-rules validate
    ```
 
-3. Replace the placeholder in `AGENTS.project.md`. Commit that file with
+   Successful output is `oracle-rules: registry and profiles valid`.
+3. Start from a clean target repository and create its local inputs:
+
+   ```bash
+   cd ~/Projects/<PROJECT_DIRECTORY> && oracle-rules init --profile <PROFILE_NAME> --repository "$(pwd)"
+   ```
+
+   Output lists each created file with an `initialized:` prefix.
+4. Replace the placeholder in `AGENTS.project.md`. Commit that file with
    `.oracle/profile.json`.
-4. Generate and verify the tracked snapshot:
+5. Generate and check the tracked snapshot from `~/Projects/dotfiles`:
 
    ```bash
-   cd ~/Projects/dotfiles
-   oracle-rules sync --repository <NAME>
-   oracle-rules doctor --repository <NAME>
+   oracle-rules sync --repository <REPOSITORY_NAME> && oracle-rules doctor --repository <REPOSITORY_NAME>
    ```
 
-5. Review and commit the generated files in the target repository.
+   Output lists synced files, then reports that managed files match the lock.
+6. Run the target repository's checks. Review and commit the generated files.
 
 `init` and `sync` require a clean registered checkout. Remove or commit
 untracked legacy links first. Never run them in sibling worktrees. New
 worktrees inherit snapshots from Git. Existing worktrees merge or rebase the
-updated default branch.
+updated default branch. Sync stops if a generated rule names a missing file.
 
 ### 8. Propagate rules updates
 
-Global rules update through section 6. Repository snapshots update explicitly:
+Complete section 6 for global changes. Then list repository snapshots:
 
 ```bash
 oracle-rules status --all
-oracle-rules sync --repository <NAME>
 ```
 
-Commit each updated snapshot in its repository. `agentsfleet` keeps
-`make harness-verify`, mapped to `CONFORM`; `VERIFY` and `REVIEW` remain
-separate responsibilities.
+Output contains one `current` or `update-required` row per repository. For each
+`update-required` row, repeat steps 5 and 6 in section 7.
+
+`agentsfleet` keeps `make harness-verify` as its repository rule check.
+Verification and review remain separate lifecycle stages.
 
 See [Oracle rules architecture](docs/ORACLE_RULES_ARCHITECTURE.md) for profiles,
 locks, refusal rules, evidence, and lifecycle command mapping.
@@ -384,17 +394,8 @@ Run all three read-only checks at any time:
 update-ai-tools --doctor
 ```
 
-You can also run each doctor on its own:
-
-```bash
-link-bin-dotfiles --doctor
-update-skills --doctor
-oracle-rules link-agent-homes --check
-oracle-rules doctor --all
-```
-
-The doctors print their checked paths and exit with a non-zero status when they
-find a missing link, changed managed file, or stale ruleset lock.
+The command prints each checked path. It exits with a non-zero status for a
+missing link, changed managed file, or stale ruleset lock.
 
 ## Optional macOS process limits
 
