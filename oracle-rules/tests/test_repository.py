@@ -11,6 +11,7 @@ from oracle_rules.render import Renderer
 from oracle_rules.repository import (
     doctor_agent_homes,
     doctor_repository,
+    initialize_repository,
     link_agent_homes,
     sync_repository,
 )
@@ -26,13 +27,11 @@ class RepositoryTests(unittest.TestCase):
         self._git("init")
         self._git("config", "user.email", "oracle-tests@example.invalid")
         self._git("config", "user.name", "Oracle Tests")
-        (self.project_root / "AGENTS.project.md").write_text(
-            "# Test repository\n", encoding="utf-8"
-        )
-        self._git("add", "AGENTS.project.md")
+        source_model = RulesModel.load(ROOT)
+        initialize_repository(source_model, "global", self.project_root)
+        self._git("add", "AGENTS.project.md", ".oracle/profile.json")
         self._git("commit", "-m", "test: initialize repository")
 
-        source_model = RulesModel.load(ROOT)
         repositories = copy.deepcopy(source_model.repositories)
         repositories["repositories"]["test"] = {
             "path": str(self.project_root),
@@ -48,7 +47,7 @@ class RepositoryTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def test_sync_writes_real_tracked_snapshot_candidates(self) -> None:
+    def test_sync_accepts_initialized_profile_and_writes_snapshot(self) -> None:
         copied = sync_repository(self.model, "test")
 
         self.assertIn("AGENTS.md", copied)
@@ -67,6 +66,15 @@ class RepositoryTests(unittest.TestCase):
         agents_path.write_text("local instructions\n", encoding="utf-8")
         self._git("add", "AGENTS.md")
         self._git("commit", "-m", "test: add local instructions")
+
+        with self.assertRaisesRegex(RulesValidationError, "unmanaged path"):
+            sync_repository(self.model, "test")
+
+    def test_sync_refuses_modified_initialized_profile(self) -> None:
+        profile_path = self.project_root / ".oracle/profile.json"
+        profile_path.write_text("{}\n", encoding="utf-8")
+        self._git("add", ".oracle/profile.json")
+        self._git("commit", "-m", "test: change initialized profile")
 
         with self.assertRaisesRegex(RulesValidationError, "unmanaged path"):
             sync_repository(self.model, "test")

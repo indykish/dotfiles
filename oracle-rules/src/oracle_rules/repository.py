@@ -17,6 +17,9 @@ AGENT_HOME_TARGETS = (
     ".config/opencode/AGENTS.md",
     ".amp/AGENTS.md",
 )
+PROJECT_INSTRUCTIONS_PATH = "AGENTS.project.md"
+PROFILE_PATH = ".oracle/profile.json"
+RULESET_LOCK_PATH = ".oracle/ruleset.lock"
 
 
 def repository_path(model: RulesModel, repository_name: str) -> Path:
@@ -46,7 +49,7 @@ def sync_repository(model: RulesModel, repository_name: str) -> list[str]:
         raise RulesValidationError(
             "repository must be clean before sync:\n" + "\n".join(dirty)
         )
-    project_instructions = project_root / "AGENTS.project.md"
+    project_instructions = project_root / PROJECT_INSTRUCTIONS_PATH
     if not project_instructions.is_file():
         raise RulesValidationError(
             f"{project_instructions} is required before replacing AGENTS.md"
@@ -58,23 +61,11 @@ def sync_repository(model: RulesModel, repository_name: str) -> list[str]:
         rendered_root = Path(temp_dir)
         renderer.render(profile_name, rendered_root, project_root)
         managed_files = load_json(rendered_root / ".oracle/managed-files.json")["files"]
-        managed_files.append(".oracle/ruleset.lock")
+        managed_files.append(RULESET_LOCK_PATH)
         prior_managed = _prior_managed_files(project_root, profile_name, renderer)
-        errors: list[str] = []
-        for relative_path in managed_files:
-            target_path = project_root / relative_path
-            if not target_path.parent.resolve().is_relative_to(project_root):
-                errors.append(f"managed path escapes repository: {relative_path}")
-                continue
-            if not target_path.exists() and not target_path.is_symlink():
-                continue
-            if relative_path in prior_managed:
-                continue
-            if target_path.is_symlink() and target_path.resolve().is_relative_to(
-                model.root.resolve()
-            ):
-                continue
-            errors.append(f"refusing to replace unmanaged path: {relative_path}")
+        errors = _replacement_errors(
+            model, project_root, rendered_root, managed_files, prior_managed
+        )
         if errors:
             raise RulesValidationError("\n".join(errors))
         copied: list[str] = []
@@ -101,10 +92,10 @@ def initialize_repository(
         raise RulesValidationError(
             "repository must be clean before initialization:\n" + "\n".join(dirty)
         )
-    project_instructions = project_root / "AGENTS.project.md"
+    project_instructions = project_root / PROJECT_INSTRUCTIONS_PATH
     if project_instructions.exists():
         raise RulesValidationError(f"already exists: {project_instructions}")
-    profile_path = project_root / ".oracle/profile.json"
+    profile_path = project_root / PROFILE_PATH
     if profile_path.exists() or profile_path.is_symlink():
         raise RulesValidationError(f"already exists: {profile_path}")
     project_instructions.write_text(
@@ -117,7 +108,40 @@ def initialize_repository(
         json.dumps(model.profile(profile_name), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    return ["AGENTS.project.md", ".oracle/profile.json"]
+    return [PROJECT_INSTRUCTIONS_PATH, PROFILE_PATH]
+
+
+def _replacement_errors(
+    model: RulesModel,
+    project_root: Path,
+    rendered_root: Path,
+    managed_files: list[str],
+    prior_managed: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    for relative_path in managed_files:
+        target_path = project_root / relative_path
+        if not target_path.parent.resolve().is_relative_to(project_root):
+            errors.append(f"managed path escapes repository: {relative_path}")
+            continue
+        if not target_path.exists() and not target_path.is_symlink():
+            continue
+        if relative_path in prior_managed:
+            continue
+        if target_path.is_symlink() and target_path.resolve().is_relative_to(
+            model.root.resolve()
+        ):
+            continue
+        rendered_path = rendered_root / relative_path
+        if (
+            relative_path == PROFILE_PATH
+            and target_path.is_file()
+            and not target_path.is_symlink()
+            and target_path.read_bytes() == rendered_path.read_bytes()
+        ):
+            continue
+        errors.append(f"refusing to replace unmanaged path: {relative_path}")
+    return errors
 
 
 def doctor_repository(model: RulesModel, repository_name: str) -> list[str]:
@@ -173,7 +197,7 @@ def _prior_managed_files(
     project_root: Path, profile_name: str, renderer: Renderer
 ) -> set[str]:
     manifest_path = project_root / ".oracle/managed-files.json"
-    lock_path = project_root / ".oracle/ruleset.lock"
+    lock_path = project_root / RULESET_LOCK_PATH
     if not manifest_path.exists() and not lock_path.exists():
         return set()
     if not manifest_path.is_file() or not lock_path.is_file():
@@ -198,7 +222,7 @@ def _prior_managed_files(
             raise RulesValidationError(
                 f"managed path escapes repository: {relative_path}"
             )
-    return set(files) | {".oracle/ruleset.lock"}
+    return set(files) | {RULESET_LOCK_PATH}
 
 
 def doctor_agent_homes(
