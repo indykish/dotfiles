@@ -306,7 +306,7 @@ A card is not deleted until its delta-landed assertion is green. Preserve any
 | Anchor | CONFORM (end-of-turn) | `write_zig.sh --staged`; 🔴 → back to EXECUTE; 🔵 → state verdict |
 | Backstop | COMMIT | **`.githooks/pre-commit`** (core.hooksPath, confirmed) runs `dispatch/*.sh --staged` — **dotfiles repo only;** product repos keep the 8 leaf audits (Reading A, §10.7) |
 | Audit | pre-push + `make audit` | `dispatch-coverage.sh` + `merge-coverage.sh` wired into the SAME chain as `agents-md.sh` |
-| Evals | pre-push + `make` | `dispatch-evals/run.sh` + (opt-in) `make llmevals` |
+| Evals | pre-push + `make` | deterministic fixtures + live smoke; full `make llmevals` is explicit |
 
 **Latency fix:** v1's `write_zig.sh` wired `ufs.sh --all` (full-tree scan)
 on every per-edit call — contradicting "instant on no-match." v2 scopes leaf runs

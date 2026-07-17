@@ -36,14 +36,15 @@ dispatch-parity:
 	@bash evals/test-dispatch-parity.sh
 
 # Cross-agent Large Language Model (LLM) evaluation (Scenario 23): each
-# installed agent (claude/codex/amp/opencode) answers the frozen golden-set;
-# verdicts graded by exact match. Live LLM calls — costs tokens on every
-# agent. The run is resumable through a machine-local journal.
+# installed agent (claude/codex/amp/opencode) answers frozen fixtures; verdicts
+# are graded by exact match. Live calls cost tokens on every agent. The full run
+# is resumable through a machine-local journal.
 #
 # One entry point. The live run validates fixtures + reports availability as a
 # mandatory preamble (run.sh:188) before any spend. For the zero-token
-# dry path (CI / runner unavailable, Scenario 23.8) pass CHECK=1:
-#   make llmevals          — live graded run (costs tokens)
-#   make llmevals CHECK=1  — validate fixtures + availability only, no live calls
+# dry path pass CHECK=1. Pre-push uses the fixed smoke path:
+#   make llmevals          — full live graded run
+#   make llmevals SMOKE=1  — one live fixture per installed agent
+#   make llmevals CHECK=1  — validate all fixtures, no live calls
 llmevals:
-	@bash evals/llms/run.sh $(if $(CHECK),--check)
+	@bash evals/llms/run.sh $(if $(CHECK),--check,$(if $(SMOKE),--smoke))

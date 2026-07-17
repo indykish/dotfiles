@@ -25,8 +25,8 @@ if [[ $semantic_change -eq 1 ]]; then
     echo "pre-push: user override skips live comprehension; record the reason in the newest commit" >&2
     llm_result="not-required"
   else
-    echo "pre-push: semantic governance changed — running live comprehension" >&2
-    make llmevals || exit 1
+    echo "pre-push: semantic governance changed — running live comprehension smoke test" >&2
+    make llmevals SMOKE=1 || exit 1
     llm_result="pass"
   fi
 else

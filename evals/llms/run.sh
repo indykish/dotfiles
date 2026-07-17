@@ -10,7 +10,8 @@
 # file-read variance — and only the single `VERDICT: YES|NO` line is graded.
 #
 # Modes: --check (validate fixtures + availability, no live calls) · --smoke
-# (one fixture/agent) · --agent <name> · --threshold <N> (default 100) ·
+# (fixed first fixture, once per agent) · --agent <name> · --threshold <N>
+# (default 100) ·
 # --fresh (ignore journal) · (default) full set × every agent. The command exits
 # successfully when every gradable agent meets the threshold; absent or
 # credit-blocked agents are logged, never silently skipped.

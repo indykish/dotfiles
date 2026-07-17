@@ -29,8 +29,8 @@ when the reason is recorded in the newest commit message.
 2. Render the dotfiles profile into the repository root.
 3. Run `make audit`; fix every failure.
 4. Answer every question in `audits/agents-md.md` against the generated rules.
-5. Run `make llmevals CHECK=1` before commit. Pre-push owns the single live
-   comprehension run for semantic changes.
+5. Run `make llmevals CHECK=1` before commit. Pre-push owns the live smoke run
+   for semantic changes. Run the full matrix manually with `make llmevals`.
 6. Run `orly verify --all --write-evidence --llm-result pass`.
 7. Emit the invariance report before declaring the work complete.
 
@@ -45,8 +45,8 @@ Any failure returns to the edit. Do not patch the checker to silence its result.
 ## Push enforcement
 
 Pre-commit runs `make audit` when governance files are staged. Pre-push runs the
-same deterministic chain, runs live comprehension for semantic changes, and
-regenerates `.oracle/evidence.json` against the pushed commit.
+same deterministic chain, runs one live fixture per installed agent for semantic
+changes, and regenerates `.oracle/evidence.json` against the pushed commit.
 
 Repository synchronization remains explicit. Governance verification never
 mutates a consumer repository or sibling worktree.

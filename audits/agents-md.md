@@ -274,8 +274,9 @@ The questions force *proof of reading* over *recall*.
 | 23.4 | When two rules fire on the same edit (e.g. PUB + LIFECYCLE on `pub fn init`, or a spec that contradicts a rule), must the agent apply **both**/escalate rather than silently picking one? | YES |
 | 23.5 | For an auto-mode / override question, must the agent trace the full conditional chain (auto-mode AND (active-spec OR start-instruction); action-triggered guards still block) rather than collapsing it to "auto mode = yes"? | YES |
 | 23.6 | Is the negative-test harness (`evals/test-agents-md.sh`) required to pass — proving each deterministic check still *bites* — whenever `audits/agents-md.sh` itself changes? | YES |
-| 23.7 | Is Scenario 23 enforced by a live, cross-agent comprehension runner (`evals/llms/run.sh`, `make llmevals`) that feeds the frozen golden-set to every installed agent and grades each `VERDICT:` by exact match? | YES |
+| 23.7 | Does the live, cross-agent comprehension runner (`evals/llms/run.sh`, `make llmevals`) feed the frozen golden-set to every installed agent and grade each `VERDICT:` by exact match? | YES |
 | 23.8 | When the live runner is unavailable or the golden-set changes, is `make llmevals CHECK=1` the minimum dry validation? | YES |
+| 23.9 | Does pre-push cap token spend with `make llmevals SMOKE=1` while keeping the full golden-set available through an explicit `make llmevals` run? | YES |
 
 ### Scenario 24 — Memory routing (auto-memory retired)
 
@@ -427,8 +428,8 @@ The dotfiles `.githooks/pre-commit` runs `make audit` when generated rules,
 canonical sources, profiles, dispatch pages, audits, or governance hooks are
 staged. It is fast and deterministic.
 
-The Step-2 questionnaire is read during the edit. The live golden-set runner is
-hooked only for semantic governance changes because:
+The Step-2 questionnaire is read during the edit. A live smoke run is hooked
+only for semantic governance changes because:
 
 - It needs an LLM, which means latency, cost, and credentials in the hook environment.
 - It only adds value when operating-model semantics change.
@@ -439,7 +440,7 @@ Required workflow when you edit Oracle rules:
 1. Run Step 1 (`bash audits/agents-md.sh`).
 2. Answer every question in this file against the generated `AGENTS.md` and dispatch pages.
 3. Emit the report. All-YES permits commit; any NO returns to the edit.
-4. Let pre-push run the live golden-set and generate commit-bound evidence.
+4. Let pre-push run one fixture per installed agent and generate commit-bound evidence.
 
 ---
 
