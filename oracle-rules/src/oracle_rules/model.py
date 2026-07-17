@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .file_state import normalized_file_mode
+
 
 class RulesValidationError(Exception):
     pass
@@ -151,6 +153,8 @@ class RulesModel:
             source_path = self.root / source
             if source_path.is_file():
                 digest.update(source.encode("utf-8"))
+                digest.update(b"\0")
+                digest.update(f"{normalized_file_mode(source_path):04o}".encode("ascii"))
                 digest.update(b"\0")
                 digest.update(source_path.read_bytes())
                 digest.update(b"\0")

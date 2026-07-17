@@ -68,6 +68,51 @@ class RendererTests(unittest.TestCase):
 
         self.assertTrue(expected_paths <= set(managed["files"]))
 
+    def test_render_normalizes_managed_file_modes(self) -> None:
+        with tempfile.TemporaryDirectory() as output_dir:
+            output_root = Path(output_dir)
+            self.renderer.render("agentsfleet", output_root)
+            lock = load_json(output_root / ".oracle/ruleset.lock")
+
+            self.assertEqual(
+                (output_root / "audits/ufs.sh").stat().st_mode & 0o777,
+                0o755,
+            )
+            self.assertEqual(
+                (output_root / "docs/TEMPLATE.md").stat().st_mode & 0o777,
+                0o644,
+            )
+            self.assertEqual(lock["modes"]["audits/ufs.sh"], "0755")
+            self.assertEqual(lock["modes"]["docs/TEMPLATE.md"], "0644")
+
+    def test_managed_mode_drift_fails_lock_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as output_dir:
+            output_root = Path(output_dir)
+            self.renderer.render("agentsfleet", output_root)
+            managed_script = output_root / "audits/ufs.sh"
+            managed_script.chmod(0o700)
+
+            errors = self.renderer.verify_lock(output_root)
+
+        self.assertIn(
+            "managed file mode changed: audits/ufs.sh (0700, expected 0755)",
+            errors,
+        )
+
+    def test_managed_symbolic_link_fails_lock_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as output_dir:
+            output_root = Path(output_dir)
+            self.renderer.render("global", output_root)
+            agents_path = output_root / "AGENTS.md"
+            external_path = output_root / "external-agents.md"
+            external_path.write_bytes(agents_path.read_bytes())
+            agents_path.unlink()
+            agents_path.symlink_to(external_path)
+
+            errors = self.renderer.verify_lock(output_root)
+
+        self.assertIn("managed file is a symbolic link: AGENTS.md", errors)
+
     def test_tampered_managed_file_fails_lock_verification(self) -> None:
         with tempfile.TemporaryDirectory() as output_dir:
             output_root = Path(output_dir)

@@ -5,7 +5,13 @@ import shlex
 from pathlib import Path
 from typing import Any
 
-from .model import RulesModel, RulesValidationError, load_json, sha256_file
+from .file_state import NON_EXECUTABLE_FILE_MODE, file_mode, normalized_file_mode
+from .model import (
+    RulesModel,
+    RulesValidationError,
+    load_json,
+    sha256_file,
+)
 
 
 GENERATED_HEADER = """<!--
@@ -37,7 +43,11 @@ class Renderer:
         for managed_file in self._managed_files(profile):
             source_path = self.model.root / managed_file["source"]
             target_path = output_root / managed_file["target"]
-            self._write_bytes(target_path, source_path.read_bytes())
+            self._write_bytes(
+                target_path,
+                source_path.read_bytes(),
+                normalized_file_mode(source_path),
+            )
             rendered_paths.append(target_path)
 
         oracle_dir = output_root / ".oracle"
@@ -61,12 +71,17 @@ class Renderer:
             path.relative_to(output_root).as_posix(): sha256_file(path)
             for path in sorted(rendered_paths)
         }
+        file_modes = {
+            path.relative_to(output_root).as_posix(): f"{file_mode(path):04o}"
+            for path in sorted(rendered_paths)
+        }
         lock_path = oracle_dir / "ruleset.lock"
         lock = {
             "schema_version": 1,
             "profile": profile_name,
             "ruleset_digest": self.model.profile_digest(profile_name),
             "files": file_hashes,
+            "modes": file_modes,
         }
         self._write_json(lock_path, lock)
         return {**file_hashes, ".oracle/ruleset.lock": sha256_file(lock_path)}
@@ -84,6 +99,7 @@ class Renderer:
                 f"ruleset profile is {lock.get('profile')}, expected {expected_profile}"
             )
         profile_name = expected_profile or lock.get("profile")
+        current_digest: str | None = None
         if isinstance(profile_name, str):
             try:
                 current_digest = self.model.profile_digest(profile_name)
@@ -97,6 +113,15 @@ class Renderer:
         files = lock.get("files")
         if not isinstance(files, dict):
             return ["ruleset lock files must be an object"]
+        modes = lock.get("modes")
+        if modes is None:
+            if current_digest == lock.get("ruleset_digest"):
+                errors.append("ruleset lock modes must be an object")
+        elif not isinstance(modes, dict):
+            errors.append("ruleset lock modes must be an object")
+            modes = None
+        elif set(modes) != set(files):
+            errors.append("ruleset lock modes must match managed files")
         for relative_path, expected_hash in files.items():
             if Path(relative_path).is_absolute() or ".." in Path(relative_path).parts:
                 errors.append(f"managed path escapes repository: {relative_path}")
@@ -105,9 +130,20 @@ class Renderer:
             if not managed_path.is_file():
                 errors.append(f"missing managed file: {relative_path}")
                 continue
+            if managed_path.is_symlink():
+                errors.append(f"managed file is a symbolic link: {relative_path}")
+                continue
             actual_hash = sha256_file(managed_path)
             if actual_hash != expected_hash:
                 errors.append(f"managed file changed: {relative_path}")
+            if modes is not None:
+                expected_mode = modes.get(relative_path)
+                actual_mode = f"{file_mode(managed_path):04o}"
+                if expected_mode != actual_mode:
+                    errors.append(
+                        f"managed file mode changed: {relative_path} "
+                        f"({actual_mode}, expected {expected_mode})"
+                    )
         return errors
 
     def _agents_content(
@@ -165,11 +201,14 @@ class Renderer:
         return [by_target[target] for target in sorted(by_target)]
 
     @staticmethod
-    def _write_bytes(path: Path, content: bytes) -> None:
+    def _write_bytes(
+        path: Path, content: bytes, mode: int = NON_EXECUTABLE_FILE_MODE
+    ) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.is_symlink():
             path.unlink()
         path.write_bytes(content)
+        path.chmod(mode)
 
     @classmethod
     def _write_text(cls, path: Path, content: str) -> None:

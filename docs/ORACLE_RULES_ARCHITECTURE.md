@@ -78,5 +78,6 @@ twice. Byte-identical output proves deterministic generation. With
 `--write-evidence`, the command writes `.oracle/evidence.json` containing the
 source commit, registry digest, checks, and live comprehension result.
 
-Repository snapshots carry `.oracle/ruleset.lock`. `oracle-rules doctor` hashes
-each managed file and reports drift or an outdated profile-specific ruleset digest.
+Repository snapshots carry `.oracle/ruleset.lock`. `oracle-rules doctor` verifies
+each managed file's bytes and normalized mode (`0644` or `0755`), rejects managed
+symbolic links, and reports an outdated profile-specific ruleset digest.
