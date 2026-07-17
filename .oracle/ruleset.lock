@@ -2,10 +2,10 @@
   "files": {
     ".oracle/managed-files.json": "a81bc890d7def45c23d0af02fa48d78b23be6f6638206b35bb8230d9e477041b",
     ".oracle/profile.json": "36be259b977fd03f8b9b1e4555190d42cb42a5ceb4a1cf4c49ca311d723339b4",
-    "AGENTS.md": "a773403689c3d33b9cf9730d1fc2d09c5b1bd654819366a756baee16c625b2dc",
+    "AGENTS.md": "bea273058f26a0877aa1697d52d82f2d895849b979c61c28c3693751556d8577",
     "audits/agents-md.md": "a1ca271612436b6952327012dbffa40f64d7fa1d7090a884d490f5a8d80cbf40",
     "audits/logging.sh": "f75bd9cf8ff875b326230aa30eed7dcb518befb3b35dfaaa10aac06944f0fa87",
-    "audits/msid-ui.sh": "3c8dbc8d01421ab5a997813859e1262c770043edff8d194ec139a6cd35e16318",
+    "audits/msid-ui.sh": "31610c18b7cf17537b13b22e728a05e1dc97287b737a03344d82b603d28479e4",
     "audits/ufs.sh": "b86a37e152ede47060525c87a9e174c447f535daa0f69182da5f2d4d7250012a",
     "dispatch/edit_rules.md": "fe1198149d1106d55943f01e490444f28cb92407c89e16cf16edfbcc16587a5b",
     "dispatch/lib.sh": "3a2c453bb5d04ccda0bd849311cd0e8680ec563db3736b42b8b29b50556bfe53",
@@ -40,6 +40,6 @@
     "docs/greptile-learnings/RULES.md": "0644"
   },
   "profile": "dotfiles",
-  "ruleset_digest": "45ccc9edbcd4ef51a647ac7f189245707e2abd405e59df56f781e1575db963fd",
+  "ruleset_digest": "85b3fd3f4ee388af2e643188c24c5c1a6309e9ea5fb6725c1a2b83248f79d697",
   "schema_version": 1
 }

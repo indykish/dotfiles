@@ -47,10 +47,9 @@
 #               cleaned by the touch-it-fix-it rule (RULE NLR), not by
 #               this audit's scope.
 #
-#   Conversion to full-codebase scope is a separate research spec — see
-#   M70_001 §3 + Failure Modes. The M70 thesis (pre-commit sees staged
-#   content) holds here too: `git diff --cached` reads the index, so the
-#   staged-not-committed slip is not a risk for this script's checks.
+#   Conversion to full-codebase scope needs separate research. Pre-commit
+#   sees staged content through `git diff --cached`, so staged-but-uncommitted
+#   content is covered by this script's checks.
 #
 # Modes:
 #   --staged  (default) diff against `git diff --cached -U0`
