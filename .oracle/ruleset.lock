@@ -2,7 +2,7 @@
   "files": {
     ".oracle/managed-files.json": "aaab1e50a010aac95a145982bd4c00dd60e94114cf1afa4ef4be504184428df4",
     ".oracle/profile.json": "002d8f9cea45e57a01418f2d10842f4e54bb651ffc9d65764c5993f6162eda36",
-    "AGENTS.md": "174b6e3c67994ea74fc00c55cad4fbd4f6cf70e8d396161e63f75a116316d4cf",
+    "AGENTS.md": "16c04a7534755c011dc46b1c1723219768cad752b4815e9d83cd029d4af96716",
     "audits/agents-md.md": "a1ca271612436b6952327012dbffa40f64d7fa1d7090a884d490f5a8d80cbf40",
     "audits/cross-tier-rates.sh": "3672ce3b7972593bddfd691b4b251596b6adadb419df9aec1fdad7477cce18d0",
     "audits/deinit-pairs.sh": "6d3ee2dd3be599c48f2dad5ae48908878a8e504c757a710808ebb8fb7a5340d6",
@@ -96,6 +96,6 @@
     "docs/greptile-learnings/RULES.md": "0644"
   },
   "profile": "dotfiles",
-  "ruleset_digest": "70959145928948bd2042c3d220ee68ad5faeb830200403875a606ef984f143c1",
+  "ruleset_digest": "39118a11b3ff2026a695e0dc169b3e451533d86932a5efe61224f332f84dd99a",
   "schema_version": 1
 }
