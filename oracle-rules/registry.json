@@ -12,7 +12,8 @@
         {"source": "dispatch/lib.sh", "target": "dispatch/lib.sh"},
         {"source": "audits/ufs.sh", "target": "audits/ufs.sh"},
         {"source": "audits/logging.sh", "target": "audits/logging.sh"},
-        {"source": "audits/msid-ui.sh", "target": "audits/msid-ui.sh"}
+        {"source": "audits/msid-ui.sh", "target": "audits/msid-ui.sh"},
+        {"source": "docs/greptile-learnings/RULES.md", "target": "docs/greptile-learnings/RULES.md"}
       ]
     },
     "language.zig": {
@@ -21,7 +22,8 @@
         {"source": "dispatch/write_zig.md", "target": "dispatch/write_zig.md"},
         {"source": "dispatch/write_zig.sh", "target": "dispatch/write_zig.sh"},
         {"source": "audits/deinit-pairs.sh", "target": "audits/deinit-pairs.sh"},
-        {"source": "audits/sql-mod.sh", "target": "audits/sql-mod.sh"}
+        {"source": "audits/sql-mod.sh", "target": "audits/sql-mod.sh"},
+        {"source": "docs/LIFECYCLE_PATTERNS.md", "target": "docs/LIFECYCLE_PATTERNS.md"}
       ]
     },
     "language.typescript": {
@@ -107,7 +109,8 @@
       "extensions": [],
       "managed_files": [
         {"source": "dispatch/write_spec.md", "target": "dispatch/write_spec.md"},
-        {"source": "docs/TEMPLATE.md", "target": "docs/TEMPLATE.md"}
+        {"source": "docs/TEMPLATE.md", "target": "docs/TEMPLATE.md"},
+        {"source": "audits/spec-template.sh", "target": "audits/spec-template.sh"}
       ]
     },
     "workflow.governance": {
@@ -115,6 +118,18 @@
       "managed_files": [
         {"source": "dispatch/edit_rules.md", "target": "dispatch/edit_rules.md"},
         {"source": "audits/agents-md.md", "target": "audits/agents-md.md"}
+      ]
+    },
+    "product.agentsfleet": {
+      "extensions": [],
+      "managed_files": [
+        {"source": "audits/cross-tier-rates.sh", "target": "audits/cross-tier-rates.sh"},
+        {"source": "audits/design-tokens.sh", "target": "audits/design-tokens.sh"},
+        {"source": "audits/error-codes.sh", "target": "audits/error-codes.sh"},
+        {"source": "docs/EXECUTE_DOC_READS.md", "target": "docs/EXECUTE_DOC_READS.md"},
+        {"source": "docs/HARNESS_VERIFY_OUTPUT.md", "target": "docs/HARNESS_VERIFY_OUTPUT.md"},
+        {"source": "docs/LOGGING_STANDARD.md", "target": "docs/LOGGING_STANDARD.md"},
+        {"source": "docs/VERIFY_TIERS.md", "target": "docs/VERIFY_TIERS.md"}
       ]
     }
   },

@@ -45,6 +45,29 @@ class RendererTests(unittest.TestCase):
             )
             self.assertFalse((output_root / "dispatch/write_typescript.md").exists())
 
+    def test_agentsfleet_snapshot_contains_repository_rule_dependencies(self) -> None:
+        expected_paths = {
+            "audits/agents-md.md",
+            "audits/cross-tier-rates.sh",
+            "audits/design-tokens.sh",
+            "audits/error-codes.sh",
+            "audits/spec-template.sh",
+            "dispatch/edit_rules.md",
+            "dispatch/write_python.md",
+            "docs/EXECUTE_DOC_READS.md",
+            "docs/HARNESS_VERIFY_OUTPUT.md",
+            "docs/LIFECYCLE_PATTERNS.md",
+            "docs/LOGGING_STANDARD.md",
+            "docs/VERIFY_TIERS.md",
+            "docs/greptile-learnings/RULES.md",
+        }
+        with tempfile.TemporaryDirectory() as output_dir:
+            output_root = Path(output_dir)
+            self.renderer.render("agentsfleet", output_root)
+            managed = load_json(output_root / ".oracle/managed-files.json")
+
+        self.assertTrue(expected_paths <= set(managed["files"]))
+
     def test_tampered_managed_file_fails_lock_verification(self) -> None:
         with tempfile.TemporaryDirectory() as output_dir:
             output_root = Path(output_dir)

@@ -16,7 +16,8 @@
     "dispatch/write_python.md",
     "dispatch/write_rust.md",
     "dispatch/write_shell.md",
-    "docs/DOCUMENTATION_RULES.md"
+    "docs/DOCUMENTATION_RULES.md",
+    "docs/greptile-learnings/RULES.md"
   ],
   "profile": "dotfiles",
   "schema_version": 1

@@ -1,8 +1,8 @@
 {
   "files": {
-    ".oracle/managed-files.json": "d72d5b9490c9870e1c34606f0ba0817422d2a2f9221e31da3bb5e4aa968a697e",
+    ".oracle/managed-files.json": "a81bc890d7def45c23d0af02fa48d78b23be6f6638206b35bb8230d9e477041b",
     ".oracle/profile.json": "36be259b977fd03f8b9b1e4555190d42cb42a5ceb4a1cf4c49ca311d723339b4",
-    "AGENTS.md": "228467b89ff1fb0e30fad96f61a0fd39274109a6255ae51847e87f9c82847f9f",
+    "AGENTS.md": "ead94a08aabb2c1e65a3b749533713c5d0d3815688b577b027270f37b2573af7",
     "audits/agents-md.md": "a1ca271612436b6952327012dbffa40f64d7fa1d7090a884d490f5a8d80cbf40",
     "audits/logging.sh": "f75bd9cf8ff875b326230aa30eed7dcb518befb3b35dfaaa10aac06944f0fa87",
     "audits/msid-ui.sh": "3c8dbc8d01421ab5a997813859e1262c770043edff8d194ec139a6cd35e16318",
@@ -16,9 +16,10 @@
     "dispatch/write_python.md": "b863b6e9d9aa1d65ad51639a64c9fda3bd4cf45881d88a81d2fb40c16df649c6",
     "dispatch/write_rust.md": "ed6f48c05bd528a81460bb6ac2f4dc376f8889ac7e57bca5b5f91ceb470b455a",
     "dispatch/write_shell.md": "9d726314aba14d36d1181f2ac022f58d8c95ad08e1f7da130deae750dbc6eb8f",
-    "docs/DOCUMENTATION_RULES.md": "805a6bf0239d07c280d1a1fb1bfe5075108c178d8f42ad9646d0e0b3253f27b6"
+    "docs/DOCUMENTATION_RULES.md": "805a6bf0239d07c280d1a1fb1bfe5075108c178d8f42ad9646d0e0b3253f27b6",
+    "docs/greptile-learnings/RULES.md": "4692b2f550fe0f0a9b7f53db8e08fb423c9c88058fc7376585e2a0eeafffc56d"
   },
   "profile": "dotfiles",
-  "ruleset_digest": "84ba21fc45b75ce4c12c08e3dc173645f9b6041baeb40f4f52b58dac018f8f5d",
+  "ruleset_digest": "5f21411de6ab1d6fda8a00248dcd725ec941bec040f721e6c31cd8d4a1497294",
   "schema_version": 1
 }
