@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "profile": "dotfiles",
-  "ruleset_digest": "d2420f119526436915721c50e698800ad0c6d687b8545e3d082b4b8252a8467c",
+  "ruleset_digest": "098e2f23f0609978fa9f645afeb34715200cd30131e4b7f36b2f79cd1289f60e",
   "files": {
     ".oracle/managed-files.json": "0c0503f236aae9ab268ef95ec07755f90baf830bd8b630d9a736b390beeeb7b5",
     ".oracle/profile.json": "f122380ddb22fc927d72204da53e8c9a5c4bc63c176c643b0e0e4822fa87ac09",
-    "AGENTS.md": "728fd4b008f13457914a192d16cabfc483968cb60091d96499b7ea4bdf11a769",
-    "audits/agents-md.md": "1075fd4e4d1ff3805a8cf61327341feb1179a97bf40cc1bc1a37894a13557786",
+    "AGENTS.md": "863555c37762947a12e17359fef79dd375c7e2b8b5bb9df931ee5e16d969c2c5",
+    "audits/agents-md.md": "470b0aa0b6c04ce914d8dc15155cd5b9bcbfbce6208c8db293e640b858b155b3",
     "audits/cross-tier-rates.sh": "3672ce3b7972593bddfd691b4b251596b6adadb419df9aec1fdad7477cce18d0",
     "audits/deinit-pairs.sh": "6d3ee2dd3be599c48f2dad5ae48908878a8e504c757a710808ebb8fb7a5340d6",
     "audits/design-tokens.sh": "a331dfdffae459ad868484ddf55a4d8a000faa7561243e4f9d9619cd64240a49",
@@ -39,16 +39,16 @@
     "dispatch/write_zig.sh": "0906a1ffe631f8cf04652d11f94adc377f49374b7ab857c2e6d50c209ae78ec9",
     "docs/CHANGELOG_VOICE.md": "340b30766421a830463c9975f80d5d214fc10d147015e32bea194ab5b90f89ac",
     "docs/DOCUMENTATION_RULES.md": "805a6bf0239d07c280d1a1fb1bfe5075108c178d8f42ad9646d0e0b3253f27b6",
-    "docs/EXECUTE_DOC_READS.md": "33273b4e81fe181fbe63eb72736cb1c9ad88bc791e5f5c2c85bcdcc3cfc1eab2",
+    "docs/EXECUTE_DOC_READS.md": "c1fadadfe745d67eb0c9e9eed8de3b09b91103af98d35b14f9dd8a0295b68ce6",
     "docs/HARNESS_VERIFY_OUTPUT.md": "22f00eb903b227c66a884a2f0b1448a4dcd559c02cdd38c082cf0c19d4ad0cd9",
     "docs/LIFECYCLE_PATTERNS.md": "3b610c521ee3ac7838c13c27bdbdbd63ea84b94017cd06618401ddcecff13ee3",
     "docs/LOGGING_STANDARD.md": "0920ab10ad99ee0520f8c90b79daf78e0e9dc593ebd638dd481ed6ef6103bbff",
-    "docs/ORLY_ARCHITECTURE.md": "69f29cb5233a31015c3fffb00410aa92fdce10e31ccfd098bc24e4fe3ec0d6d7",
+    "docs/ORLY_ARCHITECTURE.md": "26c66437a6ffd013cdbd3e438d1c1b87724bcf6e33a9d85aab8433a7c2473878",
     "docs/REST_API_DESIGN_GUIDELINES.md": "e8ec70219f466324de1bbf749570fd879d5fc896a0098f269e8eeedd1240919a",
     "docs/SCHEMA_CONVENTIONS.md": "6a3642e7acd518c59e2e1dd4e2ddd0abefea5a941fc43b92eef5c19219abdd52",
     "docs/TEMPLATE.md": "db1a8be4442f1e524cb59679aeca6d72aab5005a46a2c17d0bd697563fca41d5",
     "docs/VERIFY_TIERS.md": "d88924fdfdac4a9ea8b48eb6db6984d8d92bae507bb2f600ea11f16d54cc3e67",
-    "docs/greptile-learnings/RULES.md": "4692b2f550fe0f0a9b7f53db8e08fb423c9c88058fc7376585e2a0eeafffc56d"
+    "docs/greptile-learnings/RULES.md": "af0dbdcb70d55b5c513e51f6569894fce7c92bcda9b32b0c04652550ec177baf"
   },
   "modes": {
     ".oracle/managed-files.json": "0644",

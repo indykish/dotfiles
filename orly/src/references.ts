@@ -8,6 +8,7 @@ const PACK_START = /^[ \t]*<!--[ \t]*oracle-packs:start ([^>]+)[ \t]*-->[ \t]*$/
 const PACK_END = /^[ \t]*<!--[ \t]*oracle-packs:end[ \t]*-->[ \t]*$/;
 const MARKDOWN_LINK = /\[[^\]]*\]\(([^)]+)\)/g;
 const DISPATCH_REFERENCE = /dispatch\/[A-Za-z0-9_.-]+\.md/g;
+const NEWLINE = "\n";
 
 export function renderProfileText(
   content: string,
@@ -15,6 +16,27 @@ export function renderProfileText(
   knownPacks: Set<string>,
   source: string,
 ): string {
+  return walkPackMarkers(content, selectedPacks, knownPacks, source, false).join(NEWLINE).trim();
+}
+
+// Managed documents keep marker lines verbatim so the source profile's
+// self-render stays byte-stable; only excluded lines are dropped.
+export function filterManagedText(
+  content: string,
+  selectedPacks: Set<string>,
+  knownPacks: Set<string>,
+  source: string,
+): string {
+  return walkPackMarkers(content, selectedPacks, knownPacks, source, true).join(NEWLINE);
+}
+
+function walkPackMarkers(
+  content: string,
+  selectedPacks: Set<string>,
+  knownPacks: Set<string>,
+  source: string,
+  keepMarkers: boolean,
+): string[] {
   const rendered: string[] = [];
   let activeBlock: string[] | undefined;
   let includeBlock = true;
@@ -26,10 +48,12 @@ export function renderProfileText(
       if (activeBlock) throw new OrlyError(`${source}:${lineNumber}: nested orly pack block`);
       activeBlock = packNames(start[1] ?? "", knownPacks, source, lineNumber);
       includeBlock = activeBlock.some((name) => selectedPacks.has(name));
+      if (keepMarkers && includeBlock) rendered.push(line);
       continue;
     }
     if (PACK_END.test(line)) {
       if (!activeBlock) throw new OrlyError(`${source}:${lineNumber}: unmatched orly pack block end`);
+      if (keepMarkers && includeBlock) rendered.push(line);
       activeBlock = undefined;
       includeBlock = true;
       continue;
@@ -38,13 +62,13 @@ export function renderProfileText(
     const match = line.match(PACK_LINE);
     if (match) {
       const names = packNames(match[2] ?? "", knownPacks, source, lineNumber);
-      if (names.some((name) => selectedPacks.has(name))) rendered.push((match[1] ?? "").trimEnd());
+      if (names.some((name) => selectedPacks.has(name))) rendered.push(keepMarkers ? line : (match[1] ?? "").trimEnd());
       continue;
     }
     rendered.push(line);
   }
   if (activeBlock) throw new OrlyError(`${source}: unclosed orly pack block`);
-  return rendered.join("\n").trim();
+  return rendered;
 }
 
 export async function referenceClosureErrors(
@@ -66,11 +90,9 @@ export async function referenceClosureErrors(
         if (!isBelow(resolved, root)) errors.add(`snapshot reference escapes repository: ${relativeSource}:${lineNumber} -> ${rawTarget}`);
         else if (!existsSync(resolved)) errors.add(`missing snapshot reference: ${relativeSource}:${lineNumber} -> ${rawTarget}`);
       }
-      if (relativeSource === "AGENTS.md") {
-        for (const target of line.matchAll(DISPATCH_REFERENCE)) {
-          const path = target[0];
-          if (!existsSync(join(outputRoot, path))) errors.add(`missing dispatch reference: ${relativeSource}:${lineNumber} -> ${path}`);
-        }
+      for (const target of line.matchAll(DISPATCH_REFERENCE)) {
+        const path = target[0];
+        if (!existsSync(join(outputRoot, path))) errors.add(`missing dispatch reference: ${relativeSource}:${lineNumber} -> ${path}`);
       }
     }
   }

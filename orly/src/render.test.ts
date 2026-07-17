@@ -40,6 +40,27 @@ describe("Renderer", () => {
     expect(await Bun.file(join(output, "dispatch/write_rust.md")).exists()).toBeFalse();
   });
 
+  test("filters unselected pack rows from managed documents", async () => {
+    const output = temporaryDirectory();
+    await new Renderer(await RulesModel.load(ROOT)).render("agentsfleet", output);
+
+    const documentText = await Bun.file(join(output, "docs/EXECUTE_DOC_READS.md")).text();
+    expect(documentText).toContain("dispatch/write_python.md");
+    expect(documentText).not.toContain("dispatch/write_rust.md");
+    expect(documentText).not.toContain("dispatch/write_mdx.md");
+    const questionnaire = await Bun.file(join(output, "audits/agents-md.md")).text();
+    expect(questionnaire).not.toContain("dispatch/write_rust.md");
+    expect(questionnaire).not.toContain("dispatch/write_mdx.md");
+  });
+
+  test("keeps managed markers verbatim for the source profile", async () => {
+    const output = temporaryDirectory();
+    await new Renderer(await RulesModel.load(ROOT)).render("dotfiles", output);
+
+    const rendered = await Bun.file(join(output, "docs/EXECUTE_DOC_READS.md")).text();
+    expect(rendered).toBe(await Bun.file(join(ROOT, "docs/EXECUTE_DOC_READS.md")).text());
+  });
+
   test("records normalized modes and detects drift", async () => {
     const output = temporaryDirectory();
     const renderer = new Renderer(await RulesModel.load(ROOT));
