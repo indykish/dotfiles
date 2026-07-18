@@ -86,7 +86,7 @@ done
 [[ $missing_bans -eq 0 ]] && pass "always-forbidden list (${#FORBIDDEN_KEYS[@]} bans present)"
 
 # ---------------------------------------------------------------------------
-# 5. Skill-chain order — /write-unit-test → /review → babysit.
+# 5. Skill-chain order — /write-unit-test → runtime review → babysit.
 #    Anchored to within the CHORE(close) section so a stray earlier mention
 #    cannot satisfy the check.
 # ---------------------------------------------------------------------------
@@ -94,12 +94,19 @@ awk '
   /^### CHORE \(close\)/                  { in_section=1; next }
   /^### |^## /                            { if (in_section) in_section=0 }
   in_section && /\/write-unit-test/  && !a { a=NR }
-  in_section && /\/review[^-]/       && a && !b { b=NR }
+  in_section && /Runtime review route/ && a && !b { b=NR }
   in_section && /kishore-babysit-prs/&& b && !c { c=NR }
   END { exit (a && b && c && a<b && b<c) ? 0 : 1 }
 ' "$AGENTS" \
   && pass "skill-chain ordering (anchored to CHORE(close))" \
-  || fail "skill chain not in order within CHORE(close): /write-unit-test → /review → kishore-babysit-prs"
+  || fail "skill chain not in order within CHORE(close): /write-unit-test → runtime review → kishore-babysit-prs"
+
+review_routes_missing=0
+grep -qF 'Codex: native `/review` (`codex review` non-interactively).' "$AGENTS" \
+  || { fail "Codex native review route missing"; review_routes_missing=1; }
+grep -qF 'Claude, OpenCode, Amp: gstack `/review`.' "$AGENTS" \
+  || { fail "gstack review route missing for Claude, OpenCode, and Amp"; review_routes_missing=1; }
+[[ $review_routes_missing -eq 0 ]] && pass "runtime-specific review routing"
 
 # ---------------------------------------------------------------------------
 # 6. CONFORM rows — every gate keyword in the verdict block (CONFORM_KEYS).

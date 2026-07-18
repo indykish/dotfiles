@@ -132,6 +132,14 @@ expect_fail "skill-chain bites when kishore-babysit-prs is removed from CHORE(cl
   "skill chain not in order" \
   "perl -ni -e 'print unless m{kishore-babysit-prs}' AGENTS.md"
 
+expect_fail "review routing bites when the Codex native route is removed" \
+  "Codex native review route missing" \
+  "perl -pi -e 's/Codex: native `\/review`/Codex: review removed/' AGENTS.md"
+
+expect_fail "review routing bites when the gstack route is removed" \
+  "gstack review route missing" \
+  "perl -pi -e 's/Claude, OpenCode, Amp: gstack `\/review`/Other agents: review removed/' AGENTS.md"
+
 expect_fail "always-forbidden bites when the no-verify ban is removed" \
   "always-forbidden item missing: no-verify" \
   "perl -pi -e 's/no-verify/no_verify_GONE/g' AGENTS.md"
