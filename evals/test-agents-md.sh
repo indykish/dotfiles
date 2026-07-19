@@ -133,8 +133,12 @@ expect_fail "skill-chain bites when kishore-babysit-prs is removed from CHORE(cl
   "perl -ni -e 'print unless m{kishore-babysit-prs}' AGENTS.md"
 
 expect_fail "review routing bites when the Codex native route is removed" \
-  "Codex native review route missing" \
+  "Codex dual review sequence missing" \
   "perl -pi -e 's/Codex: native `\/review`/Codex: review removed/' AGENTS.md"
+
+expect_fail "review routing bites when the Codex gstack route is removed" \
+  "Codex dual review sequence missing" \
+  "perl -pi -e 's/then gstack `\$review`/then gstack review removed/' AGENTS.md"
 
 expect_fail "review routing bites when the gstack route is removed" \
   "gstack review route missing" \

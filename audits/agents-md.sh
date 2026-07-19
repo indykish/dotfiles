@@ -102,8 +102,8 @@ awk '
   || fail "skill chain not in order within CHORE(close): /write-unit-test → runtime review → kishore-babysit-prs"
 
 review_routes_missing=0
-grep -qF 'Codex: native `/review` (`codex review` non-interactively).' "$AGENTS" \
-  || { fail "Codex native review route missing"; review_routes_missing=1; }
+grep -qF 'Codex: native `/review` (`codex review` non-interactively), then gstack `$review`.' "$AGENTS" \
+  || { fail "Codex dual review sequence missing"; review_routes_missing=1; }
 grep -qF 'Claude, OpenCode, Amp: gstack `/review`.' "$AGENTS" \
   || { fail "gstack review route missing for Claude, OpenCode, and Amp"; review_routes_missing=1; }
 [[ $review_routes_missing -eq 0 ]] && pass "runtime-specific review routing"
