@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "profile": "global",
-  "ruleset_digest": "8a515eb0a05e805ef6d5b53ac6738a799e214f8c88bbb4bb49862c3819088b7d",
+  "ruleset_digest": "0b6c022ba3b10d0386f1d0b0bedaef6b7f80910d4323b0ae5c3c6469b49963a7",
   "files": {
     ".oracle/managed-files.json": "c1b07f970c462f42f360c413b1e2e777596d44f66465db2c54cae47d1eb7050f",
     ".oracle/profile.json": "10b70bf28d556db2cae262e679e45023bd787f7a20215ff74d24e13b11c5c38a",
-    "AGENTS.md": "9caf422702ee12bdd69108c1d96a373bbb3522b521152952519a251d8afcbe22"
+    "AGENTS.md": "379308aa49f8c1059b0f3b2bda9273860a2ab69e48160ef5d1a214cf015c56ab"
   },
   "modes": {
     ".oracle/managed-files.json": "0644",

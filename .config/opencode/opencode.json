@@ -181,8 +181,8 @@
         "apiKey": "{env:OPENROUTER_API_KEY}"
       },
       "models": {
-        "moonshotai/kimi-k2.5": {
-          "name": "Kimi K2.5 (OR)"
+        "moonshotai/kimi-k3": {
+          "name": "Kimi K3 (OpenRouter)"
         }
       }
     },
@@ -190,12 +190,12 @@
       "name": "Moonshot",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "baseURL": "https://api.moonshot.com/v1",
+        "baseURL": "https://api.moonshot.ai/v1",
         "apiKey": "{env:MOONSHOT_API_KEY}"
       },
       "models": {
-        "kimi-k2.5": {
-          "name": "Kimi K2.5"
+        "kimi-k3": {
+          "name": "Kimi K3"
         }
       }
     },
