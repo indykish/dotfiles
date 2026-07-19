@@ -74,9 +74,16 @@ check_baseline() {
 
 # expect_fail <name> <expected-substring> <mutation-shell-run-in-sandbox>
 expect_fail() {
-  local name="$1" want="$2" mutate="$3" sb rc
+  local name="$1" want="$2" mutate="$3" sb mutate_rc rc
   sb="$(make_sandbox)"
-  ( cd "$sb" && eval "$mutate" ) >/dev/null 2>&1
+  ( cd "$sb" && eval "$mutate" ) >"$sb/.mutate-out" 2>&1
+  mutate_rc=$?
+  if [[ $mutate_rc -ne 0 ]]; then
+    bad "$name — mutation command failed (rc=$mutate_rc)"
+    head -3 "$sb/.mutate-out" >&2
+    rm -rf "$sb"
+    return
+  fi
   bash "$sb/audits/agents-md.sh" >"$sb/.out" 2>&1; rc=$?
   if [[ $rc -ne 0 ]] && grep -qF "$want" "$sb/.out"; then
     ok "$name"
@@ -134,15 +141,15 @@ expect_fail "skill-chain bites when kishore-babysit-prs is removed from CHORE(cl
 
 expect_fail "review routing bites when the Codex native route is removed" \
   "Codex dual review sequence missing" \
-  "perl -pi -e 's/Codex: native `\/review`/Codex: review removed/' AGENTS.md"
+  "perl -pi -e 's{Codex: native \\x60/review\\x60}{Codex: review removed}' AGENTS.md"
 
 expect_fail "review routing bites when the Codex gstack route is removed" \
   "Codex dual review sequence missing" \
-  "perl -pi -e 's/then gstack `\$review`/then gstack review removed/' AGENTS.md"
+  "perl -pi -e 's{then gstack \\x60\\x24review\\x60}{then gstack review removed}' AGENTS.md"
 
 expect_fail "review routing bites when the gstack route is removed" \
   "gstack review route missing" \
-  "perl -pi -e 's/Claude, OpenCode, Amp: gstack `\/review`/Other agents: review removed/' AGENTS.md"
+  "perl -pi -e 's{Claude, OpenCode, Amp: gstack \\x60/review\\x60}{Other agents: review removed}' AGENTS.md"
 
 expect_fail "always-forbidden bites when the no-verify ban is removed" \
   "always-forbidden item missing: no-verify" \
