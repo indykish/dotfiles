@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "profile": "dotfiles",
-  "ruleset_digest": "e39b0a5e1d6ac7bf6d0d507996ae81f73faa54fb013b7c40e30648e58263b0ad",
+  "ruleset_digest": "f6e19df99263ff94e699c804fe09bbd81449b59df12c6c56415972f85583d401",
   "files": {
     ".oracle/managed-files.json": "0c0503f236aae9ab268ef95ec07755f90baf830bd8b630d9a736b390beeeb7b5",
     ".oracle/profile.json": "f122380ddb22fc927d72204da53e8c9a5c4bc63c176c643b0e0e4822fa87ac09",
-    "AGENTS.md": "0e1a81b687b1cc7addbb4cd70085441f4a5bea76cb29f342c576ce88baa377ff",
+    "AGENTS.md": "15c71858db902bee9e7a6344d6ba74d83b3e783c0c630f60fa20330251166a0d",
     "audits/agents-md.md": "0375b4fc161eddad21bc1997c6c9e2630fddc631df36c997366f7528f92fc775",
     "audits/cross-tier-rates.sh": "3672ce3b7972593bddfd691b4b251596b6adadb419df9aec1fdad7477cce18d0",
     "audits/deinit-pairs.sh": "6d3ee2dd3be599c48f2dad5ae48908878a8e504c757a710808ebb8fb7a5340d6",
@@ -35,7 +35,7 @@
     "dispatch/write_sql.sh": "cdbb4d4cd01c940723ac14abca26faabb18c731f7c1df2864b03f5cb32322f1a",
     "dispatch/write_ts_adhere_bun.md": "818c32356f98c298927cd604f726695cc5c4803b7b98ff04a21247ad3237711e",
     "dispatch/write_ts_adhere_bun.sh": "1724ab4d465d29bbdd54f9cf178ec914da9bc262c8dd015ae66f4440945bcdc6",
-    "dispatch/write_zig.md": "6bd039098259aeaa8e8fce98ffa7421682ff0adb6c596fb5caa81a3dd2650dc3",
+    "dispatch/write_zig.md": "94d162abed0fe10116042aaf5837a51bbc9a97e0bab257ea8e91a4faf3d71af9",
     "dispatch/write_zig.sh": "0906a1ffe631f8cf04652d11f94adc377f49374b7ab857c2e6d50c209ae78ec9",
     "docs/CHANGELOG_VOICE.md": "3a9cd7d87dab1f03eba2b5eb04e85bbc8dd19cf86a72d2587a304e1563721013",
     "docs/DOCUMENTATION_RULES.md": "805a6bf0239d07c280d1a1fb1bfe5075108c178d8f42ad9646d0e0b3253f27b6",
