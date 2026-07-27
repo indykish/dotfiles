@@ -21,7 +21,28 @@
     "product.agentsfleet"
   ],
   "commands": {
-    "conform": [["make", "audit"]],
-    "verify.unit": [["bun", "test", "orly/src"]]
+    "conform": [
+      [
+        "make",
+        "audit"
+      ]
+    ],
+    "verify.unit": [
+      [
+        "bun",
+        "test",
+        "orly/src"
+      ]
+    ]
+  },
+  "surfaces": {
+    "user": [
+      "orly/src/",
+      "bin/"
+    ],
+    "docs": [
+      "README.md",
+      "docs/"
+    ]
   }
 }

@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, lstatSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
 
-import { validateActiveRule, validateCommands, validateRelativePath } from "./validation";
+import { validateActiveRule, validateCommands, validateRelativePath, validateSurfaces } from "./validation";
 
 export type JsonObject = Record<string, unknown>;
 
@@ -201,6 +201,7 @@ export class RulesModel {
         }
       }
       validateCommands(name, profile.commands, errors);
+      validateSurfaces(name, profile.surfaces, errors);
     }
   }
 

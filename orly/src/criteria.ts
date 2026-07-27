@@ -1,8 +1,9 @@
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { isObject, objectValue, OrlyError, RulesModel } from "./model";
+import { isObject, JsonObject, objectValue, OrlyError, RulesModel } from "./model";
 import { repositoryPath } from "./repository";
+import { classifyBranch, SurfaceReport } from "./surfaces";
 
 const PIPE_OUTPUT = "pipe";
 const DEFAULT_BRANCHES = ["master", "main"];
@@ -27,6 +28,7 @@ const GIT_BRANCH = "git.branch";
 const GIT_TREE = "git.tree";
 const GIT_PUSHED = "git.pushed";
 const REPO_PROFILE = "repo.profile";
+const DOCS_UPDATED = "docs.updated";
 
 export type Verdict = { ok: boolean; detail: string };
 export type CriterionResult = Verdict & { name: string };
@@ -37,6 +39,7 @@ export type CriterionContext = {
   specText: string;
   model: RulesModel;
   acceptDirty: boolean;
+  surfaces?: SurfaceReport;
 };
 
 export type Criterion = { name: string; evaluate: (context: CriterionContext) => CriterionResult };
@@ -44,11 +47,13 @@ export type Criterion = { name: string; evaluate: (context: CriterionContext) =>
 // Every criterion is mechanical: it reads an exit code or a file, never a
 // judgment. The anchor invariant promises the machine can PROVE the previous
 // stage's exit criteria, so anything unprovable stays prose and never lands here.
+// Fast commands (conform, verify.unit) gate VERIFIED; the slow suites and the
+// docs check gate PR_READY, where the whole branch is what ships.
 export function criteriaFor(target: string, context: CriterionContext): Criterion[] {
   if (target === "PLANNED") return [specGate(), openQuestions(), productClarity()];
   if (target === "EXECUTING") return [gitBranch(), gitTree(), repositoryProfile()];
-  if (target === "VERIFIED") return [specDimensions(), ...commandCriteria(context)];
-  if (target === "PR_READY") return [gitTree(), gitPushed(), specGate(), specDimensions()];
+  if (target === "VERIFIED") return [specDimensions(), ...commandCriteria(context, FAST_TIER)];
+  if (target === "PR_READY") return [gitTree(), gitPushed(), specGate(), specDimensions(), docsUpdated(), ...commandCriteria(context, SLOW_TIER)];
   return [];
 }
 
@@ -155,16 +160,64 @@ function repositoryProfile(): Criterion {
   });
 }
 
+const FAST_TIER = "fast";
+const SLOW_TIER = "slow";
+// The slow tier is a fixed name set, not a prefix rule: lint and version
+// checks are verify.* too, and demoting them to skip-on-prose would be wrong.
+const SLOW_COMMANDS = ["verify.integration", "verify.memory"];
+
 // Model C: the repository's declared command surface. Orly owns policy and
-// invokes these; the repository owns what they actually do.
-function commandCriteria(context: CriterionContext): Criterion[] {
+// invokes these; the repository owns what they actually do. Fast tier =
+// conform + verify.unit. Slow tier = every other verify.* (integration,
+// memleak); those auto-pass with a printed skip when the branch carries no
+// code, so a prose-only branch never pays for the slow suites.
+function commandCriteria(context: CriterionContext, tier: string): Criterion[] {
+  const profile = resolvedProfile(context);
+  if (!profile) return tier === FAST_TIER ? [criterion(REPO_PROFILE, () => ({ ok: false, detail: UNREGISTERED }))] : [];
+  const commands = objectValue(profile.commands, "profile commands");
+  const selected = Object.keys(commands).filter((key) => tierOf(key) === tier).sort();
+  return selected.map((key) => criterion(`cmd.${key}`, (inner) => {
+    if (tier === SLOW_TIER && report(inner, profile).code.length === 0) {
+      return { ok: true, detail: "skipped — no code files on this branch" };
+    }
+    return runInvocations(inner.root, commands[key]);
+  }));
+}
+
+function tierOf(key: string): string {
+  if (SLOW_COMMANDS.includes(key)) return SLOW_TIER;
+  if (key === CONFORM_COMMAND || key.startsWith(VERIFY_PREFIX)) return FAST_TIER;
+  return "";
+}
+
+function docsUpdated(): Criterion {
+  return criterion(DOCS_UPDATED, (context) => {
+    const profile = resolvedProfile(context);
+    if (!profile) return { ok: true, detail: "no registered profile — no declared user surface" };
+    const surfaces = report(context, profile);
+    if (surfaces.userSurface.length === 0) return { ok: true, detail: "no user-surface files on this branch" };
+    if (surfaces.docs.length > 0) return { ok: true, detail: `${surfaces.userSurface.length} user-surface file(s), ${surfaces.docs.length} docs file(s) updated` };
+    return {
+      ok: false,
+      detail: `${surfaces.userSurface.length} user-surface file(s) changed (first: ${surfaces.userSurface[0] ?? ""}) with no docs change — update the docs page, or record: orly override ${DOCS_UPDATED} --reason <REASON>`,
+    };
+  });
+}
+
+// The branch is classified once per inspection and cached on the context.
+function report(context: CriterionContext, profile: JsonObject): SurfaceReport {
+  context.surfaces ??= classifyBranch(context.root, profile);
+  return context.surfaces;
+}
+
+function resolvedProfile(context: CriterionContext): JsonObject | undefined {
   const name = repositoryFor(context.model, context.root);
-  if (!name) return [criterion(REPO_PROFILE, () => ({ ok: false, detail: UNREGISTERED }))];
-  const commands = objectValue(context.model.profile(profileName(context.model, name)).commands, "profile commands");
-  return Object.keys(commands)
-    .filter((key) => key === CONFORM_COMMAND || key.startsWith(VERIFY_PREFIX))
-    .sort()
-    .map((key) => criterion(`cmd.${key}`, (inner) => runInvocations(inner.root, commands[key])));
+  if (!name) return undefined;
+  try {
+    return context.model.profile(profileName(context.model, name));
+  } catch {
+    return undefined;
+  }
 }
 
 function runInvocations(root: string, invocations: unknown): Verdict {

@@ -58,7 +58,8 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 | `docs/VERIFY_TIERS.md` | EDIT | §1 port-up: agentsfleet's evolved copy is the truth; replace wholesale |
 | `orly/src/lifecycle.ts` | CREATE | §2–§3 state graph, transition log, advance orchestration, escape hatches |
 | `orly/src/criteria.ts` | CREATE | §2 exit-criterion definitions + evaluation (LENGTH GATE split from lifecycle.ts) |
-| `orly/src/{lifecycle,criteria}.test.ts` | CREATE | engine unit/integration/e2e tests |
+| `orly/src/surfaces.ts` | CREATE | §2 branch-diff classification: user-surface, docs, code (Dimensions 2.6–2.7) |
+| `orly/src/{lifecycle,criteria,surfaces}.test.ts` | CREATE | engine unit/integration/e2e tests |
 | `orly/src/cli.ts` | EDIT | verbs `next`/`status`/`check`/`override`/`park`/`reset`; drop `sync <repo>`/`--all`/`adopt` |
 | `orly/src/repository.ts` | EDIT | delete distribution/adoption/replacement guards; keep agent-home linking |
 | `orly/src/render.ts` | EDIT | render global → root `AGENTS.md`; delete lock/manifest writing and `verifyLock` |
@@ -66,7 +67,7 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 | `orly/src/verify.ts` | EDIT | idempotence + root-render currency; evidence drops `registry_digest` |
 | `orly/src/{cli,model,render,references,repository,verify}.test.ts` | EDIT | follow the surviving surfaces |
 | `orly/registry.json` | EDIT | packs keep extensions+façade pointer; `managed_files` lists removed; render.stable fail fixture swapped |
-| `orly/profiles/*.json` | EDIT | keep `packs` + `commands{}` (the Model C command surface); nothing else |
+| `orly/profiles/*.json` | EDIT | keep `packs` + `commands{}` (the Model C command surface) + optional `surfaces{user,docs}` prefix lists |
 | `orly/fixtures/tampered-lock.json` → `orly/fixtures/unclosed-pack-block.md` | DELETE + CREATE | genuine render-failure fail fixture replaces the ledger one |
 | `orly/schemas/ruleset-lock.schema.json` DELETE; `orly/schemas/evidence.schema.json` | EDIT | ledger schema gone; evidence drops `registry_digest` |
 | `orly/generated/**` | DELETE | root `AGENTS.md` becomes the one render target; homes relink to it |
@@ -135,6 +136,8 @@ The state machine: `PENDING → PLANNED → EXECUTING → VERIFIED → PR_READY 
 - **Dimension 2.3** — DONE — `orly next`: evaluate current transition's exit criteria; all green → append transition + update spec `Status:` field; any red → print each failing criterion (name, command, one output line), exit 1, no append → Test `test_next_halts_on_red`
 - **Dimension 2.4** — DONE — exit criteria wiring: built-ins (spec gate, open-questions, Product Clarity, branch, tree, profile resolution, Dimensions DONE, pushed) + profile `commands{}` groups (`conform`, `verify.*`) per the criteria table in Interfaces; every criterion mechanical → Test `test_criteria_per_transition`
 - **Dimension 2.5** — DONE — `orly check <state>`: read-only, exit-code-only; safe for Continuous Integration (CI) later → Test `test_check_readonly`
+- **Dimension 2.6** — DONE — `docs.updated` criterion (VERIFIED→PR_READY): profile-declared user-surface prefixes touched (test files and `.md` excluded) with no same-branch docs change (spec tree `docs/v[0-9]+/` never counts as docs) → red, with the override hatch as the recorded way out → Test `test_docs_updated_criterion`
+- **Dimension 2.7** — DONE — tiered verify commands: `cmd.conform` + fast `verify.*` gate EXECUTING→VERIFIED; the fixed slow set (`verify.integration`, `verify.memory`) gates VERIFIED→PR_READY and auto-passes with a printed skip reason when the branch diff contains no code files → Test `test_slow_suites_skip_on_prose_only`
 
 ### §3 — Escape hatches (owner authority, recorded)
 
@@ -154,7 +157,8 @@ One render target: dotfiles root `AGENTS.md`. Agent homes symlink to it. Consume
 
 ### §5 — Prose + enforcement retarget
 
-- **Dimension 5.1** — operating model: lifecycle section names `orly next` as the sole driver; anchor invariant sentence added; LAND/SHIP recorded as prose-manual stages pointing at v2; regenerated `AGENTS.md` ≤ 32,768 bytes → Test `audit_size_and_headers`
+- **Dimension 5.1** — operating model, one editing pass: lifecycle names `orly next` as the sole driver + anchor invariant; LAND prose-manual recipe (merge → checkout default → pull → prune worktree+branch → stash-compare-drop); PR budget (one PR per milestone, or draft + one, never more); review route unified (every runtime uses gstack `/review`; Codex native review dropped); skill chain gains `/write-integration-test` before PR; babysit row names CI check runs + greptile inline + PR-level threads; regenerated `AGENTS.md` ≤ 32,768 bytes → Test `audit_size_and_headers`
+- **Dimension 5.5** — writing voice: no-ai-slop editing rules land in `docs/DOCUMENTATION_RULES.md` (docs Orly writes) and `SOUL.md` (decisions Orly explains — simple, user-case-first, the four-step risk rubric); the review-route change sweeps `audits/agents-md.sh` check 5, `audits/data.sh`, `audits/agents-md.md`, `evals/`, and `docs/ORLY_ARCHITECTURE.md` in the same commit → Test `audit_named_scenarios`
 - **Dimension 5.2** — `.githooks/pre-push`: `make audit` + evidence only when the pushed range touches governance paths; live `llmevals` removed from hooks (manual `make llmevals` stays) → Test `grep_prepush_scoped`
 - **Dimension 5.3** — questionnaire: 4 ledger rows reworded; Scenario 27 (engine semantics: what advances, what halts, how overrides record) + `NAMED_SCENARIOS` parity → Test `audit_named_scenarios`
 - **Dimension 5.4** — `docs/TEMPLATE.md` gains `## Transitions`; `audits/spec-template.sh` requires it (staged scope); `ORLY_ARCHITECTURE.md` + `README.md` rewritten → Test `audit_spec_gate_transitions`
@@ -198,9 +202,19 @@ anchor invariant says "the machine can prove", so unprovable claims stay prose.
   PLANNED→EXECUTING  git.branch (not the default branch) · git.tree (clean, or
                      --accept-dirty) · repo.profile (registered + resolves)
   EXECUTING→VERIFIED spec.dimensions (every Dimension marked DONE) ·
-                     cmd.conform · cmd.verify.* (profile commands{}, exit 0 each)
+                     cmd.conform · cmd.verify.unit (fast tier, exit 0 each)
   VERIFIED→PR_READY  git.tree · git.pushed (upstream set, nothing unpushed) ·
-                     spec.gate · spec.dimensions
+                     spec.gate · spec.dimensions · docs.updated (user surface
+                     touched ⇒ docs touched; overridable) · cmd.verify.<slow>
+                     (every verify.* except unit; auto-pass with printed skip
+                     when the branch diff carries no code files)
+
+Branch diff = merge-base(default branch, HEAD)..HEAD. Classification is pure:
+user surface = profile surfaces.user prefix AND source extension AND not a test
+file; docs = profile surfaces.docs prefix AND never docs/v[0-9]+/ (the spec
+tree); code = source extension or a test path. Cross-repo user docs (the
+sibling docs repository) are not machine-provable from this diff — they stay a
+CHORE(close) obligation graded by the rubric.
 ```
 
 ## Failure Modes

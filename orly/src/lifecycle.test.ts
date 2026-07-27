@@ -125,7 +125,49 @@ describe("advance", () => {
     expect(names(await inspect(model, project, false, "PLANNED"))).toEqual(["spec.gate", "spec.open-questions", "spec.product-clarity"]);
     expect(names(await inspect(model, project, false, "EXECUTING"))).toEqual(["git.branch", "git.tree", "repo.profile"]);
     expect(names(await inspect(model, project, false, "VERIFIED"))).toEqual(["cmd.conform", "cmd.verify.unit", "spec.dimensions"]);
-    expect(names(await inspect(model, project, false, "PR_READY"))).toEqual(["git.pushed", "git.tree", "spec.dimensions", "spec.gate"]);
+    expect(names(await inspect(model, project, false, "PR_READY"))).toEqual(["docs.updated", "git.pushed", "git.tree", "spec.dimensions", "spec.gate"]);
+  });
+
+  test("docs.updated blocks a user-surface change with no docs change", async () => {
+    const project = newSpecRepository();
+    const model = await modelFor(project, { user: ["src/"], docs: ["docs/pages/"] });
+    git(project, "checkout", "-q", "-b", "feat/fixture");
+    await Bun.write(join(project, "src/handler.ts"), "export const HANDLER = 1;\n");
+    git(project, "add", ".");
+    git(project, "commit", "-q", "-m", "test: change a user surface");
+
+    const blocked = await inspect(model, project, false, "PR_READY");
+    const docs = blocked.results.find((result) => result.name === "docs.updated");
+    expect(docs?.ok).toBeFalse();
+    expect(docs?.detail).toContain("orly override docs.updated");
+
+    await Bun.write(join(project, "docs/pages/handler.md"), "# Handler\n");
+    git(project, "add", ".");
+    git(project, "commit", "-q", "-m", "docs: document the handler");
+    const green = await inspect(model, project, false, "PR_READY");
+    expect(green.results.find((result) => result.name === "docs.updated")?.ok).toBeTrue();
+  });
+
+  test("slow suites run on code branches and skip on prose-only branches", async () => {
+    const project = newSpecRepository();
+    const model = await modelFor(project, { user: [], docs: [] }, { "verify.integration": [["false"]] });
+    git(project, "checkout", "-q", "-b", "feat/fixture");
+    await Bun.write(join(project, "notes.md"), "prose only\n");
+    git(project, "add", ".");
+    git(project, "commit", "-q", "-m", "docs: prose only");
+
+    const prose = await inspect(model, project, false, "PR_READY");
+    const skipped = prose.results.find((result) => result.name === "cmd.verify.integration");
+    expect(skipped?.ok).toBeTrue();
+    expect(skipped?.detail).toContain("skipped — no code files");
+
+    await Bun.write(join(project, "src/thing.ts"), "export const THING = 1;\n");
+    git(project, "add", ".");
+    git(project, "commit", "-q", "-m", "feat: add code");
+    const code = await inspect(model, project, false, "PR_READY");
+    const ran = code.results.find((result) => result.name === "cmd.verify.integration");
+    expect(ran?.ok).toBeFalse();
+    expect(ran?.detail).toContain("false -> exit 1");
   });
 
   test("reports no machine transition beyond PR_READY", async () => {
@@ -202,13 +244,20 @@ function fixtureRegistry(project: string): string {
   return root;
 }
 
-async function modelFor(project: string): Promise<RulesModel> {
+async function modelFor(
+  project: string,
+  surfaces?: { user: string[]; docs: string[] },
+  extraCommands?: Record<string, string[][]>,
+): Promise<RulesModel> {
   const source = await RulesModel.load(ROOT);
   const repositories = structuredClone(source.repositories);
   const profiles = structuredClone(source.profiles);
   if (!isObject(repositories.repositories)) throw new Error("repositories missing");
   repositories.repositories.fixture = { path: project, profile: "fixture" };
-  profiles.fixture = structuredClone(FIXTURE_PROFILE);
+  const fixture = structuredClone(FIXTURE_PROFILE) as Record<string, unknown>;
+  if (surfaces) fixture.surfaces = surfaces;
+  if (extraCommands) fixture.commands = { ...(fixture.commands as Record<string, unknown>), ...extraCommands };
+  profiles.fixture = fixture;
   return new RulesModel(source.root, source.registry, profiles, repositories);
 }
 

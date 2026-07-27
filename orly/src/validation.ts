@@ -11,6 +11,22 @@ export function validateRelativePath(value: unknown, label: string, errors: stri
   if (isAbsolute(value) || relative(".", value).split(/[\\/]/).includes("..")) errors.push(`${label} must stay below the output root: ${value}`);
 }
 
+// Optional per-profile diff-surface prefixes: surfaces.user (paths whose change
+// demands a docs update) and surfaces.docs (paths that count as that update).
+export function validateSurfaces(profileName: string, value: unknown, errors: string[]): void {
+  if (value === undefined) return;
+  if (!isObject(value)) {
+    errors.push(`profile ${profileName} surfaces must be an object`);
+    return;
+  }
+  for (const [field, prefixes] of Object.entries(value)) {
+    if (field !== "user" && field !== "docs") errors.push(`profile ${profileName} surfaces.${field} is not a known surface`);
+    else if (!Array.isArray(prefixes) || !prefixes.every((prefix) => isString(prefix) && prefix.length > 0)) {
+      errors.push(`profile ${profileName} surfaces.${field} must be an array of path prefixes`);
+    }
+  }
+}
+
 export function validateCommands(profileName: string, value: unknown, errors: string[]): void {
   if (!isObject(value)) {
     errors.push(`profile ${profileName} commands must be an object`);
