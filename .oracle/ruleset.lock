@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "profile": "dotfiles",
-  "ruleset_digest": "c625b937a6cff0d6c07653d6c693212b3b8b2e41407d02fc3e6275d9d8abd48c",
+  "ruleset_digest": "269cbf85a88ed84d5a35de2e7db217077de99d7efe1a898a5f60ae067a08e838",
   "files": {
     ".oracle/managed-files.json": "0c0503f236aae9ab268ef95ec07755f90baf830bd8b630d9a736b390beeeb7b5",
     ".oracle/profile.json": "f122380ddb22fc927d72204da53e8c9a5c4bc63c176c643b0e0e4822fa87ac09",
-    "AGENTS.md": "c547a5ee7bc0a65ab50ae1377856acff3f305fb77bb454d95c6509e1b1333a88",
+    "AGENTS.md": "9013e4c0ca1fae86298c97e6bfdc0010cc9e19f6fe28df7b789ecc9000644319",
     "audits/agents-md.md": "0375b4fc161eddad21bc1997c6c9e2630fddc631df36c997366f7528f92fc775",
     "audits/cross-tier-rates.sh": "3672ce3b7972593bddfd691b4b251596b6adadb419df9aec1fdad7477cce18d0",
     "audits/deinit-pairs.sh": "6d3ee2dd3be599c48f2dad5ae48908878a8e504c757a710808ebb8fb7a5340d6",
@@ -44,10 +44,10 @@
     "docs/LIFECYCLE_PATTERNS.md": "3b610c521ee3ac7838c13c27bdbdbd63ea84b94017cd06618401ddcecff13ee3",
     "docs/LOGGING_STANDARD.md": "0920ab10ad99ee0520f8c90b79daf78e0e9dc593ebd638dd481ed6ef6103bbff",
     "docs/ORLY_ARCHITECTURE.md": "4eb14495ad924736b1f8a8b8941fa54ee9751f9a951f621eb8e7c97a4a703b6c",
-    "docs/REST_API_DESIGN_GUIDELINES.md": "e8ec70219f466324de1bbf749570fd879d5fc896a0098f269e8eeedd1240919a",
+    "docs/REST_API_DESIGN_GUIDELINES.md": "cd9f7fb3e58d36fea531fb8f7b990ac8cd004699b4e12b3f89a68fe05d65b152",
     "docs/SCHEMA_CONVENTIONS.md": "a6dde1a7eb1ce0e7703b6c5b83a4d8c4427b1473454525ba8c9a4ebe775d201f",
     "docs/TEMPLATE.md": "9f18a5749ab3b6dced96cec5260619c584d6618918512e893cc83c4368eaef6a",
-    "docs/VERIFY_TIERS.md": "d88924fdfdac4a9ea8b48eb6db6984d8d92bae507bb2f600ea11f16d54cc3e67",
+    "docs/VERIFY_TIERS.md": "06a4e008d4b06c1b69d34e3439f1a9ed382d57eb95b7254e0de706f4bc8f8355",
     "docs/greptile-learnings/RULES.md": "af0dbdcb70d55b5c513e51f6569894fce7c92bcda9b32b0c04652550ec177baf"
   },
   "modes": {

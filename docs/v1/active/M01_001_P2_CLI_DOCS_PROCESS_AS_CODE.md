@@ -122,8 +122,8 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 
 agentsfleet's copies evolved ahead of the source; deleting consumer copies (§6) without porting first loses owner-approved content. **Implementation default:** the two REST exception blocks stay wrapped in `oracle-packs:start product.agentsfleet` markers — under thin distribution the markers become scope labels, no longer rendered away.
 
-- **Dimension 1.1** — REST guide source carries the downstream taste fixes (guarantee-wording, stage-wording in the state-field list) and both exception blocks → Test `grep_rest_guide_ported`
-- **Dimension 1.2** — `VERIFY_TIERS.md` source replaced wholesale with agentsfleet's evolved copy (coverage lanes, integration roots, rewritten memleak lanes) → Test `grep_verify_tiers_ported`
+- **Dimension 1.1** — DONE — REST guide source carries the downstream taste fixes (guarantee-wording, stage-wording in the state-field list) and both exception blocks → Test `grep_rest_guide_ported`
+- **Dimension 1.2** — DONE — `VERIFY_TIERS.md` source replaced wholesale with agentsfleet's evolved copy (coverage lanes, integration roots, rewritten memleak lanes) → Test `grep_verify_tiers_ported`
 
 ### §2 — Lifecycle engine (Model P)
 
