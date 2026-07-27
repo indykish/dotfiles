@@ -2,21 +2,13 @@
 import { resolve } from "node:path";
 
 import { GateReport, isGateName, recordOverride, runGate, runGates } from "./gates";
-import { isObject, OrlyError, RulesModel } from "./model";
+import { OrlyError, RulesModel } from "./model";
 import { Renderer } from "./render";
-import {
-  adoptRepository,
-  doctorAgentHomes,
-  doctorRepository,
-  syncGlobal,
-  syncRepository,
-} from "./repository";
+import { doctorAgentHomes, syncGlobal } from "./repository";
 import { verifyAllProfiles, writeEvidence } from "./verify";
 
-const REPOSITORY_SCOPE = "repository";
-const ALL_SCOPE = "all";
-const GLOBAL_SCOPE = "global";
 const ALL_FLAG = "--all";
+const GLOBAL_FLAG = "--global";
 const PASS_RESULT = "pass";
 const NOT_REQUIRED_RESULT = "not-required";
 const ACCEPT_DIRTY_FLAG = "--accept-dirty";
@@ -25,11 +17,6 @@ const PIPE_OUTPUT = "pipe";
 const PASS_GLYPH = "🟢";
 const FAIL_GLYPH = "🔴";
 const PR_GATE = "pr";
-
-type Scope =
-  | { kind: typeof REPOSITORY_SCOPE; name: string }
-  | { kind: typeof ALL_SCOPE }
-  | { kind: typeof GLOBAL_SCOPE };
 
 const { root, arguments: commandArguments } = parseRoot(Bun.argv.slice(2));
 
@@ -54,28 +41,17 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
     console.log("orly: registry and profiles valid");
     return 0;
   }
-  if (command === "adopt") {
-    model.validate();
-    const name = requiredRepository(rest);
-    const files = await adoptRepository(model, name);
-    console.log(`🟢 ${name}: adopted ${String(model.repository(name).profile)} (${files.length} files)`);
-    return 0;
-  }
   if (command === "sync") {
     model.validate();
-    const scope = parseScope(rest);
-    if (scope.kind === GLOBAL_SCOPE) {
-      const links = await syncGlobal(model);
-      console.log(`🟢 global: updated rules and ${links.length} agent-home links`);
-      return 0;
-    }
-    return syncRepositories(model, repositoryNames(model, scope));
+    requireGlobalOnly(rest, "sync renders the root rules: orly sync [--global]");
+    const links = await syncGlobal(model);
+    console.log(`${PASS_GLYPH} rules rendered to AGENTS.md; ${links.length} agent-home links current`);
+    return 0;
   }
   if (command === "doctor") {
     model.validate();
-    const scope = parseScope(rest);
-    if (scope.kind === GLOBAL_SCOPE) return doctorGlobal(model);
-    return doctorRepositories(model, repositoryNames(model, scope));
+    requireGlobalOnly(rest, "doctor checks the root rules and home links: orly doctor [--global]");
+    return doctorGlobal(model);
   }
   if (command === "render") return render(model, rest);
   if (command === "verify") return verify(model, rest);
@@ -118,49 +94,22 @@ function projectRoot(): string {
   return result.stdout.toString().trim();
 }
 
-async function syncRepositories(model: RulesModel, names: string[]): Promise<number> {
-  let failed = false;
-  for (const name of names) {
-    try {
-      const files = await syncRepository(model, name);
-      console.log(`🟢 ${name}: synchronized ${files.length} files`);
-    } catch (error) {
-      failed = true;
-      console.log(`🔴 ${name}: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-  return failed ? 1 : 0;
-}
-
-async function doctorRepositories(model: RulesModel, names: string[]): Promise<number> {
-  let failed = false;
-  for (const name of names) {
-    const errors = await doctorRepository(model, name);
-    if (errors.length > 0) {
-      failed = true;
-      console.log(`🔴 ${name}: ${errors.join("; ")}`);
-    } else console.log(`🟢 ${name}: managed files match the ruleset lock`);
-  }
-  return failed ? 1 : 0;
-}
-
 async function doctorGlobal(model: RulesModel): Promise<number> {
   const errors = await doctorAgentHomes(model);
   if (errors.length > 0) {
-    for (const error of errors) console.log(`🔴 ${error}`);
+    for (const error of errors) console.log(`${FAIL_GLYPH} ${error}`);
     return 1;
   }
-  console.log("🟢 agent-home instructions use the generated global rules");
+  console.log(`${PASS_GLYPH} root AGENTS.md is current and every agent home links to it`);
   return 0;
 }
 
 async function render(model: RulesModel, args: string[]): Promise<number> {
   model.validate();
   const profile = optionValue(args, "--profile");
-  const output = optionValue(args, "--output");
-  const projectRoot = optionalValue(args, "--project-root");
-  const hashes = await new Renderer(model).render(profile, resolve(output), projectRoot ? resolve(projectRoot) : undefined);
-  console.log(JSON.stringify(hashes, null, 2));
+  const projectRootPath = optionalValue(args, "--project-root");
+  const text = await new Renderer(model).renderText(profile, projectRootPath ? resolve(projectRootPath) : undefined);
+  console.log(text);
   return 0;
 }
 
@@ -184,28 +133,8 @@ function parseRoot(args: string[]): { root: string; arguments: string[] } {
   return { root: resolve(value), arguments: args.filter((_, position) => position !== index && position !== index + 1) };
 }
 
-function parseScope(args: string[]): Scope {
-  if (args.length !== 1) throw new OrlyError("choose one repository, --all, or --global");
-  if (args[0] === ALL_FLAG) return { kind: ALL_SCOPE };
-  if (args[0] === "--global") return { kind: GLOBAL_SCOPE };
-  return { kind: REPOSITORY_SCOPE, name: args[0] ?? "" };
-}
-
-function repositoryNames(model: RulesModel, scope: Scope): string[] {
-  if (scope.kind === REPOSITORY_SCOPE) return [scope.name];
-  if (scope.kind === ALL_SCOPE) return Object.keys(objectRepositories(model)).sort();
-  throw new OrlyError("global scope does not select repositories");
-}
-
-function objectRepositories(model: RulesModel): Record<string, unknown> {
-  const value = model.repositories.repositories;
-  if (!isObject(value)) throw new OrlyError("repositories must be an object");
-  return value;
-}
-
-function requiredRepository(args: string[]): string {
-  if (args.length !== 1 || !args[0]) throw new OrlyError("adopt requires one registered repository name");
-  return args[0];
+function requireGlobalOnly(args: string[], usage: string): void {
+  if (args.length > 0 && (args.length !== 1 || args[0] !== GLOBAL_FLAG)) throw new OrlyError(usage);
 }
 
 function optionValue(args: string[], name: string): string {
@@ -228,8 +157,10 @@ Gates (read-only; no PR without every criterion green or a recorded override):
   orly override <CRITERION> --reason <REASON>
                                     empty commit with an Orly-Override trailer
 
-Rules:
-  orly adopt <REPOSITORY>
-  orly sync <REPOSITORY|--all|--global>
-  orly doctor <REPOSITORY|--all|--global>`);
+Rules (one render target — the root AGENTS.md every agent home links to):
+  orly sync [--global]              render the root rules + relink agent homes
+  orly doctor [--global]            root currency + home links
+  orly render --profile <NAME>      print a profile's render (stdout)
+  orly verify --all                 per-profile determinism + root currency
+  orly validate                     registry and profile shape`);
 }

@@ -16,18 +16,7 @@ export function renderProfileText(
   knownPacks: Set<string>,
   source: string,
 ): string {
-  return walkPackMarkers(content, selectedPacks, knownPacks, source, false).join(NEWLINE).trim();
-}
-
-// Managed documents keep marker lines verbatim so the source profile's
-// self-render stays byte-stable; only excluded lines are dropped.
-export function filterManagedText(
-  content: string,
-  selectedPacks: Set<string>,
-  knownPacks: Set<string>,
-  source: string,
-): string {
-  return walkPackMarkers(content, selectedPacks, knownPacks, source, true).join(NEWLINE);
+  return walkPackMarkers(content, selectedPacks, knownPacks, source).join(NEWLINE).trim();
 }
 
 function walkPackMarkers(
@@ -35,7 +24,6 @@ function walkPackMarkers(
   selectedPacks: Set<string>,
   knownPacks: Set<string>,
   source: string,
-  keepMarkers: boolean,
 ): string[] {
   const rendered: string[] = [];
   let activeBlock: string[] | undefined;
@@ -48,12 +36,10 @@ function walkPackMarkers(
       if (activeBlock) throw new OrlyError(`${source}:${lineNumber}: nested orly pack block`);
       activeBlock = packNames(start[1] ?? "", knownPacks, source, lineNumber);
       includeBlock = activeBlock.some((name) => selectedPacks.has(name));
-      if (keepMarkers && includeBlock) rendered.push(line);
       continue;
     }
     if (PACK_END.test(line)) {
       if (!activeBlock) throw new OrlyError(`${source}:${lineNumber}: unmatched orly pack block end`);
-      if (keepMarkers && includeBlock) rendered.push(line);
       activeBlock = undefined;
       includeBlock = true;
       continue;
@@ -62,7 +48,7 @@ function walkPackMarkers(
     const match = line.match(PACK_LINE);
     if (match) {
       const names = packNames(match[2] ?? "", knownPacks, source, lineNumber);
-      if (names.some((name) => selectedPacks.has(name))) rendered.push(keepMarkers ? line : (match[1] ?? "").trimEnd());
+      if (names.some((name) => selectedPacks.has(name))) rendered.push((match[1] ?? "").trimEnd());
       continue;
     }
     rendered.push(line);

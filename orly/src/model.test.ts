@@ -28,16 +28,4 @@ describe("RulesModel", () => {
 
     expect(() => model.validate()).toThrow("fixture source is missing");
   });
-
-  test("binds profile commands into only the selected profile digest", async () => {
-    const source = await RulesModel.load(ROOT);
-    const profiles = structuredClone(source.profiles);
-    const agentsfleet = profiles.agentsfleet;
-    if (!agentsfleet || typeof agentsfleet.commands !== "object" || agentsfleet.commands === null) throw new Error("agentsfleet commands missing");
-    agentsfleet.commands = { ...agentsfleet.commands, conform: [["make", "other"]] };
-    const changed = new RulesModel(source.root, source.registry, profiles, source.repositories);
-
-    expect(await source.profileDigest("agentsfleet")).not.toBe(await changed.profileDigest("agentsfleet"));
-    expect(await source.profileDigest("cache-kit")).toBe(await changed.profileDigest("cache-kit"));
-  });
 });

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { filterManagedText, referenceClosureErrors, renderProfileText } from "./references";
+import { referenceClosureErrors, renderProfileText } from "./references";
 
 describe("renderProfileText", () => {
   test("keeps selected pack lines and removes their marker", () => {
@@ -26,34 +26,6 @@ describe("renderProfileText", () => {
       new Set(["language.rust"]),
       "fixture.md",
     )).toThrow("unknown orly pack marker");
-  });
-});
-
-describe("filterManagedText", () => {
-  test("drops unselected lines and keeps selected markers verbatim", () => {
-    const content = "before\nselected <!-- oracle-packs:language.rust -->\nremoved <!-- oracle-packs:language.zig -->\nafter\n";
-
-    const filtered = filterManagedText(
-      content,
-      new Set(["language.rust"]),
-      new Set(["language.rust", "language.zig"]),
-      "fixture.md",
-    );
-
-    expect(filtered).toBe("before\nselected <!-- oracle-packs:language.rust -->\nafter\n");
-  });
-
-  test("is byte-stable when every marked pack is selected", () => {
-    const content = "before\nselected <!-- oracle-packs:language.rust -->\nafter\n";
-
-    const filtered = filterManagedText(
-      content,
-      new Set(["language.rust"]),
-      new Set(["language.rust"]),
-      "fixture.md",
-    );
-
-    expect(filtered).toBe(content);
   });
 });
 

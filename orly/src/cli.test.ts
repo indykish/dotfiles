@@ -10,8 +10,9 @@ describe("orly command", () => {
     const output = result.stdout.toString();
 
     expect(result.exitCode).toBe(0);
-    expect(output).toContain("orly adopt <REPOSITORY>");
-    expect(output).toContain("orly sync <REPOSITORY|--all|--global>");
+    expect(output).toContain("orly gate");
+    expect(output).toContain("orly override <CRITERION> --reason <REASON>");
+    expect(output).not.toContain("orly adopt");
     expect(output).not.toContain("oracle-rules");
   });
 

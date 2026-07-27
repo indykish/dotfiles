@@ -1,5 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { RulesModel } from "./model";
@@ -14,33 +13,23 @@ export type VerificationCheck = {
   detail?: string;
 };
 
+// Two proofs: every profile renders the same bytes twice (determinism), and
+// the committed root AGENTS.md matches its render (currency). No stored
+// hashes — the render itself is the reference.
 export async function verifyAllProfiles(model: RulesModel): Promise<VerificationCheck[]> {
   model.validate();
   const checks: VerificationCheck[] = [];
   const renderer = new Renderer(model);
   for (const profileName of Object.keys(model.profiles).sort()) {
-    const firstRoot = mkdtempSync(join(tmpdir(), `orly-${profileName}-a-`));
-    const secondRoot = mkdtempSync(join(tmpdir(), `orly-${profileName}-b-`));
-    try {
-      const first = await renderer.render(profileName, firstRoot);
-      const second = await renderer.render(profileName, secondRoot);
-      checks.push({
-        name: `render.${profileName}.idempotent`,
-        result: JSON.stringify(first) === JSON.stringify(second) ? PASS_RESULT : FAIL_RESULT,
-      });
-    } finally {
-      rmSync(firstRoot, { recursive: true, force: true });
-      rmSync(secondRoot, { recursive: true, force: true });
-    }
+    const first = await renderer.renderText(profileName);
+    const second = await renderer.renderText(profileName);
+    checks.push({
+      name: `render.${profileName}.idempotent`,
+      result: first === second ? PASS_RESULT : FAIL_RESULT,
+    });
   }
-  const outputs: Record<string, string> = {
-    "generated.global.current": join(model.root, "orly/generated/global"),
-    "generated.dotfiles.current": model.root,
-  };
-  for (const [name, root] of Object.entries(outputs)) {
-    const errors = await renderer.verifyLock(root);
-    checks.push({ name, result: errors.length === 0 ? PASS_RESULT : FAIL_RESULT, detail: errors.join("; ") });
-  }
+  const errors = await renderer.rootErrors();
+  checks.push({ name: "generated.root.current", result: errors.length === 0 ? PASS_RESULT : FAIL_RESULT, detail: errors.join("; ") });
   return checks;
 }
 
@@ -57,7 +46,6 @@ export async function writeEvidence(
     schema_version: 1,
     profile,
     source_commit: commit.exitCode === 0 ? commit.stdout.toString().trim() : "uncommitted",
-    registry_digest: await model.registryDigest(),
     result: checks.every((check) => check.result === PASS_RESULT) ? PASS_RESULT : FAIL_RESULT,
     checks,
     llm_result: languageModelResult,

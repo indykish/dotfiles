@@ -66,7 +66,7 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 | `orly/src/model.ts` | EDIT | delete `profileDigest`/`registryDigest`/`contentDigest`/`implementationSources` |
 | `orly/src/verify.ts` | EDIT | idempotence + root-render currency; evidence drops `registry_digest` |
 | `orly/src/{cli,model,render,references,repository,verify}.test.ts` | EDIT | follow the surviving surfaces |
-| `orly/registry.json` | EDIT | packs keep extensions+façade pointer; `managed_files` lists removed; render.stable fail fixture swapped |
+| `orly/registry.json` | EDIT | render.stable fail fixture swapped; packs keep `managed_files` as validated inventory (sources must exist) — nothing copies them |
 | `orly/profiles/*.json` | EDIT | keep `packs` + `commands{}` (the Model C command surface) + optional `surfaces{user,docs}` prefix lists |
 | `orly/fixtures/tampered-lock.json` → `orly/fixtures/unclosed-pack-block.md` | DELETE + CREATE | genuine render-failure fail fixture replaces the ledger one |
 | `orly/schemas/ruleset-lock.schema.json` DELETE; `orly/schemas/evidence.schema.json` | EDIT | ledger schema gone; evidence drops `registry_digest` |
@@ -75,6 +75,7 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 | `orly/core/operating-model.md` | EDIT | lifecycle names `orly next` as driver; anchor invariant; LAND/SHIP prose-manual note |
 | `.oracle/ruleset.lock`, `.oracle/profile.json`, `.oracle/managed-files.json` | DELETE | ledger artifacts (dotfiles self-copies) |
 | `.agents-comprehension-signoff`, `.agents-invariance-signoff` | DELETE | zero references anywhere — orphans |
+| `bin/update-ai-tools`, `bin/update-skills` | EDIT | `orly doctor --all` → `orly doctor` (home links + root currency); skills step renders the root `AGENTS.md` |
 | `.githooks/pre-push` | EDIT | audit+evidence scoped to governance paths; live LLM smoke removed (manual/scheduled) |
 | `audits/agents-md.md` | EDIT | reword 4 ledger rows; add Scenario 27 (engine semantics) |
 | `audits/data.sh` | EDIT | `NAMED_SCENARIOS` +1 for Scenario 27 |
@@ -144,14 +145,14 @@ One escape hatch, not three: parking is closing the worktree, resetting is git. 
 
 One render target: dotfiles root `AGENTS.md`. Agent homes symlink to it. Consumers carry no orly-managed files. **Implementation default:** provenance moves to sync-commit messages; the generated header names only the profile — render becomes a pure function of (sources, profile), so byte-diff currency checks never see phantom drift.
 
-- **Dimension 4.1** — `orly sync --global` renders root `AGENTS.md` + relinks homes; `orly/generated/` deleted → Test `test_render_targets_root`
-- **Dimension 4.2** — ledger machinery deleted: lock/manifest writing, `verifyLock`, digest functions, `sync <repo>`/`adopt` verbs, replacement/adoption guards → Test `grep_zero_ledger_symbols`
-- **Dimension 4.3** — registry slims (packs: extensions + façade pointer only); render.stable fail fixture = `unclosed-pack-block.md`; schemas updated → Test `test_validate_slim_registry`
-- **Dimension 4.4** — `orly verify --all` = per-profile double-render idempotence + root-render currency; `orly doctor` = home links + root currency → Test `test_verify_currency`
+- **Dimension 4.1** — DONE — `orly sync` renders root `AGENTS.md` + relinks all four agent homes; `orly/generated/` deleted → Test `test_render_targets_root`
+- **Dimension 4.2** — DONE — ledger machinery deleted: lock/manifest writing, `verifyLock`, digest functions, `sync <repo>`/`adopt` verbs, replacement/adoption guards, `filterManagedText` → Test `grep_zero_ledger_symbols`
+- **Dimension 4.3** — DONE — render.stable fail fixture = `unclosed-pack-block.md` (a genuine render failure); ledger schema deleted; evidence schema drops `registry_digest`; packs keep validated `managed_files` inventory → Test `test_validate_slim_registry`
+- **Dimension 4.4** — DONE — `orly verify --all` = per-profile double-render idempotence + root-render currency; `orly doctor` = home links + root currency; `bin/update-ai-tools` repointed → Test `test_verify_currency`
 
 ### §5 — Prose + enforcement retarget
 
-- **Dimension 5.1** — operating model, one editing pass: lifecycle names `orly next` as the sole driver + anchor invariant; LAND prose-manual recipe (merge → checkout default → pull → prune worktree+branch → stash-compare-drop); PR budget (one PR per milestone, or draft + one, never more); review route unified (every runtime uses gstack `/review`; Codex native review dropped); skill chain gains `/write-integration-test` before PR; babysit row names CI check runs + greptile inline + PR-level threads; regenerated `AGENTS.md` ≤ 32,768 bytes → Test `audit_size_and_headers`
+- **Dimension 5.1** — operating model, one editing pass: lifecycle names `orly next` as the sole driver + anchor invariant; LAND prose-manual recipe (merge → checkout default → pull → prune worktree+branch → stash-compare-drop → `make down` where the repo defines it); PR budget (one PR per milestone, or draft + one, never more); review route unified (every runtime uses gstack `/review`; Codex native review dropped); skill chain gains `/write-integration-test` before PR; babysit row names CI check runs + greptile inline + PR-level threads; regenerated `AGENTS.md` ≤ 32,768 bytes → Test `audit_size_and_headers`
 - **Dimension 5.5** — writing voice: no-ai-slop editing rules land in `docs/DOCUMENTATION_RULES.md` (docs Orly writes) and `SOUL.md` (decisions Orly explains — simple, user-case-first, the four-step risk rubric); the review-route change sweeps `audits/agents-md.sh` check 5, `audits/data.sh`, `audits/agents-md.md`, `evals/`, and `docs/ORLY_ARCHITECTURE.md` in the same commit → Test `audit_named_scenarios`
 - **Dimension 5.2** — `.githooks/pre-push`: `make audit` + evidence only when the pushed range touches governance paths; live `llmevals` removed from hooks (manual `make llmevals` stays) → Test `grep_prepush_scoped`
 - **Dimension 5.3** — questionnaire: 4 ledger rows reworded; Scenario 27 (engine semantics: what advances, what halts, how overrides record) + `NAMED_SCENARIOS` parity → Test `audit_named_scenarios`
@@ -327,7 +328,7 @@ obligation graded by the rubric.
 ## Discovery (consult log)
 
 - **Consults** — Architecture: Jul 27, 2026 session — Opus 5 review + Fable 5 subagent audit (ledger self-refuting; dual delivery via global symlink; downstream-first fixes) + external ChatGPT verdict (P+F+C; coarse states; escape hatches; anchor invariant on movement). Indy decisions: process-as-code foundation; distribution ceremony dies; stage vocabulary retained.
-- **Mid-milestone redesign (Indy simplicity challenge, Jul 27, 2026 evening):** the first engine stored state in a spec-resident Transitions table and could not run in cache-kit (`docs/v0.9.2/`) or the docs repo (no spec tree) — a second ledger inside git, the SHA mistake one layer up. Replaced by derived gates; the two transitions it recorded before removal: PENDING→PLANNED (bootstrap, 04:35 PM), PLANNED→EXECUTING (green via `orly next`, 07:21 PM). Indy process rules added same session: docs-before-PR gate, slow suites only on code change, one PR per milestone (draft + one max), gstack `/review` on every runtime, babysit reads CI + inline + threads, merge-cleanup recipe, no-ai-slop voice for decisions and docs, judgment-ask glyphs 📍🪚🍯🕳️.
+- **Mid-milestone redesign (Indy simplicity challenge, Jul 27, 2026 evening):** the first engine stored state in a spec-resident Transitions table and could not run in cache-kit (`docs/v0.9.2/`) or the docs repo (no spec tree) — a second ledger inside git, the SHA mistake one layer up. Replaced by derived gates; the two transitions it recorded before removal: PENDING→PLANNED (bootstrap, 04:35 PM), PLANNED→EXECUTING (green via `orly next`, 07:21 PM). Indy process rules added same session: docs-before-PR gate, slow suites only on code change, one PR per milestone (draft + one max), gstack `/review` on every runtime, babysit reads CI + inline + threads, merge-cleanup recipe incl. `make down` container teardown, no-ai-slop voice for decisions and docs, judgment-ask glyphs 📍🧰💎🚨 (visibility-revised).
 - **CHORE(open) deviation — no sibling worktree; branch cut in the main checkout.** The agent-home symlinks (`~/.claude/CLAUDE.md` and siblings) must resolve to a path that survives the branch, and §4.1 retargets them at `~/Projects/dotfiles/AGENTS.md`. A sibling worktree would either link agents at a directory removed post-merge or leave them on stale rules. Consequence accepted: a new agent session started mid-EXECUTE reads partially-rebuilt rules. Same-tree matches the operating model's stated default.
 - **Metrics review** — no analytics/funnel playbook update required: internal governance tooling, no product signal.
 - **Skill-chain outcomes** — (populated at VERIFY/CHORE(close)).

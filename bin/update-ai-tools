@@ -14,8 +14,8 @@ then relink local dotfiles, update skills, and refresh global agent instructions
 Usage: update-ai-tools [--doctor]
 
 Runs tool updaters for: claude, opencode, amp, and @openai/codex.
-Then runs `link-bin-dotfiles` and `update-skills`, followed by repository rules
-status. Each delegate runs its own postflight check before this script exits.
+Then runs `link-bin-dotfiles` and `update-skills`, followed by the root rules
+and agent-home link status. Each delegate runs its own postflight check before this script exits.
 --doctor verifies delegate state without updating tools.
 EOF
 }
@@ -25,7 +25,7 @@ case "${1:-}" in
   --doctor)
     ~/bin/link-bin-dotfiles --doctor
     ~/bin/update-skills --doctor
-    ~/bin/orly doctor --all
+    ~/bin/orly doctor
     exit 0
     ;;
 esac
@@ -68,9 +68,9 @@ info "🔄 Running update-skills to keep skills updated..."
 ~/bin/update-skills
 
 echo ""
-info "🔎 Reporting repository rules snapshot status..."
+info "🔎 Checking the root rules and agent-home links..."
 if [[ -x "$HOME/bin/orly" ]]; then
-  ~/bin/orly doctor --all
+  ~/bin/orly doctor
 else
   warn "orly not found in ~/bin/ — run link-bin-dotfiles first"
 fi

@@ -69,83 +69,6 @@ export class RulesModel {
     return repository;
   }
 
-  registryDigest(): Promise<string> {
-    const values: Array<[string, unknown]> = [
-      [REGISTRY_LABEL, this.registry],
-      [REPOSITORIES_LABEL, this.repositories],
-      ...Object.keys(this.profiles).sort().map((name): [string, unknown] => [`profile:${name}`, this.profiles[name]]),
-    ];
-    return this.contentDigest(values, this.allRuleSources());
-  }
-
-  profileDigest(profileName: string): Promise<string> {
-    const profile = this.profile(profileName);
-    const packs = objectValue(this.registry.packs, REGISTRY_PACKS_LABEL);
-    const selectedPacks: JsonObject = {};
-    for (const name of stringArray(profile.packs, `profile ${profileName} packs`)) selectedPacks[name] = packs[name];
-    const rules = objectArray(this.registry.rules, REGISTRY_RULES_LABEL);
-    const selectedRules = rules.filter((rule) => isString(rule.pack) && rule.pack in selectedPacks);
-    const subset = {
-      schema_version: this.registry.schema_version,
-      core_documents: this.registry.core_documents,
-      packs: selectedPacks,
-      rules: selectedRules,
-    };
-    const sources = this.implementationSources();
-    for (const source of stringArray(this.registry.core_documents, CORE_DOCUMENTS_LABEL)) sources.add(source);
-    for (const pack of Object.values(selectedPacks)) {
-      if (!isObject(pack)) continue;
-      for (const file of objectArray(pack.managed_files, MANAGED_FILES_LABEL)) {
-        if (isString(file.source)) sources.add(file.source);
-      }
-    }
-    for (const rule of selectedRules) addFixtureSources(rule, sources);
-    return this.contentDigest([[REGISTRY_LABEL, subset], ["profile", profile]], sources);
-  }
-
-  private allRuleSources(): Set<string> {
-    const sources = this.implementationSources();
-    for (const source of stringArray(this.registry.core_documents, CORE_DOCUMENTS_LABEL)) sources.add(source);
-    const packs = objectValue(this.registry.packs, REGISTRY_PACKS_LABEL);
-    for (const pack of Object.values(packs)) {
-      if (!isObject(pack)) continue;
-      for (const file of objectArray(pack.managed_files, MANAGED_FILES_LABEL)) {
-        if (isString(file.source)) sources.add(file.source);
-      }
-    }
-    for (const rule of objectArray(this.registry.rules, REGISTRY_RULES_LABEL)) addFixtureSources(rule, sources);
-    return sources;
-  }
-
-  private implementationSources(): Set<string> {
-    const sources = new Set<string>([
-      "bin/orly",
-      "orly/bun.lock",
-      "orly/package.json",
-      "orly/tsconfig.json",
-    ]);
-    for (const filename of readdirSync(join(this.root, "orly/src")).filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts")).sort()) {
-      sources.add(`orly/src/${filename}`);
-    }
-    for (const filename of readdirSync(join(this.root, "orly/schemas")).filter((name) => name.endsWith(JSON_EXTENSION)).sort()) {
-      sources.add(`orly/schemas/${filename}`);
-    }
-    return sources;
-  }
-
-  private async contentDigest(values: Array<[string, unknown]>, sources: Set<string>): Promise<string> {
-    const hasher = new Bun.CryptoHasher("sha256");
-    for (const [label, value] of values) hasher.update(`${label}\0${stableJson(value)}\0`);
-    for (const source of [...sources].sort()) {
-      const path = join(this.root, source);
-      if (!(await Bun.file(path).exists())) continue;
-      hasher.update(`${source}\0${normalizedMode(path).toString(8).padStart(4, "0")}\0`);
-      hasher.update(await Bun.file(path).arrayBuffer());
-      hasher.update("\0");
-    }
-    return hasher.digest("hex");
-  }
-
   private validateRegistry(errors: string[]): void {
     if (this.registry.schema_version !== 1) errors.push("registry schema_version must equal 1");
     const documents = this.registry.core_documents;
@@ -293,17 +216,8 @@ export function normalizedMode(path: string): number {
   return (lstatSync(path).mode & 0o111) === 0 ? NON_EXECUTABLE_MODE : EXECUTABLE_MODE;
 }
 
-export function stableJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
-  if (isObject(value)) return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(",")}}`;
-  return JSON.stringify(value);
-}
 
 export function setNormalizedMode(path: string, source: string): void {
   chmodSync(path, normalizedMode(source));
 }
 
-function addFixtureSources(rule: JsonObject, sources: Set<string>): void {
-  if (!isObject(rule.fixtures)) return;
-  for (const paths of Object.values(rule.fixtures)) if (Array.isArray(paths)) for (const path of paths) if (isString(path)) sources.add(path);
-}
