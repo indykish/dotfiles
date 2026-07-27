@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "profile": "dotfiles",
-  "ruleset_digest": "64ebd2c22d6f0b1dadb62045e7c88fa3b4be9e8fa1f29740e5b612685b615193",
+  "ruleset_digest": "c625b937a6cff0d6c07653d6c693212b3b8b2e41407d02fc3e6275d9d8abd48c",
   "files": {
     ".oracle/managed-files.json": "0c0503f236aae9ab268ef95ec07755f90baf830bd8b630d9a736b390beeeb7b5",
     ".oracle/profile.json": "f122380ddb22fc927d72204da53e8c9a5c4bc63c176c643b0e0e4822fa87ac09",
-    "AGENTS.md": "8fded7c0e3dd47f515f144807e0e6467738ffd528e63fade427b51016d814e0f",
+    "AGENTS.md": "c547a5ee7bc0a65ab50ae1377856acff3f305fb77bb454d95c6509e1b1333a88",
     "audits/agents-md.md": "0375b4fc161eddad21bc1997c6c9e2630fddc631df36c997366f7528f92fc775",
     "audits/cross-tier-rates.sh": "3672ce3b7972593bddfd691b4b251596b6adadb419df9aec1fdad7477cce18d0",
     "audits/deinit-pairs.sh": "6d3ee2dd3be599c48f2dad5ae48908878a8e504c757a710808ebb8fb7a5340d6",
