@@ -1,322 +1,177 @@
 # dotfiles
 
-Personal macOS configuration for shells, terminals, Git, coding agents, and
-the agent rules that govern work across local repositories.
+macOS setup for shells, terminals, Git, and four coding agents — plus the
+rules and gates that govern work across Kishore's repositories.
 
-This repository is opinionated. Its helpers assume the clone lives at
-`~/Projects/dotfiles`. Some defaults also name Kishore's project directories.
-Read each setup step before running it on another machine or account.
+Helpers assume the clone lives at `~/Projects/dotfiles`. Defaults name
+Kishore's directories, keys, and email. Read each step before running it on
+another machine.
 
 ## What you get
 
 - Shell, Git, tmux, Starship, mise, Ghostty, and iTerm2 settings.
 - Settings for Claude, Codex, OpenCode, and Amp.
-- A shared skill collection built from [gstack](https://github.com/garrytan/gstack)
-  and the local [`skills/`](skills/) directory.
-- The [`AGENTS.md`](AGENTS.md) operating model, focused rule pages, checks, and
-  evaluation fixtures.
-- Helper commands to link files, update Artificial Intelligence (AI) coding
-  tools, and write local environment files from 1Password.
+- Shared skills from [gstack](https://github.com/garrytan/gstack) plus [`skills/`](skills/).
+- The [`AGENTS.md`](AGENTS.md) operating model, rule pages, gates, and checks.
+- Helpers to link files, update agent tools, and write secrets from 1Password.
 
 ## Before you begin
-
-You need:
-
-- macOS with Zsh and Git.
-- Access to [indykish/dotfiles](https://github.com/indykish/dotfiles).
-- A Secure Shell (SSH) key registered with GitHub if you use the SSH clone URL.
-- Any coding agents you want to configure already installed.
-- Bun for the gstack setup.
-- GNU coreutils for a bounded `timeout` or `gtimeout` command during setup.
-- Starship before loading the supplied `.zshrc`.
-- mise if you want to use the supplied tool-version settings.
-- The 1Password command-line tool (`op`) only if you want to write secret files.
-
-Install the command-line prerequisites with [Homebrew](https://brew.sh) if you
-do not have them:
 
 ```bash
 brew install bun coreutils starship mise 1password-cli
 ```
 
-Homebrew prints each package it installs. Skip this command if you install
-these tools another way.
-
-The setup commands can affect files in your home directory and other project
-repositories. Back up any existing configuration that you want to keep.
+You also need macOS with Zsh and Git, access to
+[indykish/dotfiles](https://github.com/indykish/dotfiles), and any coding
+agents already installed. Back up configuration you want to keep.
 
 ## Set up a new machine
 
-Follow these steps in order on a fresh machine. Each step states its expected
-output, so a person or a coding agent can verify progress. Skip optional
-settings that you do not use.
-
-### 1. Clone into the expected directory
+### 1. Clone
 
 ```bash
-mkdir -p ~/Projects
-git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles
-cd ~/Projects/dotfiles
+mkdir -p ~/Projects && git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles && cd ~/Projects/dotfiles
 ```
 
-Git prints its clone progress. The other commands print nothing when they
-succeed.
-
-If you do not use GitHub over SSH, clone with HTTPS instead:
-
-```bash
-git clone https://github.com/indykish/dotfiles.git ~/Projects/dotfiles
-```
-
-Expected result: Git creates `~/Projects/dotfiles`.
-
-### 2. Enable the repository hooks
+### 2. Enable hooks
 
 ```bash
 git config core.hooksPath .githooks
 ```
 
-This command prints nothing. It enables the repository's pre-commit and
-pre-push checks for this clone.
+Verify with `git config --get core.hooksPath` → `.githooks`. Repeat per fresh
+clone.
 
-Verify the setting:
-
-```bash
-git config --get core.hooksPath
-```
-
-```text
-.githooks
-```
-
-Run this step for every fresh clone. A linked Git worktree shares the setting
-with its main clone.
-
-### 3. Link tmux and the helper commands
-
-Run the helper directly for the first setup:
+### 3. Link helpers
 
 ```bash
 ./bin/link-bin-dotfiles
 ```
 
-The helper links `~/.tmux.conf` and these commands into `~/bin`:
-
-- `link-bin-dotfiles`
-- `orly`
-- `update-skills`
-- `provision-env-1password`
-- `update-ai-tools`
-
-It skips a destination that already exists as a regular file or directory.
-Successful output ends with `✔ dotfiles links complete`.
-
-Ensure `~/bin` is on your `PATH`. The supplied [`.zshrc`](.zshrc) does this.
-
-### 4. Install the configuration you want
-
-These commands use `cp -i`, which asks before replacing an existing file.
-
-Review the files before copying them to another account. `.zshrc` contains
-Kishore's GNU Privacy Guard (GnuPG) key identifier, `agentsfleet` defaults, and
-Fly install path.
-`.gitconfig` and `.gitconfig-agentsfleet` contain his Git name and email
-addresses. Replace those values with your own.
-
-Install the shell files:
-
-```bash
-cp -i .zshrc ~/.zshrc
-cp -i .zshenv ~/.zshenv
+```text
+✔ dotfiles links complete
 ```
 
-Install Git and npm settings:
+Links `~/.tmux.conf` and `orly`, `update-skills`, `update-ai-tools`,
+`provision-env-1password`, `link-bin-dotfiles` into `~/bin`. Keep `~/bin` on
+your `PATH`; the supplied `.zshrc` does.
+
+### 4. Copy the configuration you want
+
+`cp -i` asks before replacing a file. Replace Kishore's name, email, and GNU
+Privacy Guard (GnuPG) key with your own first.
 
 ```bash
-cp -i .gitconfig ~/.gitconfig
-cp -i .gitconfig-agentsfleet ~/.gitconfig-agentsfleet
-cp -i .gitignore_global ~/.gitignore_global
-cp -i .npmrc ~/.npmrc
-```
-
-Install Starship and mise settings:
-
-```bash
-mkdir -p ~/.config/mise
-cp -i .config/starship.toml ~/.config/starship.toml
-cp -i .config/mise/config.toml ~/.config/mise/config.toml
-```
-
-Install settings only for agents present on the machine:
-
-```bash
+cp -i .zshrc ~/.zshrc && cp -i .zshenv ~/.zshenv
+cp -i .gitconfig ~/.gitconfig && cp -i .gitconfig-agentsfleet ~/.gitconfig-agentsfleet
+cp -i .gitignore_global ~/.gitignore_global && cp -i .npmrc ~/.npmrc
+mkdir -p ~/.config/mise && cp -i .config/starship.toml ~/.config/starship.toml && cp -i .config/mise/config.toml ~/.config/mise/config.toml
 mkdir -p ~/.claude ~/.codex ~/.config/amp
-cp -i .claude/settings.json ~/.claude/settings.json
-cp -i .codex/config.toml ~/.codex/config.toml
-cp -i .config/amp/settings.json ~/.config/amp/settings.json
+cp -i .claude/settings.json ~/.claude/settings.json && cp -i .codex/config.toml ~/.codex/config.toml && cp -i .config/amp/settings.json ~/.config/amp/settings.json
 ```
 
-These copy commands print nothing after a new file is written. If a destination
-exists, `cp -i` asks whether to replace it.
+Ghostty and iTerm2 settings live under [`Library/`](Library/) at their macOS
+paths; copy them the same way if you use those terminals. OpenCode settings are
+linked by `update-skills` in the next step. Finish with `exec zsh`.
 
-OpenCode is different. `update-skills` links the repository's
-`.config/opencode/opencode.json` into `~/.config/opencode/` in the next step.
-
-Install terminal settings if you use Ghostty or iTerm2:
-
-```bash
-mkdir -p "$HOME/Library/Application Support/com.mitchellh.ghostty"
-cp -i "Library/Application Support/com.mitchellh.ghostty/config" "$HOME/Library/Application Support/com.mitchellh.ghostty/config"
-cp -i "Library/Preferences/com.googlecode.iterm2.plist" "$HOME/Library/Preferences/com.googlecode.iterm2.plist"
-```
-
-Start a new terminal tab, or reload Zsh:
-
-```bash
-exec zsh
-```
-
-The current shell is replaced by a new Zsh process.
-
-### 5. Install the shared agent skills
-
-> **Warning:** `update-skills` replaces only instruction links already owned by
-> this dotfiles repository. It refuses an unexpected real file or external link.
+### 5. Install the shared skills
 
 ```bash
 update-skills
 ```
 
-If your shell cannot find `update-skills`, run `./bin/update-skills` from this
-repository instead.
-
-This command:
-
-1. Clones or updates gstack at `~/.local/share/gstack`.
-2. Installs the gstack package dependencies with Bun.
-3. Checks that Playwright Chromium launches, and downloads it with `curl`
-   when the check fails.
-4. Runs gstack setup for each installed agent it supports, with a 600-second
-   cap per agent.
-5. Rebuilds `.unified-skills/` from gstack and local skills.
-6. Links the shared skills directory into installed agents.
-7. Renders the global Oracle rules and links them into each installed agent's home directory.
-8. Links the OpenCode settings file.
-
-If an agent already has a real `skills` directory, the helper moves it to a
-timestamped backup before creating the link. Successful output reports
-`✔ Skills updated!`, then prints the gstack and unified-skills paths.
-
-Verify the links without changing them:
-
-```bash
-update-skills --doctor
+```text
+✔ Skills updated!
 ```
 
-Successful output ends with `✔ Skills doctor passed`.
+Clones gstack to `~/.local/share/gstack`, installs its dependencies, links the
+shared skills into each installed agent, renders the root rules, and links the
+agent homes. It refuses to replace files it does not own; a real `skills`
+directory is moved to a timestamped backup. Verify anytime with
+`update-skills --doctor` → `✔ Skills doctor passed`.
 
-### 6. Update global agent instructions
+### 6. Render the rules
 
-Run this command from `~/Projects/dotfiles` after changing global rules:
+Run after any rule edit:
 
 ```bash
-orly sync --global
+orly sync
 ```
-
-Expected output:
 
 ```text
-🟢 global: updated rules and 4 agent-home links
+🟢 rules rendered to AGENTS.md; 4 agent-home links current
 ```
 
-The links serve Claude, Codex, OpenCode, and Amp. Orly refuses regular files and
-links outside this repository.
+The root [`AGENTS.md`](AGENTS.md) is the only generated file.
+`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, OpenCode, and Amp all symlink to
+it. A rule edit is one commit here — every agent session in every repository
+reads it immediately.
 
-### 7. Set up a repository
+### 7. Register a repository
 
-Add the repository path and profile to `orly/repositories.json`, then run:
+Add its path and profile to `orly/repositories.json`. The profile declares the
+repository's commands (`conform`, `verify.*`) and optional `surfaces{user,docs}`
+prefixes for the docs gate. The repository keeps one hand-written `AGENTS.md`
+with project facts. No generated copies, no `.oracle/` directory.
+
+### 8. Gate the work
 
 ```bash
-orly adopt <REPOSITORY_NAME>
+orly gate
 ```
 
-Expected output is `🟢 <REPOSITORY_NAME>: adopted <PROFILE_NAME> (<N> files)`.
-Orly preserves a regular `AGENTS.md` as `AGENTS.project.md`, then composes it
-with common rules and the selected profile packs. Review and commit the result
-in the target repository.
+```text
+🔆 gate work
+   🟢 git.branch: on feat/example
+   🟢 git.tree: clean (active spec excluded)
+   🟢 repo.profile: agentsfleet -> agentsfleet
+...
+🟢 PR boundary open — CHORE(close) is the next motion
+```
 
-Adoption requires a clean registered checkout. It refuses external symbolic
-links, unmanaged destinations, sibling worktrees, and partial snapshots.
-
-### 8. Propagate rules updates
-
-Update every clean registered repository:
+`orly gate` runs work → verify → pr and stops at the first red group. Every
+criterion is mechanical. No spec → spec checks skip; quality gates still run.
+Slow suites run only when the branch carries code. A user-surface change with
+no docs change blocks the PR gate. The recorded way out:
 
 ```bash
-orly sync --all
+orly override <CRITERION> --reason <REASON>
 ```
 
-Check without changing files:
+The override is an empty commit with an `Orly-Override` trailer — visible in
+the Pull Request, dead with the branch. Check the carrier anytime:
+`orly doctor` → `🟢 root AGENTS.md is current and every agent home links to it`.
 
-```bash
-orly doctor --all
-```
-
-New worktrees inherit the tracked snapshot. Existing worktrees receive it when
-they merge or rebase the updated default branch. A dirty repository is reported
-and left untouched.
-
-`agentsfleet` keeps `make harness-verify` as its repository rule check.
-Verification and review remain separate lifecycle stages.
-
-See [Orly architecture](docs/ORLY_ARCHITECTURE.md) for profiles,
-locks, refusal rules, evidence, and lifecycle command mapping.
-
-### 9. Write local secret files (optional)
-
-The secret helper writes:
-
-- `~/.config/agentsfleet/.env` from the `ZMB_LOCAL_ENV` vault.
-- `~/.config/e2e/.env` from the `E2E_WORK` vault.
-
-It requires `OP_SERVICE_ACCOUNT_TOKEN`. Export the token in your shell for the
-first run, or place it in `~/.config/agentsfleet/.env`. Do not commit or print
-the token.
+### 9. Write secret files (optional)
 
 ```bash
 provision-env-1password
 ```
 
-The helper lists both destination files and asks before replacing them. It
-writes files with mode `600`, then checks the required variable names.
-Successful output ends with `✔ Done. Restart shell or: source ~/.zshrc`.
-
-Verify the files later without reading or printing their values:
-
-```bash
-provision-env-1password --doctor
+```text
+✔ Done. Restart shell or: source ~/.zshrc
 ```
 
-Successful output ends with `✔ env doctor passed`.
+Writes `~/.config/agentsfleet/.env` and `~/.config/e2e/.env` from 1Password
+vaults with mode `600`. Requires `OP_SERVICE_ACCOUNT_TOKEN` exported; never
+commit or print it. Verify with `provision-env-1password --doctor`.
 
-### 10. Verify the repository rules
+### 10. Verify the rules
 
 ```bash
-cd ~/Projects/dotfiles/orly && bun install --frozen-lockfile
-cd ~/Projects/dotfiles
-make audit
+cd orly && bun install --frozen-lockfile && cd .. && make audit
 ```
 
-Bun reports installed dependencies. The audit validates the registry and
-profiles, runs focused unit tests, proves byte-stable generation, checks rule
-invariants, and runs dispatch evaluations.
+```text
+✅ ALL CHECKS PASSED
+```
 
-## How the agent rules work
+## How the rules work
 
-[`orly/core/operating-model.md`](orly/core/operating-model.md) is
-the canonical global operating model. Profiles select rule packs and repository
-commands. The renderer produces [`AGENTS.md`](AGENTS.md) for this repository,
-the global agent-home file, and tracked consumer snapshots.
+[`orly/core/operating-model.md`](orly/core/operating-model.md) is the source.
+The renderer produces one artifact — the root [`AGENTS.md`](AGENTS.md) — and
+every agent home symlinks to it. Consumer repositories carry no copies; gates
+and rule pages resolve from this checkout.
 
 The dispatch index sends an agent to the smallest relevant rule page before an
 edit or claim:
@@ -325,129 +180,66 @@ edit or claim:
 |---|---|
 | Zig | [`dispatch/write_zig.md`](dispatch/write_zig.md) |
 | TypeScript or JavaScript | [`dispatch/write_ts_adhere_bun.md`](dispatch/write_ts_adhere_bun.md) |
-| SQL or database schema | [`dispatch/write_sql.md`](dispatch/write_sql.md) |
+| SQL or schema | [`dispatch/write_sql.md`](dispatch/write_sql.md) |
 | Any source file | [`dispatch/write_any.md`](dispatch/write_any.md) |
-| Specs, documentation, API prose, or authentication code | Matching `dispatch/write_*.md` page |
+| Specs, docs, API prose, auth | matching `dispatch/write_*.md` |
 | Verification claims | [`dispatch/verify.md`](dispatch/verify.md) |
 | Architecture names and flows | [`dispatch/name_architecture.md`](dispatch/name_architecture.md) |
 | Rule changes | [`dispatch/edit_rules.md`](dispatch/edit_rules.md) |
 
-Machine-checkable rules have scripts or fixtures under [`audits/`](audits/) and
-[`evals/`](evals/). `make audit` detects missing pages, stale indexes, and rule
-checks that no longer match their documentation.
-
-Read [`docs/ORLY_ARCHITECTURE.md`](docs/ORLY_ARCHITECTURE.md)
-for registry, profile, synchronization, refusal, and evidence details.
-
-Read [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md) for the
-full dispatch design.
+`make audit` proves the registry, rendering, rule invariants, and dispatch
+fixtures. Design detail: [`docs/ORLY_ARCHITECTURE.md`](docs/ORLY_ARCHITECTURE.md)
+and [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md).
 
 ## Repository map
 
 | Path | Contents |
 |---|---|
-| [`AGENTS.md`](AGENTS.md) | Generated dotfiles-profile instructions. |
-| [`orly/`](orly/) | Bun and TypeScript command, operating model, profiles, schemas, fixtures, and generated global rules. |
-| [`SOUL.md`](SOUL.md) | Orly's working style and collaboration notes. |
-| [`dispatch/`](dispatch/) | Rule pages selected by the work an agent is about to do. |
-| [`audits/`](audits/) | Shell checks and review questionnaires. |
-| [`evals/`](evals/) | Deterministic fixtures that prove dispatch checks accept and reject the right inputs. |
-| [`docs/`](docs/) | Shared standards, templates, architecture notes, and verification guidance. |
-| [`skills/`](skills/) | Local agent skills added to the shared skills directory. |
-| [`bin/`](bin/) | Setup, linking, update, and doctor commands. |
-| [`.claude/`](.claude/), [`.codex/`](.codex/), [`.config/`](.config/) | Agent and command-line tool settings. |
-| [`.zshrc`](.zshrc), [`.zshenv`](.zshenv), [`.gitconfig`](.gitconfig), [`.tmux.conf`](.tmux.conf) | Home-directory settings copied or linked during setup. |
-| [`Library/`](Library/) | Ghostty and iTerm2 settings stored at their macOS paths. |
-| [`.githooks/`](.githooks/) | Pre-commit and pre-push checks for this clone. |
-| [`.github/workflows/`](.github/workflows/) | GitHub checks for secret leaks. |
-| [`Makefile`](Makefile) | Audit and evaluation entry points. |
-| `.unified-skills/` | Generated links to gstack and local skills. Do not edit this directory by hand. |
+| [`AGENTS.md`](AGENTS.md) | Generated rules — the file every agent home links to. |
+| [`orly/`](orly/) | The gate engine, renderer, profiles, and fixtures (Bun + TypeScript). |
+| [`SOUL.md`](SOUL.md) | Orly's working style. |
+| [`dispatch/`](dispatch/) | Rule pages keyed to the work at hand. |
+| [`audits/`](audits/), [`evals/`](evals/) | Deterministic checks and their fixtures. |
+| [`docs/`](docs/) | Standards, templates, architecture notes, specs under `docs/v*/`. |
+| [`skills/`](skills/), `.unified-skills/` | Local skills and the generated shared set. |
+| [`bin/`](bin/) | Setup, linking, update, and doctor helpers. |
+| [`.githooks/`](.githooks/) | Pre-commit and pre-push checks. |
+| dotfiles proper | `.zshrc`, `.gitconfig`, `.tmux.conf`, agent settings, `Library/`. |
 
-## Routine maintenance
-
-Update all supported AI coding tools, relink dotfiles, refresh skills, and
-refresh global agent rules:
+## Maintenance
 
 ```bash
 update-ai-tools
 ```
 
-The helper updates `claude`, `opencode`, `amp`, and `@openai/codex` when they
-are installed. It then runs `link-bin-dotfiles`, `update-skills`, renders the
-global rules, verifies agent-home links, and reports repository snapshot status.
-It does not synchronize consumer repositories.
+Updates `claude`, `opencode`, `amp`, and `@openai/codex`, relinks dotfiles,
+refreshes skills, renders the root rules, and verifies the links.
+`update-ai-tools --doctor` runs the read-only checks; non-zero exit means a
+missing link or stale root `AGENTS.md`.
 
-Run all three read-only checks at any time:
+## macOS process limits (optional)
 
-```bash
-update-ai-tools --doctor
-```
-
-The command prints each checked path. It exits with a non-zero status for a
-missing link, changed managed file, or stale ruleset lock.
-
-## Optional macOS process limits
-
-Several coding agents, Docker, and concurrent builds can exhaust the default
-per-user process limit. Change these values only if you see
-`fork: resource temporarily unavailable`.
-
-Check the current values first:
-
-```bash
-sysctl kern.maxproc kern.maxprocperuid
-```
-
-Output varies by machine.
-
-The following commands append persistent settings to `/etc/sysctl.conf`.
-Repeated runs append duplicate lines, so inspect the file before running them.
+Only if you see `fork: resource temporarily unavailable`:
 
 ```bash
 echo "kern.maxproc=16384" | sudo tee -a /etc/sysctl.conf
 echo "kern.maxprocperuid=8192" | sudo tee -a /etc/sysctl.conf
 sudo sysctl -w kern.maxproc=16384 kern.maxprocperuid=8192
+printf '%s\n' 'ulimit -u 8192' 'ulimit -n 65536' >> ~/.zshenv && exec zsh
 ```
 
-Expected final output includes:
+Repeated runs append duplicate lines; inspect both files first.
 
-```text
-kern.maxproc: 16384
-kern.maxprocperuid: 8192
-```
+## Undo
 
-New shells can also use higher process and file-descriptor limits:
-
-The command appends two lines. Check `~/.zshenv` first to avoid duplicates.
+Links are symbolic. Inspect, then remove:
 
 ```bash
-printf '%s\n' 'ulimit -u 8192' 'ulimit -n 65536' >> ~/.zshenv
-exec zsh
+readlink "$HOME/.tmux.conf" && unlink "$HOME/.tmux.conf"
 ```
 
-These commands append two lines to `~/.zshenv`, then replace the current shell.
-
-## Remove or undo the setup
-
-The linking helpers use symbolic links. For example, inspect the tmux link:
-
-```bash
-readlink "$HOME/.tmux.conf"
-```
-
-Expected output points into `~/Projects/dotfiles`. Only then remove the link:
-
-```bash
-unlink "$HOME/.tmux.conf"
-```
-
-Use the same inspect-then-remove sequence for another home or project link.
-Restore copied configuration from the backup you made before setup. The skills
-helper also leaves timestamped `skills.backup.*` directories when it replaces a
-real skills directory.
-
-Deleting the clone breaks every remaining link into it. Remove or replace those
-links before deleting `~/Projects/dotfiles`.
+Restore copied files from your backup. Deleting the clone breaks every link
+into it — remove those links first.
 
 ## License
 
