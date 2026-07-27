@@ -160,9 +160,9 @@ One render target: dotfiles root `AGENTS.md`. Agent homes symlink to it. Consume
 
 ### §6 — Consumer migration (one commit per repo)
 
-- **Dimension 6.1** — agentsfleet: orly-managed copies + `.oracle/` + `AGENTS.project.md` deleted; thin hand-authored `AGENTS.md` (project facts + command table + operating-model pointer); `make/harness.mk` resolves gates from `ORLY_ROOT ?= $(HOME)/Projects/dotfiles`; gitleaks lock carve-out removed; `make harness-verify` green → Test `rubric_agentsfleet_thin`
-- **Dimension 6.2** — cache-kit.rs: copies + `.oracle/` deleted (5 gate scripts had no invoker); thin `AGENTS.md` → Test `rubric_cachekit_thin`
-- **Dimension 6.3** — docs repo: same shape → Test `rubric_docs_thin`
+- **Dimension 6.1** — DONE — agentsfleet: orly-managed copies + `.oracle/` + `AGENTS.project.md` deleted; thin hand-authored `AGENTS.md` (project facts + command table + operating-model pointer); `make/harness.mk` resolves gates from `ORLY_ROOT ?= $(HOME)/Projects/dotfiles`; gitleaks lock carve-out KEPT (history still holds the blobs); `make harness-verify` green → Test `rubric_agentsfleet_thin`
+- **Dimension 6.2** — DEFERRED (Indy-acked, see Discovery) — cache-kit.rs: copies + `.oracle/` deleted (5 gate scripts had no invoker); thin `AGENTS.md` → Test `rubric_cachekit_thin`
+- **Dimension 6.3** — DONE — docs repo: same shape → Test `rubric_docs_thin`
 
 ## Interfaces
 
@@ -332,4 +332,7 @@ obligation graded by the rubric.
 - **CHORE(open) deviation — no sibling worktree; branch cut in the main checkout.** The agent-home symlinks (`~/.claude/CLAUDE.md` and siblings) must resolve to a path that survives the branch, and §4.1 retargets them at `~/Projects/dotfiles/AGENTS.md`. A sibling worktree would either link agents at a directory removed post-merge or leave them on stale rules. Consequence accepted: a new agent session started mid-EXECUTE reads partially-rebuilt rules. Same-tree matches the operating model's stated default.
 - **Metrics review** — no analytics/funnel playbook update required: internal governance tooling, no product signal.
 - **Skill-chain outcomes** — (populated at VERIFY/CHORE(close)).
-- **Deferrals** — none.
+- **Deferrals** — cache-kit.rs migration (Dimension 6.2) deferred at Indy's direction; the repository was restored to an untouched state (0 pending changes).
+  > Indy (2026-07-27 21:55): "just leave it out for now in cache-kit.rs since its not upgraded yet" — context: Dimension 6.2, cache-kit thin migration; the repo is not upgraded yet and specs are being spun in agentsfleet.
+  > Indy (2026-07-27 21:56): "focus on agentsfleet and docs" — context: scope for the remainder of this milestone.
+  Its stale `.oracle/` snapshot is inert: nothing verifies it now that per-repository `doctor` is gone. Its profile stays registered so `orly gate` keeps working there. Two findings surfaced while it was briefly touched, both left in place: the 5 orly-managed gate scripts have no invoker (no hooks, no Makefile or Continuous Integration (CI) reference), and `cargo clippy -- -D warnings` fails on a pre-existing `collapsible_str_replace` lint at `tests/memcached_integration_test.rs:58`.
