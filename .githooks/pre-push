@@ -4,10 +4,9 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
-echo "pre-push: running deterministic governance audit" >&2
-make audit || exit 1
+GOVERNANCE_PATTERN='^(orly/(core|packs|profiles|src)/|orly/(registry|repositories)\.json|AGENTS\.md|SOUL\.md|dispatch/|audits/|docs/(EXECUTE_DOC_READS|ORLY_ARCHITECTURE|HARNESS_VERIFY_OUTPUT|DOCUMENTATION_RULES|TEMPLATE)\.md|evals/|\.githooks/|Makefile|README\.md)'
 
-semantic_change=0
+governance_change=0
 while read -r local_ref local_sha remote_ref remote_sha; do
   [[ -z "$local_sha" || "$local_sha" = "0000000000000000000000000000000000000000" ]] && continue
   if [[ "$remote_sha" = "0000000000000000000000000000000000000000" ]]; then
@@ -15,23 +14,23 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   else
     files="$(git diff --name-only "$remote_sha..$local_sha")"
   fi
-  if grep -qE '^(orly/(core|packs|profiles|src)/|orly/(registry|repositories)\.json|AGENTS\.md|SOUL\.md|dispatch/.*\.md|audits/agents-md\.md|evals/llms/fixtures\.jsonl|docs/(EXECUTE_DOC_READS|ORLY_ARCHITECTURE|HARNESS_VERIFY_OUTPUT)\.md|\.githooks/(pre-commit|pre-push)|Makefile)$' <<<"$files"; then
-    semantic_change=1
+  if grep -qE "$GOVERNANCE_PATTERN" <<<"$files"; then
+    governance_change=1
   fi
 done
 
-if [[ $semantic_change -eq 1 ]]; then
-  if [[ "${SKIP_INVARIANCE_PUSH:-0}" = "1" ]]; then
-    echo "pre-push: user override skips live comprehension; record the reason in the newest commit" >&2
-    llm_result="not-required"
-  else
-    echo "pre-push: semantic governance changed — running live comprehension smoke test" >&2
-    make llmevals SMOKE=1 || exit 1
-    llm_result="pass"
-  fi
-else
-  llm_result="not-required"
+# Non-governance pushes pay nothing: the audit proves the rule corpus, and a
+# push that does not touch it cannot have broken it.
+if [[ $governance_change -eq 0 ]]; then
+  exit 0
 fi
 
-bin/orly verify --all --write-evidence --llm-result "$llm_result" || exit 1
+echo "pre-push: governance changed — running deterministic audit" >&2
+make audit || exit 1
+
+# Live comprehension costs tokens on every installed agent and proves rule
+# QUALITY, not distribution integrity. It is off the push path: run
+# `make llmevals` by hand, or `make llmevals CHECK=1` for the zero-token
+# fixture validation that `make audit` already covers.
+bin/orly verify --all --write-evidence --llm-result not-required || exit 1
 exit 0

@@ -18,9 +18,9 @@ Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
 
 **Acronym expansion (durable artifacts AND human-facing communication):** spell out non-obvious acronyms / project codenames / vendor names on first mention in the same message — `Continuous Integration (CI)`, `Cross-Site Scripting (XSS)`, `Identifier (ID)`. Skip undergrad-CS staples with no expansion needed: `API`, `URL`, `HTTP`, `JSON`, `SQL`, `DNS`, `CSS`, `HTML`, `TCP`, `UDP`, `IP`, `OS`. Reuse the bare acronym after the first expansion. Applies to chat replies, PR descriptions, commit messages, and inline code comments — not just specs.
 
-**Acronym self-check (pre-send, invariant).** On par with CONFORM: before sending any message or committing any durable artifact, scan for `\b[A-Z][A-Z0-9]{1,5}\b` hits. Each one: staple allowlist above → skip; already expanded in this same message/artifact → skip; otherwise write `Full Form (ACR)` then reuse bare. Bitten recently: `RSC`, `SPA`, `OTP`, `SDK`, `MCP`, `UUID`, `FAPI`, `pk`/`sk`, `OIDC`, `JWT`, `RBAC`. Skipping = `ACRONYM CHECK: SKIPPED per user override (reason: ...)`; reasonable only when expansion would distort a verbatim quote.
+**Acronym self-check (pre-send, invariant).** On par with CONFORM: before sending any message or committing any durable artifact, scan for `\b[A-Z][A-Z0-9]{1,5}\b` hits. Each one: staple allowlist above → skip; already expanded in this same message/artifact → skip; otherwise write `Full Form (ACR)` then reuse bare. Bitten recently: `RSC`, `OTP`, `SDK`, `MCP`, `UUID`, `OIDC`, `JWT`, `RBAC`. Skipping = `ACRONYM CHECK: SKIPPED per user override (reason: ...)`; reasonable only when expansion would distort a verbatim quote.
 
-**Banned-vocabulary self-check (pre-send, invariant).** Same scan, same trigger points: whole-word **`phase`** and **`contract`**. Each hit → swap for the hierarchy / stage vocabulary above, or `external commitment` / `vendor agreement` for a genuine commercial agreement. `phase` is the one it bites on, caught across multiple sessions. Skipping = `BANNED-VOCAB CHECK: SKIPPED per user override (reason: ...)`; reasonable only when the term names a real commercial agreement with no clearer word, or would distort a verbatim quote.
+**Banned-vocabulary self-check (pre-send, invariant).** Same scan, same trigger points: whole-word **`phase`** and **`contract`**. Each hit → swap for the hierarchy / stage vocabulary above, or `external commitment` / `vendor agreement` for a genuine commercial agreement. Skipping = `BANNED-VOCAB CHECK: SKIPPED per user override (reason: ...)`; reasonable only when the term names a real commercial agreement with no clearer word, or would distort a verbatim quote.
 
 ## Documentation voice
 
@@ -37,7 +37,7 @@ Changelog entries then read `write_changelog` + [`docs/CHANGELOG_VOICE.md`](./do
 
 **Mid-task conflict** → (1) STOP, (2) name the confusion, (3) present tradeoff or ask one precise question, (4) wait. Don't paper over with assumptions.
 
-**Routine choice points** (no ambiguity, no conflict — two paths both solve it) → pick and proceed, stating the WHY in one line. **Reasoning is mandatory; lowest-cost is the *default* when reasoning is silent, not a constraint on it** — correctness, pattern-match, gate compliance, or a prior Kishore decision can argue for the pricier path, and the reasoning wins. Match answer shape to question shape: string-shaped questions ("where is X?") get string-shaped answers plus at most a one-line "because"; design/scope questions get the call + reasoning, with alternatives only when costs are genuinely symmetric AND Kishore's taste is load-bearing. Name the winner and move; don't enumerate options just because you can see them. If the answer is grep-able, grep. Wrong cheap moves cost ~2 min to revert; wrong nags cost a context switch — bias to act when the move is local + reversible.
+**Routine choice points** (no ambiguity, no conflict — two paths both solve it) → pick and proceed, stating the WHY in one line. **Reasoning is mandatory; lowest-cost is the *default* when reasoning is silent, not a constraint on it** — correctness, pattern-match, gate compliance, or a prior Kishore decision can argue for the pricier path, and the reasoning wins. Match answer shape to question shape: string-shaped questions ("where is X?") get string-shaped answers plus at most a one-line "because"; design/scope questions get the call + reasoning, with alternatives only when costs are genuinely symmetric AND Kishore's taste is load-bearing. Name the winner and move; don't enumerate options just because you can see them. If the answer is grep-able, grep. Bias to act when the move is local and reversible.
 
 ## Memory Discipline
 
@@ -186,6 +186,10 @@ Non-trivial (full lifecycle) if it: touches >1 file · new abstraction · data m
 
 **With spec:** `CHORE(open) → PLAN → EXECUTE → CONFORM → VERIFY → REVIEW → DOCUMENT → COMMIT → CHORE(close)`. **Without spec** (bug fix/config/refactor): `PLAN → EXECUTE → CONFORM → VERIFY → REVIEW → DOCUMENT → COMMIT`. CHORE bookends iff work creates/continues a spec under `docs/v*/{active,pending}/`.
 
+**Anchor invariant — `orly gate` proves the boundary.** No PR opens unless every `orly gate pr` criterion is green or carries an `Orly-Override` trailer Indy recorded with a reason. `orly gate` runs `work → verify → pr`, stops at the first red group, and only reads; green unlocks CHORE(close) but never performs it. No spec → spec criteria skip, quality gates still run (ad-hoc fixes gate clean). Slow suites (`verify.integration`, `verify.memory`) run only when the branch carries code. A user-surface change without a docs change is red until docs land or an override says why not.
+
+**LAND (after merge, or when Indy says merged):** `git checkout <default> && git pull origin <default>`; prune the merged worktree and branch; `make down` where the repository defines it. Files still pending → stash, pull, diff the stash against the new default; already-landed → drop it.
+
 <!-- oracle-packs:start workflow.specifications -->
 ### CHORE (open)
 
@@ -229,12 +233,7 @@ The `agentsfleet` output block and exact tiers live in [`docs/VERIFY_TIERS.md`](
 
 Run an adversarial diff review after verification and before documentation. Compare the implementation and tests against the plan, active spec, architecture, failure modes, public behavior, and every triggered rule. Address findings or record an Indy-approved deferral before advancing.
 
-**Review routing is runtime-specific and mandatory:**
-
-- **Codex:** run native `/review` (or `codex review` non-interactively), then invoke gstack `$review`.
-- **Claude, OpenCode, and Amp:** invoke gstack `/review`.
-
-Every selected review is local and pre-commit. They are distinct from post-push reviewer triage.
+**One route, every runtime: gstack `/review`.** Local and pre-commit, distinct from post-push reviewer triage.
 
 ### DOCUMENT
 
@@ -253,11 +252,13 @@ Required when spec involved — after last COMMIT, before PR. Also runs when par
 
 | # | When | Skill | What |
 |---|---|---|---|
-| 1 | VERIFY | `/write-unit-test` | Already ran — confirm clean. |
-| 2 | REVIEW | Runtime review route | Codex: native `/review` (`codex review` non-interactively), then gstack `$review`. Claude, OpenCode, Amp: gstack `/review`. Review the diff against the spec, architecture, REST guide (HTTP), `dispatch/write_zig.md` (Zig), failure modes, and invariants. Address or document deferrals. |
-| 3 | After every push | `kishore-babysit-prs` | Polls greptile per cadence, walks every review id, triages P0/P1 vs RULES.md, fixes+replies+reschedules. Stops on two consecutive empty polls. Never `gh pr checks --watch` for greptile. |
+| 1 | VERIFY | `/write-unit-test`, then `/write-integration-test` | Both run before the PR — never skipped, never deferred. Confirm clean. |
+| 2 | REVIEW | gstack `/review` | Every runtime, same route. Diff vs spec, architecture, REST guide (HTTP), `dispatch/write_zig.md` (Zig), failure modes, invariants. Address or record an Indy-acked deferral. |
+| 3 | After every push | `kishore-babysit-prs` | Per-cadence polls covering **all three surfaces: CI check runs (fix every failure your diff caused), greptile inline comments, and the PR-level summary thread.** Stops on two consecutive empty polls with CI green. Never `gh pr checks --watch` for greptile. |
 
-Every review in the runtime route is required. Skipping any one is a violation. **Step 2 runs local pre-commit reviews with no PR. They happen before the push; `kishore-babysit-prs` (step 3) is the post-push arm, triaging what reviewers actually post.** Reviewer unavailable → PR Session Notes: *"`<review route>` skipped — <reason> <ts>; rerun before merge."*
+Step 2 is pre-push and local; step 3 is the post-push arm. Reviewer unavailable → PR Session Notes: *"gstack `/review` skipped — <reason> <ts>; rerun before merge."*
+
+**PR budget — one per milestone.** A draft plus one follow-up is the ceiling; more means the milestone was mis-split. Fold new scope into the open PR (reopen `done/`→`active/` if needed) rather than opening a third.
 
 **Required outputs:** all Dimensions/Sections `DONE` (`IN_PROGRESS` if parked); spec moved `docs/v*/active/`→`docs/v*/done/` (iff complete); new `<Update>` in `~/Projects/docs/changelog.mdx` (template + version-bump matrix in `~/Projects/dotfiles/skills/release-template.md` — re-source each release, never paraphrase) **AND, re-reading the spec, the affected `~/Projects/docs/` pages revised to match (endpoints/CLI/flags/behavior) — an `<Update>` alone is insufficient when documented behavior changes**; **`docs/architecture/**` carries a non-empty diff for flow-defining changes, or Session Notes says why not (`dispatch/name_architecture.md` covers both homes)**; PR `## Session notes` with decisions, assumptions, dead ends, deferrals, `/write-unit-test` + runtime review outcomes, `kishore-babysit-prs` final report; orphan sweep complete (RULE ORP); ephemeral handoff docs deleted (`docs/**/HANDOFF_*.md`, `docs/**/handoff*.md`, `HANDOFF.md` at any depth — they brief the next agent, never the PR); **pre-commit `git status -uall` audit — every modified/untracked/conflict-resolved/hook-managed file staged into the CHORE(close) commit, or documented-as-excluded with reason in the commit body; `git status` MUST be empty post-commit before opening/updating the PR;** version sync (`VERSION` touched → `make sync-version`, commit propagated `build.zig.zon`/`agentsfleet/package.json`/`agentsfleet/src/cli.js`; `make check-version` passes).
 

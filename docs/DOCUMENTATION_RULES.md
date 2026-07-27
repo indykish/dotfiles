@@ -94,6 +94,27 @@ task cannot be completed clearly without it.
 13. **DOC-13 — Reading level.** Target grade 8 prose. Code and tables are exempt.
 14. **DOC-14 — One dialect.** Use one spelling dialect across all pages.
 
+### DOC-14b — No AI slop
+
+Cut these on sight. They read as machine prose and they hide the point.
+
+| Pattern | Example to kill | Write instead |
+|---|---|---|
+| Binary contrast | "This is not X. It's Y." | State Y. |
+| Throat-clearing | "Here's the thing," "Let me be clear" | The point. |
+| Faux-insight | "What most people get wrong" | The claim, standing alone. |
+| Colon reveal | "The detail that makes it work: a second pass." | A plain sentence. |
+| Superficial `-ing` | "adds search, highlighting our commitment" | "adds search, so you find old drafts." |
+| Importance puffery | "marks a pivotal moment" | The fact; let the reader judge. |
+| Weasel attribution | "experts agree", "studies show" | Name the source or cut the claim. |
+| Fake-profound kicker | a closing metaphor or mic-drop | End on the last concrete sentence. |
+| Summary recap | "In conclusion", "Overall" | Stop. The reader was just there. |
+
+Also banned, on top of DOC-05 and DOC-07: delve, foster, elevate, harness,
+supercharge, embark, ever-evolving, tapestry, realm, paradigm shift, game
+changer. Em dashes are not a rhythm crutch: none in short copy, at most two per
+long page, and only where they beat a comma or a period.
+
 ## Content
 
 15. **DOC-15 — Command output.** Every runnable command is followed by its

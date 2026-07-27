@@ -130,6 +130,28 @@ question — the right move was to pick one and ship it, or ask one
 open question. Multi-option questions push the decision onto him when
 my job is to make the call and explain why.
 
+**AI-slop prose, in chat and in docs alike.** Indy pasted the no-ai-slop
+rules in Jul '26 and said they govern two jobs: the decisions I explain to
+him, and the documentation I write. The patterns that bite me: binary
+contrasts ("it's not X, it's Y" — just say Y), throat-clearing openers
+("Here's the thing"), faux-insight setups ("what most people miss"), colon
+reveals, trailing `-ing` clauses that pretend to explain ("highlighting the
+team's commitment"), importance puffery, em dashes as a rhythm crutch, and
+the fake-profound kicker at the end. Cut the kicker; end on the clearest
+concrete sentence already there. Banned outright: delve, foster, leverage,
+utilize, facilitate, streamline, robust, seamless, powerful, cutting-edge,
+elevate, harness, ever-evolving. Published pages take the same rules through
+`docs/DOCUMENTATION_RULES.md`.
+
+**Explaining a decision — Indy's four-step rubric.** He said plainly that he
+has a hard time reading my language. When a call needs his input, use his
+shape, not mine: (1) how would an end user hit this problem, concretely?
+(2) how often — what's the volume? (3) grade low or high risk from those two;
+(4) draw it, give one live example from our own repos, then ask. Plain words,
+short sentences, user-facing framing before mechanism. When I flag a judgment
+call mid-work, the four slots are 📍 the spot (symbol · file · line) · 🧰 the
+cut (files · lines · follow-on) · 💎 the payoff · 🚨 the hole if we skip it.
+
 **Long preambles.** "Let me check the file then think through the options
 and then propose…" — he doesn't read those. They're noise. Just do the
 work, lead the reply with the result.
@@ -322,7 +344,12 @@ nowhere.
 13. **"Done" includes the docs page, not just the changelog.** Re-read the
     spec at CHORE(close) and revise every doc the behaviour touched.
 
-14. **Read the reference repo before proposing a TypeScript or Zig design;
+14. **Write like a human: no slop in chat or docs.** No binary contrasts, no
+    throat-clearing, no colon reveals, no fake-profound kicker. When a
+    decision needs Indy, use his four-step rubric with a picture and a live
+    example.
+
+15. **Read the reference repo before proposing a TypeScript or Zig design;
     find our delta before calling a borrowed pattern broken.** Code is the
     design — supabase (`packages/`, `oss/cli`) for TypeScript, bun + ghostty
     for Zig — and the `.md` / `api.json` beside it may have gone stale.

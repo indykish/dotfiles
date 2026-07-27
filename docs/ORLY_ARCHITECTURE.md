@@ -1,103 +1,95 @@
 # Orly architecture
 
-Orly uses one canonical registry, explicit profiles, generated agent-home
-instructions, and tracked repository snapshots. This removes implicit worktree
-mutation while keeping every repository's existing verification commands.
+Orly does two jobs. It renders one rules file, and it proves the boundary
+before a Pull Request (PR) opens. It stores nothing.
 
 ## Topology
 
 ```text
-orly/core/operating-model.md
-orly/packs/**
-orly/profiles/*.json
-orly/registry.json
-              │
-              ▼
-        bin/orly
-          │
-          ├── sync repository ──> tracked snapshot + ruleset lock
-          │
-          └── sync global ──────> orly/generated/global/AGENTS.md
-                                      │
-                                      └── agent-home symbolic links
+orly/core/operating-model.md   orly/packs/**   orly/profiles/*.json
+                              │
+                         bin/orly
+                              │
+          ┌───────────────────┴───────────────────┐
+          │                                       │
+   orly sync                                orly gate
+          │                                       │
+   AGENTS.md (repo root)                  reads git + the tree,
+          │                               runs the profile's commands,
+   ~/.claude/CLAUDE.md ─┐                 prints green or red
+   ~/.codex/AGENTS.md  ─┼─ symlinks              │
+   opencode, amp       ─┘                  exit 0 or 1
 ```
 
-`AGENTS.project.md` is the only repository-authored input appended to a
-snapshot. Generated files are ordinary tracked files, never cross-repository
-symbolic links.
+One generated artifact: the root `AGENTS.md`. Every agent home links to it, so a
+rule edit is one commit here and reaches every session in every repository at
+once. Consumer repositories keep one hand-written `AGENTS.md` with project facts
+and no copies. Their gate scripts run from `$ORLY_ROOT` (default
+`~/Projects/dotfiles`); their rule pages are read from the same checkout.
 
-## Reference closure
+## Why nothing is stored
 
-Every repository snapshot is reference-closed: each relative Markdown link and
-each `dispatch/*.md` target named by any rendered Markdown file resolves inside
-that repository. Profile markers remove operating-model rows and blocks whose
-packs are not selected, and filter managed Markdown documents the same way —
-excluded lines are dropped while included lines keep their marker verbatim, so
-the source profile's self-render stays byte-stable. Pack façades remain
-self-contained canonical files rather than depending on dotfiles-only design
-documents.
+The earlier model copied 44 files into each repository and tracked them with a
+Secure Hash Algorithm 256-bit (SHA-256) manifest. It cost a re-baseline commit
+on every edit, it invalidated every lock when the tool itself was refactored,
+and three of four repositories were stale anyway. The manifest was also a hash
+ledger inside git, which is already one.
 
-The `dotfiles` source profile deliberately selects the full pack inventory so its
-invariance audit exercises every route. Consumer profiles remain selective.
+So orly derives instead of storing. `orly verify --all` re-renders each profile
+twice and compares, then compares the committed `AGENTS.md` against a fresh
+render. Determinism and currency, no stored hashes.
 
-Rendering fails before writing a lock when a selected snapshot contains a
-missing or escaping reference. The `global` profile is the deliberate exception:
-it is an agent-home routing overlay whose targets are supplied by the active
-repository snapshot, not a repository snapshot itself.
+## Gates
 
-## Propagation
+`orly gate` runs three groups in order and stops at the first red one.
 
-Update global agent-home instructions:
+| Gate | Proves |
+|---|---|
+| `work` | branch is not the default; tree is clean; the repository resolves to a profile |
+| `verify` | Dimensions marked DONE (when a spec exists); `conform`; the fast `verify.*` commands |
+| `pr` | tree clean; branch pushed; spec gate; docs updated for user-surface changes; the slow suites |
 
-```bash
-orly sync --global
+Every criterion is mechanical — it reads an exit code or a file. Claims that
+cannot be proven that way stay prose and are graded by the spec's rubric; they
+never become fake criteria.
+
+Three behaviours worth knowing:
+
+- **No spec, no problem.** Spec criteria skip with a printed reason, so an
+  ad-hoc bug fix meets the quality gates without being told to write a spec.
+  Two active specs is an error — one stream per worktree.
+- **Slow suites are conditional.** `verify.integration` and `verify.memory` run
+  only when the branch diff carries code files.
+- **The docs gate is diff-shaped.** A change under a profile's `surfaces.user`
+  prefixes with no matching `surfaces.docs` change is red. Test files and the
+  spec tree never count.
+
+## Overrides
+
+`orly override <criterion> --reason <REASON>` writes an empty commit carrying an
+`Orly-Override: <criterion> (<reason>)` trailer. It is immutable once pushed,
+visible in the PR, scoped to the branch by merge-base, and dead after the merge.
+A red criterion with a matching trailer reports `overridden`, never green. A
+malformed trailer is not an override; the gate stays red.
+
+## Profiles
+
+A profile names its rule packs, its command surface, and optionally its diff
+surfaces:
+
+```json
+{
+  "commands": { "conform": [["make", "harness-verify"]],
+                "verify.unit": [["make", "test-unit-all"]] },
+  "surfaces": { "user": ["src/agentsfleetd/http/", "cli/src/"],
+                "docs": ["docs/"] }
+}
 ```
 
-The agent-home links point at that generated file, so later renders become
-visible immediately to installed agents.
-
-Update registered repository snapshots:
-
-```bash
-orly sync --all
-```
-
-Synchronization refuses a dirty repository, an absent `AGENTS.project.md`, an
-unmanaged destination, and an unknown profile. It never walks or mutates sibling
-worktrees.
-
-## Repository setup
-
-1. Add the repository path and profile to `orly/repositories.json`.
-2. Run `orly adopt <REPOSITORY_NAME>` from dotfiles.
-3. Review and commit the generated snapshot in the target repository.
-4. Run `orly doctor <REPOSITORY_NAME>`.
-
-The clean-tree boundary makes every propagation reviewable. A repository cannot
-receive a partial update while unrelated work is present.
-
-## Lifecycle command mapping
-
-`CONFORM`, `VERIFY`, and `REVIEW` are responsibilities, not command names.
-Profiles map those responsibilities to repository commands. The `agentsfleet`
-profile maps `CONFORM` to `make harness-verify`; that command remains unchanged.
-
-`VERIFY` runs the profile's correctness commands. `REVIEW` challenges the diff
-after those commands pass. No additional lifecycle stage is needed.
-
-The REVIEW command is runtime-specific. Codex first uses native `/review`, or
-`codex review` when invoked non-interactively, and then invokes gstack
-`$review`. Claude, OpenCode, and Amp use gstack `/review`. The Codex sequence
-provides two independent local pre-commit reviews; post-push reviewer triage
-remains separate.
+Orly owns policy and invokes these commands. The repository owns what they do.
 
 ## Evidence
 
-`orly verify --all` validates every profile and renders each profile
-twice. Byte-identical output proves deterministic generation. With
-`--write-evidence`, the command writes `.oracle/evidence.json` containing the
-source commit, registry digest, checks, and live comprehension result.
-
-Repository snapshots carry `.oracle/ruleset.lock`. `orly doctor` verifies
-each managed file's bytes and normalized mode (`0644` or `0755`), rejects managed
-symbolic links, and reports an outdated profile-specific ruleset digest.
+`orly verify --all --write-evidence` records the source commit and every check
+into `.oracle/evidence.json` (git-ignored). Pre-push writes it when the pushed
+range touches governance paths.
