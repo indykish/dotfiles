@@ -16,12 +16,12 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 **Milestone:** M01
 **Workstream:** 001
 **Date:** Jul 27, 2026
-**Status:** PENDING
+**Status:** IN_PROGRESS
 **Priority:** P2 — governance tooling; no customer surface, but every future milestone's flow runs through it
 **Categories:** CLI, DOCS
 **Batch:** B1 — no parallel siblings
-**Branch:** set at CHORE(open)
-**Test Baseline:** set at CHORE(open) — `unit=<N>` via `cd orly && bun test src` summary line
+**Branch:** `feat/m01-process-as-code`
+**Test Baseline:** `unit=25` (25 pass / 0 fail across 7 files, `cd orly && bun test src`)
 **Depends on:** none
 **Provenance:** LLM-drafted (Claude Opus 5 authoring; Fable 5 architecture review; external ChatGPT verdict P+F+C; Jul 27, 2026)
 **Canonical architecture:** `docs/ORLY_ARCHITECTURE.md` — rewritten by §5 of this spec; the rewrite IS the shape definition
@@ -218,6 +218,7 @@ Exit criteria per transition (fixed graph; profile commands{} supply the runnabl
 
 | Timestamp | From → To | Actor | Verdict |
 |---|---|---|---|
+| Jul 27, 2026: 04:35 PM | PENDING → IN_PROGRESS | agent | CHORE(open) — hand-run; the engine this spec builds does not exist yet |
 
 ## Test Specification (tiered)
 
@@ -315,6 +316,7 @@ Exit criteria per transition (fixed graph; profile commands{} supply the runnabl
 ## Discovery (consult log)
 
 - **Consults** — Architecture: Jul 27, 2026 session — Opus 5 review + Fable 5 subagent audit (ledger self-refuting; dual delivery via global symlink; downstream-first fixes) + external ChatGPT verdict (P+F+C; coarse states; three escape hatches; anchor invariant on movement). Indy decisions: process-as-code foundation; distribution ceremony dies; stage vocabulary retained.
+- **CHORE(open) deviation — no sibling worktree; branch cut in the main checkout.** The agent-home symlinks (`~/.claude/CLAUDE.md` and siblings) must resolve to a path that survives the branch, and §4.1 retargets them at `~/Projects/dotfiles/AGENTS.md`. A sibling worktree would either link agents at a directory removed post-merge or leave them on stale rules. Consequence accepted: a new agent session started mid-EXECUTE reads partially-rebuilt rules. Same-tree matches the operating model's stated default.
 - **Metrics review** — no analytics/funnel playbook update required: internal governance tooling, no product signal.
 - **Skill-chain outcomes** — (populated at VERIFY/CHORE(close)).
 - **Deferrals** — none.
