@@ -313,4 +313,4 @@ immediately preceding the edit. Generic "save for later" / "tactical decision" n
 - `dispatch/write_zig.md` (pub-surface) — PUB GATE; carve-out in §11.
 - `dispatch/write_any.md` (File & Function Length) — file ≤ 350, fn ≤ 50, method ≤ 70 (deinit/init don't escape these limits).
 - Universal rules (RULE UFS, RULE TGU, RULE ORP) live in `docs/greptile-learnings/RULES.md` and apply via the GREPTILE GATE.
-- This file is the **lifecycle convention** that those universal rules cannot express. Read it once at session start; re-read on sub-task shape change.
+- This file is the **lifecycle convention** that those universal rules cannot express. Read it once at session start; on sub-task shape change, section-scan (`grep -n "^## "`) and re-read only the touched sections — never the full file again.

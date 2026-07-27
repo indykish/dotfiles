@@ -152,9 +152,14 @@ provision-env-1password
 ✔ Done. Restart shell or: source ~/.zshrc
 ```
 
-Writes `~/.config/agentsfleet/.env` and `~/.config/e2e/.env` from 1Password
-vaults with mode `600`. Requires `OP_SERVICE_ACCOUNT_TOKEN` exported; never
-commit or print it. Verify with `provision-env-1password --doctor`.
+Writes `~/.config/agentsfleet/.env`, `~/.config/e2e/.env`,
+`~/.config/agentsfleet/ui.env.local`, and
+`~/.config/agentsfleet/runner.env.local` from 1Password vaults with mode
+`600`. The two `*.env.local` files are the machine-level sources that the
+agentsfleet repo's `post-checkout` hook symlinks into every worktree — one
+copy per machine, zero per checkout. Requires `OP_SERVICE_ACCOUNT_TOKEN`
+exported; never commit or print it. Verify with
+`provision-env-1password --doctor`.
 
 ### 10. Verify the rules
 
@@ -197,7 +202,7 @@ and [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md).
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Generated rules — the file every agent home links to. |
 | [`orly/`](orly/) | The gate engine, renderer, profiles, and fixtures (Bun + TypeScript). |
-| [`SOUL.md`](SOUL.md) | Orly's working style. |
+| [`SOUL.md`](SOUL.md) | Orly's judgment layer — precedent log of Kishore's verbatim calls, reply-shape rules, pre-send checklist. Each rule once; `AGENTS.md` holds the gates. |
 | [`dispatch/`](dispatch/) | Rule pages keyed to the work at hand. |
 | [`audits/`](audits/), [`evals/`](evals/) | Deterministic checks and their fixtures. |
 | [`docs/`](docs/) | Standards, templates, architecture notes, specs under `docs/v*/`. |

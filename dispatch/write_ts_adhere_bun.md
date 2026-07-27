@@ -278,7 +278,7 @@ immediately preceding the edit. **User-invokable only.** Generic "scope creep" /
 - Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `docs/greptile-learnings/RULES.md` and apply to TypeScript via the **GREPTILE GATE**.
 - Frontend visual primitives live in the UI Component Substitution section of this façade (UI GATE).
 - Length caps live in `dispatch/write_any.md` (LENGTH GATE — file ≤ 350, fn ≤ 50, method ≤ 70 — same as every other source language).
-- This file is the **TypeScript / Bun-specific** layer that those universal rules cannot express. Read it once at session start, re-read on sub-task shape change.
+- This file is the **TypeScript / Bun-specific** layer that those universal rules cannot express. Read it once at session start; on sub-task shape change, section-scan (`grep -n "^## "`) and re-read only the touched sections — never the full file again.
 
 ## Merged from dissolved gate cards
 

@@ -287,4 +287,4 @@ immediately preceding the edit. Generic "scope creep" is not a valid reason — 
 - M42_002 redaction harness (`src/runner/engine/runner_progress.zig`) — secret-redaction precondition; this doc's §6 inherits.
 - Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `docs/greptile-learnings/RULES.md`.
 - Length caps in `dispatch/write_any.md` (File & Function Length).
-- This file is the **wire-format and discipline contract** that those universal rules cannot express. Read it once at session start; re-read on sub-task shape change.
+- This file is the **wire-format and discipline layer** that those universal rules cannot express. Read it once at session start; on sub-task shape change, section-scan (`grep -n "^## "`) and re-read only the touched sections — never the full file again.
