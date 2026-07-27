@@ -250,6 +250,7 @@ CHORE(close) obligation graded by the rubric.
 | Timestamp | From → To | Actor | Verdict |
 |---|---|---|---|
 | Jul 27, 2026: 04:35 PM | PENDING → PLANNED | agent | bootstrap — CHORE(open) hand-run; the engine this spec builds did not exist yet |
+| Jul 27, 2026: 07:21 PM | PLANNED → EXECUTING | agent | green |
 
 ## Test Specification (tiered)
 
