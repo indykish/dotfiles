@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { resolve } from "node:path";
 
+import { advance, inspect, isState, LifecycleView, record, State } from "./lifecycle";
 import { isObject, OrlyError, RulesModel } from "./model";
 import { Renderer } from "./render";
 import {
@@ -18,6 +19,12 @@ const GLOBAL_SCOPE = "global";
 const ALL_FLAG = "--all";
 const PASS_RESULT = "pass";
 const NOT_REQUIRED_RESULT = "not-required";
+const ACCEPT_DIRTY_FLAG = "--accept-dirty";
+const REASON_FLAG = "--reason";
+const INDY_ACTOR = "indy";
+const PIPE_OUTPUT = "pipe";
+const PASS_GLYPH = "🟢";
+const FAIL_GLYPH = "🔴";
 
 type Scope =
   | { kind: typeof REPOSITORY_SCOPE; name: string }
@@ -72,7 +79,83 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
   }
   if (command === "render") return render(model, rest);
   if (command === "verify") return verify(model, rest);
+  if (command === "next") return next(model, rest);
+  if (command === "status") return status(model, rest);
+  if (command === "check") return check(model, rest);
+  if (command === "override") return override(rest);
+  if (command === "park") return park(rest);
+  if (command === "reset") return reset(rest);
   throw new OrlyError(`unknown command: ${command}`);
+}
+
+async function next(model: RulesModel, args: string[]): Promise<number> {
+  const { view, advanced } = await advance(model, projectRoot(), new Date(), args.includes(ACCEPT_DIRTY_FLAG));
+  if (!view.target) {
+    console.log(`🔆 ${view.state}: no machine transition from here — see the spec's Out of Scope`);
+    return 0;
+  }
+  printCriteria(view);
+  if (advanced) {
+    console.log(`🟢 ${view.state} → ${view.target} (${view.results.length} criteria green)`);
+    return 0;
+  }
+  const red = view.results.filter((result) => !result.ok);
+  console.log(`🔴 ${view.state} → ${view.target} blocked (${red.length} of ${view.results.length} red)`);
+  return 1;
+}
+
+async function status(model: RulesModel, args: string[]): Promise<number> {
+  const view = await inspect(model, projectRoot(), args.includes(ACCEPT_DIRTY_FLAG));
+  console.log(`🔆 ${view.specPath}`);
+  console.log(`   state: ${view.state}${view.target ? ` → ${view.target}` : " (no machine transition from here)"}`);
+  printCriteria(view);
+  return 0;
+}
+
+async function check(model: RulesModel, args: string[]): Promise<number> {
+  const target = args.find((argument) => !argument.startsWith("-")) ?? "";
+  if (!isState(target)) throw new OrlyError(`check requires one state: ${target || "none given"}`);
+  const view = await inspect(model, projectRoot(), args.includes(ACCEPT_DIRTY_FLAG), target);
+  printCriteria(view);
+  return view.results.every((result) => result.ok) ? 0 : 1;
+}
+
+async function override(args: string[]): Promise<number> {
+  const criterion = args.find((argument) => !argument.startsWith("-")) ?? "";
+  if (!criterion) throw new OrlyError("override requires one criterion name");
+  const written = await record(projectRoot(), new Date(), INDY_ACTOR, undefined, `OVERRIDE(${criterion}): ${requiredReason(args)}`);
+  console.log(`🟡 ${written.from}: recorded override of ${criterion}`);
+  return 0;
+}
+
+async function park(args: string[]): Promise<number> {
+  const written = await record(projectRoot(), new Date(), INDY_ACTOR, "PARKED", `PARK: ${requiredReason(args)}`);
+  console.log(`🟡 ${written.from} → PARKED`);
+  return 0;
+}
+
+async function reset(args: string[]): Promise<number> {
+  const target = optionValue(args, "--to");
+  if (!isState(target)) throw new OrlyError(`reset --to requires one state: ${target}`);
+  const written = await record(projectRoot(), new Date(), INDY_ACTOR, target as State, `RESET: ${requiredReason(args)}`);
+  console.log(`🟡 ${written.from} → ${written.to} (reset)`);
+  return 0;
+}
+
+function printCriteria(view: LifecycleView): void {
+  for (const result of view.results) console.log(`   ${result.ok ? PASS_GLYPH : FAIL_GLYPH} ${result.name}: ${result.detail}`);
+}
+
+function requiredReason(args: string[]): string {
+  const reason = optionalValue(args, REASON_FLAG)?.trim();
+  if (!reason) throw new OrlyError(`${REASON_FLAG} is required and must not be empty — an escape hatch without a reason is not a record`);
+  return reason;
+}
+
+function projectRoot(): string {
+  const result = Bun.spawnSync(["git", "rev-parse", "--show-toplevel"], { stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
+  if (result.exitCode !== 0) throw new OrlyError("not inside a Git repository");
+  return result.stdout.toString().trim();
 }
 
 async function syncRepositories(model: RulesModel, names: string[]): Promise<number> {
@@ -124,7 +207,7 @@ async function render(model: RulesModel, args: string[]): Promise<number> {
 async function verify(model: RulesModel, args: string[]): Promise<number> {
   if (!args.includes(ALL_FLAG)) throw new OrlyError("verify requires --all");
   const checks = await verifyAllProfiles(model);
-  for (const check of checks) console.log(`${check.result === PASS_RESULT ? "🟢" : "🔴"} ${check.name}${check.detail ? `: ${check.detail}` : ""}`);
+  for (const check of checks) console.log(`${check.result === PASS_RESULT ? PASS_GLYPH : FAIL_GLYPH} ${check.name}${check.detail ? `: ${check.detail}` : ""}`);
   if (args.includes("--write-evidence")) {
     const result = optionalValue(args, "--llm-result") ?? NOT_REQUIRED_RESULT;
     if (result !== PASS_RESULT && result !== NOT_REQUIRED_RESULT) throw new OrlyError("--llm-result must be pass or not-required");
@@ -177,9 +260,17 @@ function optionalValue(args: string[], name: string): string | undefined {
 }
 
 function printHelp(): void {
-  console.log(`orly — compose common rules with repository instructions
+  console.log(`orly — drive the lifecycle; carry the rules
 
-Usage:
+Lifecycle (no transition without proven exit criteria, or a recorded override):
+  orly next [--accept-dirty]        advance one state, or report what is red
+  orly status [--accept-dirty]      current state + next criteria (read-only)
+  orly check <STATE>                exit 0 iff that state's criteria hold
+  orly override <CRITERION> --reason <REASON>
+  orly park --reason <REASON>
+  orly reset --to <STATE> --reason <REASON>
+
+Rules:
   orly adopt <REPOSITORY>
   orly sync <REPOSITORY|--all|--global>
   orly doctor <REPOSITORY|--all|--global>`);

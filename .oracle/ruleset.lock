@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "profile": "dotfiles",
-  "ruleset_digest": "269cbf85a88ed84d5a35de2e7db217077de99d7efe1a898a5f60ae067a08e838",
+  "ruleset_digest": "feac456bec297b867f420a1485964a593eb894a87d7a659eaeb9d9e50cf9746d",
   "files": {
     ".oracle/managed-files.json": "0c0503f236aae9ab268ef95ec07755f90baf830bd8b630d9a736b390beeeb7b5",
     ".oracle/profile.json": "f122380ddb22fc927d72204da53e8c9a5c4bc63c176c643b0e0e4822fa87ac09",
-    "AGENTS.md": "9013e4c0ca1fae86298c97e6bfdc0010cc9e19f6fe28df7b789ecc9000644319",
+    "AGENTS.md": "9d1bf824e1378137ac223f64c1f295fd4035b2418862816b741c18f1b4b8fcbf",
     "audits/agents-md.md": "0375b4fc161eddad21bc1997c6c9e2630fddc631df36c997366f7528f92fc775",
     "audits/cross-tier-rates.sh": "3672ce3b7972593bddfd691b4b251596b6adadb419df9aec1fdad7477cce18d0",
     "audits/deinit-pairs.sh": "6d3ee2dd3be599c48f2dad5ae48908878a8e504c757a710808ebb8fb7a5340d6",
@@ -13,7 +13,7 @@
     "audits/error-codes.sh": "38442d78fdb441ad67e5b604b12a60aee0508fb244d2a3291ac3e134814a841c",
     "audits/logging.sh": "f75bd9cf8ff875b326230aa30eed7dcb518befb3b35dfaaa10aac06944f0fa87",
     "audits/msid-ui.sh": "31610c18b7cf17537b13b22e728a05e1dc97287b737a03344d82b603d28479e4",
-    "audits/spec-template.sh": "aeec4f02edf0fa0a20b99d6fed34a9884890da94537002adce2ea0205900227d",
+    "audits/spec-template.sh": "cafd9fd8367d9626209741f3967748f2154fda5ad1625e105715b69556188bec",
     "audits/sql-mod.sh": "0a3e3300c0f0ff955faaa5bca82d5feed22d140631af9723f3eaa1225d2e2984",
     "audits/ufs.sh": "ddafdb25932c27dc968b798a537b21304ff853ee464f447f8392fd43ba905aa6",
     "dispatch/edit_rules.md": "35266e3a028cdb5431a744c8935f221fd1170672cd88a663b980a73facafe788",
@@ -46,7 +46,7 @@
     "docs/ORLY_ARCHITECTURE.md": "4eb14495ad924736b1f8a8b8941fa54ee9751f9a951f621eb8e7c97a4a703b6c",
     "docs/REST_API_DESIGN_GUIDELINES.md": "cd9f7fb3e58d36fea531fb8f7b990ac8cd004699b4e12b3f89a68fe05d65b152",
     "docs/SCHEMA_CONVENTIONS.md": "a6dde1a7eb1ce0e7703b6c5b83a4d8c4427b1473454525ba8c9a4ebe775d201f",
-    "docs/TEMPLATE.md": "9f18a5749ab3b6dced96cec5260619c584d6618918512e893cc83c4368eaef6a",
+    "docs/TEMPLATE.md": "12d06bbb33a09eba049a8f6141b096f852d86f1ceca2e51f140d5f6766db68dc",
     "docs/VERIFY_TIERS.md": "06a4e008d4b06c1b69d34e3439f1a9ed382d57eb95b7254e0de706f4bc8f8355",
     "docs/greptile-learnings/RULES.md": "af0dbdcb70d55b5c513e51f6569894fce7c92bcda9b32b0c04652550ec177baf"
   },

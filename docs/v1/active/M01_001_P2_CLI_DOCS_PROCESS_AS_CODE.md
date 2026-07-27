@@ -56,8 +56,9 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 |------|--------|-----|
 | `docs/REST_API_DESIGN_GUIDELINES.md` | EDIT | §1 port-up: banned-vocab fixes + two owner-approved agentsfleet exception blocks (pack-markered) |
 | `docs/VERIFY_TIERS.md` | EDIT | §1 port-up: agentsfleet's evolved copy is the truth; replace wholesale |
-| `orly/src/lifecycle.ts` | CREATE | §2–§3 state graph, transition log, exit-criteria evaluation, escape hatches |
-| `orly/src/lifecycle.test.ts` | CREATE | engine unit/integration/e2e tests |
+| `orly/src/lifecycle.ts` | CREATE | §2–§3 state graph, transition log, advance orchestration, escape hatches |
+| `orly/src/criteria.ts` | CREATE | §2 exit-criterion definitions + evaluation (LENGTH GATE split from lifecycle.ts) |
+| `orly/src/{lifecycle,criteria}.test.ts` | CREATE | engine unit/integration/e2e tests |
 | `orly/src/cli.ts` | EDIT | verbs `next`/`status`/`check`/`override`/`park`/`reset`; drop `sync <repo>`/`--all`/`adopt` |
 | `orly/src/repository.ts` | EDIT | delete distribution/adoption/replacement guards; keep agent-home linking |
 | `orly/src/render.ts` | EDIT | render global → root `AGENTS.md`; delete lock/manifest writing and `verifyLock` |
@@ -77,7 +78,7 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 | `audits/agents-md.md` | EDIT | reword 4 ledger rows; add Scenario 27 (engine semantics) |
 | `audits/data.sh` | EDIT | `NAMED_SCENARIOS` +1 for Scenario 27 |
 | `docs/TEMPLATE.md` | EDIT | add `## Transitions` append-only log section |
-| `audits/spec-template.sh` | EDIT | `REQUIRED_SECTIONS` += Transitions |
+| `audits/spec-template.sh` | EDIT | `REQUIRED_SECTIONS` += Transitions; `--file <path>` mode so the engine calls the same gate (one source of truth) |
 | `dispatch/write_spec.md` | EDIT | name the Transitions section in Family 2 prose |
 | `dispatch/edit_rules.md` | EDIT | required-action list loses lock/digest/push-smoke language |
 | `docs/ORLY_ARCHITECTURE.md` | EDIT | rewrite: P+F+C topology, anchor invariant, provenance-in-commit-message |
@@ -129,18 +130,18 @@ agentsfleet's copies evolved ahead of the source; deleting consumer copies (§6)
 
 The state machine: `PENDING → PLANNED → EXECUTING → VERIFIED → PR_READY → DONE`, plus `PARKED` reachable from any working state. Stage names are the existing vocabulary; CONFORM/REVIEW/DOCUMENT are exit criteria inside transitions, not dwelling states. State record = append-only `## Transitions` table in the active spec. v1 ends at PR_READY.
 
-- **Dimension 2.1** — Transitions log: parse, tail-validate (`last.to` must equal observed state), append; no rewrite path exists → Test `test_transitions_append_only`
-- **Dimension 2.2** — `orly status`: repo → active spec → current state → next transition's criteria with green/red per line; read-only → Test `test_status_reports_red_criteria`
-- **Dimension 2.3** — `orly next`: evaluate current transition's exit criteria; all green → append transition + update spec `Status:` field; any red → print each failing criterion (name, command, one output line), exit 1, no append → Test `test_next_halts_on_red`
-- **Dimension 2.4** — exit criteria wiring: built-ins (spec-template gate clean, zero `[?]` in spec, clean-or-accepted tree, non-default branch, Dimensions marked DONE, changelog-or-exemption, branch pushed) + profile `commands{}` groups (`conform`, `verify.*`) per the criteria table in Interfaces → Test `test_criteria_per_transition`
-- **Dimension 2.5** — `orly check <state>`: read-only, exit-code-only; safe for Continuous Integration (CI) later → Test `test_check_readonly`
+- **Dimension 2.1** — DONE — Transitions log: parse, append, derive state from the tail; an unparseable data row throws rather than inventing a state; no rewrite path exists → Test `test_transitions_append_only`
+- **Dimension 2.2** — DONE — `orly status`: repo → active spec → current state → next transition's criteria with green/red per line; read-only → Test `test_status_reports_red_criteria`
+- **Dimension 2.3** — DONE — `orly next`: evaluate current transition's exit criteria; all green → append transition + update spec `Status:` field; any red → print each failing criterion (name, command, one output line), exit 1, no append → Test `test_next_halts_on_red`
+- **Dimension 2.4** — DONE — exit criteria wiring: built-ins (spec gate, open-questions, Product Clarity, branch, tree, profile resolution, Dimensions DONE, pushed) + profile `commands{}` groups (`conform`, `verify.*`) per the criteria table in Interfaces; every criterion mechanical → Test `test_criteria_per_transition`
+- **Dimension 2.5** — DONE — `orly check <state>`: read-only, exit-code-only; safe for Continuous Integration (CI) later → Test `test_check_readonly`
 
 ### §3 — Escape hatches (owner authority, recorded)
 
 Exactly three. Each requires a non-empty `--reason`, appends a log entry visible in the Pull Request (PR) diff, and never marks a failed command green — an OVERRIDE entry is distinct from a pass.
 
-- **Dimension 3.1** — `orly override <criterion> --reason` appends OVERRIDE row; `next` treats that criterion as satisfied-by-override → Test `test_override_recorded_not_green`
-- **Dimension 3.2** — `orly park --reason` / `orly reset --to <state> --reason` append rows; empty reason refused → Test `test_park_reset_require_reason`
+- **Dimension 3.1** — DONE — `orly override <criterion> --reason` appends OVERRIDE row; `next` treats that criterion as satisfied-by-override and stamps the advance `green (N override(s): …)`, never plain green → Test `test_override_recorded_not_green`
+- **Dimension 3.2** — DONE — `orly park --reason` / `orly reset --to <state> --reason` append rows; empty reason refused → Test `test_park_reset_require_reason`
 
 ### §4 — Thin distribution (Model F)
 
@@ -174,16 +175,32 @@ orly override <criterion> --reason "…"    append OVERRIDE row (owner authority
 orly park --reason "…"   |   orly reset --to <state> --reason "…"
 orly sync --global | doctor | render | validate | verify --all     (surviving verbs)
 
-Transitions row:  | {ISO ts} | FROM→TO | {agent|indy} | green | OVERRIDE(<criterion>) |
+State record: the `## Transitions` table in the active spec. Current state = the
+last row's TO (no rows = PENDING). `**Status:**` is a derived human summary
+(PENDING / IN_PROGRESS / DONE), never the state itself — one source of truth.
+
+Row schema (one table carries advances, overrides, parks, resets):
+  | {MMM DD, YYYY: HH:MM AM/PM} | FROM → TO | {agent|indy} | {verdict} |
+  advance   FROM → TO     verdict "green" or "green (N override(s))"
+  override  STATE → STATE verdict "OVERRIDE(<criterion>): <reason>"
+  park      STATE → PARKED verdict "PARK: <reason>"
+  reset     ANY → STATE   verdict "RESET: <reason>"   (bypasses the graph — its purpose)
+An override applies only to the state it was recorded in: scanning back from the
+tail stops at the first advance row.
+
 Exit codes: 0 advanced/green · 1 criteria red · 2 usage or state corruption
 
-Exit criteria per transition (fixed graph; profile commands{} supply the runnable rows):
-  PENDING→PLANNED    spec-template gate clean · zero "[?]" · Product Clarity present
-  PLANNED→EXECUTING  clean-or-accepted tree · non-default branch · profile resolves
-  EXECUTING→VERIFIED conform commands green · verify.* commands green · touched
-                     Dimensions marked DONE
-  VERIFIED→PR_READY  changelog-or-exemption · docs updated per surface checklist ·
-                     Dead Code Sweep clean · branch pushed · spec-template gate clean
+Exit criteria per transition — every criterion is MECHANICAL (a check the machine
+runs and reads an exit code from). Nothing unmeasurable is a criterion; the
+anchor invariant says "the machine can prove", so unprovable claims stay prose.
+  PENDING→PLANNED    spec.gate (audits/spec-template.sh --file, both families) ·
+                     spec.open-questions (zero "[?]") · spec.product-clarity
+  PLANNED→EXECUTING  git.branch (not the default branch) · git.tree (clean, or
+                     --accept-dirty) · repo.profile (registered + resolves)
+  EXECUTING→VERIFIED spec.dimensions (every Dimension marked DONE) ·
+                     cmd.conform · cmd.verify.* (profile commands{}, exit 0 each)
+  VERIFIED→PR_READY  git.tree · git.pushed (upstream set, nothing unpushed) ·
+                     spec.gate · spec.dimensions
 ```
 
 ## Failure Modes
@@ -218,7 +235,7 @@ Exit criteria per transition (fixed graph; profile commands{} supply the runnabl
 
 | Timestamp | From → To | Actor | Verdict |
 |---|---|---|---|
-| Jul 27, 2026: 04:35 PM | PENDING → IN_PROGRESS | agent | CHORE(open) — hand-run; the engine this spec builds does not exist yet |
+| Jul 27, 2026: 04:35 PM | PENDING → PLANNED | agent | bootstrap — CHORE(open) hand-run; the engine this spec builds did not exist yet |
 
 ## Test Specification (tiered)
 
@@ -286,7 +303,8 @@ Exit criteria per transition (fixed graph; profile commands{} supply the runnabl
 
 ## Out of Scope
 
-- LAND/SHIP machine states (`pr-ready → landed → deployed → observed`) — v2 spec; prose-manual until then.
+- LAND/SHIP machine states (`pr-ready → landed → deployed → observed`) — v2 spec; prose-manual until then. `PR_READY → DONE` (CHORE(close)) is likewise hand-recorded in v1: `DONE` exists in the state enum for Status derivation, but no transition into it is implemented.
+- Non-mechanizable exit criteria — changelog/docs-page currency and Dead Code Sweep were considered for `VERIFIED→PR_READY` and cut: no honest machine signal exists for them here (dotfiles' changelog lives in a sibling repo). They remain prose obligations enforced at CHORE(close) and graded by the Acceptance Rubric. Adding them later means adding a real signal, not a checkbox.
 - CI enforcement (`orly check pr-ready` as a protected-branch check) — needs Indy's explicit CI-edit approval; named follow-up.
 - Generated per-repo operating brief for cloud visitors — build only on demonstrated need.
 - Deleting the llmevals/questionnaire corpus — demoted off the push path here; removal is a later cleanup once the engine proves itself.

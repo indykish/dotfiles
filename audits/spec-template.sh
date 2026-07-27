@@ -52,8 +52,15 @@ case "$MODE" in
   --include-done|include-done)
     mapfile -t SPECS < <(find docs/v[0-9]* -type f -name '*.md' 2>/dev/null | grep -E '/(pending|active|done)/' || true)
     ;;
+  --file|file)
+    # Single named spec, both families — the lifecycle engine's spec.gate
+    # criterion calls this so the engine and pre-commit share one enforcer.
+    [[ -n "${2:-}" ]] || { printf "usage: %s --file <spec path>\n" "$0" >&2; exit 64; }
+    [[ -f "$2" ]] || { printf "FAIL: spec not found: %s\n" "$2" >&2; exit 1; }
+    SPECS=("$2")
+    ;;
   *)
-    printf "usage: %s [--staged|--all|--include-done]\n" "$0" >&2
+    printf "usage: %s [--staged|--all|--include-done|--file <path>]\n" "$0" >&2
     exit 64
     ;;
 esac
@@ -122,6 +129,7 @@ REQUIRED_SECTIONS=(
   '^#+ .*Acceptance (Criteria|Rubric):Acceptance Rubric (legacy heading Acceptance Criteria accepted)'
   '^#+ .*Product Clarity:Product Clarity (authoring record)'
   '^#+ .*Discovery:Discovery (consult log)'
+  '^#+ .*Transitions:Transitions (lifecycle state record — the engine appends here)'
 )
 
 # Template residue — strings that exist ONLY in the unfilled template. Their
@@ -189,7 +197,7 @@ scan_required() {
 for spec in "${SPECS[@]}"; do
   [[ -f "$spec" ]] || continue
   scan_spec "$spec"
-  case "$MODE" in --staged|staged) scan_required "$spec" ;; esac
+  case "$MODE" in --staged|staged|--file|file) scan_required "$spec" ;; esac
 done
 
 if [[ $FAIL -ne 0 ]]; then
