@@ -129,7 +129,6 @@ REQUIRED_SECTIONS=(
   '^#+ .*Acceptance (Criteria|Rubric):Acceptance Rubric (legacy heading Acceptance Criteria accepted)'
   '^#+ .*Product Clarity:Product Clarity (authoring record)'
   '^#+ .*Discovery:Discovery (consult log)'
-  '^#+ .*Transitions:Transitions (lifecycle state record — the engine appends here)'
 )
 
 # Template residue — strings that exist ONLY in the unfilled template. Their

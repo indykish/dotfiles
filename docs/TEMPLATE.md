@@ -278,18 +278,6 @@ The implementing agent revisits this table after implementation and during
 /review; missing action events, funnel timers, or feature-flag exposure events
 are implementation gaps, not notes for later. -->
 
-## Transitions
-
-| Timestamp | From → To | Actor | Verdict |
-|---|---|---|---|
-
-<!-- tpl: The lifecycle state record — `orly next` appends here and NOTHING
-rewrites it. Current state = the last row's TO (no rows = PENDING); the
-**Status:** field above is a derived human summary, not the state. Leave the
-table empty at authoring: the engine writes advances (`green`), overrides
-(`OVERRIDE(<criterion>): <reason>`), parks, and resets. A row you hand-write is
-a bootstrap, and says so in its verdict. -->
-
 ## Test Specification (tiered)
 
 | Dimension | Tier | Test | Asserts (concrete inputs → expected output) |

@@ -10,7 +10,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
   sequencing signal. A section that contradicts these rules loses — delete it.
 -->
 
-# M01_001: Process-as-code — `orly next` lifecycle engine + thin rule distribution
+# M01_001: Process-as-code — `orly gate` PR-boundary engine + thin rule distribution
 
 **Prototype:** v1.0.0
 **Milestone:** M01
@@ -30,9 +30,9 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 
 ## Overview
 
-**Goal (testable):** `orly next` advances a spec PENDING→PR_READY only when the current transition's declared exit criteria all pass (or carry a recorded override), and a rule edit reaches every agent session through one dotfiles commit with zero consumer sync commits.
+**Goal (testable):** `orly gate pr` exits 0 only when every PR-boundary criterion passes or carries a recorded override trailer — in all three federated repos, spec or no spec — and a rule edit reaches every agent session through one dotfiles commit with zero consumer sync commits.
 **Problem:** 21 of the last 36 file-touching dotfiles commits are hash-rebaseline ceremony; 3 of 4 federated repos are red on `orly doctor`; downstream-first rule fixes get flagged as integrity violations; lifecycle stages are enforced only by four stochastic agent runtimes interpreting 32 KB of prose.
-**Solution summary:** Encode the lifecycle as a state machine in the orly Command-Line Interface (CLI) — states are the existing stage vocabulary, exit criteria are profile commands plus built-in checks, and an append-only `## Transitions` log in the spec is the state record. Simultaneously delete rule *distribution*: the root `AGENTS.md` render (symlinked into every agent home) becomes the sole rules carrier, consumer repos thin to one hand-authored `AGENTS.md`, and executable gates resolve from the dotfiles checkout. The Secure Hash Algorithm (SHA-256) ledger, manifests, digests, and push-time live Large Language Model (LLM) evals are removed.
+**Solution summary:** Encode the lifecycle's boundaries as derived gates in the orly Command-Line Interface (CLI) — ordered gate groups (work → verify → pr) whose criteria are profile commands plus built-in checks, evaluated fresh from git and the working tree on every run; git history is the only state record. Simultaneously delete rule *distribution*: the root `AGENTS.md` render (symlinked into every agent home) becomes the sole rules carrier, consumer repos thin to one hand-authored `AGENTS.md`, and executable gates resolve from the dotfiles checkout. The Secure Hash Algorithm (SHA-256) ledger, manifests, digests, and push-time live Large Language Model (LLM) evals are removed.
 
 ## PR Intent & comprehension handshake
 
@@ -56,11 +56,11 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 |------|--------|-----|
 | `docs/REST_API_DESIGN_GUIDELINES.md` | EDIT | §1 port-up: banned-vocab fixes + two owner-approved agentsfleet exception blocks (pack-markered) |
 | `docs/VERIFY_TIERS.md` | EDIT | §1 port-up: agentsfleet's evolved copy is the truth; replace wholesale |
-| `orly/src/lifecycle.ts` | CREATE | §2–§3 state graph, transition log, advance orchestration, escape hatches |
+| `orly/src/gates.ts` | CREATE | §2–§3 gate groups, ordered runner, override-trailer scan |
 | `orly/src/criteria.ts` | CREATE | §2 exit-criterion definitions + evaluation (LENGTH GATE split from lifecycle.ts) |
 | `orly/src/surfaces.ts` | CREATE | §2 branch-diff classification: user-surface, docs, code (Dimensions 2.6–2.7) |
-| `orly/src/{lifecycle,criteria,surfaces}.test.ts` | CREATE | engine unit/integration/e2e tests |
-| `orly/src/cli.ts` | EDIT | verbs `next`/`status`/`check`/`override`/`park`/`reset`; drop `sync <repo>`/`--all`/`adopt` |
+| `orly/src/{gates,criteria,surfaces}.test.ts` | CREATE | engine unit/integration/e2e tests |
+| `orly/src/cli.ts` | EDIT | verbs `gate`/`override`; drop `sync <repo>`/`--all`/`adopt` |
 | `orly/src/repository.ts` | EDIT | delete distribution/adoption/replacement guards; keep agent-home linking |
 | `orly/src/render.ts` | EDIT | render global → root `AGENTS.md`; delete lock/manifest writing and `verifyLock` |
 | `orly/src/model.ts` | EDIT | delete `profileDigest`/`registryDigest`/`contentDigest`/`implementationSources` |
@@ -78,9 +78,7 @@ Blast-radius grep executed at authoring: `grep -rln 'ruleset.lock|ruleset_digest
 | `.githooks/pre-push` | EDIT | audit+evidence scoped to governance paths; live LLM smoke removed (manual/scheduled) |
 | `audits/agents-md.md` | EDIT | reword 4 ledger rows; add Scenario 27 (engine semantics) |
 | `audits/data.sh` | EDIT | `NAMED_SCENARIOS` +1 for Scenario 27 |
-| `docs/TEMPLATE.md` | EDIT | add `## Transitions` append-only log section |
-| `audits/spec-template.sh` | EDIT | `REQUIRED_SECTIONS` += Transitions; `--file <path>` mode so the engine calls the same gate (one source of truth) |
-| `dispatch/write_spec.md` | EDIT | name the Transitions section in Family 2 prose |
+| `audits/spec-template.sh` | EDIT | `--file <path>` mode so the engine's spec.gate calls the same enforcer (one source of truth) |
 | `dispatch/edit_rules.md` | EDIT | required-action list loses lock/digest/push-smoke language |
 | `docs/ORLY_ARCHITECTURE.md` | EDIT | rewrite: P+F+C topology, anchor invariant, provenance-in-commit-message |
 | `README.md` | EDIT | propagation/doctor sections match the thin model |
@@ -127,24 +125,20 @@ agentsfleet's copies evolved ahead of the source; deleting consumer copies (§6)
 - **Dimension 1.1** — DONE — REST guide source carries the downstream taste fixes (guarantee-wording, stage-wording in the state-field list) and both exception blocks → Test `grep_rest_guide_ported`
 - **Dimension 1.2** — DONE — `VERIFY_TIERS.md` source replaced wholesale with agentsfleet's evolved copy (coverage lanes, integration roots, rewritten memleak lanes) → Test `grep_verify_tiers_ported`
 
-### §2 — Lifecycle engine (Model P)
+### §2 — PR-boundary gates (Model P, simplified: verdicts, no stored state)
 
-The state machine: `PENDING → PLANNED → EXECUTING → VERIFIED → PR_READY → DONE`, plus `PARKED` reachable from any working state. Stage names are the existing vocabulary; CONFORM/REVIEW/DOCUMENT are exit criteria inside transitions, not dwelling states. State record = append-only `## Transitions` table in the active spec. v1 ends at PR_READY.
+Redesigned mid-milestone after Indy's simplicity challenge (Discovery). The first build stored state in a spec-resident Transitions table — a second ledger inside git, the same mistake the SHA ledger made one layer up, and it could not run in cache-kit (`docs/v0.9.2/`) or the docs repo (no spec tree). Gates replace it: every verdict is derived fresh from git + the working tree; git history is the only record.
 
-- **Dimension 2.1** — DONE — Transitions log: parse, append, derive state from the tail; an unparseable data row throws rather than inventing a state; no rewrite path exists → Test `test_transitions_append_only`
-- **Dimension 2.2** — DONE — `orly status`: repo → active spec → current state → next transition's criteria with green/red per line; read-only → Test `test_status_reports_red_criteria`
-- **Dimension 2.3** — DONE — `orly next`: evaluate current transition's exit criteria; all green → append transition + update spec `Status:` field; any red → print each failing criterion (name, command, one output line), exit 1, no append → Test `test_next_halts_on_red`
-- **Dimension 2.4** — DONE — exit criteria wiring: built-ins (spec gate, open-questions, Product Clarity, branch, tree, profile resolution, Dimensions DONE, pushed) + profile `commands{}` groups (`conform`, `verify.*`) per the criteria table in Interfaces; every criterion mechanical → Test `test_criteria_per_transition`
-- **Dimension 2.5** — DONE — `orly check <state>`: read-only, exit-code-only; safe for Continuous Integration (CI) later → Test `test_check_readonly`
-- **Dimension 2.6** — DONE — `docs.updated` criterion (VERIFIED→PR_READY): profile-declared user-surface prefixes touched (test files and `.md` excluded) with no same-branch docs change (spec tree `docs/v[0-9]+/` never counts as docs) → red, with the override hatch as the recorded way out → Test `test_docs_updated_criterion`
-- **Dimension 2.7** — DONE — tiered verify commands: `cmd.conform` + fast `verify.*` gate EXECUTING→VERIFIED; the fixed slow set (`verify.integration`, `verify.memory`) gates VERIFIED→PR_READY and auto-passes with a printed skip reason when the branch diff contains no code files → Test `test_slow_suites_skip_on_prose_only`
+- **Dimension 2.1** — DONE — gate groups, ordered: `work` (branch, tree, profile) → `verify` (spec dimensions when a spec exists · conform · fast suites) → `pr` (tree, pushed, spec gate + dimensions, docs.updated, slow suites); `orly gate` runs them in order and stops at the first red group; `orly gate <name>` runs one; `--list` prints the plan; all read-only → Test `test_gate_groups_and_first_red`
+- **Dimension 2.2** — DONE — spec checks are conditional, never demanded: no active spec → spec criteria skip with a printed reason (ad-hoc bug fixes gate clean); more than one active spec → red (one stream per worktree); discovery accepts every real layout (`docs/v2/`, `docs/v0.9.2/`) → Test `test_spec_optional_and_layouts`
+- **Dimension 2.3** — DONE — `docs.updated` (pr gate): profile-declared user-surface prefixes touched (test files and `.md` excluded) with no same-branch docs change (spec tree `docs/v*/` never counts as docs) → red, printing the exact override command → Test `test_docs_updated_criterion`
+- **Dimension 2.4** — DONE — tiered suites: `conform` + fast `verify.*` in the verify gate; the fixed slow set (`verify.integration`, `verify.memory`) in the pr gate, auto-passing with a printed skip when the branch diff carries no code files → Test `test_slow_suites_skip_on_prose_only`
 
-### §3 — Escape hatches (owner authority, recorded)
+### §3 — Override (owner authority, recorded in git)
 
-Exactly three. Each requires a non-empty `--reason`, appends a log entry visible in the Pull Request (PR) diff, and never marks a failed command green — an OVERRIDE entry is distinct from a pass.
+One escape hatch, not three: parking is closing the worktree, resetting is git. `orly override <criterion> --reason <REASON>` writes an **empty commit** carrying an `Orly-Override:` trailer — immutable once pushed, visible in the PR, dead with the branch. Gates scan merge-base..HEAD for trailers; a red criterion with a matching trailer reports `overridden`, never plain green.
 
-- **Dimension 3.1** — DONE — `orly override <criterion> --reason` appends OVERRIDE row; `next` treats that criterion as satisfied-by-override and stamps the advance `green (N override(s): …)`, never plain green → Test `test_override_recorded_not_green`
-- **Dimension 3.2** — DONE — `orly park --reason` / `orly reset --to <state> --reason` append rows; empty reason refused → Test `test_park_reset_require_reason`
+- **Dimension 3.1** — DONE — override trailer: empty reason refused; trailer parsed strictly (`Orly-Override: <criterion> (<reason>)`); scoped to the branch, so it cannot leak past merge → Test `test_override_trailer_recorded_not_green`
 
 ### §4 — Thin distribution (Model F)
 
@@ -161,7 +155,7 @@ One render target: dotfiles root `AGENTS.md`. Agent homes symlink to it. Consume
 - **Dimension 5.5** — writing voice: no-ai-slop editing rules land in `docs/DOCUMENTATION_RULES.md` (docs Orly writes) and `SOUL.md` (decisions Orly explains — simple, user-case-first, the four-step risk rubric); the review-route change sweeps `audits/agents-md.sh` check 5, `audits/data.sh`, `audits/agents-md.md`, `evals/`, and `docs/ORLY_ARCHITECTURE.md` in the same commit → Test `audit_named_scenarios`
 - **Dimension 5.2** — `.githooks/pre-push`: `make audit` + evidence only when the pushed range touches governance paths; live `llmevals` removed from hooks (manual `make llmevals` stays) → Test `grep_prepush_scoped`
 - **Dimension 5.3** — questionnaire: 4 ledger rows reworded; Scenario 27 (engine semantics: what advances, what halts, how overrides record) + `NAMED_SCENARIOS` parity → Test `audit_named_scenarios`
-- **Dimension 5.4** — `docs/TEMPLATE.md` gains `## Transitions`; `audits/spec-template.sh` requires it (staged scope); `ORLY_ARCHITECTURE.md` + `README.md` rewritten → Test `audit_spec_gate_transitions`
+- **Dimension 5.4** — `ORLY_ARCHITECTURE.md` + `README.md` rewritten for the gates model → Test `audit_spec_gate_transitions`
 
 ### §6 — Consumer migration (one commit per repo)
 
@@ -179,65 +173,57 @@ orly override <criterion> --reason "…"    append OVERRIDE row (owner authority
 orly park --reason "…"   |   orly reset --to <state> --reason "…"
 orly sync --global | doctor | render | validate | verify --all     (surviving verbs)
 
-State record: the `## Transitions` table in the active spec. Current state = the
-last row's TO (no rows = PENDING). `**Status:**` is a derived human summary
-(PENDING / IN_PROGRESS / DONE), never the state itself — one source of truth.
+orly gate [--list|--accept-dirty]   run work → verify → pr in order; stop at
+                                    the first red GROUP; report every criterion
+orly gate <work|verify|pr>          run one group
+orly override <criterion> --reason <REASON>
+                                    empty commit with trailer:
+                                    "Orly-Override: <criterion> (<reason>)"
+Exit codes: 0 all green · 1 red · 2 usage error. Nothing is ever written by
+`gate`; `override` writes exactly one empty commit.
 
-Row schema (one table carries advances, overrides, parks, resets):
-  | {MMM DD, YYYY: HH:MM AM/PM} | FROM → TO | {agent|indy} | {verdict} |
-  advance   FROM → TO     verdict "green" or "green (N override(s))"
-  override  STATE → STATE verdict "OVERRIDE(<criterion>): <reason>"
-  park      STATE → PARKED verdict "PARK: <reason>"
-  reset     ANY → STATE   verdict "RESET: <reason>"   (bypasses the graph — its purpose)
-An override applies only to the state it was recorded in: scanning back from the
-tail stops at the first advance row.
-
-Exit codes: 0 advanced/green · 1 criteria red · 2 usage or state corruption
-
-Exit criteria per transition — every criterion is MECHANICAL (a check the machine
-runs and reads an exit code from). Nothing unmeasurable is a criterion; the
-anchor invariant says "the machine can prove", so unprovable claims stay prose.
-  PENDING→PLANNED    spec.gate (audits/spec-template.sh --file, both families) ·
-                     spec.open-questions (zero "[?]") · spec.product-clarity
-  PLANNED→EXECUTING  git.branch (not the default branch) · git.tree (clean, or
-                     --accept-dirty) · repo.profile (registered + resolves)
-  EXECUTING→VERIFIED spec.dimensions (every Dimension marked DONE) ·
-                     cmd.conform · cmd.verify.unit (fast tier, exit 0 each)
-  VERIFIED→PR_READY  git.tree · git.pushed (upstream set, nothing unpushed) ·
-                     spec.gate · spec.dimensions · docs.updated (user surface
-                     touched ⇒ docs touched; overridable) · cmd.verify.<slow>
-                     (every verify.* except unit; auto-pass with printed skip
-                     when the branch diff carries no code files)
+Gate groups — every criterion is MECHANICAL (the machine runs a check and
+reads an exit code or a file). Unprovable claims stay prose, never criteria.
+  work    git.branch (not the default branch) · git.tree (clean, or
+          --accept-dirty; the active spec never counts) · repo.profile
+  verify  spec.dimensions (when a spec exists) · cmd.conform ·
+          fast cmd.verify.* (unit, lint, version, …)
+  pr      git.tree · git.pushed · spec.gate + spec.dimensions (when a spec
+          exists) · docs.updated (user surface touched ⇒ docs touched;
+          overridable) · slow suites (verify.integration, verify.memory —
+          auto-pass with printed skip when the branch has no code files)
 
 Branch diff = merge-base(default branch, HEAD)..HEAD. Classification is pure:
 user surface = profile surfaces.user prefix AND source extension AND not a test
-file; docs = profile surfaces.docs prefix AND never docs/v[0-9]+/ (the spec
-tree); code = source extension or a test path. Cross-repo user docs (the
-sibling docs repository) are not machine-provable from this diff — they stay a
-CHORE(close) obligation graded by the rubric.
+file; docs = profile surfaces.docs prefix AND never docs/v*/ (the spec tree);
+code = source extension or a test path. Overrides = Orly-Override trailers in
+merge-base..HEAD commit bodies. Cross-repo user docs (the sibling docs
+repository) are not machine-provable from this diff — they stay a CHORE(close)
+obligation graded by the rubric.
 ```
 
 ## Failure Modes
 
 | Mode | Cause | Handling (system response + what the caller observes) |
 |------|-------|--------------------------------------------------------|
-| Red criterion | any exit-criterion command fails | print criterion + command + one output line; exit 1; no log append |
-| Log tail mismatch | spec edited outside the engine | exit 2; print expected vs observed state; no append |
-| No active spec | `next` outside a spec-bearing worktree | exit 2; name `kishore-spec-new` as the fix |
-| Profile missing command group | profile lacks `conform`/`verify.*` | exit 2 naming the profile file; never a crash/stack |
-| Empty override reason | `--reason ""` or omitted | refuse, exit 2; nothing appended |
+| Red criterion | any gate command fails | print criterion + command + one output line; stop at that group; exit 1; nothing written |
+| No active spec | ad-hoc branch, no spec tree | spec criteria print "skipped — no active spec" and pass; quality gates still run |
+| Two active specs | parallel streams in one tree | red naming both paths (one stream per worktree) |
+| Profile missing / unregistered repo | repo absent from `repositories.json` | cmd criteria absent; `repo.profile` red naming the registry file; never a crash |
+| Empty override reason | `--reason ""` or omitted | refuse, exit 2; no commit created |
+| Malformed hand-written trailer | trailer text does not parse | ignored (not an override); gate stays red naming the criterion |
 | Broken home link | symlink target moved/deleted | `orly doctor` red naming the link and target |
 | Consumer gate path absent | dotfiles not at `ORLY_ROOT` on a machine | consumer `make` fails loudly printing the expected path (documented in harness.mk) |
-| Override of a load-bearing criterion | owner records OVERRIDE | allowed; row visible in PR diff; never rendered as green |
+| Override of a load-bearing criterion | owner records the trailer | allowed; empty commit visible in the PR; reported `overridden`, never green |
 
 ## Invariants
 
-1. Anchor — no transition is appended unless every exit criterion is green or carries its own OVERRIDE row — enforced by `lifecycle.ts` having a single advance path.
-2. The Transitions log is append-only — no rewrite function exists; tail-validation rejects divergence (exit 2).
+1. Anchor — `orly gate pr` exits 0 only when every pr-gate criterion is green or carries a matching `Orly-Override` trailer in merge-base..HEAD — enforced by `gates.ts` having a single evaluation path and no write path.
+2. Gates derive, never store — no gate command writes any file; the only state is git — enforced by construction (read-only evaluation) + negative test.
 3. Render purity — `render(sources, profile)` twice → byte-identical — enforced by the retained idempotence check in `orly verify --all`.
 4. Zero ledger artifacts — no lock/digest/manifest files or symbols anywhere — enforced by deletion + rubric R4 grep.
 5. `AGENTS.md` ≤ 32,768 bytes — enforced by `audits/agents-md.sh` check 16 (unchanged).
-6. Overrides carry a non-empty reason — argument validation + negative test.
+6. Overrides carry a non-empty reason inside a strict trailer — argument validation + strict parse + negative test.
 
 ## Metrics & Observability
 
@@ -245,32 +231,24 @@ CHORE(close) obligation graded by the rubric.
 |----------------|-------|------------|--------------------|---------------|------------|
 | not applicable — no product/operator signal changes; `orly status`/`next` output is the operator surface | — | — | — | — | — |
 
-## Transitions
-
-| Timestamp | From → To | Actor | Verdict |
-|---|---|---|---|
-| Jul 27, 2026: 04:35 PM | PENDING → PLANNED | agent | bootstrap — CHORE(open) hand-run; the engine this spec builds did not exist yet |
-| Jul 27, 2026: 07:21 PM | PLANNED → EXECUTING | agent | green |
-
 ## Test Specification (tiered)
 
 | Dimension | Tier | Test | Asserts (concrete inputs → expected output) |
 |-----------|------|------|---------------------------------------------|
 | 1.1 | gate (grep) | `grep_rest_guide_ported` | banned-vocab grep → 0 hits; both exception blocks present with markers |
 | 1.2 | gate (grep) | `grep_verify_tiers_ported` | coverage-lane + integration-root headings present in source |
-| 2.1 | unit | `test_transitions_append_only` | append twice → two rows; tampered tail → exit 2, no append |
-| 2.2 | unit | `test_status_reports_red_criteria` | fixture with failing verify → status lists that criterion red, exits 0 |
-| 2.3 | integration | `test_next_halts_on_red` | failing conform command → exit 1, no new row, output names criterion + command |
-| 2.3 | e2e (subprocess) | `test_e2e_full_walk` | fixture repo walks PENDING→PR_READY via spawned `bin/orly next` ×4; final log row PR_READY |
-| 2.4 | unit | `test_criteria_per_transition` | each transition evaluates exactly its declared criteria set |
-| 2.5 | unit | `test_check_readonly` | `check VERIFIED` on red fixture → exit 1; no file mutated |
-| 3.1 | unit | `test_override_recorded_not_green` | override then next → advance; log row says OVERRIDE(criterion), not green |
-| 3.2 | unit | `test_park_reset_require_reason` | empty reason → exit 2, log unchanged; with reason → row appended |
+| 2.1 | unit | `test_gate_groups_and_first_red` | ordered run stops at the first red group; later groups unevaluated |
+| 2.2 | unit | `test_spec_optional_and_layouts` | no spec → spec criteria skip; two active specs → red; v0.9.2 layout discovered |
+| 2.3 | integration | `test_docs_updated_criterion` | user-surface change with no docs change → red naming the override command |
+| 2.1 | e2e (subprocess) | `test_e2e_gate_walk` | fixture repo: `orly gate` red → fix → `orly gate` green → `orly gate pr` green, via the real CLI |
+| 2.4 | unit | `test_slow_suites_skip_on_prose_only` | prose-only branch skips integration/memory with printed reason; code branch runs them |
+| 3.1 | unit | `test_override_trailer_recorded_not_green` | trailer satisfies its criterion, reported `overridden`; malformed trailer ignored |
+| 3.1 | unit | `test_override_requires_reason` | empty reason → exit 2, no commit created |
 | 4.1 | unit | `test_render_targets_root` | render writes root `AGENTS.md`; no `.oracle/` outputs; homes relink |
 | 4.2 | gate (grep) | `grep_zero_ledger_symbols` | word-boundary greps for deleted symbols → 0 matches (Dead Code Sweep) |
 | 4.3 | unit | `test_validate_slim_registry` | validate passes slim registry; fail fixture `unclosed-pack-block.md` makes render throw |
 | 4.4 | unit | `test_verify_currency` | stale root `AGENTS.md` → verify red naming the file; regenerate → green |
-| 5.1–5.4 | gate | `make audit` | full chain green: size cap, scenarios parity, spec gate incl. Transitions |
+| 5.1–5.4 | gate | `make audit` | full chain green: size cap, scenarios parity, spec gate |
 | 6.1–6.3 | rubric (manual command) | `rubric_*_thin` | R7 commands per repo; agentsfleet `make harness-verify` green from dotfiles-resolved gates |
 | regression | unit | existing render/reference tests | pack-marker filtering + reference closure behave unchanged for the root render |
 | regression | integration | `orly doctor` home links | pre-existing green `doctor --global` behavior preserved on the new target |
@@ -287,7 +265,7 @@ CHORE(close) obligation graded by the rubric.
 | R6 | Homes link to root render (§4) | `readlink ~/.claude/CLAUDE.md && bin/orly doctor` | path ends `/dotfiles/AGENTS.md`; exit 0 | P0 | |
 | R7 | agentsfleet thin + gates resolve (§6) | `test ! -d ~/Projects/agentsfleet/dispatch && test ! -d ~/Projects/agentsfleet/.oracle && (cd ~/Projects/agentsfleet && make harness-verify)` | exit 0 | P0 | |
 | R8 | Hooks scoped, smoke off push path (§5) | `grep -c 'GOVERNANCE' .githooks/pre-push; grep -c 'llmevals' .githooks/pre-push` | first ≥1; second = 0 | P0 | |
-| R9 | Spec corpus clean incl. Transitions rule (§5) | `bash audits/spec-template.sh --all` | exit 0 | P0 | |
+| R9 | Spec corpus clean (§5) | `bash audits/spec-template.sh --all` | exit 0 | P0 | |
 | S7 | No secrets | `gitleaks detect` | exit 0 | P0 | |
 | S8 | No oversize source file | `git diff --name-only origin/master...HEAD \| grep -v '\.md$' \| xargs wc -l 2>/dev/null \| awk '$1>350 && $2!="total"'` | no output | P0 | |
 | S9 | Orphan sweep | Dead Code Sweep greps below | 0 matches | P0 | |
@@ -348,7 +326,8 @@ CHORE(close) obligation graded by the rubric.
 
 ## Discovery (consult log)
 
-- **Consults** — Architecture: Jul 27, 2026 session — Opus 5 review + Fable 5 subagent audit (ledger self-refuting; dual delivery via global symlink; downstream-first fixes) + external ChatGPT verdict (P+F+C; coarse states; three escape hatches; anchor invariant on movement). Indy decisions: process-as-code foundation; distribution ceremony dies; stage vocabulary retained.
+- **Consults** — Architecture: Jul 27, 2026 session — Opus 5 review + Fable 5 subagent audit (ledger self-refuting; dual delivery via global symlink; downstream-first fixes) + external ChatGPT verdict (P+F+C; coarse states; escape hatches; anchor invariant on movement). Indy decisions: process-as-code foundation; distribution ceremony dies; stage vocabulary retained.
+- **Mid-milestone redesign (Indy simplicity challenge, Jul 27, 2026 evening):** the first engine stored state in a spec-resident Transitions table and could not run in cache-kit (`docs/v0.9.2/`) or the docs repo (no spec tree) — a second ledger inside git, the SHA mistake one layer up. Replaced by derived gates; the two transitions it recorded before removal: PENDING→PLANNED (bootstrap, 04:35 PM), PLANNED→EXECUTING (green via `orly next`, 07:21 PM). Indy process rules added same session: docs-before-PR gate, slow suites only on code change, one PR per milestone (draft + one max), gstack `/review` on every runtime, babysit reads CI + inline + threads, merge-cleanup recipe, no-ai-slop voice for decisions and docs, judgment-ask glyphs 📍🪚🍯🕳️.
 - **CHORE(open) deviation — no sibling worktree; branch cut in the main checkout.** The agent-home symlinks (`~/.claude/CLAUDE.md` and siblings) must resolve to a path that survives the branch, and §4.1 retargets them at `~/Projects/dotfiles/AGENTS.md`. A sibling worktree would either link agents at a directory removed post-merge or leave them on stale rules. Consequence accepted: a new agent session started mid-EXECUTE reads partially-rebuilt rules. Same-tree matches the operating model's stated default.
 - **Metrics review** — no analytics/funnel playbook update required: internal governance tooling, no product signal.
 - **Skill-chain outcomes** — (populated at VERIFY/CHORE(close)).

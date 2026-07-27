@@ -17,6 +17,7 @@ const VERIFY_PREFIX = "verify.";
 const REPOSITORIES_LABEL = "repositories";
 const NO_OUTPUT = "no output";
 const UNREGISTERED = "repository is not registered in orly/repositories.json";
+const NO_SPEC_SKIP = "skipped — no active spec (quality gates still apply)";
 const REV_PARSE = "rev-parse";
 const ABBREV_REF = "--abbrev-ref";
 
@@ -35,8 +36,10 @@ export type CriterionResult = Verdict & { name: string };
 
 export type CriterionContext = {
   root: string;
-  specPath: string;
-  specText: string;
+  // Absent when the repo has no active spec: spec criteria then skip-pass —
+  // an ad-hoc bug fix meets quality gates, never a demand to write a spec.
+  specPath?: string;
+  specText?: string;
   model: RulesModel;
   acceptDirty: boolean;
   surfaces?: SurfaceReport;
@@ -45,15 +48,16 @@ export type CriterionContext = {
 export type Criterion = { name: string; evaluate: (context: CriterionContext) => CriterionResult };
 
 // Every criterion is mechanical: it reads an exit code or a file, never a
-// judgment. The anchor invariant promises the machine can PROVE the previous
-// stage's exit criteria, so anything unprovable stays prose and never lands here.
-// Fast commands (conform, verify.unit) gate VERIFIED; the slow suites and the
-// docs check gate PR_READY, where the whole branch is what ships.
-export function criteriaFor(target: string, context: CriterionContext): Criterion[] {
-  if (target === "PLANNED") return [specGate(), openQuestions(), productClarity()];
-  if (target === "EXECUTING") return [gitBranch(), gitTree(), repositoryProfile()];
-  if (target === "VERIFIED") return [specDimensions(), ...commandCriteria(context, FAST_TIER)];
-  if (target === "PR_READY") return [gitTree(), gitPushed(), specGate(), specDimensions(), docsUpdated(), ...commandCriteria(context, SLOW_TIER)];
+// judgment. The anchor invariant promises the machine can PROVE the PR
+// boundary, so anything unprovable stays prose and never lands here.
+// work = is this branch workable · verify = does the work hold up ·
+// pr = can this ship (whole-branch checks + the slow suites).
+export function criteriaFor(gate: string, context: CriterionContext): Criterion[] {
+  if (gate === "work") return [gitBranch(), gitTree(), repositoryProfile()];
+  if (gate === "verify") return [specDimensions(), ...commandCriteria(context, FAST_TIER)];
+  if (gate === "pr") {
+    return [gitTree(), gitPushed(), specGate(), openQuestions(), productClarity(), specDimensions(), docsUpdated(), ...commandCriteria(context, SLOW_TIER)];
+  }
   return [];
 }
 
@@ -84,26 +88,35 @@ function criterion(name: string, evaluate: (context: CriterionContext) => Verdic
   return { name, evaluate: (context) => ({ name, ...evaluate(context) }) };
 }
 
+// Wrap a spec-reading criterion: no active spec → skip-pass with the reason
+// printed, so quality gates still run on spec-less (ad-hoc) branches.
+function specCriterion(name: string, evaluate: (context: CriterionContext) => Verdict): Criterion {
+  return criterion(name, (context) => {
+    if (!context.specText || !context.specPath) return { ok: true, detail: NO_SPEC_SKIP };
+    return evaluate(context);
+  });
+}
+
 function specGate(): Criterion {
-  return criterion(SPEC_GATE, (context) => runCommand(context.root, ["bash", SPEC_GATE_SCRIPT, "--file", context.specPath]));
+  return specCriterion(SPEC_GATE, (context) => runCommand(context.root, ["bash", SPEC_GATE_SCRIPT, "--file", context.specPath ?? ""]));
 }
 
 function openQuestions(): Criterion {
-  return criterion(SPEC_OPEN_QUESTIONS, (context) => {
+  return specCriterion(SPEC_OPEN_QUESTIONS, (context) => {
     const hits = specLines(context).filter((line) => line.includes(OPEN_QUESTION));
     return { ok: hits.length === 0, detail: hits.length === 0 ? "no open questions" : `${hits.length} line(s) still carry ${OPEN_QUESTION}` };
   });
 }
 
 function productClarity(): Criterion {
-  return criterion(SPEC_PRODUCT_CLARITY, (context) => {
+  return specCriterion(SPEC_PRODUCT_CLARITY, (context) => {
     const present = specLines(context).some((line) => line.startsWith(PRODUCT_CLARITY_HEADING));
     return { ok: present, detail: present ? "section present" : `missing ${PRODUCT_CLARITY_HEADING}` };
   });
 }
 
 function specDimensions(): Criterion {
-  return criterion(SPEC_DIMENSIONS, (context) => {
+  return specCriterion(SPEC_DIMENSIONS, (context) => {
     const dimensions = specLines(context).filter((line) => line.trimStart().startsWith(DIMENSION_PREFIX));
     const open = dimensions.filter((line) => !line.includes(DONE_MARKER));
     return {
@@ -125,13 +138,13 @@ function gitBranch(): Criterion {
 
 function gitTree(): Criterion {
   return criterion(GIT_TREE, (context) => {
-    // The active spec is excluded: `orly next` writes the transition row
-    // itself, so counting it would make the engine block on its own
-    // bookkeeping. Committing it stays a CHORE(close) obligation.
+    // The active spec is excluded while work is in flight: Dimensions get
+    // marked DONE as the agent goes, and the tree check must not block on that
+    // bookkeeping. Committing the spec stays a CHORE(close) obligation.
     const dirty = gitOutput(context.root, ["status", "--porcelain=v1", "-uall"])
       .split(/\r?\n/)
       .filter(Boolean)
-      .filter((line) => !line.includes(context.specPath));
+      .filter((line) => !context.specPath || !line.includes(context.specPath));
     if (dirty.length === 0) return { ok: true, detail: "clean (active spec excluded)" };
     if (context.acceptDirty) return { ok: true, detail: `${dirty.length} dirty path(s) accepted` };
     return { ok: false, detail: `${dirty.length} uncommitted path(s), first: ${dirty[0] ?? ""}` };
@@ -239,7 +252,7 @@ function profileName(model: RulesModel, repository: string): string {
 }
 
 function specLines(context: CriterionContext): string[] {
-  return context.specText.split(/\r?\n/);
+  return (context.specText ?? "").split(/\r?\n/);
 }
 
 function dimensionLabels(lines: string[]): string {

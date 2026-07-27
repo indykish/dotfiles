@@ -55,13 +55,13 @@ export function isDocs(path: string, prefixes: string[]): boolean {
 }
 
 export function branchDiff(root: string): string[] {
-  const base = mergeBase(root);
+  const base = defaultMergeBase(root);
   if (!base) return [];
   const output = gitOutput(root, ["diff", "--name-only", `${base}..HEAD`]);
   return output.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 }
 
-function mergeBase(root: string): string {
+export function defaultMergeBase(root: string): string {
   for (const branch of defaultBranchCandidates(root)) {
     const base = gitOutput(root, ["merge-base", branch, "HEAD"]);
     if (base) return base;
