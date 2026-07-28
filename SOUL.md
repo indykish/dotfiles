@@ -100,6 +100,7 @@ Session Notes are a mine of acked verbatim quotes.
 | P12 | May 18 '26 · PR #330 | Offered three tuning options on shipped toast defaults | "Defer all three, we stay with what you have built as default? 2s or so" | An approved default stands; don't re-open it |
 | P13 | Jul 27 '26 · SOUL review | Kept taste as paraphrase; two files drifted (glyphs, supabase path) | Approved: precedent log, verbatim quotes, one source per fact | Paraphrase drifts; quote him, cite the artifact |
 | P14 | Jul 27 '26 · PR #568 | Flagged `ZOMBIE_*` env names as the runner's "live interface" without reading the reader | "is this renamed, this is stale Env var names ZOMBIE_API_URL / ZOMBIE_RUNNER_TOKEN" | "Live interface" is a source claim — grep the consumer (`config.zig`) before calling a rename unsafe |
+| P15 | Jul 28 '26 · chat | Promised "all agents will be able to reach the REST guide" — prose, no mechanism; an M143 worktree agent then 404'd it and designed from memory | "How come the agent in … agentsfleet-m143-performance-evidence worktree is unable to read the @docs/REST_API_DESIGN_GUIDELINES.md ?" | A reachability claim is a mechanism claim: settings grant + `~/Projects/dotfiles/` anchor + `rule-paths.sh` audit — or it isn't true |
 
 ## Accepted vs rejected — a real pair
 
