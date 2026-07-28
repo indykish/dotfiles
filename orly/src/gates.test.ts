@@ -10,6 +10,15 @@ const ROOT = resolve(import.meta.dir, "../..");
 const SPEC_RELATIVE = "docs/v1/active/M99_001_P2_CLI_FIXTURE.md";
 const FIXTURE_PROFILE = { schema_version: 1, name: "fixture", packs: [], commands: { conform: [["true"]], "verify.unit": [["true"]] } };
 const temporaryDirectories: string[] = [];
+const GIT_SCOPE_VARIABLES = ["GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_PREFIX", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES"];
+
+// git exports GIT_DIR and GIT_INDEX_FILE to its hooks, and .githooks/pre-commit
+// runs this suite through `make audit`. Inherited, they scope every git call at
+// the dotfiles checkout: relative values resolve fixture-locally by luck in a
+// plain repository and fatally in a linked worktree, whose .git is a file, so
+// .git/index reads as "Not a directory". Bun does not propagate a deletion from
+// process.env to a spawned child, so the scrubbed copy is passed explicitly.
+const HERMETIC_ENVIRONMENT = hermeticEnvironment();
 
 afterEach(() => {
   for (const path of temporaryDirectories.splice(0)) rmSync(path, { recursive: true, force: true });
@@ -74,6 +83,42 @@ describe("spec discovery", () => {
     Bun.write(join(project, "docs/v2/active/M02_001_P2_CLI_Y.md"), specFixture());
 
     expect(() => activeSpecPath(project)).toThrow("one stream per worktree");
+  });
+});
+
+describe("repository resolution", () => {
+  test("a linked worktree resolves to the profile its registered checkout declares", async () => {
+    const project = newSpecRepository();
+    const model = await modelFor(project);
+    const worktree = join(temporaryDirectory(), "stream");
+    git(project, "worktree", "add", "-q", "-b", "feat/stream", worktree);
+
+    const profile = runGate(model, worktree, "work").results.find((result) => result.name === "repo.profile");
+
+    expect(profile?.ok).toBeTrue();
+    expect(profile?.detail).toBe("fixture -> fixture");
+  });
+
+  test("the profile's commands run in the worktree, not in the registered checkout", async () => {
+    const project = newSpecRepository();
+    const model = await modelFor(project, undefined, { conform: [["test", "-f", "stream-only.txt"]] });
+    const worktree = join(temporaryDirectory(), "stream");
+    git(project, "worktree", "add", "-q", "-b", "feat/stream", worktree);
+    await Bun.write(join(worktree, "stream-only.txt"), "present only in the worktree\n");
+
+    expect(runGate(model, worktree, "verify").results.find((result) => result.name === "cmd.conform")?.ok).toBeTrue();
+    expect(runGate(model, project, "verify").results.find((result) => result.name === "cmd.conform")?.ok).toBeFalse();
+  });
+
+  test("an unrelated repository is still unregistered", async () => {
+    const project = newSpecRepository();
+    const model = await modelFor(project);
+    const stranger = newRepository();
+
+    const profile = runGate(model, stranger, "work").results.find((result) => result.name === "repo.profile");
+
+    expect(profile?.ok).toBeFalse();
+    expect(profile?.detail).toContain("not registered");
   });
 });
 
@@ -272,13 +317,19 @@ function specFixture(): string {
   ].join("\n");
 }
 
+function hermeticEnvironment(): Record<string, string | undefined> {
+  const environment: Record<string, string | undefined> = { ...process.env };
+  for (const name of GIT_SCOPE_VARIABLES) delete environment[name];
+  return environment;
+}
+
 function git(project: string, ...args: string[]): void {
-  const result = Bun.spawnSync(["git", ...args], { cwd: project, stdout: "ignore", stderr: "pipe" });
+  const result = Bun.spawnSync(["git", ...args], { cwd: project, env: HERMETIC_ENVIRONMENT, stdout: "ignore", stderr: "pipe" });
   if (result.exitCode !== 0) throw new Error(result.stderr.toString());
 }
 
 function gitOutput(project: string, ...args: string[]): string {
-  const result = Bun.spawnSync(["git", ...args], { cwd: project, stdout: "pipe", stderr: "pipe" });
+  const result = Bun.spawnSync(["git", ...args], { cwd: project, env: HERMETIC_ENVIRONMENT, stdout: "pipe", stderr: "pipe" });
   return result.exitCode === 0 ? result.stdout.toString().trim() : "";
 }
 

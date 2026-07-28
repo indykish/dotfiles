@@ -134,6 +134,7 @@ Redesigned mid-milestone after Indy's simplicity challenge (Discovery). The firs
 - **Dimension 2.2** — DONE — spec checks are conditional, never demanded: no active spec → spec criteria skip with a printed reason (ad-hoc bug fixes gate clean); more than one active spec → red (one stream per worktree); discovery accepts every real layout (`docs/v2/`, `docs/v0.9.2/`) → Test `test_spec_optional_and_layouts`
 - **Dimension 2.3** — DONE — `docs.updated` (pr gate): profile-declared user-surface prefixes touched (test files and `.md` excluded) with no same-branch docs change (spec tree `docs/v*/` never counts as docs) → red, printing the exact override command → Test `test_docs_updated_criterion`
 - **Dimension 2.4** — DONE — tiered suites: `conform` + fast `verify.*` in the verify gate; the fixed slow set (`verify.integration`, `verify.memory`) in the pr gate, auto-passing with a printed skip when the branch diff carries no code files → Test `test_slow_suites_skip_on_prose_only`
+- **Dimension 2.5** — DONE — `repo.profile` resolves a linked worktree to the registry entry its primary checkout owns: identity is the set of checkouts git reports for the shared object store, never the path alone, so a per-stream worktree gates against its repository's profile while the commands still run in the worktree; a repository outside that set stays unregistered → Test `test_worktree_resolves_to_registered_repository`
 
 ### §3 — Override (owner authority, recorded in git)
 

@@ -20,6 +20,8 @@ const UNREGISTERED = "repository is not registered in orly/repositories.json";
 const NO_SPEC_SKIP = "skipped — no active spec (quality gates still apply)";
 const REV_PARSE = "rev-parse";
 const ABBREV_REF = "--abbrev-ref";
+const WORKTREE_LIST = ["worktree", "list", "--porcelain"];
+const WORKTREE_PREFIX = "worktree ";
 
 const SPEC_GATE = "spec.gate";
 const SPEC_OPEN_QUESTIONS = "spec.open-questions";
@@ -69,12 +71,18 @@ export function runCommand(root: string, command: string[]): Verdict {
   return { ok: false, detail: `exit ${result.exitCode}: ${lines[lines.length - 1] ?? NO_OUTPUT}` };
 }
 
+// Identity is the set of checkouts sharing one object store, never the path
+// alone: the operating model puts one stream per worktree, so a registry that
+// matched paths exactly would resolve only the stream that happens to occupy
+// the registered checkout and call every sibling worktree unregistered.
+// Resolution is the only thing widened — context.root stays the worktree, so
+// the profile's commands still run in the stream's own tree.
 export function repositoryFor(model: RulesModel, root: string): string | undefined {
   const repositories = objectValue(model.repositories.repositories, REPOSITORIES_LABEL);
-  const target = canonical(root);
+  const checkouts = new Set([canonical(root), ...attachedCheckouts(root)]);
   for (const name of Object.keys(repositories).sort()) {
     try {
-      if (canonical(repositoryPath(model, name)) === target) return name;
+      if (checkouts.has(canonical(repositoryPath(model, name)))) return name;
     } catch {
       continue;
     }
@@ -262,6 +270,18 @@ function dimensionLabels(lines: string[]): string {
 function gitOutput(root: string, command: string[]): string {
   const result = Bun.spawnSync(["git", ...command], { cwd: root, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
   return result.exitCode === 0 ? result.stdout.toString().trim() : "";
+}
+
+// Every checkout git attaches to this repository — the main worktree first,
+// then each linked one. Asking git beats deriving the main checkout from the
+// common Git directory, which would assume the <toplevel>/.git layout and
+// break on bare mains and separate Git directories. Empty outside a
+// repository, leaving the caller comparing paths alone as it did before.
+function attachedCheckouts(root: string): string[] {
+  return gitOutput(root, WORKTREE_LIST)
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith(WORKTREE_PREFIX))
+    .map((line) => canonical(line.slice(WORKTREE_PREFIX.length).trim()));
 }
 
 // Compare canonical paths: git reports the symlink-resolved root while a
