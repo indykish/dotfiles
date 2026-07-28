@@ -1,6 +1,6 @@
 # write_sql.md — SQL / schema latent façade
 
-This is the prose the AGENT reads before writing any `schema/*.sql` file. It pairs with the deterministic façade `dispatch/write_sql.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. **Read `docs/SCHEMA_CONVENTIONS.md` first** — it is the source-of-truth for table/column naming, type choices, and schema-qualification (the analogue of `docs/REST_API_DESIGN_GUIDELINES.md` for `write_http`). The dissolving **Schema Table Removal Guard** card is merged verbatim below, while the durable SQL rules (`NSQ`, `STS`, `SGR`, `ITF`) stay in `docs/greptile-learnings/RULES.md` (retained) — referenced here, enforced by the GREPTILE GATE. Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
+This is the prose the AGENT reads before writing any `schema/*.sql` file. It pairs with the deterministic façade `dispatch/write_sql.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. **Read `~/Projects/dotfiles/docs/SCHEMA_CONVENTIONS.md` first** — it is the source-of-truth for table/column naming, type choices, and schema-qualification (the analogue of `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` for `write_http`). The dissolving **Schema Table Removal Guard** card is merged verbatim below, while the durable SQL rules (`NSQ`, `STS`, `SGR`, `ITF`) stay in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` (retained) — referenced here, enforced by the GREPTILE GATE. Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
 
 **Signal legend** (printed by `write_sql.sh`):
 
@@ -26,7 +26,7 @@ deterministic façade in this snapshot.
 
 > [JUDGMENT → SCH]
 
-Triggers on every `Edit`/`Write` to `schema/*.sql`, `schema/embed.zig` (`@embedFile` constants), and the canonical migration array in `src/cmd/common.zig`. **Before authoring DDL, read `docs/SCHEMA_CONVENTIONS.md`** (naming, types, schema-qualification). SQL embedded in handlers (`*.zig`) and integration-test fixtures is also governed by the companion rules below — those surfaces additionally fire `write_zig.md` and the GREPTILE GATE.
+Triggers on every `Edit`/`Write` to `schema/*.sql`, `schema/embed.zig` (`@embedFile` constants), and the canonical migration array in `src/cmd/common.zig`. **Before authoring DDL, read `~/Projects/dotfiles/docs/SCHEMA_CONVENTIONS.md`** (naming, types, schema-qualification). SQL embedded in handlers (`*.zig`) and integration-test fixtures is also governed by the companion rules below — those surfaces additionally fire `write_zig.md` and the GREPTILE GATE.
 
 ## Merged from dissolved gate cards
 
@@ -38,7 +38,7 @@ The **Schema Table Removal Guard** card dissolves into this façade; its prose i
 
 > [JUDGMENT → SCH]
 
-**Family:** Schema discipline. **Source:** `AGENTS.md` (project-side guard). Related: **RULE STS** (no static strings in SQL schema), **RULE NSQ** (named constants, schema-qualified SQL) — both in `docs/greptile-learnings/RULES.md`.
+**Family:** Schema discipline. **Source:** `AGENTS.md` (project-side guard). Related: **RULE STS** (no static strings in SQL schema), **RULE NSQ** (named constants, schema-qualified SQL) — both in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`.
 
 **Triggers** — before any of these, run `cat VERSION` and print the guard output:
 
@@ -81,11 +81,11 @@ SCHEMA GUARD: VERSION=<v> (<2.0.0 ? teardown : alter)
 
 For pre-v2.0.0 path, all three rm- lines appear. For v2.0.0+, replace with `migration:schema/<NNN>_<change>.sql`.
 
-## Companion SQL rules (retained in `docs/greptile-learnings/RULES.md`)
+## Companion SQL rules (retained in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`)
 
 > [container]
 
-These rules are **not** dissolved — they remain in `docs/greptile-learnings/RULES.md`. STS/NSQ/SGR are enforced by the GREPTILE GATE until a leaf check is wired (`TODO-CHECK`); ITF additionally surfaces as a `🔵 DECIDE` judgment row in `write_sql.sh`. Summarised here so the SQL author sees the full surface in one place; RULES.md stays canonical (read it for the full text + `Ref:` provenance).
+These rules are **not** dissolved — they remain in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`. STS/NSQ/SGR are enforced by the GREPTILE GATE until a leaf check is wired (`TODO-CHECK`); ITF additionally surfaces as a `🔵 DECIDE` judgment row in `write_sql.sh`. Summarised here so the SQL author sees the full surface in one place; RULES.md stays canonical (read it for the full text + `Ref:` provenance).
 
 ### RULE STS — No static strings in SQL schema
 

@@ -46,14 +46,20 @@ make_sandbox() {
   cp "$SRC_ROOT/audits/agents-md.md"       "$sb/audits/"
   cp "$SRC_ROOT/audits/data.sh"            "$sb/audits/"
   cp "$SRC_ROOT/audits/parity-dispatch.sh" "$sb/audits/"
+  cp "$SRC_ROOT/audits/rule-paths.sh"      "$sb/audits/"
   cp "$SRC_ROOT"/audits/fixtures/*.diff    "$sb/audits/fixtures/"
   cp "$SRC_ROOT"/dispatch/*.md             "$sb/dispatch/"
   local d
   for d in TEMPLATE REST_API_DESIGN_GUIDELINES LOGGING_STANDARD \
-           LIFECYCLE_PATTERNS DOCUMENTATION_RULES ORLY_ARCHITECTURE; do
+           LIFECYCLE_PATTERNS DOCUMENTATION_RULES ORLY_ARCHITECTURE \
+           CHANGELOG_VOICE EXECUTE_DOC_READS VERIFY_TIERS \
+           HARNESS_VERIFY_OUTPUT SCHEMA_CONVENTIONS; do
     cp "$SRC_ROOT/docs/$d.md" "$sb/docs/" 2>/dev/null
   done
   cp "$SRC_ROOT/docs/greptile-learnings/RULES.md" "$sb/docs/greptile-learnings/"
+  mkdir -p "$sb/skills/kishore-spec-new" "$sb/.claude"
+  cp "$SRC_ROOT/skills/kishore-spec-new/SKILL.md" "$sb/skills/kishore-spec-new/"
+  cp "$SRC_ROOT/.claude/settings.json" "$sb/.claude/"
   cp "$SRC_ROOT/.githooks/pre-commit" "$SRC_ROOT/.githooks/pre-push" "$sb/.githooks/"
   printf '%s' "$sb"
 }
@@ -139,17 +145,25 @@ expect_fail "skill-chain bites when kishore-babysit-prs is removed from CHORE(cl
   "skill chain not in order" \
   "perl -ni -e 'print unless m{kishore-babysit-prs}' AGENTS.md"
 
-expect_fail "review routing bites when the Codex native route is removed" \
-  "Codex dual review sequence missing" \
-  "perl -pi -e 's{Codex: native \\x60/review\\x60}{Codex: review removed}' AGENTS.md"
+expect_fail "review routing bites when the single gstack route is removed" \
+  "single gstack review route missing" \
+  "perl -pi -e 's{One route, every runtime: gstack \\x60/review\\x60\\.}{Review removed.}' AGENTS.md"
 
-expect_fail "review routing bites when the Codex gstack route is removed" \
-  "Codex dual review sequence missing" \
-  "perl -pi -e 's{then gstack \\x60\\x24review\\x60}{then gstack review removed}' AGENTS.md"
+expect_fail "review routing bites when /write-integration-test drops from the chain" \
+  "/write-integration-test missing" \
+  "perl -pi -e 's{/write-integration-test}{/wit-removed}g' AGENTS.md"
 
-expect_fail "review routing bites when the gstack route is removed" \
-  "gstack review route missing" \
-  "perl -pi -e 's{Claude, OpenCode, Amp: gstack \\x60/review\\x60}{Other agents: review removed}' AGENTS.md"
+expect_fail "rule-path residence bites when a façade anchor is stripped" \
+  "unanchored dotfiles-resident ref" \
+  "perl -pi -e 's{~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES}{docs/REST_API_DESIGN_GUIDELINES}g' dispatch/write_http.md"
+
+expect_fail "rule-path residence bites when the resolution doctrine is dropped" \
+  "resolution doctrine missing" \
+  "perl -pi -e 's{Rule paths resolve from}{Rule paths came from}' AGENTS.md"
+
+expect_fail "rule-path reachability bites when the settings Read grant is removed" \
+  "lacks \"Read(~/Projects/dotfiles/**)\"" \
+  "perl -ni -e 'print unless m{Read\\(~/Projects/dotfiles}' .claude/settings.json"
 
 expect_fail "always-forbidden bites when the no-verify ban is removed" \
   "always-forbidden item missing: no-verify" \

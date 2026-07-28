@@ -666,7 +666,7 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 
 ## RULE RAD — New HTTP endpoints must pass the REST API Design Guidelines checklist
 
-**Rule:** Before writing any new HTTP handler or adding/modifying an endpoint, read `docs/REST_API_DESIGN_GUIDELINES.md` and verify each of the following:
+**Rule:** Before writing any new HTTP handler or adding/modifying an endpoint, read `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` and verify each of the following:
 1. **No verbs in URL** (§7) — use HTTP method for the action. Exception: Google Custom Method colon-action (`resource:verb`) is allowed for RPC-style actions; document the exception in the spec.
 2. **Response fields** (§1 + §8) — no `ack` or redundant acknowledgement fields (HTTP 200 is the ack); no `is_` boolean prefix; use `_at` suffix for timestamps; snake_case throughout.
 3. **Error shape** (§10) — 400/401/403/404/500 with `{error, message}` JSON body.
@@ -674,11 +674,11 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 5. **Correct HTTP method** (§4) — GET=read, POST=create/action, PUT=replace, PATCH=partial-update, DELETE=remove.
 6. **Versioning** (§6) — all routes under `/v1/` (or the current version prefix).
 
-**Why:** M23_001 steer endpoint shipped with `ack: true` (redundant) and `run_steered` (ambiguous dual-semantics). Caught only in post-build audit against REST_API_DESIGN_GUIDELINES.md. A pre-write checklist would have caught both at design time.
+**Why:** M23_001 steer endpoint shipped with `ack: true` (redundant) and `run_steered` (ambiguous dual-semantics). Caught only in post-build audit against ~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md. A pre-write checklist would have caught both at design time.
 **Do:** Paste the six-point checklist into the PLAN surface-area section and tick each item before EXECUTE.
 **Don't:** Write the handler and check guidelines afterward — the response shape is the hardest thing to change once tests and OpenAPI are written against it.
 **Tags:** zig, http, api-design, rest, naming
-**Ref:** M23_001 `agent_steer_http.zig` — `ack` dropped, `run_steered` split into `message_queued` + `execution_active` after post-build audit. `docs/REST_API_DESIGN_GUIDELINES.md`.
+**Ref:** M23_001 `agent_steer_http.zig` — `ack` dropped, `run_steered` split into `message_queued` + `execution_active` after post-build audit. `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md`.
 
 ## RULE HGD — Every new handler must follow api_handler_guide.md before writing any code
 

@@ -16,6 +16,7 @@
   "model": "opus",
   "permissions": {
     "allow": [
+      "Read(~/Projects/dotfiles/**)",
       "Bash(ls:*)",
       "Bash(ll:*)",
       "Bash(pwd:*)",

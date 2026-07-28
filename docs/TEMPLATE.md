@@ -157,18 +157,18 @@ no path filter (dispatch/write_spec.md, Authoring discipline). -->
 
 ## Applicable Rules
 
-- **`docs/greptile-learnings/RULES.md`** — {specific rule IDs this diff trips: e.g. UFS, NDC, NLR, ORP, FLL}
+- **`~/Projects/dotfiles/docs/greptile-learnings/RULES.md`** — {specific rule IDs this diff trips: e.g. UFS, NDC, NLR, ORP, FLL}
 - {per-surface rule file} — {why it applies to this diff}
 
 <!-- tpl: The rule files the executing agent re-reads BEFORE EXECUTE and
 re-checks during VERIFY. Name the exact rule IDs the diff will trip — generic
 "follow RULES.md" earns a greptile finding; named IDs are obeyed by
 construction. Per-surface menu: dispatch/write_zig.md (*.zig — pg-drain,
-tagged-union results, errdefer, cross-compile) · docs/REST_API_DESIGN_GUIDELINES.md
-(handlers/OpenAPI — name the §) · docs/SCHEMA_CONVENTIONS.md (schema/*.sql,
-schema/embed.zig) · dispatch/write_ts_adhere_bun.md / docs/LOGGING_STANDARD.md /
-docs/LIFECYCLE_PATTERNS.md (when touched). Fully greenfield → write "Standard
-set only — docs/greptile-learnings/RULES.md; no other rule files apply." -->
+tagged-union results, errdefer, cross-compile) · ~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md
+(handlers/OpenAPI — name the §) · ~/Projects/dotfiles/docs/SCHEMA_CONVENTIONS.md (schema/*.sql,
+schema/embed.zig) · dispatch/write_ts_adhere_bun.md / ~/Projects/dotfiles/docs/LOGGING_STANDARD.md /
+~/Projects/dotfiles/docs/LIFECYCLE_PATTERNS.md (when touched). Fully greenfield → write "Standard
+set only — ~/Projects/dotfiles/docs/greptile-learnings/RULES.md; no other rule files apply." -->
 
 ## Applicable Gates
 
@@ -200,8 +200,8 @@ handlers); output as a service (human vs JSON vs env rendering chosen by the
 renderer); structured JSON errors with suggestion/retry fields; 3-tier test
 pyramid (handler unit / in-process integration / subprocess e2e); auto-JSON when
 stdout is piped (LLM-native) — state which pillars this spec aligns with and any
-divergence. API → docs/REST_API_DESIGN_GUIDELINES.md + the closest existing
-handler. Schema → the nearest migration + docs/SCHEMA_CONVENTIONS.md. UI →
+divergence. API → ~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md + the closest existing
+handler. Schema → the nearest migration + ~/Projects/dotfiles/docs/SCHEMA_CONVENTIONS.md. UI →
 design-system primitives + theme.css tokens. Greenfield → "no prior art; shape
 defined in docs/architecture/{doc}.md." -->
 

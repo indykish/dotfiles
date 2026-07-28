@@ -29,6 +29,8 @@ EXPECTED_LABELS=(
   "rule extension protocol"
   "identity handles"
   "memory discipline"
+  "rule-path residence"
+  "rule-path reachability"
   "size"
 )
 
@@ -70,7 +72,9 @@ CONFORM_KEYS=(
 # must exist on disk. The per-language Zig/Bun standards docs were dropped —
 # dissolved into dispatch/write_zig.md and dispatch/write_ts_adhere_bun.md
 # respectively. The dispatch façades are listed so the AGENTS.md dispatch-table
-# refs are checked.
+# refs are checked. The docs/* entries double as the residence classifier for
+# check 15c (audits/rule-paths.sh): these paths are cited through the
+# ~/Projects/dotfiles/ anchor in every consumer-facing surface.
 DOTFILES_RESIDENT=(
   "docs/TEMPLATE.md"
   "docs/REST_API_DESIGN_GUIDELINES.md"
@@ -78,6 +82,11 @@ DOTFILES_RESIDENT=(
   "docs/LIFECYCLE_PATTERNS.md"
   "docs/DOCUMENTATION_RULES.md"
   "docs/ORLY_ARCHITECTURE.md"
+  "docs/CHANGELOG_VOICE.md"
+  "docs/EXECUTE_DOC_READS.md"
+  "docs/VERIFY_TIERS.md"
+  "docs/HARNESS_VERIFY_OUTPUT.md"
+  "docs/SCHEMA_CONVENTIONS.md"
   "docs/greptile-learnings/RULES.md"
   "dispatch/write_zig.md"
   "dispatch/write_ts_adhere_bun.md"
@@ -139,6 +148,7 @@ NAMED_SCENARIOS=(
   "Memory routing"           # Scenario 24
   "Allocator & concurrency discipline"  # Scenario 25
   "Rules propagation"        # Scenario 26
+  "Rule-path"                # Scenario 27
 )
 
 # Check 14 — the Rule-extension protocol must enumerate all four wiring steps.

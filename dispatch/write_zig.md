@@ -25,7 +25,7 @@ deterministic façade in this snapshot.
 Date: Mar 17, 2026
 Status: Canonical Zig source of truth for agents and commits
 
-**Also read:** `docs/greptile-learnings/RULES.md` for cross-language rules including Zig-specific patterns learned from reviews.
+**Also read:** `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` for cross-language rules including Zig-specific patterns learned from reviews.
 
 ## Verification workflow
 
@@ -825,7 +825,7 @@ PUB GATE and LIFECYCLE GATE answer different questions and neither defers to the
 
 > [DETERMINISTIC → DEINIT]
 
-`defer` and `errdefer` on the *same* allocation is forbidden — pick one per `LIFECYCLE_PATTERNS.md` §6. (`errdefer` cleans up only on the error path; `defer` always cleans up. Both on one allocation double-frees on the error path, or frees a value the caller still owns on success.) The pairing audit surfaces this as `defer-mix:<ok|conflict>`.
+`defer` and `errdefer` on the *same* allocation is forbidden — pick one per `~/Projects/dotfiles/docs/LIFECYCLE_PATTERNS.md` §6. (`errdefer` cleans up only on the error path; `defer` always cleans up. Both on one allocation double-frees on the error path, or frees a value the caller still owns on success.) The pairing audit surfaces this as `defer-mix:<ok|conflict>`.
 
 ### Lifecycle-method recognition: renames do not bypass
 

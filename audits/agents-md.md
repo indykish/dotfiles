@@ -127,7 +127,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 7.1 | Is the skill chain order `/write-unit-test` → runtime review → `kishore-babysit-prs` preserved? | YES |
 | 7.2 | Is REVIEW an explicit stage after VERIFY and before DOCUMENT, with the runtime's review route required there? | YES |
-| 7.3 | Does Codex run native `/review` (`codex review` non-interactively) and then gstack `$review`, while Claude, OpenCode, and Amp use gstack `/review`? | YES |
+| 7.3 | Is gstack `/review` the single review route for every runtime (Claude, Codex, OpenCode, Amp) — local and pre-commit, distinct from post-push reviewer triage? | YES |
 | 7.4 | Does `kishore-babysit-prs` run after every push and stop only on two consecutive empty polls? | YES |
 | 7.5 | Is using `gh pr checks --watch` for greptile explicitly disallowed? | YES |
 | 7.6 | If an MCP-backed skill is unavailable, must PR Session Notes record the skip + a "rerun before merge" note? | YES |
@@ -323,11 +323,26 @@ siblings.
 | # | Question | Expected |
 |---|---|---|
 | 26.1 | Is `orly/registry.json` the canonical profile and pack registry, with `orly/core/operating-model.md` as the global operating-model source? | YES |
-| 26.2 | Do agent-home links point to `orly/generated/global/AGENTS.md`, making a new global render immediately visible to installed agents? | YES |
+| 26.2 | Do agent-home links (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, OpenCode) point at the rendered root `AGENTS.md` in `~/Projects/dotfiles`, making a new global render immediately visible to installed agents? | YES |
 | 26.3 | Are project rules ordinary tracked snapshots with `.oracle/ruleset.lock`, rather than symbolic links into dotfiles? | YES |
 | 26.4 | Does repository synchronization require a clean tree and `AGENTS.project.md`, and refuse sibling-worktree mutation? | YES |
 | 26.5 | Does the `agentsfleet` profile map CONFORM to `make harness-verify` while VERIFY remains behavior proof? | YES |
 | 26.6 | Does `README.md` document initialization, explicit synchronization, status, and doctor commands for new repositories? | YES |
+
+### Scenario 27 — Rule-path residence & reachability
+
+Added after the M143 worktree incident: an agent resolved
+`docs/REST_API_DESIGN_GUIDELINES.md` against the product repository, found
+nothing (consumer repos carry no rule copies), and designed an HTTP surface
+from memory instead of the guide. Residence (where the doc lives) and
+reachability (whether the read is pre-authorized) are separate invariants;
+both must hold in every session, in every worktree, after every restart.
+
+| # | Question | Expected |
+|---|---|---|
+| 27.1 | Does AGENTS.md state that every `dispatch/…`, `docs/…`, and `audits/…` rule path resolves from `~/Projects/dotfiles/` — consumer repos carry no copies — so a rule path the current repository lacks is read from dotfiles rather than declared missing? | YES |
+| 27.2 | Is the dotfiles read pre-authorized for every session by the settings allow-rule `Read(~/Projects/dotfiles/**)` (repo template `.claude/settings.json`, propagated to `~/.claude/settings.json`), so reachability never depends on a permission prompt? | YES |
+| 27.3 | Must dotfiles-resident rule docs be cited through the `~/Projects/dotfiles/` anchor in dispatch façades, `docs/TEMPLATE.md`, `docs/EXECUTE_DOC_READS.md`, and spec Applicable-Rules lists (product-repo paths stay bare), with `audits/rule-paths.sh` failing `make audit` on an unanchored reference? | YES |
 
 ## Comprehension layer
 
@@ -418,6 +433,7 @@ Scenario verdicts:
 | 24 | Memory routing                          | <N/M YES>       |
 | 25 | Allocator and concurrency discipline    | <N/M YES>       |
 | 26 | Rules propagation                       | <N/M YES>       |
+| 27 | Rule-path residence and reachability    | <N/M YES>       |
 
 OVERALL: PASS | FAIL — <reason if fail>
 ```

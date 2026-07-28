@@ -20,12 +20,12 @@ reported** — without a 20-questions loop. It is written for my reasoning, not 
 a file-naming guide: the mechanics (naming, layout) are demoted to the end
 because they are the easy part.
 
-> **The trio stays coherent.** This skill (*how to author*) ← `docs/TEMPLATE.md`
+> **The trio stays coherent.** This skill (*how to author*) ← `~/Projects/dotfiles/docs/TEMPLATE.md`
 > (*the section shape*) → `audits/spec-template.sh` (*the enforcer*). If a
 > step here demands something, the template carries the section and the audit
 > asserts it. Drift between the three is a bug.
 
-A spec is an *instance*; `AGENTS.md` and `docs/greptile-learnings/RULES.md` are
+A spec is an *instance*; `AGENTS.md` and `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` are
 the *constants*. When the spec contradicts a rule, amend the spec — never weaken
 the rule.
 
@@ -61,9 +61,9 @@ Determinism starts here. Before copying the template:
 
 This is the step that prevents greptile findings — the spec becomes a pre-commitment to the rules its code must obey:
 
-- **Applicable Rules** — name the *specific* `docs/greptile-learnings/RULES.md` rule IDs the diff will trip (e.g. NDC, NLR, NLG, UFS), plus the per-surface dispatch façades / rule files: `dispatch/write_zig.md` (`*.zig`), `REST_API_DESIGN_GUIDELINES.md` (`src/http/handlers/**`), `SCHEMA_CONVENTIONS.md` (`schema/*`), `dispatch/write_ts_adhere_bun.md`, `LOGGING_STANDARD.md`, `LIFECYCLE_PATTERNS.md`. Generic "follow RULES.md" earns a greptile finding; named IDs the implementer obeys by construction do not.
+- **Applicable Rules** — name the *specific* `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` rule IDs the diff will trip (e.g. NDC, NLR, NLG, UFS), plus the per-surface dispatch façades / rule files: `dispatch/write_zig.md` (`*.zig`), `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` (`src/http/handlers/**`), `~/Projects/dotfiles/docs/SCHEMA_CONVENTIONS.md` (`schema/*`), `dispatch/write_ts_adhere_bun.md`, `~/Projects/dotfiles/docs/LOGGING_STANDARD.md`, `~/Projects/dotfiles/docs/LIFECYCLE_PATTERNS.md`. Generic "follow RULES.md" earns a greptile finding; named IDs the implementer obeys by construction do not. Cite rule docs through the `~/Projects/dotfiles/` anchor — consumer repos carry no copies, so a bare `docs/…` cite points at nothing in the worktree that executes the spec.
 - **Applicable Gates** — which Action-Triggered Guards fire (ZIG, PUB, LENGTH, UFS, UI, DESIGN TOKEN, LOGGING, LIFECYCLE, SCHEMA, ERROR REGISTRY) and the satisfaction strategy for each. Rules ≠ gates: rules are knowledge to read; gates fire on edits.
-- **Prior-Art / Reference Implementations** — the reference codebase to mirror (CLI → the "7 Pillars" of CLI DX in `docs/TEMPLATE.md` Prior-Art; API → REST guide + nearest handler). No reinventing what a known-good pattern already solves.
+- **Prior-Art / Reference Implementations** — the reference codebase to mirror (CLI → the "7 Pillars" of CLI DX in `~/Projects/dotfiles/docs/TEMPLATE.md` Prior-Art; API → REST guide + nearest handler). No reinventing what a known-good pattern already solves.
 
 → Fills **Applicable Rules**, **Applicable Gates**, **Prior-Art / Reference Implementations**.
 
@@ -85,10 +85,9 @@ Now the file. Pick the ID and copy the template:
 # next free M{N}_{WS}
 ls docs/v*/pending/ docs/v*/active/ docs/v*/done/ 2>/dev/null \
   | grep -oE 'M[0-9]+_[0-9]+' | sort -u | tail -5
-cp docs/TEMPLATE.md docs/v{N}/pending/M{N}_{WS}_P{P}_{CATEGORIES}_{NAME}.md
+cp ~/Projects/dotfiles/docs/TEMPLATE.md docs/v{N}/pending/M{N}_{WS}_P{P}_{CATEGORIES}_{NAME}.md
 ```
 
-If `docs/TEMPLATE.md` is missing in this repo, fall back to `~/Projects/dotfiles/docs/TEMPLATE.md`.
 
 **Fill grammar** — the template body is ordered for the *executing* agent (execution read order), not for authoring; fill sections in the order of Steps 1–3 above, not top-to-bottom. Replace every `{…}` slot with instance content, then **delete every `<!-- tpl: … -->` guidance comment** — the SPEC TEMPLATE GATE BLOCKs any survivor, unfilled slot sentinels, and missing required sections. The SPEC AUTHORING RULES banner is the one comment that stays.
 
@@ -155,7 +154,7 @@ The spec lands in `pending/` on the branch/worktree where the skill was invoked.
 
 ## References
 
-- `docs/TEMPLATE.md` — the section shape this skill fills (per-repo copy; fallback `~/Projects/dotfiles/docs/TEMPLATE.md`).
+- `~/Projects/dotfiles/docs/TEMPLATE.md` — the section shape this skill fills (per-repo copy; fallback `~/Projects/dotfiles/docs/TEMPLATE.md`).
 - `audits/spec-template.sh` — the enforcer (`--staged` BLOCKs an incomplete spec).
-- `docs/greptile-learnings/RULES.md` — the rule IDs Step 2 pins for review-cleanliness.
+- `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` — the rule IDs Step 2 pins for review-cleanliness.
 - `~/Projects/dotfiles/AGENTS.md` — lifecycle stages, action-triggered guards, deterministic VERIFY/CHORE sequencing.

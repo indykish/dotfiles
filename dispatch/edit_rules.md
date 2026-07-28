@@ -4,7 +4,7 @@ Read this file before editing Oracle's operating model, rule registry, profiles,
 generated instructions, dispatch pages, audits, or governance hooks.
 
 The canonical propagation design lives in
-[`docs/ORLY_ARCHITECTURE.md`](../docs/ORLY_ARCHITECTURE.md).
+`~/Projects/dotfiles/docs/ORLY_ARCHITECTURE.md`.
 The deterministic checker is `make audit`. The comprehension questionnaire is
 [`audits/agents-md.md`](../audits/agents-md.md).
 
@@ -34,10 +34,11 @@ when the reason is recorded in the newest commit message.
 6. Run `orly verify --all --write-evidence --llm-result pass`.
 7. Emit the invariance report before declaring the work complete.
 
-Render command:
+Render command (writes the root `AGENTS.md` and relinks agent homes;
+`orly render --profile <NAME>` only prints to stdout):
 
 ```bash
-orly render --profile dotfiles --output ~/Projects/dotfiles
+orly sync --global
 ```
 
 Any failure returns to the edit. Do not patch the checker to silence its result.
