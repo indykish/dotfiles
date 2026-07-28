@@ -17,6 +17,9 @@ Usage: link-bin-dotfiles [--doctor]
 
 Links:
   ~/.tmux.conf
+  ~/.claude/settings.json
+  ~/.codex/config.toml
+  ~/.config/amp/settings.json
   ~/bin/link-bin-dotfiles
   ~/bin/orly
   ~/bin/update-skills
@@ -43,6 +46,9 @@ FAILED=0
 
 DOTFILE_LINKS=(
   ".tmux.conf:$HOME/.tmux.conf"
+  ".claude/settings.json:$HOME/.claude/settings.json"
+  ".codex/config.toml:$HOME/.codex/config.toml"
+  ".config/amp/settings.json:$HOME/.config/amp/settings.json"
 )
 
 BIN_LINKS=(

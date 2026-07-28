@@ -52,9 +52,16 @@ clone.
 ✔ dotfiles links complete
 ```
 
-Links `~/.tmux.conf` and `orly`, `update-skills`, `update-ai-tools`,
+Links `~/.tmux.conf`, `~/.claude/settings.json`, `~/.codex/config.toml`,
+`~/.config/amp/settings.json`, and `orly`, `update-skills`, `update-ai-tools`,
 `provision-env-1password`, `link-bin-dotfiles` into `~/bin`. Keep `~/bin` on
-your `PATH`; the supplied `.zshrc` does.
+your `PATH`; the supplied `.zshrc` does. Agent settings are symlinked, not
+copied — a `/model` switch or a newly-trusted Codex project directory lands in
+this checkout the same way an `AGENTS.md` rule edit does. On a machine that
+already has real content at one of those three paths, `link-bin-dotfiles`
+skips it with a warning rather than overwriting; reconcile by hand (move the
+machine's version into this checkout, or back it up and remove it) and
+re-run.
 
 ### 4. Copy the configuration you want
 
@@ -66,8 +73,6 @@ cp -i .zshrc ~/.zshrc && cp -i .zshenv ~/.zshenv
 cp -i .gitconfig ~/.gitconfig && cp -i .gitconfig-agentsfleet ~/.gitconfig-agentsfleet
 cp -i .gitignore_global ~/.gitignore_global && cp -i .npmrc ~/.npmrc
 mkdir -p ~/.config/mise && cp -i .config/starship.toml ~/.config/starship.toml && cp -i .config/mise/config.toml ~/.config/mise/config.toml
-mkdir -p ~/.claude ~/.codex ~/.config/amp
-cp -i .claude/settings.json ~/.claude/settings.json && cp -i .codex/config.toml ~/.codex/config.toml && cp -i .config/amp/settings.json ~/.config/amp/settings.json
 ```
 
 Ghostty and iTerm2 settings live under [`Library/`](Library/) at their macOS

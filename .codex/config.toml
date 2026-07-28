@@ -1,3 +1,4 @@
+model = "gpt-5.6-sol"
 model_reasoning_effort = "high"
 tool_output_token_limit = 25000
 # Leave room for native compaction near the 272–273k context window.
@@ -6,6 +7,16 @@ tool_output_token_limit = 25000
 model_auto_compact_token_limit = 233000
 suppress_unstable_features_warning = true
 web_search = "cached"
+dangerouslyAllowAll = true
+approvals_reviewer = "user"
+
+[notice]
+hide_full_access_warning = true
+
+[notice.model_migrations]
+"gpt-5.2-codex" = "gpt-5.3-codex"
+"gpt-5.3-codex" = "gpt-5.4"
+"gpt-5.4" = "gpt-5.5"
 
 [features]
 multi_agent = true
@@ -15,3 +26,96 @@ unified_exec = true
 apply_patch_freeform = true
 skills = true
 shell_snapshot = true
+
+[projects."/Users/kishore/code"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/code/process/e2e-logging-platform"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/skills"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/ai-jumpstart"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/sre/e2e-logging-platform"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/e2e-marketplace"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/awakening"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/dotfiles"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/runbooks"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/marketplace_api"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/e2e-logging-platform"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/clawable/docs"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/clawable"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/usezombie"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/posthog-zig"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/e2e-observability-platform"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/.claude"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/www.megam.io"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/indykish"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/conductor/repos/Quickstart"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Library/Application Support/com.conductor.app/bin"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/docs"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/.github"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/marketplace-blueprints"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/e2e2e"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/agentsfleet"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/gpu-ai"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/console"]
+trust_level = "trusted"
+
+[tui]
+status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining", "five-hour-limit", "used-tokens", "pull-request-number", "permissions", "task-progress"]
+status_line_use_colors = true
+theme = "monokai-extended-origin"
+
+[tui.model_availability_nux]
+"gpt-5.5" = 4
+"gpt-5.6-sol" = 4
