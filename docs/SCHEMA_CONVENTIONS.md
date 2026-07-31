@@ -4,11 +4,13 @@ Canonical reference for agentsfleet database schema patterns. All new tables **m
 
 ## Migration Model
 
-**Additive migrations (current model, owner decision Jul 22, 2026).** Every schema change lands as a **new numbered migration file** — `ALTER TABLE … ADD COLUMN`, new tables, new indexes. **Shipped slot files are frozen history: never edit an existing `schema/NNN_*.sql`.** Migrations are version-tracked and applied incrementally (expected-vs-applied state is inspectable via `agentsfleetd doctor --schema-gate`). Use `IF NOT EXISTS` guards so a migration is idempotent against both a fresh bootstrap (all slots in order) and an already-provisioned database (new slots only).
+**Teardown-rebuild is in force for the M154 rebuild (owner decision, Indy, Jul 31, 2026).** The development database is being dropped and re-created from empty while production is undeployed, so slots `001`–`046` are **retired wholesale** and the schema is re-authored by dependency layer. During this rebuild the frozen-slot rule below does not apply, and `ALTER`/`DROP` statements are forbidden rather than required — a change belongs in the base statement it would have patched. This is the posture RULE SCH already specifies for `VERSION < 2.0.0`; the Jul 22 additive model was the deviation.
 
-Destructive changes (`DROP TABLE`, `DROP COLUMN`, type rewrites) still require an explicit owner decision per change — additive is the default an agent may author alone.
+**Additive migrations resume once the rebuild lands.** Every subsequent schema change is a **new numbered migration file** — `ALTER TABLE … ADD COLUMN`, new tables, new indexes. **Shipped slot files are then frozen history: never edit an existing `schema/NNN_*.sql`.** Migrations are version-tracked and applied incrementally (expected-vs-applied state is inspectable via `agentsfleetd doctor --schema-gate`). Use `IF NOT EXISTS` guards so a migration is idempotent against both a fresh bootstrap (all slots in order) and an already-provisioned database (new slots only).
 
-> Historical note: slots `001`–`031` predate this model (teardown-rebuild with inline DDL edits, enforced by a since-removed `check-schema-gate` lint target). They remain valid bootstrap history and are equally frozen.
+Destructive changes (`DROP TABLE`, `DROP COLUMN`, type rewrites) require an explicit owner decision per change — additive is the default an agent may author alone.
+
+> Historical note: slots `001`–`031` predate the additive model (teardown-rebuild with inline DDL edits, enforced by a since-removed `check-schema-gate` lint target). M154 retires them along with everything up to `046`.
 
 ## Schema File Organization
 
@@ -29,17 +31,22 @@ Destructive changes (`DROP TABLE`, `DROP COLUMN`, type rewrites) still require a
 - Keep the database DDL value unchanged unless the product default is intentionally changing; the Zig constant mirrors the schema default for drift detection.
 - Add an adjacent `Canonical constant:` SQL comment next to each shared numeric default so reviewers can verify the linkage quickly.
 
-## Unique Identifier (UID) Format
+## Identity Column
 
-- **Column:** `uid`
+**One identity column per table, named `id` (owner decision, Indy, Jul 31, 2026 — M154).** The earlier `uid` rule paired a generated `uid` primary key with a duplicate twin column (`id`, `tenant_id`, `workspace_id`, …) holding the same value under its own `UNIQUE` constraint. That shape is retired.
+
+- **Column:** `id`
 - **Type:** Universally Unique Identifier (UUID) `PRIMARY KEY`
 - **Generation:** Application-side UUID version 7 (UUIDv7) via `src/agentsfleetd/types/id_format.zig`, never `gen_random_uuid()`.
-- **Constraint:** Every table must have a UUIDv7 CHECK constraint:
+- **No second unique key on the same value.** This is a correctness rule, not only a storage one: `ON CONFLICT` can arbitrate exactly one constraint, so a table carrying two unique keys over the same value makes two sessions inserting a brand-new row race to a duplicate-key error on the *other* index instead of taking the update arm. `schema/043_runner_lifetime_counters.sql` recorded this before the rule was generalised.
+- **Foreign keys reference the primary key**, never a secondary unique constraint.
+- **Constraint:** every table carries a UUIDv7 CHECK:
   ```sql
-  CONSTRAINT ck_{table}_uid_uuidv7 CHECK (substring(uid::text from 15 for 1) = '7')
+  CONSTRAINT ck_{table}_id_uuidv7 CHECK (substring(id::text from 15 for 1) = '7')
   ```
-- **Adding a new table:** Add a `generate{TableName}Id()` function to `src/agentsfleetd/types/id_format.zig`.
-- **API shape:** public API fields may continue to expose `id`, `tenant_id`, `workspace_id`, or other documented names. SQL should alias `uid` back to the public field name at the boundary instead of casually renaming client-facing payloads.
+- **Adding a new table:** add a `generate{TableName}Id()` function to `src/agentsfleetd/types/id_format.zig`.
+- **API shape:** unchanged — public fields keep exposing `id`, `tenant_id`, `workspace_id` and the other documented names. The column now *is* the public name in most tables, so the aliasing the old rule required mostly disappears; where a public field differs from `id`, alias at the boundary rather than renaming client-facing payloads.
+- **Exceptions,** each stated in the slot that creates the table: a curated catalogue keyed by a stable slug (`core.fleet_library`) and a singleton keyed by a pinned integer (`core.model_catalogue_revision`) carry no UUID.
 
 ## Timestamps
 
@@ -53,9 +60,11 @@ Every table must have:
 
 | Column | Type | Required | Notes |
 |--------|------|----------|-------|
-| `uid` | `UUID PRIMARY KEY` | Yes | UUIDv7, app-generated |
+| `id` | `UUID PRIMARY KEY` | Yes | UUIDv7, app-generated; the table's only identity column |
 | `created_at` | `BIGINT NOT NULL` | Yes | Set once at INSERT |
 | `updated_at` | `BIGINT NOT NULL` | If mutable | Set at INSERT and every UPDATE |
+
+**Naming is uniform.** `created_at` and `updated_at` are the only names for row lifecycle time — not `recorded_at`, `created_at_ms`, or `updated_at_ms`. A column carrying *domain* time distinct from row birth (for example the originating event's creation instant on a money row) is named for that domain meaning and documented in its slot.
 
 **Mutable tables** (any table where UPDATE is a valid operation) must have `updated_at`.
 
