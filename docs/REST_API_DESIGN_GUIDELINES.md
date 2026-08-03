@@ -552,11 +552,9 @@ Some endpoints register with the `none` middleware policy (step 3) and verify �
 | `src/agentsfleetd/http/handlers/health.zig` (`healthz`/`readyz`/`metrics`) | Unauthenticated by design — health/metrics | `// unauthenticated — health` (or equivalent) |
 | `src/agentsfleetd/http/handlers/auth/sessions.zig` | Per-function (create/poll/verify public; approve/delete are `registry.bearer()`-authed Clerk JWT, not raw) | per-function comments |
 | `src/agentsfleetd/http/handlers/auth/identity_events_clerk.zig` | Svix-signed `user.created` event, verified inline against `CLERK_WEBHOOK_SECRET` | `// Svix-verified — does not use bearer/HMAC middleware` |
-| `src/agentsfleetd/http/handlers/webhooks/grant_approval.zig` | Single-use Redis nonce, not HMAC or Bearer | `// Redis nonce-verified — see grant:nonce:{grant_id}` |
 | `src/agentsfleetd/http/handlers/connectors/callback.zig` (+ provider hooks `src/agentsfleetd/http/handlers/connectors/github/callback.zig`, `src/agentsfleetd/http/handlers/connectors/slack/callback.zig`) | Generic OAuth-callback dispatcher; verifies the signed `state` param inline before delegating to the provider hook | `// OAuth callback — verifies signed state, not bearer` |
 | `src/agentsfleetd/http/handlers/connectors/slack/events.zig` | Slack Events API ingress; Slack v0 request signature only (no Bearer fallback) | `// Slack v0 signature-verified — mirrors the webhook plane` |
 | `src/agentsfleetd/http/handlers/ingress/qstash.zig` | QStash schedule ingress; QStash JSON Web Token signature only (no Bearer fallback) | `// QStash signature-verified — no bearer or generic webhook fallback` |
-| `src/agentsfleetd/http/handlers/integration_grants/handler.zig` (`request_integration_grant`) | Fleet-key verified inline (`src/agentsfleetd/auth/api_key.zig`), not a Bearer/runner principal | `// Fleet-key verified — does not use bearer middleware` |
 
 If you write a new raw handler, add it to this table AND add a first-10-lines comment in the file explaining why it's registered with `none` and what verifies the caller instead. A `none`-policy handler file lacking either its own verification call OR an explanatory comment in its first 10 lines is a bug — not an oversight.
 
