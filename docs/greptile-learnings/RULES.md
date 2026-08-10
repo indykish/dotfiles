@@ -659,10 +659,10 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 
 **Rule:** Every new HTTP handler in `src/http/handlers/*.zig` takes `hx: Hx` as its first parameter and uses `hx.ok(status, body)` and `hx.fail(code, detail)` for responses. Do NOT introduce new call sites of `common.writeJson(res, ...)` or `common.errorResponse(res, code, msg, req_id)` — those are internal implementation details of Hx. Internal-500 helpers (`common.internalDbError`, `common.internalOperationError`, `common.internalDbUnavailable`) stay public because they have fixed codes + messages; call them directly with `hx.res, hx.req_id`.
 **Why:** M18_002 completed the sweep from `handleXxx(ctx, req, res, ...)` to `innerXxx(hx, req, ...)`. Re-introducing raw `common.writeJson`/`common.errorResponse` drags back the old signature and bypasses the JSON envelope / RFC 7807 contract that `Hx` enforces. Greptile will flag reviews that do this.
-**Do:** `hx.ok(.ok, .{ .field = value })` / `hx.fail(ec.ERR_INVALID_REQUEST, "detail")`. See `docs/nostromo/api_handler_guide.md` for the full style guide.
+**Do:** `hx.ok(.ok, .{ .field = value })` / `hx.fail(ec.ERR_INVALID_REQUEST, "detail")`. See `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` §8 for the canonical handler shape.
 **Don't:** `common.writeJson(hx.res, .ok, body)` or `common.errorResponse(hx.res, code, msg, hx.req_id)`. If you find yourself writing either, you either need to add a missing method to `Hx` (rare — only `ok` and `fail` earn their place) or the helper should not be public at all.
 **Tags:** zig, http, handlers, hx, api-style
-**Ref:** M18_002 §5.1–5.2 — full sweep of 18 handler files to inner*/hx. Style guide at `docs/nostromo/api_handler_guide.md`.
+**Ref:** M18_002 §5.1–5.2 — full sweep of 18 handler files to inner*/hx. Canonical guide: `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` §8.
 
 ## RULE RAD — New HTTP endpoints must pass the REST API Design Guidelines checklist
 
@@ -680,9 +680,9 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 **Tags:** zig, http, api-design, rest, naming
 **Ref:** M23_001 `agent_steer_http.zig` — `ack` dropped, `run_steered` split into `message_queued` + `execution_active` after post-build audit. `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md`.
 
-## RULE HGD — Every new handler must follow api_handler_guide.md before writing any code
+## RULE HGD — Every new handler must follow the REST API Design Guidelines before writing any code
 
-**Rule:** Before writing any new `inner*` handler function, read `docs/nostromo/api_handler_guide.md` in full and verify:
+**Rule:** Before writing any new `inner*` handler function, read `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` in full and verify:
 1. Function named `inner<Resource><Action>` (not `handle*`, not `do*`).
 2. First parameter is `hx: Hx` (value, not pointer) — never build your own arena.
 3. Responses via `hx.ok(status, body)` and `hx.fail(error_code, detail)` only.
@@ -690,11 +690,11 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 5. All `conn.query()` results wrapped in `PgQuery` with `defer q.deinit()` (RULE FLS).
 6. No `common.writeJson` or `common.errorResponse` at call sites (RULE HXX).
 
-**Why:** The `api_handler_guide.md` encodes the M18_002 migration rule. New handlers that skip it reintroduce the old `handle*(ctx, req, res)` signature or roll their own arena/response building, breaking middleware propagation and RFC 7807 error shape consistency.
-**Do:** Open `docs/nostromo/api_handler_guide.md`, skim the template, then write the handler. Read RULE HXX alongside it.
+**Why:** The canonical guide encodes the M18_002 handler shape and the complete route-registration checklist. New handlers that skip it reintroduce the old `handle*(ctx, req, res)` signature or roll their own arena and response building, breaking middleware propagation and Request for Comments (RFC) 7807 error-shape consistency.
+**Do:** Open `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md`, apply its quick checklist and §7–§8, then write the handler. Read RULE HXX alongside it.
 **Don't:** Copy-paste a handler from before M18_002 (anything that takes `ctx *Context` as first param, or calls `common.writeJson` directly). Those are the old pattern.
 **Tags:** zig, http, handlers, hx, api-style
-**Ref:** `docs/nostromo/api_handler_guide.md`. RULE HXX (same topic, handler signature). M18_002 full sweep.
+**Ref:** `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` §7–§8. RULE HXX (same topic, handler signature). M18_002 full sweep.
 
 ## RULE AWO — Workspace+agent path routes must verify agent-to-workspace ownership
 
