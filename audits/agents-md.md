@@ -87,9 +87,9 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.17 (Lifecycle) | Must the LAST `errdefer` in init lexically precede the LAST allocation it protects (no batched-at-bottom errdefer)? | YES |
 | 4.18 (Spec template) | For every Edit/Write to a spec under `docs/v*/{pending,active,done}/` or to `docs/TEMPLATE.md`, does SPEC TEMPLATE GATE forbid time/effort estimates, complexity ratings, percentage-complete fields, owners, and dates (per `TEMPLATE.md` "Prohibited" section)? | YES |
 | 4.19 (Spec template) | Does `spec-template.sh` run as part of `make lint` and block on prohibited-section regex matches? | YES |
-| 4.20 (Doc read) | For every Edit/Write whose file pattern matches a row in the EXECUTE doc-reads table, does DOC READ GATE require a `📖 DOC READ: <path>` proof-line — either citing §N applied OR the cited-skip variant — before the edit? | YES |
-| 4.21 (Doc read) | Is the `📖 DOC READ:` proof-line required **per-edit** (not once per session, not once per file across multiple edits)? | YES |
-| 4.22 (Doc read) | Are auto-mode and "I read this earlier in the session" both invalid grounds to skip the proof-line? | YES |
+| 4.20 (Doc read) | For every Edit/Write whose file pattern matches a row in the EXECUTE doc-reads table, does DOC READ GATE require a `📖 DOC READ: <path>` proof-line — either citing §N applied OR the cited-skip variant — before the turn's first triggering edit? | YES |
+| 4.21 (Doc read) | Is the `📖 DOC READ:` proof-line required **per triggered document per turn** (not once per session — every new turn that edits the trigger surface needs a fresh line)? | YES |
+| 4.22 (Doc read) | Are auto-mode and "I read this earlier" both invalid grounds to skip the per-turn proof-line — already-loaded sections are cited rather than re-read, but the line itself is never skipped? | YES |
 | 4.23 (Documentation) | Before published Markdown JSX (MDX), reusable snippets, customer readme, or public OpenAPI prose, must the agent read `dispatch/write_documentation.md` and `docs/DOCUMENTATION_RULES.md` before any narrower guide? | YES |
 | 4.24 (Documentation) | Are page, snippet, generated API, and changelog scopes distinct, with repository-owned pre-commit checks enforcing the mechanical rules? | YES |
 | 4.25 (Rust) | Do `*.rs` edits route to `dispatch/write_rust.md`, with ownership, error variants, feature combinations, and deterministic contention tests preserved? | YES | <!-- oracle-packs:language.rust -->
@@ -120,6 +120,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 6.8 | Must memleak evidence (last 3 lines verbatim) appear in PR Session Notes when touching `src/http/**` / `src/cmd/serve.zig` / allocator wiring? | YES |
 | 6.9 | Does CHORE(open) record a `Test Baseline:` line (unit + integration counts from `make _lint_zig_test_depth`) in the spec header? | YES |
 | 6.10 | Does VERIFY end with a Test Delta row (growth vs the CHORE(open) baseline) plus a lacking-areas verdict, with zero/negative unit delta on a code-adding diff requiring justification or a return to EXECUTE? | YES |
+| 6.11 | Do the lifecycle stage runbooks (CHORE(open/close) checklists, PLAN expansions, deferral quote format, pre-PR gates, LAND) resolve from `dispatch/lifecycle.md`, with AGENTS.md keeping each stage's binding essence? | YES |
 
 ### Scenario 7 — Review discipline before merge
 
@@ -264,7 +265,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 
 This scenario exists because the most likely failure of the operating model is
 not a missing rule — it's the *agent misreading a rule that is present*.
-AGENTS.md is ~28 KB of table-dense, exception-laden prose; the conditions
+AGENTS.md is ~32 KB of table-dense, exception-laden prose (SOUL.md inlined); the conditions
 below are where an LLM reading it tends to drift, conflate, or confabulate.
 The questions force *proof of reading* over *recall*.
 

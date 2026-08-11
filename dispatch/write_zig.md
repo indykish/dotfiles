@@ -1,6 +1,6 @@
 # write_zig.md — Zig latent façade
 
-This is the prose the AGENT reads before writing any `*.zig` file. It pairs with the deterministic façade `dispatch/write_zig.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. This document consolidates the former Zig rules merged with the Zig-relevant dissolved gate-card deltas: every original rule line is preserved verbatim, each `## ` section now carries exactly one enforcement tag, and the dissolved gate-card prose is appended under "Merged from dissolved gate cards." Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
+This is the prose the AGENT consults before writing any `*.zig` file — **sectioned, not whole-file**: scan the headers and read the sections the diff touches, per §Verification workflow step 1. It pairs with the deterministic façade `dispatch/write_zig.sh` — the machine half that runs the mechanically-checkable subset and emits one verdict block. This document consolidates the former Zig rules merged with the Zig-relevant dissolved gate-card deltas: every original rule line is preserved verbatim, each `## ` section now carries exactly one enforcement tag, and the dissolved gate-card prose is appended under "Merged from dissolved gate cards." Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
 
 **Signal legend** (printed by `write_zig.sh`):
 

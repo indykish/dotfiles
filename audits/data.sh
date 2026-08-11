@@ -45,6 +45,7 @@ REQUIRED_DISPATCH=(
   "write_spec" "write_http" "write_auth" "write_changelog"
   "write_documentation" "verify" "name_architecture" "edit_rules"
   "write_rust" "write_python" "write_shell" "write_mdx"
+  "lifecycle"
 )
 
 # Check 2 — every source/config language has at least one mention.
@@ -104,6 +105,7 @@ DOTFILES_RESIDENT=(
   "dispatch/verify.md"
   "dispatch/name_architecture.md"
   "dispatch/edit_rules.md"
+  "dispatch/lifecycle.md"
 )
 
 # Check 11 — every lifecycle stage header is present in AGENTS.md.

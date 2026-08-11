@@ -2,7 +2,12 @@
 
 Generic principles from greptile reviews, PR feedback, and production incidents.
 
-**Read this:** at EXECUTE start, during `/review`, when fixing review feedback.
+**Read this — sectioned, not whole-file.** At EXECUTE start: the Rule-code gloss
+legend below + the sections named by the spec's "Applicable Rules" list (locate
+via `grep -n "^## "`; the list is canonical — a missing list makes the standard
+set the floor). The full file belongs to `/review` and review-feedback fixing,
+not EXECUTE. On sub-task shape change: re-scan headers and read only
+newly-touched sections, citing §s in the proof-line — never the full file again.
 **Ignore a rule:** only when the user explicitly overrides it with a stated reason.
 
 Reference a rule as `RULE NDC`, `RULE OWN`, etc.

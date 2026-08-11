@@ -1,15 +1,12 @@
 ---
 name: kishore-spec-new
 description: |
-  Author a milestone/workstream specification the executing agent (Orly) can
-  ship into a deterministic, review-clean (no greptile findings), and reported
-  Pull Request. Leads with intent capture and review-readiness — not file
-  mechanics. Use when the user says "create a spec", "new milestone",
-  "start M{N}_{NNN}", "spec out X", or attempts a TODO.md (forbidden in this
-  project — every non-trivial intent becomes a spec instead).
-
-  Cross-agent: works for Claude, Codex, OpenCode, Amp. Self-contained
-  markdown — no agent-specific tool invocations.
+  Author a milestone/workstream spec the executing agent (Orly) ships into a
+  deterministic, review-clean, reported Pull Request — intent capture and
+  review-readiness first, file mechanics last. Use on "create a spec", "new
+  milestone", "start M{N}_{NNN}", "spec out X", or any TODO.md attempt
+  (forbidden — every non-trivial intent becomes a spec). Cross-agent,
+  self-contained markdown.
 ---
 
 # kishore-spec-new

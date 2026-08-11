@@ -1,15 +1,12 @@
 ---
 name: write-integration-test
 description: >
-  Generates service-layer integration tests that exercise real dependencies (Postgres,
-  Redis, full HTTP router + middleware chain) with deterministic failure injection,
-  per-test state isolation, drain audits, and leak audits. Proves zero leaks over the
-  real request lifecycle (error paths included), correctness + parallelism at >=100
-  connections (no hidden global lock), and a complexity/latency budget under load that
-  escalates serialization findings to a refactor proposal. Sister skill to
-  write-unit-test. Use when adding/changing handlers, repos, services, or any code
-  crossing module boundaries with real I/O. Not for browser E2E (use gstack /qa)
-  and not for pure logic (use write-unit-test).
+  Service-layer integration tests against real dependencies (Postgres, Redis,
+  full HTTP router + middleware) with deterministic failure injection,
+  per-test isolation, drain + leak audits, and >=100-connection parallelism
+  proofs. Sister of write-unit-test. Use for handlers, repos, services, or
+  any real-I/O module-boundary crossing. Not for browser E2E (gstack /qa) or
+  pure logic (write-unit-test).
 ---
 
 # Write Integration Test

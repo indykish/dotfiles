@@ -1,25 +1,14 @@
 ---
 name: kishore-babysit-prs
 description: |
-  Async polling layer on top of gstack's greptile-triage helper. Fires after
-  every push to a PR/MR, schedules re-polls per a backoff cadence, walks every
-  review thread (not just the first), classifies via gstack's
-  greptile-triage.md, suppresses against per-project + global
-  greptile-history.md, and stops on two consecutive empty polls.
-
-  Also gates "done" on CI: each cycle it polls the PR/MR check runs, fixes any
-  failure caused by your own changes, and only reports done when CI is green.
-  And it triages greptile's PR/MR-level SUMMARY feedback (the review body + the
-  top-level "description reply" comment), not only the line-level threads.
-
-  Forge-aware: GitHub (gh / Pull Request) and GitLab (glab / Merge Request),
-  detected from `git remote`.
-
-  Use after `gh pr create` / `glab mr create`, after every `git push` to a
-  branch with an open PR/MR, or when asked to "babysit", "watch greptile",
-  "poll the PR/MR", "watch reviews", "follow up on review feedback".
-
-  Cross-agent: Claude, Codex, OpenCode, Amp.
+  Post-push follow-up for PRs/MRs: backoff-cadence polls over CI check runs
+  (fix every failure your diff caused), every greptile inline thread, and the
+  PR-level summary; classifies via gstack greptile-triage, suppresses via
+  greptile-history, stops after two consecutive empty polls with CI green.
+  Forge-aware (gh PR / glab MR). Use after `gh pr create` / `glab mr create`,
+  after every push to a branch with an open PR/MR, or on "babysit", "watch
+  greptile", "poll the PR/MR", "watch reviews", "follow up on review
+  feedback". Cross-agent: Claude, Codex, OpenCode, Amp.
 ---
 
 # kishore-babysit-prs

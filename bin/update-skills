@@ -9,6 +9,23 @@ SYSTEM_SKILLS="$UNIFIED_SKILLS/.system"
 GSTACK_DIR="$HOME/.local/share/gstack"
 GSTACK_REPO="https://github.com/garrytan/gstack.git"
 
+# Skills excluded from the overlay — duplicate families (the openclaw variants
+# of retro/investigate/office-hours/ceo-review shadow the plain-named skills
+# that are the actual invocation surface) and stacks unused on this machine
+# (ios-*). Every entry trims the always-in-context skill listing each agent
+# carries per request; delete a name here and re-run update-skills to restore.
+SKILL_EXCLUDES=(
+    gstack-openclaw-retro
+    gstack-openclaw-investigate
+    gstack-openclaw-office-hours
+    gstack-openclaw-ceo-review
+    ios-clean
+    ios-design-review
+    ios-fix
+    ios-qa
+    ios-sync
+)
+
 # Agent configurations: "host_flag:config_dir:skills_subdir"
 # skills_subdir is relative to config_dir.
 AGENTS=(
@@ -44,11 +61,14 @@ esac
 
 link_skill_dir() {
     local source_dir="$1"
-    local skill_name
+    local skill_name excluded
     skill_name="$(basename "$source_dir")"
 
     [ "$skill_name" != "gstack" ] || return 0
     [ -f "$source_dir/SKILL.md" ] || return 0
+    for excluded in "${SKILL_EXCLUDES[@]}"; do
+        [ "$skill_name" != "$excluded" ] || return 0
+    done
 
     rm -f "$OVERLAY_TMP/$skill_name"
     ln -snf "$source_dir" "$OVERLAY_TMP/$skill_name"

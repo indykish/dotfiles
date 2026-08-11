@@ -1,13 +1,12 @@
 ---
 name: write-unit-test
 description: >
-  Generates risk-weighted, failure-injecting tests across 8 stacks (Python, Python SDK,
-  OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Shell). Enforces behaviour + failure +
-  invariant + integration + regression coverage with explicit anti-patterns and a
-  Definition-of-Done gate. Adds deterministic production-safety proofs: Zig zero-leak
-  (error paths included), concurrency proven at >=100 connections (no hidden global
-  lock), and a counter-based complexity/latency budget that escalates O(n) and
-  serialization findings to a refactor proposal. Use during implementation, not after.
+  Risk-weighted, failure-injecting test generation across 8 stacks (Python,
+  OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Shell) enforcing behaviour +
+  failure + invariant + integration + regression coverage with a
+  Definition-of-Done gate; deterministic production-safety proofs (Zig
+  zero-leak, >=100-connection concurrency, complexity/latency budgets) live
+  in the skill body. Use during implementation, not after.
 ---
 
 # Write Unit Test

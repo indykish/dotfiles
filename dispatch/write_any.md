@@ -1,6 +1,12 @@
 # write_any.md — cross-cutting authoring latent façade
 
-This is the prose the AGENT reads before writing ANY source file (`*.zig` / `*.ts` / `*.tsx` / `*.js` / `*.jsx` / `*.py` / `*.rs` / `*.go` / `*.sh` / `*.sql`). These are the language-agnostic authoring invariants that apply identically to every surface — literal hygiene, length, observability, milestone-free naming, dead-code/legacy. They fire IN ADDITION to the language façade (`write_zig` / `write_ts_adhere_bun` / `write_sql`), not instead of it. It pairs with the deterministic façade `dispatch/write_any.sh`. Nine dissolving gate cards are merged verbatim below (headings demoted one level, each subsection tagged); the durable rule catalogue stays in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` (retained), which the Greptile Gate audits. Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
+**Load protocol — sectioned, not whole-file.** Scan the section headers first
+(`grep -n "^## " dispatch/write_any.md`), read §Scope plus the sections the
+diff shape touches, and cite them in the proof-line; on sub-task shape change
+re-scan and read only newly-touched sections — never re-read the full file
+within a session.
+
+This is the prose the AGENT consults before writing ANY source file (`*.zig` / `*.ts` / `*.tsx` / `*.js` / `*.jsx` / `*.py` / `*.rs` / `*.go` / `*.sh` / `*.sql`). These are the language-agnostic authoring invariants that apply identically to every surface — literal hygiene, length, observability, milestone-free naming, dead-code/legacy. They fire IN ADDITION to the language façade (`write_zig` / `write_ts_adhere_bun` / `write_sql`), not instead of it. It pairs with the deterministic façade `dispatch/write_any.sh`. Nine dissolving gate cards are merged verbatim below (headings demoted one level, each subsection tagged); the durable rule catalogue stays in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` (retained), which the Greptile Gate audits. Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
 
 **Signal legend** (printed by `write_any.sh`):
 
