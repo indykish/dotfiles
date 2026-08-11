@@ -212,7 +212,8 @@ and [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md).
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Generated rules — the file every agent home links to. |
 | [`orly/`](orly/) | The gate engine, renderer, profiles, and fixtures (Bun + TypeScript). |
-| [`SOUL.md`](SOUL.md) | Orly's judgment layer — precedent log of Kishore's verbatim calls, reply-shape rules, pre-send checklist. Each rule once; `AGENTS.md` holds the gates. |
+| [`SOUL.md`](SOUL.md) | Orly's judgment layer — reply-shape rules, reading-Indy defaults, pre-send checklist; rendered into `AGENTS.md` by `orly sync`. Each rule once; `AGENTS.md` holds the gates. |
+| [`SOUL_LOG.md`](SOUL_LOG.md) | The evidence behind `SOUL.md` — precedent log of Kishore's verbatim calls, opened on demand, appended at the moment of correction. |
 | [`dispatch/`](dispatch/) | Rule pages keyed to the work at hand. |
 | [`audits/`](audits/), [`evals/`](evals/) | Deterministic checks and their fixtures. |
 | [`docs/`](docs/) | Standards, templates, architecture notes, specs under `docs/v*/`. |
