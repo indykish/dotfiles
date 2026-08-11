@@ -29,8 +29,10 @@ when the reason is recorded in the newest commit message.
 2. Render the dotfiles profile into the repository root.
 3. Run `make audit`; fix every failure.
 4. Answer every question in `audits/agents-md.md` against the generated rules.
-5. Run `make llmevals CHECK=1` before commit. Pre-push owns the live smoke run
-   for semantic changes. Run the full matrix manually with `make llmevals`.
+5. Run `make llmevals CHECK=1` before commit. Live comprehension stays off the
+   push path by policy (the hook records `--llm-result not-required` with its
+   rationale); run the matrix manually with `make llmevals` (or `SMOKE=1`)
+   when semantics change.
 6. Run `orly verify --all --write-evidence --llm-result pass`.
 7. Emit the invariance report before declaring the work complete.
 

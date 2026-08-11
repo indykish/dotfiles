@@ -10,7 +10,7 @@ Every triggered document requires one `📖 DOC READ: <path>` proof-line **per t
 | `orly/**`, agent-home instruction links, repository rules synchronization, or governance hooks | `dispatch/edit_rules.md` + `~/Projects/dotfiles/docs/ORLY_ARCHITECTURE.md` — canonical sources, profiles, snapshots, refusal boundaries, and evidence. |
 | Lifecycle stage transition (CHORE(open)/PLAN/CHORE(close)/LAND, worktree setup, milestone bootstrap) | `dispatch/lifecycle.md` — the entered stage's runbook section only (section-scan; fires on the transition itself, not on an Edit/Write). |
 | Any source file (cross-cutting authoring) | `dispatch/write_any.md` — length, logging, milestone-id, error-registry, UFS, greptile read, legacy-workaround family. |
-| Spec's "Applicable Rules" | Each rule (canonical). Missing → standard set is floor; surface omission. |
+| Spec's "Applicable Rules" | Each rule (canonical). Missing → the cross-cutting codes of `dispatch/write_any.md` are the floor; surface omission. |
 | `*.zig` | `dispatch/write_zig.md`. ZIG GATE per edit. |
 | `*.ts`/`*.tsx`/`*.js`/`*.jsx` | `dispatch/write_ts_adhere_bun.md` — TS FILE SHAPE DECISION (§1) at PLAN, const/import/Bun-primitive discipline, anti-patterns. |
 | `*.rs` | `dispatch/write_rust.md` — ownership, error variants, feature combinations, and contention tests. | <!-- oracle-packs:language.rust -->

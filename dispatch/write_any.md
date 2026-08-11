@@ -1,7 +1,8 @@
 # write_any.md — cross-cutting authoring latent façade
 
 **Load protocol — sectioned, not whole-file.** Scan the section headers first
-(`grep -n "^## " dispatch/write_any.md`), read §Scope plus the sections the
+(`grep -nE "^##+ " dispatch/write_any.md` — two-plus hashes, so the gate cards
+nested under container headings surface too), read §Scope plus the sections the
 diff shape touches, and cite them in the proof-line; on sub-task shape change
 re-scan and read only newly-touched sections — never re-read the full file
 within a session.

@@ -185,7 +185,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 13.1 | When the agent edits `orly/**`, generated `AGENTS.md`, `audits/agents-md.md`, governance hooks, or any dispatch entry, does `edit_rules` require the audit and questionnaire before declaring done? | YES |
 | 13.2 | Is the agent forbidden from self-overriding the Invariance Suite Gate? (Only the user may bypass at push time via `SKIP_INVARIANCE_PUSH=1`.) | YES |
 | 13.3 | Does generated evidence bind the source commit, registry digest, profile results, and prompt-comprehension result? | YES |
-| 13.4 | Does the pre-push hook run live prompt evaluation for semantic governance changes and regenerate evidence against the pushed commit? | YES |
+| 13.4 | Does the pre-push hook run the deterministic chain and regenerate evidence against the pushed commit, with live prompt evaluation deliberately off the push path (the hook records `--llm-result not-required` with its rationale; `make llmevals` is the manual matrix)? | YES |
 
 ### Scenario 14 — Communication discipline
 
@@ -279,7 +279,7 @@ The questions force *proof of reading* over *recall*.
 | 23.6 | Is the negative-test harness (`evals/test-agents-md.sh`) required to pass — proving each deterministic check still *bites* — whenever `audits/agents-md.sh` itself changes? | YES |
 | 23.7 | Does the live, cross-agent comprehension runner (`evals/llms/run.sh`, `make llmevals`) feed the frozen golden-set to every installed agent and grade each `VERDICT:` by exact match? | YES |
 | 23.8 | When the live runner is unavailable or the golden-set changes, is `make llmevals CHECK=1` the minimum dry validation? | YES |
-| 23.9 | Does pre-push cap token spend with `make llmevals SMOKE=1` while keeping the full golden-set available through an explicit `make llmevals` run? | YES |
+| 23.9 | Is live-eval token spend controlled by keeping it off the push path entirely (rationale recorded in `.githooks/pre-push`), with `make llmevals SMOKE=1` and the full `make llmevals` matrix available as explicit manual runs? | YES |
 
 ### Scenario 24 — Memory routing (auto-memory retired)
 
@@ -367,9 +367,9 @@ comprehension layer closes that gap:
   divergence between models flags an *ambiguous rule* (a doc bug) as much as a
   non-compliant model. Absent / credit-blocked agents are logged + excluded
   from the gate, never silently dropped.
-- **Evidence** — the pre-push hook passes the live result to
-  `orly verify --all --write-evidence`, which binds it to the current
-  source commit and registry digest.
+- **Evidence** — `orly verify --all --write-evidence` binds the result to the
+  current source commit and registry digest; pre-push records the live result
+  as `not-required` unless a manual `make llmevals` run supplied one.
 
 ---
 
