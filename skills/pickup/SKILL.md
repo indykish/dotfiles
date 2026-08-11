@@ -67,7 +67,3 @@ auth-dev: 1 window (created Wed Feb 18 11:15:22)
 3. Run E2E tests: `bunx playwright test`
 4. Push commits and check CI
 ```
-
-## Location
-
-Create `~/.codex/prompts/pickup.md`, `~/.opencode/prompts/pickup.md`, etc. for global access.

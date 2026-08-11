@@ -75,7 +75,3 @@ A src/auth/register.tsx
 - Email service has rate limits (100/day)
 - Registration endpoint not yet deployed to staging
 ```
-
-## Location
-
-Create `~/.codex/prompts/handoff.md`, `~/.opencode/prompts/handoff.md`, etc. for global access.
