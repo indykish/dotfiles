@@ -47,6 +47,7 @@ make_sandbox() {
   cp "$SRC_ROOT/audits/data.sh"            "$sb/audits/"
   cp "$SRC_ROOT/audits/parity-dispatch.sh" "$sb/audits/"
   cp "$SRC_ROOT/audits/rule-paths.sh"      "$sb/audits/"
+  cp "$SRC_ROOT/audits/lifecycle-anchors.sh" "$sb/audits/"
   cp "$SRC_ROOT"/audits/fixtures/*.diff    "$sb/audits/fixtures/"
   cp "$SRC_ROOT"/dispatch/*.md             "$sb/dispatch/"
   local d
@@ -129,6 +130,11 @@ expect_fail "dispatch parity bites when an extra unlisted row is added" \
 expect_fail "dispatch parity bites when a leftover gate card remains" \
   "switchover incomplete" \
   "mkdir -p docs/gates && printf '# leftover\n' > docs/gates/leftover_card.md"
+
+# Check 11b — lifecycle anchors: essence/runbook drift on a load-bearing string.
+expect_fail "lifecycle anchors bite when the runbook drops a load-bearing string" \
+  "lifecycle anchor missing from dispatch/lifecycle.md: Test Baseline:" \
+  "perl -pi -e 's/Test Baseline/Test Basement/g' dispatch/lifecycle.md"
 
 # Check 7 — cross-references: a dotfiles-resident doc named by AGENTS.md vanishes.
 # Use a non-dispatch resident (docs/TEMPLATE.md) so this isolates check 7

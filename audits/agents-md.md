@@ -329,6 +329,7 @@ siblings.
 | 26.4 | Does repository synchronization require a clean tree and `AGENTS.project.md`, and refuse sibling-worktree mutation? | YES |
 | 26.5 | Does the `agentsfleet` profile map CONFORM to `make harness-verify` while VERIFY remains behavior proof? | YES |
 | 26.6 | Does `README.md` document initialization, explicit synchronization, status, and doctor commands for new repositories? | YES |
+| 26.7 | Does `orly gate pr` discover a spec closed to `done/` on the branch (its `Branch:` header names the branch) and run the spec criteria — including `spec.moved`, `spec.baseline`, `spec.ordering`, and `spec.deferrals` — instead of skip-passing as spec-less? | YES |
 
 ### Scenario 27 — Rule-path residence & reachability
 
@@ -365,8 +366,9 @@ comprehension layer closes that gap:
   interruption replays finished agents instead of re-spending tokens.
 - **Cross-agent** — claude, codex, amp, opencode all run the same set;
   divergence between models flags an *ambiguous rule* (a doc bug) as much as a
-  non-compliant model. Absent / credit-blocked agents are logged + excluded
-  from the gate, never silently dropped.
+  non-compliant model. In the FULL graded run an absent or credit-blocked
+  agent FAILS the gate — "every agent adheres" cannot be proven by an agent
+  that never answered; smoke logs + excludes it, never silently.
 - **Evidence** — `orly verify --all --write-evidence` binds the result to the
   current source commit and registry digest; pre-push records the live result
   as `not-required` unless a manual `make llmevals` run supplied one.

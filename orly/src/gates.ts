@@ -12,6 +12,10 @@ const PIPE_OUTPUT = "pipe";
 const GIT = "git";
 const DOCS_DIRECTORY = "docs";
 const ACTIVE_DIRECTORY = "active";
+const DONE_DIRECTORY = "done";
+const BRANCH_HEADER = "Branch:";
+const DEFAULT_BRANCHES = ["main", "master"];
+const UTF8 = "utf8";
 // Accept every real layout: docs/v1/, docs/v2/, docs/v0.9.2/ — cache-kit
 // versions its spec tree by release, not by prototype integer.
 const PROTOTYPE_PATTERN = /^v\d+(\.\d+)*$/;
@@ -92,36 +96,66 @@ export function branchOverrides(root: string): Override[] {
 }
 
 export function activeSpecPath(root: string): string | undefined {
-  const specs = activeSpecPaths(root);
+  const specs = specPathsUnder(root, ACTIVE_DIRECTORY);
   if (specs.length === 0) return undefined;
   if (specs.length > 1) throw new OrlyError(`more than one active spec — one stream per worktree:${NEWLINE}${specs.join(NEWLINE)}`);
   return specs[0];
 }
 
+// Closed-spec follow-through: CHORE(close) moves the spec to done/, and the
+// gate must keep proving it — a close that made the criteria skip-pass would
+// be end-state theater. Discovery matches done/ specs whose Branch: header
+// names the current branch; default branches never match a stream's spec.
+export function closedSpecPath(root: string): string | undefined {
+  const branch = gitOutput(root, ["rev-parse", "--abbrev-ref", "HEAD"]);
+  if (!branch || DEFAULT_BRANCHES.includes(branch)) return undefined;
+  const specs = specPathsUnder(root, DONE_DIRECTORY).filter((path) => branchNamed(path, branch));
+  if (specs.length === 0) return undefined;
+  if (specs.length > 1) throw new OrlyError(`more than one done/ spec names branch ${branch} — one stream per worktree:${NEWLINE}${specs.join(NEWLINE)}`);
+  return specs[0];
+}
+
+// An in-flight (active/) spec wins; otherwise the branch's closed spec gates.
+export function specPathFor(root: string): { path: string; closed: boolean } | undefined {
+  const active = activeSpecPath(root);
+  if (active) return { path: active, closed: false };
+  const closed = closedSpecPath(root);
+  return closed ? { path: closed, closed: true } : undefined;
+}
+
+function branchNamed(path: string, branch: string): boolean {
+  try {
+    return readFileSync(path, UTF8).split(/\r?\n/).some((line) => line.includes(BRANCH_HEADER) && line.includes(branch));
+  } catch {
+    return false;
+  }
+}
+
 function gateContext(model: RulesModel, root: string, acceptDirty: boolean): CriterionContext {
-  const specPath = activeSpecPath(root);
+  const spec = specPathFor(root);
   const context: CriterionContext = { root, model, acceptDirty };
-  if (specPath) {
-    context.specPath = relative(root, specPath);
-    context.specText = specTextSync(specPath);
+  if (spec) {
+    context.specPath = relative(root, spec.path);
+    context.specText = specTextSync(spec.path);
+    context.specClosed = spec.closed;
   }
   return context;
 }
 
 function specTextSync(path: string): string {
   try {
-    return readFileSync(path, "utf8");
+    return readFileSync(path, UTF8);
   } catch {
     throw new OrlyError(`cannot read the active spec: ${path}`);
   }
 }
 
-function activeSpecPaths(root: string): string[] {
+function specPathsUnder(root: string, stage: string): string[] {
   const docs = join(root, DOCS_DIRECTORY);
   if (!existsSync(docs)) return [];
   const found: string[] = [];
   for (const prototype of readdirSync(docs).filter((name) => PROTOTYPE_PATTERN.test(name)).sort()) {
-    const directory = join(docs, prototype, ACTIVE_DIRECTORY);
+    const directory = join(docs, prototype, stage);
     if (!existsSync(directory)) continue;
     for (const file of readdirSync(directory).filter((name) => name.endsWith(MARKDOWN_EXTENSION)).sort()) found.push(join(directory, file));
   }

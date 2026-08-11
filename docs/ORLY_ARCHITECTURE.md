@@ -47,7 +47,7 @@ render. Determinism and currency, no stored hashes.
 |---|---|
 | `work` | branch is not the default; tree is clean; the repository resolves to a profile |
 | `verify` | Dimensions marked DONE (when a spec exists); `conform`; the fast `verify.*` commands |
-| `pr` | tree clean; branch pushed; spec gate; docs updated for user-surface changes; the slow suites |
+| `pr` | tree clean; branch pushed; spec gate + closed-spec follow-through (`spec.moved` / `spec.baseline` / `spec.ordering` / `spec.deferrals`); docs updated for user-surface changes; the slow suites |
 
 Every criterion is mechanical — it reads an exit code or a file. Claims that
 cannot be proven that way stay prose and are graded by the spec's rubric; they
@@ -55,9 +55,12 @@ never become fake criteria.
 
 Four behaviours worth knowing:
 
-- **No spec, no problem.** Spec criteria skip with a printed reason, so an
-  ad-hoc bug fix meets the quality gates without being told to write a spec.
-  Two active specs is an error — one stream per worktree.
+- **No spec, no problem — but closing is not escaping.** Spec criteria skip
+  with a printed reason, so an ad-hoc bug fix meets the quality gates without
+  being told to write a spec. A spec moved to `done/` on the branch is still
+  discovered through its `Branch:` header and gates the PR — CHORE(close)
+  never skip-passes the criteria it exists to satisfy. Two active specs is an
+  error — one stream per worktree.
 - **A worktree is its repository.** `repositories.json` registers primary
   checkouts only; a linked worktree resolves through the set of checkouts git
   reports for the shared object store. Streams stay ephemeral and unregistered,

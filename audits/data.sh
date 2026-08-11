@@ -31,6 +31,7 @@ EXPECTED_LABELS=(
   "memory discipline"
   "rule-path residence"
   "rule-path reachability"
+  "lifecycle anchors"
   "size"
 )
 
@@ -119,6 +120,20 @@ LIFECYCLE_HEADERS=(
   "### DOCUMENT"
   "### COMMIT"
   "### CHORE (close)"
+)
+
+# Check 11b — load-bearing lifecycle strings that must exist in BOTH the
+# rendered AGENTS.md (stage essence) and dispatch/lifecycle.md (the runbook).
+# Consumed by audits/lifecycle-anchors.sh; a string dropped from either side
+# is semantic drift the inventory parity check cannot see.
+LIFECYCLE_ANCHORS=(
+  "Test Baseline:"
+  '`pwd` + `git worktree list`'
+  "Indy-acked verbatim quote"
+  "make check-version"
+  "RULE ORP"
+  "git status -uall"
+  "never force-push an open PR branch"
 )
 
 # Check 12 — each scenario must exist by keyword; array size must equal the

@@ -10,11 +10,16 @@
 # file-read variance — and only the single `VERDICT: YES|NO` line is graded.
 #
 # Modes: --check (validate fixtures + availability, no live calls) · --smoke
-# (fixed first fixture, once per agent) · --agent <name> · --threshold <N>
-# (default 100) ·
-# --fresh (ignore journal) · (default) full set × every agent. The command exits
-# successfully when every gradable agent meets the threshold; absent or
-# credit-blocked agents are logged, never silently skipped.
+# (fixed first fixture, once per agent) · --agent <name> · --ids <csv> (run
+# only the named fixtures — a targeted demonstration; no journal) ·
+# --threshold <N> (default 100) · --fresh (ignore journal) · (default) full
+# set × every agent. In the FULL graded run an absent or credit-blocked agent
+# FAILS the gate — "every agent adheres" cannot be proven by an agent that
+# never answered; smoke stays lenient (plumbing check, logged + excluded).
+#
+# Per-fixture context: a fixture may carry "ctx": [paths] — the prompt then
+# embeds AGENTS.md + only those files ([] = AGENTS.md alone). Absent ctx =
+# the full façade embed (backward compatible).
 
 set -uo pipefail
 
@@ -25,12 +30,13 @@ FIXTURES="$ROOT/evals/llms/fixtures.jsonl"
 JOURNAL_DIR="$ROOT/.llmevals-journal"
 CALL_TIMEOUT="${LLMEVALS_TIMEOUT:-${COMPREHENSION_TIMEOUT:-180}}"
 
-MODE="full"; ONLY_AGENT=""; THRESHOLD=100; FRESH=0
+MODE="full"; ONLY_AGENT=""; ONLY_IDS=""; THRESHOLD=100; FRESH=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --check)     MODE="check" ;;
     --smoke)     MODE="smoke" ;;
     --agent)     ONLY_AGENT="${2:-}"; shift ;;
+    --ids)       ONLY_IDS="${2:-}"; shift ;;
     --threshold) THRESHOLD="${2:-100}"; shift ;;
     --fresh)     FRESH=1 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
@@ -81,7 +87,7 @@ invoke_agent() {
 }
 
 build_context() {
-  # Embedded once; reused for every prompt.
+  # The full embed — used for fixtures with no "ctx" allowlist.
   {
     echo "===== BEGIN AGENTS.md ====="
     cat "$AGENTS"
@@ -92,9 +98,27 @@ build_context() {
   }
 }
 
+# Fixture-scoped context: __FULL__ = the whole embed above; __NONE__ =
+# AGENTS.md alone; otherwise a comma-joined façade allowlist. Scoping cuts a
+# ~213KB prompt to the files a fixture actually interrogates.
+build_ctx_for() {
+  local spec="$1" file
+  if [[ "$spec" == "__FULL__" ]]; then cat "$CTX_FILE"; return; fi
+  echo "===== BEGIN AGENTS.md ====="
+  cat "$AGENTS"
+  echo "===== END AGENTS.md ====="
+  if [[ "$spec" != "__NONE__" ]]; then
+    echo "===== BEGIN DISPATCH FAÇADES (dispatch/) ====="
+    local -a ctx_files=()
+    IFS=',' read -ra ctx_files <<< "$spec"
+    for file in "${ctx_files[@]}"; do cat "$ROOT/$file"; done
+    echo "===== END DISPATCH FAÇADES ====="
+  fi
+}
+
 build_prompt() {
-  # $1 = question. Context is on stdin already via CTX_FILE.
-  cat "$CTX_FILE"
+  # $1 = question · $2 = ctx spec (__FULL__ | __NONE__ | comma-joined paths).
+  build_ctx_for "${2:-__FULL__}"
   cat <<EOF
 
 ===== TASK =====
@@ -158,6 +182,15 @@ for i,l in enumerate(open(sys.argv[1]),1):
         if k not in d: print("line",i,"missing",k); bad+=1
     if d.get("expect") not in ("YES","NO"): print("line",i,"bad expect"); bad+=1
     if d.get("id") in ids: print("dup id",d.get("id")); bad+=1
+    ctx = d.get("ctx")
+    if ctx is not None:
+        import os
+        if not isinstance(ctx, list) or any(not isinstance(p, str) for p in ctx):
+            print("line",i,"ctx must be a list of path strings"); bad+=1
+        else:
+            for p in ctx:
+                if not os.path.isfile(os.path.join(sys.argv[2], p)):
+                    print("line",i,"ctx path missing on disk:",p); bad+=1
     # Prompt-answerability: the prompt embeds AGENTS.md + gate bodies ONLY, not
     # audits/agents-md.md. A QUESTION that cites the invariance doc / a Scenario
     # number asks for an answer not in the prompt — the agent can only guess, so
@@ -170,6 +203,19 @@ for i,l in enumerate(open(sys.argv[1]),1):
     ids.add(d.get("id")); n+=1
 print("fixtures:",n)
 sys.exit(1 if bad else 0)
+' "$FIXTURES" "$ROOT"
+}
+
+fixtures_ctx() { # id \t (__FULL__ | __NONE__ | comma-joined ctx paths)
+  python3 -c '
+import json,sys
+for l in open(sys.argv[1]):
+    l=l.strip()
+    if not l: continue
+    d=json.loads(l)
+    ctx=d.get("ctx")
+    spec="__FULL__" if ctx is None else (",".join(ctx) if ctx else "__NONE__")
+    print(d["id"]+"\t"+spec)
 ' "$FIXTURES"
 }
 
@@ -205,11 +251,25 @@ TARGETS=("${AVAIL[@]}")
 [[ -n "$ONLY_AGENT" ]] && TARGETS=("$ONLY_AGENT")
 
 mapfile -t IDS    < <(fixtures_field id     | cut -f1)
-declare -A EXPECT QTEXT
+declare -A EXPECT QTEXT CTXS
 while IFS=$'\t' read -r id v; do EXPECT["$id"]="$v"; done < <(fixtures_field expect)
 while IFS=$'\t' read -r id v; do QTEXT["$id"]="$v";  done < <(fixtures_field q)
+while IFS=$'\t' read -r id v; do CTXS["$id"]="$v";   done < <(fixtures_ctx)
 
 [[ "$MODE" == "smoke" ]] && IDS=("${IDS[0]}")
+
+# --ids: a targeted subset (demonstration / regression probe). Unknown ids are
+# a hard error — a typo must not silently shrink the run. No journal: only the
+# untouched full set may claim a completed graded run.
+if [[ -n "$ONLY_IDS" ]]; then
+  SUBSET=()
+  IFS=',' read -ra WANT <<< "$ONLY_IDS"
+  for w in "${WANT[@]}"; do
+    [[ -n "${EXPECT[$w]:-}" ]] || { echo "${R}FAIL${X}: unknown fixture id: $w" >&2; exit 2; }
+    SUBSET+=("$w")
+  done
+  IDS=("${SUBSET[@]}")
+fi
 
 # Resumability — a long live run can be killed (session restart, Ctrl-C). Each
 # agent's verdict is journalled the moment it completes, keyed to HEAD + the
@@ -220,7 +280,7 @@ HEAD_SHA="$(cd "$ROOT" && git rev-parse --short HEAD 2>/dev/null || echo nogit)"
 FIX_HASH="$( (md5 -q "$FIXTURES" 2>/dev/null || md5sum "$FIXTURES" 2>/dev/null | cut -d' ' -f1) )"
 RUNKEY="${HEAD_SHA}-${FIX_HASH}-t${THRESHOLD}"
 RUN_JDIR="$JOURNAL_DIR/$RUNKEY"
-[[ "$MODE" == "full" ]] || RUN_JDIR=""          # journal only for full graded runs
+[[ "$MODE" == "full" && -z "$ONLY_IDS" ]] || RUN_JDIR=""  # journal only for full graded runs
 [[ $FRESH -eq 1 && -n "$RUN_JDIR" ]] && rm -rf "$RUN_JDIR"
 [[ -n "$RUN_JDIR" ]] && mkdir -p "$RUN_JDIR"
 
@@ -247,7 +307,7 @@ for agent in "${TARGETS[@]}"; do
   correct=0; total=0; fails=""; unavailable=0
   for id in "${IDS[@]}"; do
     pf="$(mktemp)"; out="$(mktemp)"
-    build_prompt "${QTEXT[$id]}" > "$pf"
+    build_prompt "${QTEXT[$id]}" "${CTXS[$id]:-__FULL__}" > "$pf"
     invoke_agent "$agent" "$pf" "$out"
     # An availability/credit/auth error means this agent can't run headless —
     # log + exclude from the gate (don't score it 0 and sink the suite).
@@ -284,7 +344,17 @@ for agent in "${TARGETS[@]}"; do
   fi
   REPORT="$REPORT$agent=$correct/$total "
 done
-[[ -n "$UNAVAIL" ]] && echo && echo "${Y}Unavailable (excluded from gate):${X}$UNAVAIL"
+if [[ -n "$UNAVAIL" ]]; then
+  echo
+  if [[ "$MODE" == "full" ]]; then
+    # "Every agent adheres" cannot be proven by an agent that never answered:
+    # in the graded run, unavailability FAILS the gate instead of shrinking it.
+    echo "${R}Unavailable agent(s) fail the full gate:${X}$UNAVAIL — restore auth/credits, or run --agent for a partial look"
+    OVERALL_OK=0
+  else
+    echo "${Y}Unavailable (excluded from smoke):${X}$UNAVAIL"
+  fi
+fi
 
 echo; echo "${BO}Summary:${X} $REPORT"
 
@@ -293,7 +363,7 @@ if [[ "$MODE" == "smoke" ]]; then
   [[ $OVERALL_OK -eq 1 ]] && exit 0 || exit 1
 fi
 
-if [[ "$MODE" == "full" && -z "$ONLY_AGENT" && $OVERALL_OK -eq 1 ]]; then
+if [[ "$MODE" == "full" && -z "$ONLY_AGENT" && -z "$ONLY_IDS" && $OVERALL_OK -eq 1 ]]; then
   if [[ $GRADED -eq 0 ]]; then
     echo "${R}🔴 no agent could be graded; all were unavailable${X}"
     exit 1

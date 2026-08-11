@@ -107,8 +107,8 @@ spec-vs-rules conflict (amend spec).
 ## Deferral discipline — expansion
 
 Any claim that a spec Section/Dimension was "deferred to follow-up" — in
-`HANDOFF.md`, PR description, Session Notes, or chat — requires an Indy-acked
-verbatim quote in PR Session Notes (or spec Discovery). Format:
+`HANDOFF.md`, PR description, Session Notes, or chat — requires an
+**Indy-acked verbatim quote** in PR Session Notes (or spec Discovery). Format:
 `> Indy (YYYY-MM-DD HH:MM): "<verbatim ack>" — context: <which item, why>`.
 Agent-unilateral deferral = incomplete scope, not deferral; CHORE(close) blocks
 until the item lands or the quote is captured. **HANDOFF.md is a faithful state
@@ -121,8 +121,19 @@ before continuing.
 Spec in `docs/v*/done/` in diff (skip iff parked); `changelog.mdx` has a new
 `<Update>` in diff (skip iff internal-only or parked); `Status: DONE` but spec
 not in `done/` → do not open PR; `make check-version` passes; branch contains
-`origin/main` HEAD (rebase pre-push / merge post-push — never force-push an open
-PR branch).
+`origin/main` HEAD (rebase pre-push / merge post-push —
+never force-push an open PR branch).
+
+**`orly gate pr` follows the spec through the close.** A spec moved to `done/`
+on this branch is still discovered — its `Branch:` header names the branch —
+and every spec criterion runs against it; skip-pass is only for genuinely
+spec-less branches. Mechanical criteria: `spec.moved` (`Status: DONE` ⇒ the
+spec sits under `done/` and was moved on this branch) · `spec.baseline`
+(`Test Baseline:` recorded) · `spec.ordering` (the branch's first commit
+carries the spec — no code before CHORE(open)) · `spec.deferrals` (a deferral
+claim needs the `> Indy (` ack quote in the spec). An Indy-acked deferral that
+leaves a Dimension open ships via `orly override spec.dimensions --reason
+"<the ack>"` — visible in the PR, dead after the merge.
 
 **Babysit detail:** `kishore-babysit-prs` covers all three surfaces — CI check
 runs (fix every failure your diff caused), greptile inline comments, and the

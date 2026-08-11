@@ -43,7 +43,8 @@ describe("gate groups", () => {
     expect(names(runGate(model, project, "work"))).toEqual(["git.branch", "git.tree", "repo.profile"]);
     expect(names(runGate(model, project, "verify"))).toEqual(["cmd.conform", "cmd.verify.unit", "spec.dimensions"]);
     expect(names(runGate(model, project, "pr"))).toEqual([
-      "docs.updated", "git.pushed", "git.tree", "spec.dimensions", "spec.gate", "spec.open-questions", "spec.product-clarity",
+      "docs.updated", "git.pushed", "git.tree", "spec.baseline", "spec.deferrals", "spec.dimensions", "spec.gate",
+      "spec.moved", "spec.open-questions", "spec.ordering", "spec.product-clarity",
     ]);
   });
 
@@ -83,6 +84,65 @@ describe("spec discovery", () => {
     Bun.write(join(project, "docs/v2/active/M02_001_P2_CLI_Y.md"), specFixture());
 
     expect(() => activeSpecPath(project)).toThrow("one stream per worktree");
+  });
+});
+
+describe("closed-spec follow-through", () => {
+  test("a spec closed to done/ is discovered by its Branch: header and still gated", async () => {
+    const project = closedSpecRepository("feat/closed");
+    const model = await modelFor(project);
+
+    const pr = runGate(model, project, "pr");
+    expect(pr.results.find((result) => result.name === "spec.dimensions")?.detail).not.toContain("no active spec");
+    expect(pr.results.find((result) => result.name === "spec.moved")?.ok).toBeTrue();
+    expect(pr.results.find((result) => result.name === "spec.ordering")?.ok).toBeTrue();
+    expect(pr.results.find((result) => result.name === "spec.baseline")?.ok).toBeTrue();
+  });
+
+  test("Status: DONE while the spec still lives under active/ is red on spec.moved", async () => {
+    const project = newRepository();
+    const model = await modelFor(project);
+    git(project, "checkout", "-q", "-b", "feat/undone");
+    mkdirSync(join(project, "docs/v1/active"), { recursive: true });
+    await Bun.write(join(project, SPEC_RELATIVE), specFixture("DONE", "feat/undone"));
+    git(project, "add", ".");
+    git(project, "commit", "-q", "-m", "chore: spec says done but never moved");
+
+    const moved = runGate(model, project, "pr").results.find((result) => result.name === "spec.moved");
+    expect(moved?.ok).toBeFalse();
+    expect(moved?.detail).toContain("still lives under active/");
+  });
+
+  test("code committed before the spec is red on spec.ordering", async () => {
+    const project = newRepository();
+    const model = await modelFor(project);
+    git(project, "checkout", "-q", "-b", "feat/rush");
+    await Bun.write(join(project, "src/rushed.ts"), "export const RUSHED = 1;\n");
+    git(project, "add", ".");
+    git(project, "commit", "-q", "-m", "feat: code before any spec");
+    mkdirSync(join(project, "docs/v1/active"), { recursive: true });
+    await Bun.write(join(project, SPEC_RELATIVE), specFixture("IN_PROGRESS", "feat/rush"));
+    git(project, "add", ".");
+    git(project, "commit", "-q", "-m", "chore: spec arrives late");
+
+    const ordering = runGate(model, project, "pr").results.find((result) => result.name === "spec.ordering");
+    expect(ordering?.ok).toBeFalse();
+    expect(ordering?.detail).toContain("carries no spec file");
+  });
+
+  test("a deferral claim needs the Indy ack quote", async () => {
+    const bare = closedSpecRepository("feat/defer", ["- Dimension 1.2 was deferred to follow-up"]);
+    const bareModel = await modelFor(bare);
+    const red = runGate(bareModel, bare, "pr").results.find((result) => result.name === "spec.deferrals");
+    expect(red?.ok).toBeFalse();
+    expect(red?.detail).toContain("agent-unilateral");
+
+    const acked = closedSpecRepository("feat/defer", [
+      "- Dimension 1.2 was deferred to follow-up",
+      '> Indy (2026-08-11 09:00): "defer 1.2, ship the rest" — context: fixture',
+    ]);
+    const ackedModel = await modelFor(acked);
+    expect(runGate(ackedModel, acked, "pr").results.find((result) => result.name === "spec.deferrals")?.ok).toBeTrue();
   });
 });
 
@@ -268,6 +328,21 @@ function newRepository(): string {
   return project;
 }
 
+// A stream that already ran CHORE(close): the spec sits under done/ with
+// Status: DONE and a Branch: header naming the branch, committed as the
+// branch's first commit so ordering holds.
+function closedSpecRepository(branch: string, extraLines: string[] = []): string {
+  const project = newRepository();
+  git(project, "checkout", "-q", "-b", branch);
+  mkdirSync(join(project, "docs/v1/done"), { recursive: true });
+  mkdirSync(join(project, "audits"), { recursive: true });
+  copyFileSync(join(ROOT, "audits/spec-template.sh"), join(project, "audits/spec-template.sh"));
+  Bun.write(join(project, "docs/v1/done/M99_001_P2_CLI_FIXTURE.md"), specFixture("DONE", branch, extraLines));
+  git(project, "add", ".");
+  git(project, "commit", "-q", "-m", "chore: close the fixture spec");
+  return project;
+}
+
 function newSpecRepository(): string {
   const project = newRepository();
   mkdirSync(join(project, "docs/v1/active"), { recursive: true });
@@ -281,7 +356,7 @@ function newSpecRepository(): string {
 
 // A spec carrying every section audits/spec-template.sh requires, with all
 // Dimensions already DONE so the gates' own criteria are what is under test.
-function specFixture(): string {
+function specFixture(status = "IN_PROGRESS", branch?: string, extraLines: string[] = []): string {
   const sections = [
     "PR Intent & comprehension handshake",
     "Overview",
@@ -304,8 +379,11 @@ function specFixture(): string {
   return [
     "# M99_001: Fixture milestone",
     "",
-    "**Status:** IN_PROGRESS",
+    `**Status:** ${status}`,
     "**Priority:** P2 — fixture",
+    ...(branch ? [`**Branch:** \`${branch}\``] : []),
+    "**Test Baseline:** unit=0 integration=0",
+    ...extraLines,
     "",
     "## Sections (implementation slices)",
     "",

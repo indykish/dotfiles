@@ -206,11 +206,14 @@ for h in "${LIFECYCLE_HEADERS[@]}"; do
 done
 [[ $missing_stages -eq 0 ]] && pass "lifecycle stages (${#LIFECYCLE_HEADERS[@]} headers present)"
 
-# ---------------------------------------------------------------------------
-# 12. audits/agents-md.md — named scenarios must exist by title
-#     (NAMED_SCENARIOS in data). Catches the case where a scenario count
-#     stays ≥ threshold but a specific high-value scenario is renamed/removed.
-# ---------------------------------------------------------------------------
+# 11b. Lifecycle anchors — load-bearing strings in BOTH essence + runbook.
+. "$ROOT/audits/lifecycle-anchors.sh"
+anchors_out=$(check_lifecycle_anchors "$ROOT")
+if [[ $? -eq 0 ]]; then pass "lifecycle anchors (${#LIFECYCLE_ANCHORS[@]} strings in essence + runbook)"; else
+  printf '%s\n' "$anchors_out" >&2; fail "lifecycle anchors (see FAIL lines above)"; fi
+
+# 12. Named scenarios exist by title (NAMED_SCENARIOS in data) — catches a
+#     renamed/removed high-value scenario hiding behind a stable count.
 INV="$ROOT/audits/agents-md.md"
 missing_scenarios=0
 if [[ -f "$INV" ]]; then
