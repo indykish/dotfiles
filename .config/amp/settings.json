@@ -1,3 +1,4 @@
 {
-  "amp.dangerouslyAllowAll": true
+  "amp.dangerouslyAllowAll": true,
+  "amp.gauge": "tokens"
 }
