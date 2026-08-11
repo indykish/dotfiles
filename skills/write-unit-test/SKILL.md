@@ -2,7 +2,7 @@
 name: write-unit-test
 description: >
   Risk-weighted, failure-injecting test generation across 8 stacks (Python,
-  OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Shell) enforcing behaviour +
+  Python SDK, OpenAPI, JS/TS CLI, React/TS, Zig, Rust, Shell) enforcing behaviour +
   failure + invariant + integration + regression coverage with a
   Definition-of-Done gate; deterministic production-safety proofs (Zig
   zero-leak, >=100-connection concurrency, complexity/latency budgets) live
