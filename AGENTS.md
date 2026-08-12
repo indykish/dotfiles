@@ -79,7 +79,7 @@ Auto-memory is **disabled** (`autoMemoryEnabled: false` in `~/.claude/settings.j
 - No new `make` targets without a distinct caller (CI job, spec-mandated gate, or a workflow existing targets can't express) — check `make/*.mk` first; extend over near-duplicate wrappers.
 - `*.zig` → read `dispatch/write_zig.md`; ZIG GATE fires.
 - Auth-flow (`src/auth/**`, `ui/packages/app/lib/auth/**`, token-minting handlers, credential-typed spec dimensions) → read `docs/AUTH.md` first.
-- `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make check-pg-drain`. Use `conn.exec()` for no-rows.
+- `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make lint-governance`. Use `conn.exec()` for no-rows.
 - Cross-repo patterns under `$HOME/Projects/` (check before inventing): Python `marketplace_api` · Rust `e2e-observability-platform`/`cache-kit.rs`/`oss/exonum` · Zig `posthog-zig`/`oss/ghostty`/`oss/nullclaw` (+`agentsfleet`) · TypeScript `docs.megam.io`/`www.megam.io`/`rioos.megam.io`/`oss/signoz` · MDX `docs` · Shell `dotfiles`.
 - **Reference canon (read before designing):** TypeScript → supabase `oss/supabase/apps/studio` (app patterns) + `oss/supabase/packages/{ui,ui-patterns}` (components) + `oss/cli` (clone if absent); Zig → `oss/ghostty/src/`. "Broken for us" → call-site diff first.
 
