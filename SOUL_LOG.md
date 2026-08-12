@@ -25,6 +25,7 @@
 | P14 | Jul 27 '26 · PR #568 | Flagged `ZOMBIE_*` env names as the runner's "live interface" without reading the reader | "is this renamed, this is stale Env var names ZOMBIE_API_URL / ZOMBIE_RUNNER_TOKEN" | "Live interface" is a source claim — grep the consumer (`config.zig`) before calling a rename unsafe |
 | P15 | Jul 28 '26 · chat | Promised "all agents will be able to reach the REST guide" — prose, no mechanism; an M143 worktree agent then 404'd it and designed from memory | "How come the agent in … agentsfleet-m143-performance-evidence worktree is unable to read the @docs/REST_API_DESIGN_GUIDELINES.md ?" | A reachability claim is a mechanism claim: settings grant + `~/Projects/dotfiles/` anchor + `rule-paths.sh` audit — or it isn't true |
 | P16 | Aug 11 '26 · chat | Mandated "Read SOUL.md at session start" as prose; sessions skipped it | "ensure the SOUL.md is actionable and not a soft recommendation" | A per-session mandate is real only when the machinery delivers it — SOUL now rides inside the render; evidence lives here, on demand |
+| P17 | Aug 12 '26 · M160_002 | Reported 8 failing `tenant_provider` tests as "not mine — separate workstream" while claiming progress toward green | "you need to ensure Green" / "dont say crap like its not mine" | A red test blocking green is mine whoever wrote it. Fix it, or state the fix and the owner — never file it under someone else's name |
 
 ## Accepted vs rejected — a real pair
 
