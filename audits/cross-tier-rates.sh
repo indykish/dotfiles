@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# cross-tier-rates.sh — pin numeric parity of the four rate constants
+# cross-tier-rates.sh — pin numeric parity of the rate constants
 # across Zig + three TypeScript surfaces.
 #
-# RULE UFS extension. The shipped billing surface depends on two constants
+# RULE UFS extension. The shipped billing surface depends on these constants
 # having identical numeric values everywhere they appear:
 #
 #   RUN_NANOS_PER_SEC         — per-second run rate (both postures) in nanos
-#   FREE_TRIAL_STAGE_NANOS    — per-stage charge during the trial window
 #
-# FREE_TRIAL_END_MS was pinned here until the trial boundary moved onto the
-# tenant row (billing.tenant_billing.free_trial_ends_at, NULL = open-ended).
-# A per-tenant value cannot be cross-tier pinned and must not be: a build-time
-# date is exactly what made pricing flip for every tenant at once when it passed.
+# Two free-trial constants were pinned here and are both gone. FREE_TRIAL_END_MS
+# went when the boundary moved onto the tenant row; FREE_TRIAL_STAGE_NANOS went
+# when the trial mechanism was removed outright, because a rate that could
+# silently price a metered slice to zero was worth deleting rather than
+# guarding. The free allowance is wallet credit now — a balance, not a rate —
+# so there is no cross-tier number to pin for it.
 #
 # Files (one definition site per constant per file):
 #
@@ -33,7 +34,6 @@ cd "$ROOT"
 
 readonly NAMES=(
   RUN_NANOS_PER_SEC
-  FREE_TRIAL_STAGE_NANOS
 )
 
 readonly FILES=(
