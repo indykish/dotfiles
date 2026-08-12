@@ -78,8 +78,8 @@ Auto-memory is **disabled** (`autoMemoryEnabled: false` in `~/.claude/settings.j
 - `*.zig` → read `dispatch/write_zig.md`; ZIG GATE fires. <!-- oracle-packs:language.zig -->
 - Auth-flow (`src/auth/**`, `ui/packages/app/lib/auth/**`, token-minting handlers, credential-typed spec dimensions) → read `docs/AUTH.md` first. <!-- oracle-packs:domain.auth -->
 - `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make check-pg-drain`. Use `conn.exec()` for no-rows.
-- Cross-repo patterns under `$HOME/Projects/` (check before inventing): Python `marketplace_api` · Rust `e2e-observability-platform`/`cache-kit.rs`/`oss/exonum` · Zig `posthog-zig`/`oss/bun`/`oss/nullclaw` (+`agentsfleet`) · TypeScript `docs.megam.io`/`www.megam.io`/`rioos.megam.io`/`oss/signoz` · MDX `docs` · Shell `dotfiles`.
-- **Reference canon (read before designing):** TypeScript → supabase `oss/supabase/apps/studio` (app patterns) + `oss/supabase/packages/{ui,ui-patterns}` (components) + `oss/cli` (clone if absent); Zig → `oss/bun/src/` + `oss/ghostty`. "Broken for us" → call-site diff first.
+- Cross-repo patterns under `$HOME/Projects/` (check before inventing): Python `marketplace_api` · Rust `e2e-observability-platform`/`cache-kit.rs`/`oss/exonum` · Zig `posthog-zig`/`oss/ghostty`/`oss/nullclaw` (+`agentsfleet`) · TypeScript `docs.megam.io`/`www.megam.io`/`rioos.megam.io`/`oss/signoz` · MDX `docs` · Shell `dotfiles`.
+- **Reference canon (read before designing):** TypeScript → supabase `oss/supabase/apps/studio` (app patterns) + `oss/supabase/packages/{ui,ui-patterns}` (components) + `oss/cli` (clone if absent); Zig → `oss/ghostty/src/`. "Broken for us" → call-site diff first.
 
 **Forge detection:** `github.com` → `gh`; `gitlab.com` → `glab`. Check `git remote -v`.
 
