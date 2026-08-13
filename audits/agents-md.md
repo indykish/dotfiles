@@ -169,7 +169,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | # | Question | Expected |
 |---|---|---|
 | 11.1 | Pre-v2.0.0, is the table-removal flow rm-file + rm-embed + rm-migration-array (no `ALTER TABLE`/`DROP TABLE`/`SELECT 1;` markers)? | YES |
-| 11.2 | Are static strings in SQL schema (`DEFAULT 'value'` / `CHECK (col IN ('a','b'))`) a **no-override** ban? | YES |
+| 11.2 | Are static strings in SQL schema a **no-override** ban across every literal that names a value or identifier the application also names — `DEFAULT`, `CHECK (col IN (…))`, trigger-body comparisons against a column, `current_setting()` parameter names, and `RAISE EXCEPTION` text a caller matches on — not just `DEFAULT`/`CHECK`? | YES |
 
 ### Scenario 12 — Auto-mode boundary (added)
 
@@ -211,7 +211,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 16.1 | Are plaintext secrets in entity tables (`core.agents`, `core.workspaces`, etc.) a **no-override** forbidden? | YES |
 | 16.2 | Must credentials be stored as a vault `key_name` reference and resolved at runtime via `crypto_store.load()`? | YES |
-| 16.3 | Are static strings in SQL schema (`DEFAULT 'value'`, `CHECK (col IN ('a','b'))`) a **no-override** forbidden — enforced via app-code named constants instead? | YES |
+| 16.3 | Are static strings in SQL schema a **no-override** forbidden — enforced via app-code named constants, and where SQL cannot import the constant, pinned by a slot-grep test rather than left to vigilance? | YES |
 | 16.4 | Must the agent NEVER print/log/paste a credential value, and always use `op read 'op://...'` at runtime when verification steps reference credentials? | YES |
 
 ### Scenario 17 — DB discipline (Zig)

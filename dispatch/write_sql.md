@@ -91,7 +91,7 @@ These rules are **not** dissolved — they remain in `~/Projects/dotfiles/docs/g
 
 > [DETERMINISTIC → TODO-CHECK]
 
-Never `DEFAULT` or `CHECK (… IN (…))` with hardcoded strings in schema — SQL cannot reference Zig/JS constants, so schema strings drift from code. Enforce value constraints via application constants. (RULES.md `RULE STS`.)
+No string literal in `schema/**.sql` may name a value or identifier the application also names — SQL cannot reference Zig/JS constants, so schema strings drift from code. The surface is every literal, not two syntactic forms: `DEFAULT`, `CHECK (… IN (…))`, **trigger-body comparisons against a column**, **`current_setting()` parameter names**, and **`RAISE EXCEPTION` text a caller matches on**. Enforce value constraints via application constants; where SQL cannot import the constant, pin the pair with a slot-grep test. Carve-out: a literal encoding a structural identity rather than a vocabulary value (`'{}'::jsonb`, `'{}'::text[]`) stays, reason stated inline. A drifted `DEFAULT` yields wrong data; a drifted trigger predicate or setting name fails **silently** — the guard stops guarding. (RULES.md `RULE STS`.)
 
 ### RULE NSQ — Named constants, schema-qualified SQL
 

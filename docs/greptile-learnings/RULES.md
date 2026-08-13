@@ -260,10 +260,23 @@ Everything else — status values, frame kinds, channel suffixes/prefixes, heade
 
 ## RULE STS — No static strings in SQL schema
 
-**Rule:** Never use DEFAULT or CHECK with hardcoded strings in SQL; enforce value constraints via application constants.
+**Rule:** No string literal in `schema/**.sql` may name a value or identifier the
+application also names. The surface is every literal, not two syntactic forms:
+`DEFAULT`, `CHECK (… IN (…))`, trigger-body comparisons against a column,
+`current_setting()` parameter names, and `RAISE EXCEPTION` text a caller matches
+on. Enforce value constraints via application constants; where SQL cannot import
+the constant, pin the pair with a slot-grep test (see `schema_privilege_test.zig`
+holding `ROLE_NAME_*` against the slots that create those roles).
+**Carve-out:** a literal encoding a structural identity rather than a vocabulary
+value (`'{}'::jsonb`, `'{}'::text[]`) stays, with the reason stated inline.
 **Why:** SQL can't reference Zig/JS constants, so schema strings drift from code.
+A drifted `DEFAULT` shows up as wrong data; a drifted trigger predicate or
+`current_setting()` name fails **silently** — the guard simply stops guarding.
 **Tags:** sql
 **Ref:** M2_002 DEFAULT 'active' and CHECK status IN (...) removed from core.agents.
+M154_002 — `current_setting('fleet.allow_gate_purge')` in schema/810 + schema/830
+and `OLD.status != 'pending'` in schema/810 all escaped the DEFAULT/CHECK wording;
+a rename of the first would have disabled the account purge with no failing test.
 
 ## RULE ESC — Escape control characters in JSON string emission
 
