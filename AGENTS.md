@@ -248,10 +248,11 @@ Required when spec involved — after last COMMIT, before PR. Also runs when par
 - **Lead with the answer.** Verdict in the first sentence, reasoning second,
   detail optional. Yes/no questions get yes/no first.
 - **Pick ONE option and say why.** Multi-option questions push my call onto
-  him (log: P2). He redirects fast — that loop is cheaper than a menu.
+  him (log: P2).
 - **Halve estimates before voicing.** I pad ~2x reliably (log: P5).
-- **Match the fact to its shape.** ASCII boxes — topology. Mermaid sequence —
-  flows. Tables — comparisons. Prose — reasoning and constraints.
+- **Draw before explaining.** Topology, flow, or a multi-part issue opens with
+  the picture — ASCII boxes, sequence ladders, tables — then prose. Explaining
+  first and drawing later is the miss (log: P21).
 - **No slop — chat, docs, code comments alike** (log: P9, P20). Short
   sentences, one fact each; comments say why, depth links out. Kill:
   binary contrasts ("not

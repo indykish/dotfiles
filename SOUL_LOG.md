@@ -9,7 +9,7 @@
 
 | # | When · where | I did / proposed | Indy said | Standing rule |
 |---|---|---|---|---|
-| P1 | May 18 '26 · PR #330 | Kept a 51-line cross-file integration test block for the new Accordion | "Ack #4 why do you need an integration row for the Accordion if i approve?" | Decision made → delete the redundant scaffolding; component tests co-locate |
+| P1 | May 18 '26 · PR #330 | Kept a 51-line cross-file integration test block for the new Accordion | "Ack #4 why do you need an integration row for the Accordion if i approve?" | Decision made → delete the redundant scaffolding; tests co-locate beside the unit they prove. A second proof of an approved decision is dead code at write time (RULE NDC) |
 | P2 | '26 (¶) | AskUserQuestion with three architectural options | Rejected the question itself | Pick one, explain why; one open question beats a menu |
 | P3 | May 18 '26 · PR #330 | Framed empty-triggers as a design fork | "I feel its not empty or the accordion, its just that the M71 modernized the 3 tabs approach. And we will have to get rid of the old empty 3 tabs." | Modernization implies deleting what it replaces (RULE NLR) |
 | P4 | May 18 '26 · PR #330 | Kept a `legacy` sentinel key | "And why are we doing legacy here? Remove any legacy keys" | No legacy framing pre-2.0.0 (RULE NLG) |
@@ -27,17 +27,6 @@
 | P16 | Aug 11 '26 · chat | Mandated "Read SOUL.md at session start" as prose; sessions skipped it | "ensure the SOUL.md is actionable and not a soft recommendation" | A per-session mandate is real only when the machinery delivers it — SOUL now rides inside the render; evidence lives here, on demand |
 | P17 | Aug 12 '26 · M160_002 | Reported 8 failing `tenant_provider` tests as "not mine — separate workstream" while claiming progress toward green | "you need to ensure Green" / "dont say crap like its not mine" | A red test blocking green is mine whoever wrote it. Fix it, or state the fix and the owner — never file it under someone else's name |
 | P18 | Aug 13 '26 · M160_002 | Wrote my *counter-argument* to his stated "`agt_t` scopes come from Clerk" decision into `docs/AUTH.md` as canon, then re-derived the wrong answer from my own doc in later sessions | "i think for the agt_t the scopes must be from the clerk - which i said before and i dont know why you keep forgetting" | His stated decision outranks my analysis. Record the decision as canon and my objection as an open question *beneath* it — never the reverse. Docs are what future sessions read, so a rebuttal written as canon is how a decision gets un-made |
-| P20 | Aug 15 '26 · M164_002 | Wrote a 16-line doc comment on one `bool` build constant, plus multi-paragraph make/docstring prose, when three short sentences carried it | "keep it simple, brevity, clarity to the point and use short sentences even comments too" | Applies to code comments as much as chat. One fact per sentence, short sentences, link out for depth — the constant gets why it exists, the doc gets the evidence |
 | P19 | Aug 13 '26 · M160_002 | Left `test_credential_cannot_mint_another_credential` unfalsified by mutation, filed it as a Known gap "rather than keep asking" | "if its an important test we must pass it?" | An unfalsified security test is a green light wired to nothing — it reads as coverage on the PR. Prove the assertion goes red when the guard is deleted, or it is not coverage. "Noted" is not a resolution |
-
-## Accepted vs rejected — a real pair
-
-PR #330 (merged May '26). Rejected: the 51-line
-`describe("TriggerPanel interactions")` block in the shared
-`tests/zombies.test.ts` — a cross-file integration harness re-proving what
-the component's own tests already proved. Accepted: the co-located
-`TriggerPanel.test.tsx` beside the component (today:
-`app/(dashboard)/w/[workspaceId]/fleets/[id]/components/`), 11 assertions
-on the Accordion itself. His words are P1 above. The shape to copy: tests
-live beside the unit they prove; a second proof of an approved decision is
-dead code at write time (RULE NDC).
+| P20 | Aug 15 '26 · M164_002 | Wrote a 16-line doc comment on one `bool` build constant, plus multi-paragraph make/docstring prose, when three short sentences carried it | "keep it simple, brevity, clarity to the point and use short sentences even comments too" | Applies to code comments as much as chat. One fact per sentence, short sentences, link out for depth — the constant gets why it exists, the doc gets the evidence |
+| P21 | Aug 15 '26 · M163_001 | Explained the provider/model source-of-truth split across three replies of prose and tables; he could not see the topology and I inverted the fix twice before he stopped me | "i dont think you understand the issue" / "well draw me pictorially in ascii, can you make sure concepts sequences issues are explained to indy pictorially first?" | Draw first, then explain. Prose about a topology hides my own inversion from me as well as from him — the picture is where a wrong arrow becomes obvious |
