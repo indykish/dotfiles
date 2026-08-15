@@ -175,6 +175,33 @@ long page, and only where they beat a comma or a period.
     matter. Each uses `lint-ignore: DOC-NN — reason`. Review recurring exceptions
     as a rule defect instead of copying them forward.
 
+## Reading joy — contributor architecture sets
+
+These apply to contributor-facing architecture sets (`docs/architecture/**`,
+`AUTH*.md`, `development.md`) in product repos, on top of everything above
+where the two do not conflict. They exist so those pages stay a pleasure to
+read, not just correct.
+
+36. **DOC-36 — Answer first.** A Facts table or a "read this when" line opens
+    the page. Reasoning follows the answer, never the other way around.
+37. **DOC-37 — Questions are the index.** The set's index maps a reader's
+    question or symptom to one section. No two index rows share a target.
+38. **DOC-38 — One fact, one home.** A fact lives on the page that owns it;
+    every other mention is a pointer. Nothing to reconcile, nothing to drift.
+39. **DOC-39 — Pictures where structure beats prose.** Topology gets a box
+    diagram, flows get a sequence, comparisons get a table, reasoning stays
+    prose. A diagram's borders align; a broken box is a defect, not a style.
+40. **DOC-40 — Color that means something.** Typed callouts (note, tip,
+    important, warning) for asides by kind; real brand marks where a product
+    is named; concept emoji only in tables and lists. Never inside headings —
+    specs cite heading text verbatim.
+41. **DOC-41 — Errors say what to do.** A failure is a code, its cause, and
+    the exact fix command, linking to the published error registry when the
+    user-facing page carries more.
+42. **DOC-42 — Same zoom, named lens.** When one story is told at several
+    zoom levels, the page names each lens and when to read it, and the lenses
+    do not repeat each other.
+
 ## Closing standard
 
 A page is complete when a human and a Large Language Model (LLM) can answer how,
