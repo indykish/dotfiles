@@ -66,6 +66,30 @@ describe("criteriaFor", () => {
   });
 });
 
+// Reproduces the pre-push hook inside a linked worktree: git exports GIT_DIR
+// and friends to its hooks, and an inherited GIT_DIR pins every spawned git to
+// the hook's repository. A linked worktree's .git is a file, so the pinned
+// path is not even a directory and every criterion judged the wrong tree.
+describe("git scope leaking from a hook environment", () => {
+  test("criteria judge the handed path even with GIT_DIR exported", async () => {
+    const project = newSpecRepository();
+    const model = await modelFor(project);
+    const context = { root: project, model, acceptDirty: false };
+    const clean = criteriaFor(WORK, context).map((c) => c.evaluate(context));
+
+    const saved = { ...process.env };
+    process.env.GIT_DIR = ".git";
+    process.env.GIT_INDEX_FILE = ".git/index";
+    try {
+      const polluted = criteriaFor(WORK, context).map((c) => c.evaluate(context));
+      expect(polluted.map((r) => `${r.name}:${r.ok}`)).toEqual(clean.map((r) => `${r.name}:${r.ok}`));
+    } finally {
+      delete process.env.GIT_DIR; delete process.env.GIT_INDEX_FILE;
+      Object.assign(process.env, saved);
+    }
+  });
+});
+
 describe("runCommand", () => {
   test("a zero exit reports ok with the exit-0 detail", () => {
     expect(runCommand(process.cwd(), ["true"])).toEqual({ ok: true, detail: "exit 0" });

@@ -1,4 +1,5 @@
 import { isObject, JsonObject, stringArray } from "./model";
+import { UNSCOPED_ENVIRONMENT } from "./git_env";
 
 const PIPE_OUTPUT = "pipe";
 const DEFAULT_BRANCHES = ["main", "master"];
@@ -84,6 +85,6 @@ function surfacePrefixes(profile: JsonObject, field: string): string[] {
 }
 
 function gitOutput(root: string, command: string[]): string {
-  const result = Bun.spawnSync(["git", ...command], { cwd: root, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
+  const result = Bun.spawnSync(["git", ...command], { cwd: root, env: UNSCOPED_ENVIRONMENT, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
   return result.exitCode === 0 ? result.stdout.toString().trim() : "";
 }

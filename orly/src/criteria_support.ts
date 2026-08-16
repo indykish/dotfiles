@@ -1,3 +1,4 @@
+import { UNSCOPED_ENVIRONMENT } from "./git_env";
 import { RulesModel } from "./model";
 import { SurfaceReport } from "./surfaces";
 
@@ -36,7 +37,7 @@ export function runCommand(root: string, command: string[]): Verdict {
   // missing binary becomes a red line naming the command.
   let result;
   try {
-    result = Bun.spawnSync(command, { cwd: root, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
+    result = Bun.spawnSync(command, { cwd: root, env: UNSCOPED_ENVIRONMENT, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
   } catch (error) {
     return { ok: false, detail: `${command[0] ?? "command"} could not be run: ${error instanceof Error ? error.message : String(error)}` };
   }
@@ -47,6 +48,6 @@ export function runCommand(root: string, command: string[]): Verdict {
 }
 
 export function gitOutput(root: string, command: string[]): string {
-  const result = Bun.spawnSync(["git", ...command], { cwd: root, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
+  const result = Bun.spawnSync(["git", ...command], { cwd: root, env: UNSCOPED_ENVIRONMENT, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
   return result.exitCode === 0 ? result.stdout.toString().trim() : "";
 }

@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { criteriaFor, CriterionContext, CriterionResult } from "./criteria";
+import { UNSCOPED_ENVIRONMENT } from "./git_env";
 import { OrlyError, RulesModel } from "./model";
 import { defaultMergeBase } from "./surfaces";
 
@@ -75,7 +76,7 @@ export function recordOverride(root: string, criterion: string, reason: string):
   const trimmed = reason.trim();
   if (!trimmed) throw new OrlyError("an override without a reason is not a record");
   const message = `override: ${criterion}\n\n${OVERRIDE_PREFIX} ${criterion} (${trimmed.replaceAll(")", "]")})`;
-  const result = Bun.spawnSync([GIT, "commit", "--allow-empty", "-m", message], { cwd: root, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
+  const result = Bun.spawnSync([GIT, "commit", "--allow-empty", "-m", message], { cwd: root, env: UNSCOPED_ENVIRONMENT, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
   if (result.exitCode !== 0) throw new OrlyError(`could not record the override commit: ${result.stderr.toString().trim()}`);
   return message;
 }
@@ -163,6 +164,6 @@ function specPathsUnder(root: string, stage: string): string[] {
 }
 
 function gitOutput(root: string, command: string[]): string {
-  const result = Bun.spawnSync([GIT, ...command], { cwd: root, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
+  const result = Bun.spawnSync([GIT, ...command], { cwd: root, env: UNSCOPED_ENVIRONMENT, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
   return result.exitCode === 0 ? result.stdout.toString().trim() : "";
 }
