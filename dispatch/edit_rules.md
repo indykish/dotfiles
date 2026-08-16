@@ -40,7 +40,7 @@ Render command (writes the root `AGENTS.md` and relinks agent homes;
 `orly render --profile <NAME>` only prints to stdout):
 
 ```bash
-orly sync --global
+orly sync
 ```
 
 Any failure returns to the edit. Do not patch the checker to silence its result.

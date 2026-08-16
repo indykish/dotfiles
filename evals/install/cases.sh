@@ -281,3 +281,56 @@ install_defaults_to_kernel_when_unregistered() {
   [[ -f "$repo/dispatch/write_rust.md" ]] || { bad "$name" "kernel install missing a language façade"; return; }
   ok "$name"
 }
+
+# The accepted-and-ignored --global flag was a leftover from the thin
+# distribution model. Rejected, not silently tolerated (RULE NDC).
+install_global_flag_rejected_and_unreferenced() {
+  local name="sync --global is rejected, and no tracked file references it"
+  local pkg; pkg="$(packed_root)"
+  if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
+
+  local sb; sb="$(mk_sandbox)"
+  local out code
+  out="$(cd "$ROOT" && run_packed "$pkg" "$sb" sync --global 2>&1)"; code=$?
+  if [[ "$code" -eq 0 ]]; then bad "$name" "expected sync --global to fail"; return; fi
+  if [[ "$out" != *"orly sync"* ]]; then bad "$name" "error does not name sync: $out"; return; fi
+
+  local leaked
+  leaked="$(cd "$ROOT" && git grep -n -w -- '--global' -- . ':!docs/v1/done/*' ':!docs/v1/active/*' ':!evals/install/*' 2>/dev/null || true)"
+  if [[ -n "$leaked" ]]; then bad "$name" "tracked --global references remain: $(printf '%s' "$leaked" | head -1)"; return; fi
+  ok "$name"
+}
+
+# update re-materialises whatever the lock pinned, and a rule change should
+# cost one command per repository — the property that replaces M01's
+# zero-sync-commit guarantee. Prove it moves a real version forward.
+install_update_repins_across_a_version_bump() {
+  local name="update moves a repository from an older pinned version to the current one"
+  local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"
+  if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
+
+  run_packed "$pkg" "$repo" init --profile cache-kit >/dev/null
+  local before; before="$(python3 -c "import json;print(json.load(open('$repo/.oracle/ruleset.lock'))['orly_version'])")"
+
+  # Simulate a newer engine: bump the packed copy's own version and touch a
+  # managed file, so update has a real, detectable change to propagate.
+  python3 - "$pkg/package.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+data = json.load(open(path))
+data["version"] = "0.4.1-test"
+json.dump(data, open(path, "w"))
+PY
+  printf '\n<!-- eval: newer engine content -->\n' >> "$pkg/orly/packs/language/rust/rules.md"
+
+  local out; out="$(run_packed "$pkg" "$repo" update)"
+  local after; after="$(python3 -c "import json;print(json.load(open('$repo/.oracle/ruleset.lock'))['orly_version'])")"
+
+  if [[ "$before" == "$after" ]]; then bad "$name" "lock still pinned to $before after update"; return; fi
+  if [[ "$after" != "0.4.1-test" ]]; then bad "$name" "lock repinned to '$after', not the newer engine"; return; fi
+  if ! grep -q "eval: newer engine content" "$repo/dispatch/write_rust.md"; then
+    bad "$name" "update did not propagate the changed file"; return
+  fi
+  if [[ "$out" != *"written"* ]]; then bad "$name" "update did not report what changed: $out"; return; fi
+  ok "$name"
+}

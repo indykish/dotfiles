@@ -129,9 +129,9 @@ The registry has always declared where each pack's files should land; nothing ev
 - **Dimension 2.3** — DONE — only the selected profile's packs are materialised, and no file is written whose own citations are absent → Test `test_init_materialises_coherent_pack_closure`
 - **Dimension 2.4** — DONE — `init` sets `core.hooksPath` and the installed hooks keep the `GIT_DIR`-unsetting preamble → Test `test_init_installs_scoped_hooks`
 - **Dimension 2.5** — DONE — `doctor` reports drift when a materialised file is edited, and is silent when it is not → Test `test_doctor_detects_materialised_drift`
-- **Dimension 2.6** — `update` moves a repository from an older pinned version to the current one and reports what changed → Test `test_update_repins_and_reports`
+- **Dimension 2.6** — DONE — `update` moves a repository from an older pinned version to the current one and reports what changed → Test `test_update_repins_and_reports`
 - **Dimension 2.7** — DONE — `--json` emits the structured result; the human path emits none of it → Test `test_install_json_contract`
-- **Dimension 2.8** — the accepted-and-ignored `--global` flag is rejected as unknown, with a message naming the replacement, and no tracked file still references it (RULE NDC; no compatibility alias) → Test `test_global_flag_rejected_and_unreferenced`
+- **Dimension 2.8** — DONE — the accepted-and-ignored `--global` flag is rejected as unknown, with a message naming the replacement, and no tracked file still references it (RULE NDC; no compatibility alias) → Test `test_global_flag_rejected_and_unreferenced`
 
 ### §3 — Persona and product become opt-in packs
 
@@ -141,7 +141,7 @@ A stranger must not inherit Kishore's address tags, banned-vocabulary list, judg
 - **Dimension 3.2** — DONE — the `global` render is byte-identical to today's `AGENTS.md` apart from §4's path changes → Test `test_global_render_unchanged_by_pack_split`
 - **Dimension 3.3** — DONE — a profile selecting `persona.indy` renders the fenced body in full → Test `test_persona_pack_renders_when_selected`
 - **Dimension 3.4** — DONE — the rendered kernel is under the size cap with margin → Test `test_kernel_render_within_size_cap`
-- **Dimension 3.5** — a Rust-only profile receives no UI or Zig gate → Test `test_rust_profile_excludes_foreign_gates`
+- **Dimension 3.5** — DONE — a Rust-only profile receives no UI or Zig gate → Test `test_rust_profile_excludes_foreign_gates`
 
 ### §4 — Rule citations resolve inside the consuming repository
 

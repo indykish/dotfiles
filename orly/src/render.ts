@@ -64,7 +64,7 @@ export class Renderer {
     if (lstatSync(target).isSymbolicLink()) return [`generated rules must be a real file: ${AGENTS_FILENAME}`];
     const expected = await this.renderText(profileName);
     const actual = await Bun.file(target).text();
-    if (expected !== actual) return [`generated rules are stale: run \`orly sync --global\``];
+    if (expected !== actual) return [`generated rules are stale: run \`orly sync\``];
     return [];
   }
 

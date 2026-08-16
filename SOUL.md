@@ -86,5 +86,5 @@
 ---
 
 *Keep every line actionable — a fact that fires nowhere moves to
-`SOUL_LOG.md` or dies. Edit here, then `orly sync --global`.*
+`SOUL_LOG.md` or dies. Edit here, then `orly sync`.*
 <!-- oracle-packs:end -->

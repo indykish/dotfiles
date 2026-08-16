@@ -36,7 +36,7 @@ agent-home symlink and every consumer's `ORLY_ROOT` resolves to
 chain the hooks run spawns git against other directories. Under a hook that
 combination corrupted the real index and flipped `core.bare` (Aug 16, 2026).
 So: `git checkout -b feat/mNN-name` in `~/Projects/dotfiles` itself, and
-`orly sync --global` always renders the one true root. One stream at a time —
+`orly sync` always renders the one true root. One stream at a time —
 a second concurrent agent coordinates in-session rather than forking a tree.
 This is the dotfiles exception; product repos keep the worktree recipe above.
 <!-- oracle-packs:end -->

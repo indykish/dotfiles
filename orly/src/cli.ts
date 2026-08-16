@@ -10,7 +10,6 @@ import { doctorAgentHomes, syncGlobal } from "./repository";
 import { verifyAllProfiles, writeEvidence } from "./verify";
 
 const ALL_FLAG = "--all";
-const GLOBAL_FLAG = "--global";
 const PASS_RESULT = "pass";
 const NOT_REQUIRED_RESULT = "not-required";
 const ACCEPT_DIRTY_FLAG = "--accept-dirty";
@@ -52,14 +51,14 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
   }
   if (command === "sync") {
     model.validate();
-    requireGlobalOnly(rest, "sync renders the root rules: orly sync [--global]");
+    requireNoArguments(rest, "sync renders the root rules: orly sync");
     const links = await syncGlobal(model);
     console.log(`${PASS_GLYPH} rules rendered to AGENTS.md; ${links.length} agent-home links current`);
     return 0;
   }
   if (command === "doctor") {
     model.validate();
-    requireGlobalOnly(rest, "doctor checks the root rules and home links: orly doctor [--global]");
+    requireNoArguments(rest, "doctor checks the root rules and home links: orly doctor");
     return doctorGlobal(model);
   }
   if (command === "init") return materialise(model, rest, true);
@@ -198,8 +197,8 @@ function parseRoot(args: string[]): { root: string; arguments: string[] } {
   return { root: resolve(value), arguments: args.filter((_, position) => position !== index && position !== index + 1) };
 }
 
-function requireGlobalOnly(args: string[], usage: string): void {
-  if (args.length > 0 && (args.length !== 1 || args[0] !== GLOBAL_FLAG)) throw new OrlyError(usage);
+function requireNoArguments(args: string[], usage: string): void {
+  if (args.length > 0) throw new OrlyError(usage);
 }
 
 function optionValue(args: string[], name: string): string {
@@ -228,8 +227,8 @@ Install (the repository is the unit — no checkout of this package required):
   orly update [--force] [--json]    re-materialise at the installed engine version
 
 Rules (one render target — the root AGENTS.md every agent home links to):
-  orly sync [--global]              render the root rules + relink agent homes
-  orly doctor [--global]            root currency + home links
+  orly sync                         render the root rules + relink agent homes
+  orly doctor                       root currency + home links
   orly render --profile <NAME>      print a profile's render (stdout)
   orly verify --all                 per-profile determinism + root currency
   orly validate                     registry and profile shape

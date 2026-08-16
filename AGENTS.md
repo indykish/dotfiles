@@ -323,7 +323,7 @@ Required when spec involved — after last COMMIT, before PR. Also runs when par
 ---
 
 *Keep every line actionable — a fact that fires nowhere moves to
-`SOUL_LOG.md` or dies. Edit here, then `orly sync --global`.*
+`SOUL_LOG.md` or dies. Edit here, then `orly sync`.*
 
 ---
 

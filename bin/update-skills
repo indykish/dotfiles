@@ -129,7 +129,7 @@ source "$DOTFILES/bin/lib/playwright.sh"
 
 if [ "$DOCTOR_ONLY" -eq 1 ]; then
     doctor_overlay
-    "$DOTFILES/bin/orly" doctor --global
+    "$DOTFILES/bin/orly" doctor
     ok "Skills doctor passed"
     exit 0
 fi
@@ -253,7 +253,7 @@ for agent_config in "${AGENTS[@]}"; do
     
 done
 
-"$DOTFILES/bin/orly" sync --global
+"$DOTFILES/bin/orly" sync
 
 # 5. Link opencode.json config (XDG Base Directory location)
 info "Linking opencode.json..."
