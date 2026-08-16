@@ -143,3 +143,31 @@ install_ci_workflow_gates_on_a_real_defect() {
   fi
   ok "$name"
 }
+
+# Every registered profile must install cleanly into its own fresh sandbox —
+# proven by hand once this session when §4's fixes landed; this makes it a
+# permanent, re-runnable eval instead of a one-time manual sweep. Catches the
+# exact defect class §4 found (kernel still pulling an engine-only pack,
+# mintlify-docs missing the pack that owns a file it needed).
+install_every_registered_profile_installs_cleanly() {
+  local name="every registered profile installs with zero dangling references"
+  local pkg; pkg="$(packed_root)"
+  if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
+
+  local profile broken=""
+  for profile in $(cd "$pkg" && ls orly/profiles/*.json | xargs -n1 basename | sed 's/\.json$//'); do
+    local repo; repo="$(mk_repo)"
+    local out code
+    out="$(run_packed "$pkg" "$repo" init --profile "$profile" 2>&1)"; code=$?
+    if [[ "$code" -ne 0 ]]; then broken+="$profile "; continue; fi
+
+    local cited dangling=""
+    while read -r cited; do
+      [[ -z "$cited" ]] && continue
+      [[ -e "$repo/$cited" ]] || dangling+="$cited "
+    done < <(grep -rhoE 'dispatch/[A-Za-z0-9_.-]+\.md' "$repo/AGENTS.md" "$repo/dispatch" "$repo/docs" 2>/dev/null | sort -u)
+    [[ -n "$dangling" ]] && broken+="$profile(dangling:$dangling) "
+  done
+  if [[ -n "$broken" ]]; then bad "$name" "broken profiles: $broken"; return; fi
+  ok "$name"
+}

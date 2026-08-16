@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { cleanupTemporaryDirectories, gitOutput, newRepository, ROOT } from "./gates_test_support";
+import { cleanupTemporaryDirectories, git, gitOutput, newRepository, ROOT } from "./gates_test_support";
 import { install } from "./install";
 import { readLock } from "./lockfile";
 import { RulesModel } from "./model";
@@ -111,6 +111,51 @@ describe("install", () => {
 
     expect(existsSync(join(repo, ".githooks"))).toBe(false);
     expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe("");
+  });
+
+  test("refuses to retarget a hooksPath already claimed by something else", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    git(repo, "config", "core.hooksPath", "some-other-tools-hooks");
+
+    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((error) => error.path === "core.hooksPath")).toBe(true);
+    expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe("some-other-tools-hooks");
+    expect(existsSync(join(repo, "AGENTS.md"))).toBe(false);
+  });
+
+  test("--no-hooks proceeds even when hooksPath is claimed by something else", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    git(repo, "config", "core.hooksPath", "some-other-tools-hooks");
+
+    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: false, orlyVersion: "0.4.0" });
+
+    expect(result.ok).toBe(true);
+    expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe("some-other-tools-hooks");
+  });
+
+  test("--force retargets a hooksPath claimed by something else", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    git(repo, "config", "core.hooksPath", "some-other-tools-hooks");
+
+    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: true, installHooks: true, orlyVersion: "0.4.0" });
+
+    expect(result.ok).toBe(true);
+    expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe(".githooks");
+  });
+
+  test("re-running init after it already set hooksPath is not a claim by another tool", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
+    const second = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
+    expect(second.ok).toBe(true);
   });
 
   test("the written lock records a hash and mode for every materialised file", async () => {

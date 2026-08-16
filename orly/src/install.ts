@@ -21,6 +21,8 @@ const GIT_COMMAND = "git";
 const GIT_REPO_FLAG = "-C";
 const PIPE_OUTPUT = "pipe";
 const HOOK_GATES = [["pre-commit", "work"], ["pre-push", "verify"]] as const;
+const GIT_CONFIG_SUBCOMMAND = "config";
+const HOOKS_PATH_KEY = "core.hooksPath";
 
 export type InstallError = { path: string; message: string; suggestion: string };
 
@@ -69,6 +71,10 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
     const recorded = lock?.files[file.target];
     if (options.force || (recorded && recorded.sha256 === actual)) { written.push(file.target); continue; }
     refusals.push(refusal(file.target, managed.has(file.target)));
+  }
+  if (options.installHooks) {
+    const claim = hooksClaimedByAnother(targetRoot);
+    if (claim && !options.force) refusals.push(claim);
   }
   if (refusals.length > 0) return { ok: false, profile: profileName, packs, written: [], skipped, errors: refusals };
 
@@ -119,6 +125,18 @@ async function stageAndCommit(model: RulesModel, targetRoot: string, planned: Pl
   }
 }
 
+// A hooksPath already pointing somewhere other than what init installs is
+// someone else's setup — retargeting it silently would disable whatever
+// ran there before. init only overrides its own prior installs (the same
+// directory name) or an unset config, matching the idempotent-rerun case.
+function hooksClaimedByAnother(targetRoot: string): InstallError | undefined {
+  const result = Bun.spawnSync([GIT_COMMAND, GIT_REPO_FLAG, targetRoot, GIT_CONFIG_SUBCOMMAND, "--get", HOOKS_PATH_KEY], { stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT, env: UNSCOPED_ENVIRONMENT });
+  if (result.exitCode !== 0) return undefined;
+  const existing = result.stdout.toString().trim();
+  if (existing === "" || existing === HOOKS_DIRECTORY) return undefined;
+  return { path: HOOKS_PATH_KEY, message: `already set to '${existing}', not the directory this install manages`, suggestion: "run with --no-hooks to leave it alone, or --force to retarget it" };
+}
+
 // Hooks are generated, never copied: this repository's own hooks run `make
 // audit` and `bin/orly verify`, neither of which exists in a consumer. What a
 // consumer needs is the gate engine, reached through the binary that installed
@@ -137,7 +155,7 @@ async function installHooks(targetRoot: string): Promise<{ written: string[]; al
     applyMode(path, MODE_EXECUTABLE);
     written.push(`${HOOKS_DIRECTORY}/${name}`);
   }
-  runGit(targetRoot, ["config", "core.hooksPath", HOOKS_DIRECTORY]);
+  runGit(targetRoot, [GIT_CONFIG_SUBCOMMAND, HOOKS_PATH_KEY, HOOKS_DIRECTORY]);
   return { written, all };
 }
 
