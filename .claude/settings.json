@@ -253,6 +253,39 @@
   "verbose": true,
   "autoCompactEnabled": false,
   "skipAutoPermissionPrompt": true,
+  "autoMode": {
+    "soft_deny": [
+      "$defaults",
+      "Bash(git push --force*) in agentsfleet — force-push default branch is hard-forbidden by repo rules, and push denial reasons were seen (Blocked by classifier, 9x) — keep as soft block pending explicit approval",
+      "Bash(kubectl delete*) scoped to non-test namespaces seen in this project's usage — several -n flags look like scratch/test namespaces but this can't be verified"
+    ],
+    "environment": [
+      "### Org-wide",
+      "**Organization**: agentsfleet (github.com/agentsfleet)",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: PUBLIC — github.com/agentsfleet/agentsfleet (any push here is publishing)",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: 1Password (op CLI); named vaults ops, ZMB_LOCAL_DEV, ZMB_CD_DEV, ZMB_CD_PROD (from ~/.claude/CLAUDE.md); CI secrets referenced: GITHUB_TOKEN, GITLEAKS_LICENSE, OP_SERVICE_ACCOUNT_TOKEN",
+      "**Default / protected branches**: main (default); ruleset `protect-main-pr-only` active, protected branch `main` (via gh, authoritative)",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: None configured",
+      "**Source control**: The trusted repo (github.com/agentsfleet/agentsfleet) and its remote only — no additional orgs configured",
+      "**Trusted internal domains**: api-dev.agentsfleet.net, app-dev.agentsfleet.net, api.agentsfleet.net (contacted repeatedly in this project's transcripts)",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: None configured",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: credential/secrets-handling code paths in this repo — cli/src/commands/fleet_secret*.ts, cli/src/constants/cli-credential.ts, cli/src/services/credentials.ts, playbooks/founding/02_preflight/02_credentials.sh, playbooks/lib/platform_secret_sync*.sh, schema/250_cli_credentials.sql, schema/300_vault_secrets.sql, src/agentsfleetd/**/*secret*.zig, src/agentsfleetd/**/*cli_credential*.zig, public/openapi/paths/{cli-credentials,secrets}.yaml — share only with audiences cleared at the named+specifics bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: playbooks/deploy/prod/001_playbook.md; any namespace, host, or container whose name carries `prod`/`production` as a whole word or segment",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod`/`production` as a whole word or segment (src/agentsfleetd/http/rbac_http_integration_test.zig touches RBAC)",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (agentsfleet — Zig backend, Next.js dashboard/site)",
+      "**Trusted repo**: /Users/kishore/Projects/agentsfleet (github.com/agentsfleet/agentsfleet, public) — confidential material is not automatically clearable into it since it's public; only the repo's own work belongs there",
+      "**Org-specific CLIs**: `orly` (dotfiles-driven lifecycle/governance tool), `op` (1Password CLI), `gh`/`glab` (forge CLIs) — all seen in this project's recent usage",
+      "routine under this repo's worktrees (~/Projects/agentsfleet and its worktrees) per the CLAUDE.md worktree/lifecycle model"
+    ]
+  },
   "feedbackSurveyState": {
     "lastShownTime": 1754141456782
   }
