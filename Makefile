@@ -16,11 +16,14 @@ audit:
 	@bash evals/ledger/run.sh
 
 # What each rule document actually enforces: one row per registered doc,
-# clause census by enforcement class. Reports; never gates on counts.
+# clause census by enforcement class, then the fire count of every façade scope
+# over recent history. Reports; never gates on counts.
 ledger:
 	@bash audits/rule-ledger.sh --census
+	@printf '\n'
+	@bash audits/rule-ledger.sh --reachability
 
-# Ledger behaviour in isolation — fixture-pinned census cases.
+# Ledger behaviour in isolation — fixture-pinned census and reachability cases.
 ledger-evals:
 	@bash evals/ledger/run.sh
 

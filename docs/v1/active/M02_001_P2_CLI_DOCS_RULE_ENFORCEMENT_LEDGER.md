@@ -20,7 +20,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 **Priority:** P2 — governance tooling; no customer surface, but it converts "is my LOGGING_STANDARD adhered to?" from a model's claim into a committed scoreboard
 **Categories:** CLI, DOCS
 **Batch:** B1 — no parallel siblings
-**Branch:** `feat/m02-rule-ledger` — the single dotfiles spec worktree at `~/Projects/dotfiles-specs`
+**Branch:** `feat/m02-rule-ledger` — in the main checkout at `~/Projects/dotfiles`; dotfiles takes no worktree (`dispatch/lifecycle.md`)
 **Test Baseline:** `unit=51` (51 pass / 0 fail across 12 files, `cd orly && bun test src`); dispatch-eval fixtures `12 passed, 0 failed`
 **Depends on:** none (M01_001 DONE — the gates engine and thin distribution this builds on)
 **Provenance:** LLM-drafted (Claude Fable 5, Aug 16, 2026) — grounded in the measured corpus: 332 normative clauses across the docs tier carry 8 tags; `audits/logging.sh` enforces 2 of LOGGING_STANDARD's 34; zero mechanical DOC READ verification exists
@@ -65,6 +65,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `audits/agents-md.md` | EDIT | one new scenario question grading the ledger semantics (rule-extension protocol step 2) |
 | `audits/data.sh` | EDIT | scenario-count parity for the new question |
 | `docs/DISPATCH_ARCHITECTURE.md` | EDIT | §6 records the docs-tier extension: `[UNENFORCED → …]` class + registry array location |
+| `orly/src/gates.test.ts` | EDIT | the end-to-end walk carries a 30s timeout — bun's 5s default reds pre-commit on a loaded machine while every assertion still holds; Indy-approved carve-out, see Discovery |
 
 ## Applicable Rules
 
@@ -107,8 +108,8 @@ A registry array in `rule-ledger-lib.sh` names the docs-tier rule files (LOGGING
 
 Derives each façade's file-glob set from the `dispatch_init` lines in `dispatch/*.sh`, replays the last 50 commits (`git log --name-only`), and reports fire counts per façade and per delegated doc. Zero fires in the window → 🟠 warn line (dead trigger or dormant surface — a human call, never auto-red). **Implementation default:** report-only to console; history-relative output is deliberately NOT written into the committed scoreboard, which must stay a pure function of the tree.
 
-- **Dimension 2.1** — fire counts derive from real history; `write_any` reports > 0 on this repo → Test `ledger_reachability_counts`
-- **Dimension 2.2** — a façade whose `.sh` yields no derivable globs is a structural red naming the file → Test `ledger_reachability_structural_red`
+- **Dimension 2.1** — DONE — fire counts derive from real history; `write_any` reports > 0 on this repo → Test `ledger_reachability_counts`
+- **Dimension 2.2** — DONE — a façade whose `.sh` yields no derivable globs is a structural red naming the file → Test `ledger_reachability_structural_red`
 
 ### §3 — Committed scoreboard (`--write` / `--check`)
 
@@ -242,6 +243,7 @@ N/A — no files deleted; no symbols removed. (S9 covers the inverse: no created
 ## Discovery (consult log)
 
 - **Consults** — Architecture / Legacy-Design / gate-flag triage: the question asked + Indy's decision.
+  - Aug 16, 2026: 02:05 PM — gate-flag triage, out-of-scope edit. `orly/src/gates.test.ts:158` (end-to-end gate walk) ran 5.5s–12.7s against bun's 5s default, reddening pre-commit's `make audit` while every assertion passed. Asked fix-or-defer; Indy chose "Raise that one test to 30s" over a suite-wide `bunfig.toml` default or waiting out machine load. Applied as a named constant on that one test; assertions untouched.
 - **Metrics review** — events added, extra events found during `/review`, analytics/funnel playbook update or the explicit no-change reason.
 - **Skill-chain outcomes** — `/write-unit-test`, `/review`, `kishore-babysit-prs` results (order per `AGENTS.md` CHORE(close); iteration counts, findings dispositioned).
 - **Deferrals** — every "deferred to follow-up" needs an **Indy-acked verbatim quote** here, format `> Indy (YYYY-MM-DD HH:MM): "<quote>" — context: <which item, why>`.

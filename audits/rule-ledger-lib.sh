@@ -102,3 +102,80 @@ ledger_has_prefix() {
   done
   return 1
 }
+
+# --- trigger reachability -----------------------------------------------------
+#
+# A rule fires only when something the agent edits matches its façade's scope.
+# The scope is declared exactly once, in the `dispatch_init` line of the
+# façade's executable, and the history of the repository says whether that
+# scope has met a real file lately. Both halves are extracted here.
+
+# How many commits a fire count replays. Reachability is report-only, so the
+# window is a readability choice, never a gate parameter.
+DEFAULT_HISTORY_COMMITS=50
+
+# dispatch/lib.sh is the shared sourcing target rather than a façade: it
+# declares no scope of its own and must never be read as a glob-less one.
+DISPATCH_LIB_BASENAME="lib.sh"
+
+# Paths every façade ignores, mirroring dispatch_resolve_files' --staged filter
+# so a fire count reports authored edits and not vendored churn.
+HISTORY_EXCLUDE_PATTERN='(^|/)(vendor|third_party|node_modules|\.zig-cache|dist|build|\.next)/'
+
+# The executable façades: dispatch/*.sh minus the shared library.
+ledger_facade_scripts() {
+  local file
+  for file in "$LEDGER_ROOT"/dispatch/*.sh; do
+    [ -f "$file" ] || continue
+    [ "$(basename "$file")" = "$DISPATCH_LIB_BASENAME" ] && continue
+    printf '%s\n' "$file"
+  done
+}
+
+# The language label a façade announces, e.g. ANY for dispatch/write_any.sh.
+ledger_facade_lang() {
+  grep -hE '^[[:space:]]*dispatch_init[[:space:]]' "$1" 2>/dev/null \
+    | head -1 | grep -oE '"[^"]+"' | head -1 | tr -d '"'
+}
+
+# The file globs a façade declares, space-separated. dispatch_init quotes its
+# language double and every glob single, so the single-quoted run IS the scope.
+# Empty output means the façade declares no scope — the caller reds on that.
+ledger_facade_globs() {
+  grep -hE '^[[:space:]]*dispatch_init[[:space:]]' "$1" 2>/dev/null \
+    | head -1 | grep -oE "'[^']+'" | tr -d "'" | tr '\n' ' '
+}
+
+# Every path touched in the last N commits, deduplicated. Merges are skipped so
+# a merge commit does not re-count what its parents already reported.
+ledger_history_paths() {
+  local commits="$1"
+  git -C "$LEDGER_ROOT" log --no-merges --name-only --pretty=format: \
+      -n "$commits" -- . 2>/dev/null \
+    | grep -v '^$' | grep -vE "$HISTORY_EXCLUDE_PATTERN" | sort -u
+}
+
+# How many paths on stdin fall inside a glob set. The unquoted `case` pattern
+# is the match itself — the same expansion dispatch_resolve_files applies to
+# explicit file arguments, so a fire count means what the dispatcher means.
+ledger_match_count() {
+  local globs="$1" path glob matches=0
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    for glob in $globs; do
+      # shellcheck disable=SC2254  # the glob is data; expansion performs the match
+      case "$path" in $glob) matches=$((matches + 1)); break ;; esac
+    done
+  done
+  printf '%d' "$matches"
+}
+
+# The façade stems whose page cites a rule doc. Substring matching catches both
+# the bare and the ~/Projects/dotfiles/-anchored spelling of the same path.
+ledger_facades_citing() {
+  local doc="$1" page
+  for page in "$LEDGER_ROOT"/dispatch/*.md; do
+    [ -f "$page" ] || continue
+    grep -qF "$doc" "$page" 2>/dev/null && printf '%s\n' "$(basename "$page" .md)"
+  done
+}

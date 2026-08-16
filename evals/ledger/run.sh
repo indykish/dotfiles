@@ -45,8 +45,17 @@ mk_root() {
 }
 
 run_ledger() { ORLY_ROOT="$1" bash "$LEDGER" --census 2>&1; }
+run_reach()  { ORLY_ROOT="$1" bash "$LEDGER" --reachability 2>&1; }
 
-printf '%sledger evals — fixture-pinned census behaviour%s\n\n' "$BO" "$X"
+# A façade executable is a file plus one dispatch_init line. Fixtures that need
+# a working scope get one; the structural case deliberately omits it.
+mk_facade() {
+  local root="$1" stem="$2" init="$3"
+  printf '#!/usr/bin/env bash\nsource "$(dirname "$0")/lib.sh"\n%s\n' "$init" \
+    > "$root/dispatch/$stem.sh"
+}
+
+printf '%sledger evals — fixture-pinned census + reachability behaviour%s\n\n' "$BO" "$X"
 
 # Dimension 1.1 — one row per registered doc, columns machine-parseable.
 sb="$(mk_root)"; out="$(run_ledger "$sb")"; rc=$?
@@ -95,14 +104,39 @@ else
   bad "ledger_unenforced_class" "row: $row"
 fi
 
-# Invariant 1 — read-only: the census must not write into its own root.
-sb="$(mk_root)"; before="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"
+# Dimension 2.1 — fire counts come from real history, not a fixture. write_any
+# globs every source extension this repository authors, so a window that found
+# nothing means the replay is broken.
+out="$(ORLY_ROOT="$ROOT" bash "$LEDGER" --reachability 2>&1)"; rc=$?
+fires="$(printf '%s' "$out" | grep 'facade=write_any ' | grep -oE 'fires=[0-9]+' | cut -d= -f2)"
+if [ "$rc" -eq 0 ] && [ -n "$fires" ] && [ "$fires" -gt 0 ]; then
+  ok "ledger_reachability_counts — write_any fired $fires times over real history"
+else
+  bad "ledger_reachability_counts" "exit=$rc write_any fires='${fires:-none}' (want > 0)"
+fi
+
+# Dimension 2.2 — a façade executable declaring no scope is structural: no diff
+# can ever reach the rules it carries, so silence would hide a dead page.
+sb="$(mk_root)"
+mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"
+mk_facade "$sb" "write_scopeless" "# no dispatch_init here"
+out="$(run_reach "$sb")"; rc=$?
+if [ "$rc" -eq 1 ] && printf '%s' "$out" | grep -q 'dispatch/write_scopeless.sh'; then
+  ok "ledger_reachability_structural_red — exit 1, names the scope-less façade"
+else
+  bad "ledger_reachability_structural_red" "exit=$rc (want 1) naming write_scopeless.sh"
+fi
+
+# Invariant 1 — read-only: neither report may write into its own root.
+sb="$(mk_root)"; mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"
+before="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"
 run_ledger "$sb" >/dev/null
+run_reach "$sb" >/dev/null
 after="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"
 if [ "$before" = "$after" ]; then
-  ok "ledger_census_read_only — fixture root byte-identical after a run"
+  ok "ledger_census_read_only — fixture root byte-identical after census + reachability"
 else
-  bad "ledger_census_read_only" "the census mutated its root"
+  bad "ledger_census_read_only" "a read-only mode mutated its root"
 fi
 
 printf '\n%s%d passed, %d failed%s\n' "$BO" "$PASS" "$FAIL" "$X"
