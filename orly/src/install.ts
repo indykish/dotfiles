@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, extname, join, relative, resolve } from "node:path";
 
@@ -231,12 +231,18 @@ function expandHome(path: string): string {
   return path.startsWith("~/") ? join(process.env.HOME ?? "", path.slice(2)) : path;
 }
 
+// git canonicalises symlinks in --show-toplevel; targetRoot, as handed in by
+// a caller, usually has not been (macOS puts $TMPDIR and often the caller's
+// own working directory behind one). Comparing without resolving both sides
+// made every install from a symlinked path — routine on macOS — refuse with
+// "not the repository root" against its own root.
 function requireWorkTree(targetRoot: string): void {
   if (!existsSync(targetRoot)) throw new OrlyError(`target directory does not exist: ${targetRoot}`);
   const result = Bun.spawnSync([GIT_COMMAND, GIT_REPO_FLAG, targetRoot, "rev-parse", "--show-toplevel"], { stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT, env: UNSCOPED_ENVIRONMENT });
   if (result.exitCode !== 0) throw new OrlyError(`not a git repository: ${targetRoot} — run \`git init\` first`);
   const top = resolve(result.stdout.toString().trim());
-  if (top !== targetRoot) throw new OrlyError(`install at the repository root, not a subdirectory: ${relative(top, targetRoot)}`);
+  const resolvedTarget = realpathSync(targetRoot);
+  if (top !== resolvedTarget) throw new OrlyError(`install at the repository root, not a subdirectory: ${relative(top, resolvedTarget)}`);
 }
 
 function runGit(targetRoot: string, args: string[]): void {
