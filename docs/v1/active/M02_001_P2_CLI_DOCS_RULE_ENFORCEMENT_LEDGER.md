@@ -16,12 +16,12 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 **Milestone:** M02
 **Workstream:** 001
 **Date:** Aug 16, 2026
-**Status:** PENDING
+**Status:** IN_PROGRESS
 **Priority:** P2 — governance tooling; no customer surface, but it converts "is my LOGGING_STANDARD adhered to?" from a model's claim into a committed scoreboard
 **Categories:** CLI, DOCS
 **Batch:** B1 — no parallel siblings
-**Branch:** added at CHORE(open)
-**Test Baseline:** set at CHORE(open) — `unit=<N>` via `cd orly && bun test src`, plus dispatch-eval fixture count
+**Branch:** `feat/m02-rule-ledger` — the single dotfiles spec worktree at `~/Projects/dotfiles-specs`
+**Test Baseline:** `unit=51` (51 pass / 0 fail across 12 files, `cd orly && bun test src`); dispatch-eval fixtures `12 passed, 0 failed`
 **Depends on:** none (M01_001 DONE — the gates engine and thin distribution this builds on)
 **Provenance:** LLM-drafted (Claude Fable 5, Aug 16, 2026) — grounded in the measured corpus: 332 normative clauses across the docs tier carry 8 tags; `audits/logging.sh` enforces 2 of LOGGING_STANDARD's 34; zero mechanical DOC READ verification exists
 **Canonical architecture:** `docs/DISPATCH_ARCHITECTURE.md` §6 (façade pairs, tag grammar, coverage audit) — this spec extends that model from `dispatch/` into the `docs/` rule tier
