@@ -29,6 +29,18 @@ own Bun project needing install + build. `git worktree add` fires
 into the tree; on 🟠 run `provision-env-1password`, re-link. Post-merge:
 `git worktree remove ../agentsfleet-mNN-name`.
 
+**dotfiles: ONE worktree, reused across specs.** Every agent-home symlink and
+every consumer's `ORLY_ROOT` resolves to `~/Projects/dotfiles`, so parallel
+dotfiles worktrees fragment propagation to the connected repos. Keep a single
+spec tree at `~/Projects/dotfiles-specs`, re-pointed at a new branch per spec
+(`git -C ~/Projects/dotfiles-specs checkout -b feat/mNN-name master`); never add
+a second. **Never run `orly sync --global` from it** — that relinks all four
+agent homes at a directory the post-merge cleanup deletes, leaving every agent
+on dangling rules. Verify a render there with `orly render --profile <NAME>`
+(stdout only); do the real `orly sync --global` from the main checkout after the
+merge. A spec whose diff leaves `orly/core/**` and `SOUL.md` untouched changes
+no rendered bytes and needs no render at all.
+
 **Mid-stream spec → ask before hydrating (default: same tree).** A spec created
 inside an active worktree → ask Indy before spinning up a second one. Indy leans
 same tree: a second tree fragments the outcome and adds a PR to babysit.
