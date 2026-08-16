@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # rule-ledger.sh — what each rule document actually enforces.
 #
-#   audits/rule-ledger.sh --census              one row per registered rule doc
-#   audits/rule-ledger.sh --reachability [-n N] fire counts over recent history
+#   audits/rule-ledger.sh --census        one row per registered rule doc
 #
 # Reports the enforcement shape of the docs/ rule tier: how many normative
 # clauses a document carries, and how many of those are machine-checked
@@ -21,8 +20,8 @@
 set -uo pipefail
 
 # A hook exports GIT_DIR/GIT_INDEX_FILE at the repository it fired in; any git
-# a child runs would silently retarget there. The reachability replay shells out
-# to git, so the scope dies here, before the library resolves LEDGER_ROOT.
+# a child runs would silently retarget there. The library resolves LEDGER_ROOT
+# with git, so the scope dies here, before it is sourced.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_PREFIX \
       GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
 
@@ -31,33 +30,23 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HERE/rule-ledger-lib.sh"
 
 MODE_CENSUS="census"
-MODE_REACHABILITY="reachability"
 MODE_WRITE="write"
 MODE_CHECK="check"
 SCOREBOARD_PATH="docs/RULE_ENFORCEMENT.md"
 SCOREBOARD_FIX_COMMAND="bash audits/rule-ledger.sh --write $SCOREBOARD_PATH"
-USAGE="usage: $0 --census | --reachability [-n <commits>] | --write <file> | --check"
+USAGE="usage: $0 --census | --write <file> | --check"
 
 MODE=""
 WRITE_TARGET=""
-HISTORY_COMMITS="$DEFAULT_HISTORY_COMMITS"
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --census) MODE="$MODE_CENSUS" ;;
-    --reachability) MODE="$MODE_REACHABILITY" ;;
     --check) MODE="$MODE_CHECK" ;;
     --write)
       shift
       WRITE_TARGET="${1:-}"
       [ -n "$WRITE_TARGET" ] || { printf '%s\n--write takes a target file\n' "$USAGE" >&2; exit 2; }
       MODE="$MODE_WRITE"
-      ;;
-    -n)
-      shift
-      HISTORY_COMMITS="${1:-}"
-      case "$HISTORY_COMMITS" in
-        ''|*[!0-9]*|0) printf '%s\n-n takes a positive commit count\n' "$USAGE" >&2; exit 2 ;;
-      esac
       ;;
     -h|--help) printf '%s\n' "$USAGE"; exit 0 ;;
     *) printf 'unknown arg: %s\n%s\n' "$1" "$USAGE" >&2; exit 2 ;;
@@ -101,86 +90,27 @@ check_registry_parity() {
   done < <(ledger_cited_docs)
 }
 
-# Zero fires is a warn, never a red: a dormant surface and a dead trigger look
-# identical from here, and only a human can tell them apart.
-fire_note() {
-  [ "$1" -eq 0 ] && printf '  🟠 no fire in the window'
-  return 0
-}
-
-# One row per executable façade — the scope it declares, and how often that
-# scope met a real file in the window.
-reachability_facade_rows() {
-  local paths_file="$1"
-  local script stem lang globs glob_count fires
+# A façade executable that declares no `dispatch_init` scope carries rules no
+# diff can ever reach. It is the one trigger question worth failing on, and it
+# is answerable from the tree — unlike "has this fired lately", which depends on
+# what happened to get committed recently and gates nothing.
+check_facade_scopes() {
+  local script stem
   while IFS= read -r script; do
     [ -n "$script" ] || continue
+    [ -n "$(ledger_facade_globs "$script")" ] && continue
     stem="$(basename "$script" .sh)"
-    lang="$(ledger_facade_lang "$script")"
-    globs="$(ledger_facade_globs "$script")"
-    if [ -z "$globs" ]; then
-      fail "facade=$stem declares no dispatch_init scope — dispatch/$stem.sh (nothing it carries can ever fire)"
-      continue
-    fi
-    glob_count="$(printf '%s' "$globs" | wc -w | tr -d ' ')"
-    fires="$(ledger_match_count "$globs" < "$paths_file")"
-    printf '  facade=%-24s lang=%-5s globs=%-4s fires=%s%s\n' \
-      "$stem" "${lang:-?}" "$glob_count" "$fires" "$(fire_note "$fires")"
+    fail "facade=$stem declares no dispatch_init scope — dispatch/$stem.sh (nothing it carries can ever fire)"
   done < <(ledger_facade_scripts)
-}
-
-# One row per registered rule doc — which façade pages carry it into a diff, and
-# the fire count of their scopes. A doc whose façades are all latent (a .md with
-# no .sh sibling) has no mechanical trigger at all: the honest report is n/a plus
-# a warn, not a zero that would read like a dead scope.
-reachability_doc_rows() {
-  local paths_file="$1"
-  local doc stem stems script globs fires total mechanical
-  for doc in "${REGISTERED_DOCS[@]}"; do
-    stems=""; total=0; mechanical=0
-    while IFS= read -r stem; do
-      [ -n "$stem" ] || continue
-      stems="${stems:+$stems,}$stem"
-      script="$LEDGER_ROOT/dispatch/$stem.sh"
-      [ -f "$script" ] || continue
-      globs="$(ledger_facade_globs "$script")"
-      [ -n "$globs" ] || continue
-      fires="$(ledger_match_count "$globs" < "$paths_file")"
-      total=$(( total + fires ))
-      mechanical=1
-    done < <(ledger_facades_citing "$doc")
-    if [ -z "$stems" ]; then
-      printf '  doc=%-44s facades=%-26s fires=n/a  🟠 cited by no façade page\n' "$doc" "—"
-    elif [ "$mechanical" -eq 0 ]; then
-      printf '  doc=%-44s facades=%-26s fires=n/a  🟠 latent façade only — no declared scope\n' "$doc" "$stems"
-    else
-      printf '  doc=%-44s facades=%-26s fires=%s%s\n' "$doc" "$stems" "$total" "$(fire_note "$total")"
-    fi
-  done
 }
 
 run_census() {
   printf '%sRULE ENFORCEMENT LEDGER — census%s\n' "$BO" "$X"
   for entry in "${REGISTERED_DOCS[@]}"; do census_row "$entry"; done
-  printf '\n%sregistry parity%s\n' "$BO" "$X"
+  printf '\n%sstructural checks%s\n' "$BO" "$X"
   check_registry_parity
-  [ "$RC" -eq 0 ] && okln "every cited rule doc is registered or explicitly excluded"
-  return 0
-}
-
-run_reachability() {
-  local paths_file total_paths
-  paths_file="$(mktemp)"
-  trap 'rm -f "$paths_file"' EXIT
-  ledger_history_paths "$HISTORY_COMMITS" > "$paths_file"
-  total_paths="$(wc -l < "$paths_file" | tr -d ' ')"
-  printf '%sRULE ENFORCEMENT LEDGER — trigger reachability (last %s commits, %s paths)%s\n' \
-    "$BO" "$HISTORY_COMMITS" "$total_paths" "$X"
-  reachability_facade_rows "$paths_file"
-  printf '\n%sdelegated rule docs%s\n' "$BO" "$X"
-  reachability_doc_rows "$paths_file"
-  rm -f "$paths_file"
-  trap - EXIT
+  check_facade_scopes
+  [ "$RC" -eq 0 ] && okln "every cited rule doc is registered; every façade declares a scope"
   return 0
 }
 
@@ -188,58 +118,57 @@ scoreboard_legend() {
   cat <<'LEGEND'
 ## How to read this
 
-- **clauses** — lines carrying a normative keyword (MUST / NEVER / ALWAYS /
-  Forbidden / Required / SHALL / Do not), outside headings and markdown tables.
-  Headings are titles; a table row's `always` is usually a column value, not an
-  obligation. A keyword heuristic, not a parse: the number informs a reader and
-  never gates a build.
-- **how a clause gets its class** — a tag alone on its line covers every clause
-  under it until the next heading; a tag at the end of a sentence covers that
-  sentence. Same grammar the `dispatch/*.md` façades already use.
-- **deterministic** — clauses tagged `[DETERMINISTIC → CODE]`: a script decides,
-  and the agent cannot talk its way past the verdict.
-- **judgment** — clauses tagged `[JUDGMENT → CODE]`: only an agent can weigh
-  them, so the enforcement is a read plus a proof-line.
-- **unenforced** — clauses tagged `[UNENFORCED → reason]`: prose nobody checks,
-  acknowledged on purpose rather than pretended away.
-- **untagged** — clauses nobody has classified yet. This column is the backlog:
-  every row above zero is a document whose real coverage is still unknown.
-- **façades** — the `dispatch/` pages that tell an agent to read the document.
+- **enforced by** — the rules in this document a script decides, and the script
+  that decides each. This is the column worth acting on: it is the difference
+  between a rule that holds and a rule that is merely written down. A code
+  reading `no helper row` is a `[DETERMINISTIC → …]` tag with nothing behind it.
+- **judged / acknowledged** — clauses an agent must weigh (`[JUDGMENT → CODE]`)
+  and clauses nobody checks on purpose (`[UNENFORCED → reason]`, the reason
+  stated where a reader meets it).
+- **classified** — how much of the document has been triaged at all. The
+  denominator counts lines carrying a normative keyword outside headings and
+  tables — a keyword heuristic, not a parse. It informs; it never gates.
 - **trigger** — `mechanical` when a citing façade declares a file scope,
   `latent` when every citing façade is prose the agent must choose to read,
   `uncited` when no façade names the document at all.
 
-Fire counts over history are deliberately absent: they are a function of
-recent commits rather than of the tree, and this file must stay reproducible
-from a checkout alone. Run `bash audits/rule-ledger.sh --reachability` for them.
+A tag alone on its line covers every clause under it until the next heading; a
+tag at the end of a sentence covers that sentence. Same grammar the
+`dispatch/*.md` façades use, read by the same code.
+
+Everything here is a function of the tree alone — no timestamps, no commit
+hashes, no history — so the file reproduces from a checkout and any diff means
+the corpus moved.
 LEGEND
 }
 
-# The scoreboard body. A pure function of the tree — registry order in, counts
-# derived from file content, no timestamp and no commit hash — so two runs on
-# one checkout are byte-identical and any diff means the corpus moved.
+# The scoreboard body: what each document actually enforces, then how much of it
+# has been triaged. Deterministic by construction — registry order in, content
+# out — so `--check` can regenerate and byte-compare.
 render_scoreboard() {
-  local doc counts clauses det judgment unenforced untagged
-  local sum_clauses=0 sum_det=0 sum_judgment=0 sum_unenforced=0 sum_untagged=0
+  local doc counts clauses det judgment unenforced untagged code codes
+  local sum_clauses=0 sum_classified=0
   printf '# Rule enforcement ledger\n\n'
   printf 'Generated by `audits/rule-ledger.sh`. Never hand-edit: `make audit`\n'
   printf 'regenerates this file and fails on any difference. To update it, run\n'
   printf '`%s`.\n\n' "$SCOREBOARD_FIX_COMMAND"
-  printf '| Rule document | clauses | deterministic | judgment | unenforced | untagged | façades | trigger |\n'
-  printf '|---|--:|--:|--:|--:|--:|---|---|\n'
+  printf '| Rule document | enforced by | judged | acknowledged | classified | trigger |\n'
+  printf '|---|---|--:|--:|--:|---|\n'
   for doc in "${REGISTERED_DOCS[@]}"; do
     counts="$(ledger_doc_counts "$LEDGER_ROOT/$doc")" || return 1
     read -r clauses det judgment unenforced untagged <<< "$counts"
-    printf '| `%s` | %s | %s | %s | %s | %s | %s | %s |\n' \
-      "$doc" "$clauses" "$det" "$judgment" "$unenforced" "$untagged" \
-      "$(ledger_doc_facade_list "$doc")" "$(ledger_doc_trigger "$doc")"
-    sum_clauses=$(( sum_clauses + clauses )); sum_det=$(( sum_det + det ))
-    sum_judgment=$(( sum_judgment + judgment ))
-    sum_unenforced=$(( sum_unenforced + unenforced ))
-    sum_untagged=$(( sum_untagged + untagged ))
+    codes=""
+    while IFS= read -r code; do
+      [ -n "$code" ] || continue
+      codes="${codes:+$codes<br>}\`$code\` → \`$(ledger_code_script "$code")\`"
+    done < <(ledger_doc_codes "$LEDGER_ROOT/$doc")
+    printf '| `%s` | %s | %s | %s | %s/%s | %s |\n' \
+      "$doc" "${codes:-—}" "$judgment" "$unenforced" \
+      "$(( clauses - untagged ))" "$clauses" "$(ledger_doc_trigger "$doc")"
+    sum_clauses=$(( sum_clauses + clauses ))
+    sum_classified=$(( sum_classified + clauses - untagged ))
   done
-  printf '| **corpus** | **%s** | **%s** | **%s** | **%s** | **%s** | | |\n\n' \
-    "$sum_clauses" "$sum_det" "$sum_judgment" "$sum_unenforced" "$sum_untagged"
+  printf '| **corpus** | | | | **%s/%s** | |\n\n' "$sum_classified" "$sum_clauses"
   scoreboard_legend
 }
 
@@ -283,7 +212,6 @@ run_check() {
 
 case "$MODE" in
   "$MODE_CENSUS") run_census ;;
-  "$MODE_REACHABILITY") run_reachability ;;
   "$MODE_WRITE") run_write "$WRITE_TARGET" ;;
   "$MODE_CHECK") run_check ;;
 esac

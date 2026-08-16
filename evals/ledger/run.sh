@@ -19,7 +19,7 @@ DOC_READ="$ROOT/audits/doc-read.sh"
 # shellcheck source=evals/ledger/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-printf '%sledger evals — census, reachability, scoreboard, doc-read%s\n\n' "$BO" "$X"
+printf '%sledger evals — census, scoreboard, doc-read%s\n\n' "$BO" "$X"
 
 # Dimension 1.1 — one row per registered doc, columns machine-parseable.
 sb="$(mk_root)"; out="$(run_ledger "$sb")"; rc=$?
@@ -68,27 +68,18 @@ else
   bad "ledger_unenforced_class" "row: $row"
 fi
 
-# Dimension 2.1 — fire counts come from real history, not a fixture. write_any
-# globs every source extension this repository authors, so a window that found
-# nothing means the replay is broken.
-out="$(ORLY_ROOT="$ROOT" bash "$LEDGER" --reachability 2>&1)"; rc=$?
-fires="$(printf '%s' "$out" | grep 'facade=write_any ' | grep -oE 'fires=[0-9]+' | cut -d= -f2)"
-if [ "$rc" -eq 0 ] && [ -n "$fires" ] && [ "$fires" -gt 0 ]; then
-  ok "ledger_reachability_counts — write_any fired $fires times over real history"
-else
-  bad "ledger_reachability_counts" "exit=$rc write_any fires='${fires:-none}' (want > 0)"
-fi
-
 # Dimension 2.2 — a façade executable declaring no scope is structural: no diff
-# can ever reach the rules it carries, so silence would hide a dead page.
+# can ever reach the rules it carries, so silence would hide a dead page. This
+# is the half of the retired reachability mode that answers from the tree, so
+# it gates inside the census rather than in a report nothing consumed.
 sb="$(mk_root)"
 mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"
 mk_facade "$sb" "write_scopeless" "# no dispatch_init here"
-out="$(run_reach "$sb")"; rc=$?
+out="$(run_ledger "$sb")"; rc=$?
 if [ "$rc" -eq 1 ] && printf '%s' "$out" | grep -q 'dispatch/write_scopeless.sh'; then
-  ok "ledger_reachability_structural_red — exit 1, names the scope-less façade"
+  ok "ledger_census_facade_scope_red — exit 1, names the scope-less façade"
 else
-  bad "ledger_reachability_structural_red" "exit=$rc (want 1) naming write_scopeless.sh"
+  bad "ledger_census_facade_scope_red" "exit=$rc (want 1) naming write_scopeless.sh"
 fi
 
 # Dimension 3.1 — the scoreboard is a pure function of the tree. A timestamp or
@@ -260,8 +251,6 @@ check_code() {
 }
 check_code 2 "$(exit_code_of bash "$LEDGER")" "no-mode"
 check_code 2 "$(exit_code_of bash "$LEDGER" --nonsense)" "unknown-arg"
-check_code 2 "$(exit_code_of bash "$LEDGER" --reachability -n notanumber)" "n-nonnumeric"
-check_code 2 "$(exit_code_of bash "$LEDGER" --reachability -n 0)" "n-zero"
 check_code 2 "$(exit_code_of bash "$LEDGER" --write)" "write-no-target"
 check_code 0 "$(exit_code_of bash "$LEDGER" --help)" "help"
 check_code 2 "$(exit_code_of bash "$DOC_READ")" "doc-read-no-mode"
@@ -272,18 +261,6 @@ if [ "$usage_codes_ok" -eq 1 ]; then
   ok "ledger_usage_exit_codes — every misuse exits 2, --help exits 0"
 else
   bad "ledger_usage_exit_codes" "$usage_note"
-fi
-
-# Failure Modes row "Zero-fire false alarm" — a dormant surface warns, never
-# reds. A façade for a language this repository does not author yet must not
-# fail anyone's build.
-sb="$(mk_root)"
-mk_facade "$sb" "write_dormant" "dispatch_init \"DORM\" '*.nothing-matches-this'"
-out="$(run_reach "$sb")"; rc=$?
-if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q '🟠 no fire in the window'; then
-  ok "ledger_reachability_zero_fire_warns — dormant scope warns 🟠 and exits 0"
-else
-  bad "ledger_reachability_zero_fire_warns" "exit=$rc (want 0 with a 🟠 line)"
 fi
 
 # Failure Modes row "Renamed/deleted rule doc" on the WRITE path: a render that
@@ -303,8 +280,8 @@ fi
 # declares no scope — and collapsing them would hide an orphaned rule doc.
 sb="$(mk_root)"
 ORLY_ROOT="$sb" bash "$LEDGER" --write "$sb/board.md" >/dev/null
-if grep -q 'VERIFY_TIERS.md.*uncited' "$sb/board.md" \
-   && grep -q 'LOGGING_STANDARD.md.*latent' "$sb/board.md"; then
+if grep -q 'VERIFY_TIERS.md.*| uncited |' "$sb/board.md" \
+   && grep -q 'LOGGING_STANDARD.md.*| latent |' "$sb/board.md"; then
   ok "ledger_trigger_uncited — uncited and latent are reported apart"
 else
   bad "ledger_trigger_uncited" "$(grep -E 'VERIFY_TIERS|LOGGING_STANDARD' "$sb/board.md" | head -2)"
@@ -314,11 +291,10 @@ fi
 sb="$(mk_root)"; mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"
 before="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"
 run_ledger "$sb" >/dev/null
-run_reach "$sb" >/dev/null
 run_check "$sb" >/dev/null
 after="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"
 if [ "$before" = "$after" ]; then
-  ok "ledger_census_read_only — fixture root byte-identical after census, reachability, check"
+  ok "ledger_census_read_only — fixture root byte-identical after census and check"
 else
   bad "ledger_census_read_only" "a read-only mode mutated its root"
 fi

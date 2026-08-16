@@ -30,9 +30,9 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 
 ## Overview
 
-**Goal (testable):** `make audit` goes red when `docs/RULE_ENFORCEMENT.md` is stale, and that committed scoreboard reports — for every registered rule doc — its normative-clause census, enforcement-class counts (deterministic / judgment / acknowledged-unenforced / untagged), and wiring status; `audits/rule-ledger.sh --reachability` reports per-façade trigger fire counts over recent history; and pre-commit turns the `📖 DOC READ` proof-line from self-report into a set comparison wherever a read-log exists.
+**Goal (testable):** `make audit` goes red when `docs/RULE_ENFORCEMENT.md` is stale, and that committed scoreboard reports — for every registered rule doc — which of its rules a script decides and which script decides each, how many are agent-judged or acknowledged-unenforced, how much of the document has been classified at all, and whether anything can trigger a read of it; and pre-commit turns the `📖 DOC READ` proof-line from self-report into a set comparison.
 **Problem:** Nobody can answer "is LOGGING_STANDARD adhered to, and which clauses?" without reading the audit source by hand. The `dispatch/` tier is fully audited (tag ↔ check ↔ fixture ↔ probe coherence), but the `docs/` rule tier sits outside every coverage glob: hundreds of MUST/NEVER clauses with no enforcement class, no report, and no signal when a doc's trigger goes dead. The DOC READ proof-line is emitted by the model about itself and compared against nothing. M01's close demonstrated the cost: a P0 length violation sat in shipped code for weeks because no mechanism forced the check to run.
-**Solution summary:** One new leaf audit (`audits/rule-ledger.sh`) with three read-only modes — clause census, trigger-reachability replay, scoreboard currency check — plus a generated, committed scoreboard (`docs/RULE_ENFORCEMENT.md`) whose staleness fails `make audit`; one new helper (`audits/doc-read.sh`) that a `PostToolUse` hook feeds and pre-commit consults, so a session that edits source without reading its triggered docs goes red mechanically; and a pilot tagging pass over `docs/LOGGING_STANDARD.md` proving the clause-class grammar on the doc that motivated the work.
+**Solution summary:** One new leaf audit (`audits/rule-ledger.sh`) with two read-only modes — clause census (including the structural trigger-scope check) and scoreboard currency check — plus a generated, committed scoreboard (`docs/RULE_ENFORCEMENT.md`) whose staleness fails `make audit`; one new helper (`audits/doc-read.sh`) that a `PostToolUse` hook feeds and pre-commit consults, so a session that edits source without reading its triggered docs goes red mechanically; and a pilot tagging pass over `docs/LOGGING_STANDARD.md` proving the clause-class grammar on the doc that motivated the work.
 
 ## PR Intent & comprehension handshake
 
@@ -42,7 +42,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 
 ## Implementing agent — read these first
 
-1. `evals/dispatch/coverage.sh` — the tag-extraction idiom (`grep -oE` + `sed`, no awk for macOS portability) and the seven-check coherence shape this ledger mirrors for the docs tier; do not modify it.
+1. `evals/dispatch/coverage.sh` — the tag-extraction idiom (`grep -oE` + `sed`, no awk for macOS portability) and the seven-check coherence shape this ledger mirrors for the docs tier. Originally "do not modify it"; superseded at review — it now sources the ledger library so one grammar serves both tiers.
 2. `audits/spec-template.sh` — the house leaf-audit shape: mode flags, `fail()`/`ok()` reporting, `git ls-files` scoping, exit-code discipline.
 3. `docs/DISPATCH_ARCHITECTURE.md` §6 — the `[DETERMINISTIC → CODE]` / `[JUDGMENT → CODE]` tag grammar this spec extends with an `[UNENFORCED → reason]` class.
 4. `.githooks/pre-commit` + `.claude/settings.json` — the two wiring points: pre-commit gains the doc-read check; settings gains the `PostToolUse` Read hook.
@@ -52,23 +52,22 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 
 | File | Action | Why |
 |------|--------|-----|
-| `audits/rule-ledger.sh` | CREATE | §1–§3 census, reachability, scoreboard write/check — one script, mode-flagged, ≤350 lines |
+| `audits/rule-ledger.sh` | CREATE | §1–§3 census + scoreboard write/check — one script, mode-flagged, ≤350 lines |
 | `audits/rule-ledger-lib.sh` | CREATE | shared extractors (clause regex, tag parse, glob map) sourced by the leaf — keeps both under the length cap |
 | `audits/doc-read.sh` | CREATE | §4 `log` (hook target, appends JSON Lines (JSONL)) and `check` (pre-commit set comparison) |
 | `docs/RULE_ENFORCEMENT.md` | CREATE | §3 generated scoreboard — census table, one row per registered rule doc; currency-checked, never hand-edited |
 | `docs/LOGGING_STANDARD.md` | EDIT | §5 pilot: every normative clause gains a class tag; zero prose changes beyond tags |
 | `.claude/settings.json` | EDIT | §4 `PostToolUse` hook on Read → `audits/doc-read.sh log` |
 | `.githooks/pre-commit` | EDIT | §4 invoke `doc-read.sh check` when source files are staged; `make audit` moves out to pre-push on Indy's call (see Discovery) |
-| `Makefile` | EDIT | `audit` target gains `rule-ledger.sh --check`; new `ledger` convenience target prints census + reachability |
+| `Makefile` | EDIT | `audit` target gains `rule-ledger.sh --check`; new `ledger` convenience target prints the census |
+| `evals/dispatch/coverage.sh` | EDIT | reads the tag grammar from `rule-ledger-lib.sh` instead of its own copy (the spec's "do not modify it" is superseded by Indy's dedup call — Discovery) |
 | `evals/ledger/run.sh` | CREATE | fixture-driven pass+fail cases for every deterministic behaviour below |
 | `evals/ledger/lib.sh` | CREATE | fixture builders + reporting, split from the runner at the length rule's "ceiling, not a budget" — the cases read as a list of behaviours |
 | `docs/DISPATCH_ARCHITECTURE.md` §6.6 | EDIT | the docs-tier extension: `[UNENFORCED → reason]`, block-tag scope, what counts as a clause, registry location |
-| `evals/ledger/fixtures/` | CREATE | minimal doc/tag/read-log fixtures the runner consumes |
 | `audits/agents-md.md` | EDIT | Scenario 28 grading the ledger semantics + recorded doc-read (rule-extension protocol step 2) |
 | `audits/data.sh` | EDIT | scenario-count parity for the new question |
 | `orly/core/operating-model.md` | EDIT | §4b — DOC READ GATE requires the recorded read; three justification tails trimmed to fit the 32,768-byte cap |
 | `AGENTS.md` (generated) | EDIT | re-rendered by `orly sync --global`; all four agent homes carry §4b |
-| `docs/DISPATCH_ARCHITECTURE.md` | EDIT | §6 records the docs-tier extension: `[UNENFORCED → …]` class + registry array location |
 | `orly/src/gates.test.ts` | EDIT | the end-to-end walk carries a 30s timeout — bun's 5s default reds pre-commit on a loaded machine while every assertion still holds; Indy-approved carve-out, see Discovery |
 
 ## Applicable Rules
@@ -108,12 +107,14 @@ A registry array in `rule-ledger-lib.sh` names the docs-tier rule files (LOGGING
 - **Dimension 1.2** — DONE — an unregistered-but-cited doc turns census red naming the doc and the registry file → Test `ledger_census_parity_red`
 - **Dimension 1.3** — DONE — the `[UNENFORCED → reason]` tag class parses and counts separately from untagged → Test `ledger_unenforced_class`
 
-### §2 — Trigger reachability (`--reachability`)
+### §2 — Trigger scope (built, then cut back to the half that gates)
 
-Derives each façade's file-glob set from the `dispatch_init` lines in `dispatch/*.sh`, replays the last 50 commits (`git log --name-only`), and reports fire counts per façade and per delegated doc. Zero fires in the window → 🟠 warn line (dead trigger or dormant surface — a human call, never auto-red). **Implementation default:** report-only to console; history-relative output is deliberately NOT written into the committed scoreboard, which must stay a pure function of the tree.
+Shipped as a `--reachability` mode: derive each façade's globs from its `dispatch_init` line, replay 50 commits, report fire counts. **Removed before the PR on Indy's review call** (Discovery, Aug 16). It had one consumer — a `make ledger` target a human types — gated nothing, and its output is history-relative, so it could never enter the tree-pure scoreboard. Roughly 90 lines of script plus three evals bought a curiosity.
 
-- **Dimension 2.1** — DONE — fire counts derive from real history; `write_any` reports > 0 on this repo → Test `ledger_reachability_counts`
-- **Dimension 2.2** — DONE — a façade whose `.sh` yields no derivable globs is a structural red naming the file → Test `ledger_reachability_structural_red`
+The half worth keeping answers from the tree and now gates inside `--census`: a façade executable that declares no scope carries rules no diff can ever reach.
+
+- **Dimension 2.1** — REMOVED — fire counts over history. Nothing consumed them; "has this fired lately" depends on what happened to get committed recently, not on whether the rule can fire at all.
+- **Dimension 2.2** — DONE — a façade whose `.sh` yields no derivable globs is a structural red naming the file, checked by the census → Test `ledger_census_facade_scope_red`
 
 ### §3 — Committed scoreboard (`--write` / `--check`)
 
@@ -155,18 +156,17 @@ Every normative clause in `docs/LOGGING_STANDARD.md` gains a class tag: `[DETERM
 
 ```
 audits/rule-ledger.sh --census                 one row per registered rule doc; exit 0, or 1 on parity red
-audits/rule-ledger.sh --reachability [-n N]    fire counts over last N commits (default 50); warn-only except structural
 audits/rule-ledger.sh --write <file>           render scoreboard (the only mode that writes)
 audits/rule-ledger.sh --check                  regenerate + byte-compare committed scoreboard; exit 1 stale
 audits/doc-read.sh log <path>                  append {ts, path} JSONL row to .git/orly/doc-reads.jsonl
 audits/doc-read.sh check                       staged-source expected-docs vs logged reads; exit 1 on missing,
                                                exit 0 + warn when no log exists
-Exit codes: 0 clean · 1 violation/stale · 2 usage. Census/reachability/check
-write nothing; scoreboard rows:
-| doc | clauses | det | judgment | unenforced | untagged | façades | trigger |
-(the last two carry the Overview's "wiring status": which dispatch pages cite
-the doc, and whether any of them declares a file scope — both tree-derived,
-so the file stays reproducible from a checkout)
+Exit codes: 0 clean · 1 violation/stale · 2 usage. Census and check write
+nothing; scoreboard rows:
+| doc | enforced by (CODE → script) | judged | acknowledged | classified | trigger |
+`enforced by` resolves each DETERMINISTIC code to the leaf audit a dispatch
+`.sh` runs for it, so a code that loses its helper stops claiming enforcement
+the same commit. All tree-derived — the file reproduces from a checkout.
 ```
 
 ## Failure Modes
@@ -184,7 +184,7 @@ so the file stays reproducible from a checkout)
 
 ## Invariants
 
-1. Only `--write <file>` mutates anything; census, reachability, and both check modes leave `git status` byte-identical — enforced by an eval that diffs status before/after every mode.
+1. Only `--write <file>` mutates anything; the census and both check modes leave `git status` byte-identical — enforced by an eval that diffs status before/after every mode.
 2. The committed scoreboard is a pure function of the working tree — enforced by the double-`--write` byte-compare eval.
 3. Clause counts never fail a build; only structural conditions red (parity miss, missing path, no derivable globs, stale scoreboard) — enforced by exit-code fixture matrix.
 4. `doc-read.sh check` cannot red without a read-log present — enforced by the absent-log fixture.
@@ -228,7 +228,7 @@ so the file stays reproducible from a checkout)
 | R2 | Diff stays inside Files Changed | `git diff --name-only origin/master...HEAD` | 0 paths missing from the Files Changed table | P0 | |
 | R3 | Scoreboard exists and is current (§3) | `bash audits/rule-ledger.sh --check` | exit 0 | P0 | |
 | R4 | Census reports the pilot fully classified (§5) | `bash audits/rule-ledger.sh --census \| grep 'LOGGING_STANDARD'` | contains `untagged=0` | P0 | |
-| R5 | Reachability reports real fires (§2) | `bash audits/rule-ledger.sh --reachability` | exit 0; `write_any` row count > 0 | P0 | |
+| R5 | Scoreboard names the enforcing script (§3) | `grep 'LOGGING_STANDARD' docs/RULE_ENFORCEMENT.md` | contains `` `LOG` `` → `` `logging.sh` `` | P0 | |
 | R6 | Governance audit green with new rows | `make audit` | `ALL CHECKS PASSED` | P0 | |
 | R7 | Read-only modes write nothing (§1,§2,§3-check,§4-check) | `git status --porcelain=v1 -uall` before/after each mode | identical output | P0 | |
 | S7 | No secrets | `gitleaks detect` | exit 0 | P0 | |

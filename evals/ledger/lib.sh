@@ -56,7 +56,6 @@ mk_repo() {
 }
 
 run_ledger()   { ORLY_ROOT="$1" bash "$LEDGER" --census 2>&1; }
-run_reach()    { ORLY_ROOT="$1" bash "$LEDGER" --reachability 2>&1; }
 run_check()    { ORLY_ROOT="$1" bash "$LEDGER" --check 2>&1; }
 run_doc_read() { local root="$1"; shift; ORLY_ROOT="$root" bash "$DOC_READ" "$@" 2>&1; }
 repo_log()     { printf '%s/.git/orly/doc-reads.jsonl' "$1"; }

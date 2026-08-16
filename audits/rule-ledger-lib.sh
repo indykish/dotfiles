@@ -125,6 +125,29 @@ ledger_doc_counts() {
   printf '%s %s %s %s %s' "$clauses" "$det" "$judgment" "$unenforced" "$untagged"
 }
 
+# The DETERMINISTIC codes a document's tags name, deduplicated, in the order
+# they appear. This is the actionable half of the scoreboard: not "how many
+# clauses exist" but "which rules here are decided by a script".
+ledger_doc_codes() {
+  grep -oE "$DETERMINISTIC_TAG" "$1" 2>/dev/null \
+    | sed -E 's/.* → ([A-Za-z0-9_:-]+)\]/\1/' | sort -u
+}
+
+# The leaf audit a dispatch façade runs for a code, e.g. LOG → logging.sh. The
+# .sh row is the single source of truth for which script decides a code, so a
+# code that loses its helper stops claiming enforcement here the same commit.
+ledger_code_script() {
+  local code="$1" script
+  script="$(grep -hoE "^dispatch_run_helper +\"$code\" +\"[^\"]+\"" "$LEDGER_ROOT"/dispatch/*.sh 2>/dev/null \
+    | sed -E 's/.*"([^"]+)"$/\1/' | head -1)"
+  printf '%s' "${script:-$UNWIRED_CODE_LABEL}"
+}
+
+# A DETERMINISTIC tag whose code has no helper row is a claim with nothing
+# behind it — named rather than hidden, because that is exactly the drift this
+# ledger exists to surface.
+UNWIRED_CODE_LABEL="no helper row"
+
 # docs/*.md paths any dispatch façade tells the agent to read. Both the bare
 # form and the ~/Projects/dotfiles/-anchored form appear in the corpus, so the
 # anchor is stripped before comparison.
@@ -151,24 +174,16 @@ ledger_has_prefix() {
   return 1
 }
 
-# --- trigger reachability -----------------------------------------------------
+# --- trigger scope ------------------------------------------------------------
 #
-# A rule fires only when something the agent edits matches its façade's scope.
-# The scope is declared exactly once, in the `dispatch_init` line of the
-# façade's executable, and the history of the repository says whether that
-# scope has met a real file lately. Both halves are extracted here.
-
-# How many commits a fire count replays. Reachability is report-only, so the
-# window is a readability choice, never a gate parameter.
-DEFAULT_HISTORY_COMMITS=50
+# A rule can only fire when something the agent edits matches its façade's
+# scope, and that scope is declared exactly once: the `dispatch_init` line of
+# the façade's executable. Reading it here means the ledger, the doc-read
+# check, and the dispatcher itself can never disagree about what fires.
 
 # dispatch/lib.sh is the shared sourcing target rather than a façade: it
 # declares no scope of its own and must never be read as a glob-less one.
 DISPATCH_LIB_BASENAME="lib.sh"
-
-# Paths every façade ignores, mirroring dispatch_resolve_files' --staged filter
-# so a fire count reports authored edits and not vendored churn.
-HISTORY_EXCLUDE_PATTERN='(^|/)(vendor|third_party|node_modules|\.zig-cache|dist|build|\.next)/'
 
 # The executable façades: dispatch/*.sh minus the shared library.
 ledger_facade_scripts() {
@@ -180,27 +195,12 @@ ledger_facade_scripts() {
   done
 }
 
-# The language label a façade announces, e.g. ANY for dispatch/write_any.sh.
-ledger_facade_lang() {
-  grep -hE '^[[:space:]]*dispatch_init[[:space:]]' "$1" 2>/dev/null \
-    | head -1 | grep -oE '"[^"]+"' | head -1 | tr -d '"'
-}
-
 # The file globs a façade declares, space-separated. dispatch_init quotes its
 # language double and every glob single, so the single-quoted run IS the scope.
 # Empty output means the façade declares no scope — the caller reds on that.
 ledger_facade_globs() {
   grep -hE '^[[:space:]]*dispatch_init[[:space:]]' "$1" 2>/dev/null \
     | head -1 | grep -oE "'[^']+'" | tr -d "'" | tr '\n' ' '
-}
-
-# Every path touched in the last N commits, deduplicated. Merges are skipped so
-# a merge commit does not re-count what its parents already reported.
-ledger_history_paths() {
-  local commits="$1"
-  git -C "$LEDGER_ROOT" log --no-merges --name-only --pretty=format: \
-      -n "$commits" -- . 2>/dev/null \
-    | grep -v '^$' | grep -vE "$HISTORY_EXCLUDE_PATTERN" | sort -u
 }
 
 # How many paths on stdin fall inside a glob set. The unquoted `case` pattern
