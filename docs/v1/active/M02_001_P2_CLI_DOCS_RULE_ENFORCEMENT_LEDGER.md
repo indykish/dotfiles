@@ -115,8 +115,8 @@ Derives each façade's file-glob set from the `dispatch_init` lines in `dispatch
 
 `--write docs/RULE_ENFORCEMENT.md` renders the census as a markdown table plus a legend; `--check` regenerates to a temp file and byte-compares, red with the exact fix command. Wired into `make audit`.
 
-- **Dimension 3.1** — `--write` is deterministic: two runs on the same tree are byte-identical; no timestamps, no commit hashes → Test `ledger_write_deterministic`
-- **Dimension 3.2** — editing a registered doc without regenerating turns `make audit` red; regenerating clears it → Test `ledger_check_currency`
+- **Dimension 3.1** — DONE — `--write` is deterministic: two runs on the same tree are byte-identical; no timestamps, no commit hashes → Test `ledger_write_deterministic`
+- **Dimension 3.2** — DONE — editing a registered doc without regenerating turns `make audit` red; regenerating clears it → Test `ledger_check_currency`
 
 ### §4 — Mechanized doc-read record
 
@@ -143,7 +143,11 @@ audits/doc-read.sh log <path>                  append {ts, path} JSONL row to .g
 audits/doc-read.sh check                       staged-source expected-docs vs logged reads; exit 1 on missing,
                                                exit 0 + warn when no log exists
 Exit codes: 0 clean · 1 violation/stale · 2 usage. Census/reachability/check
-write nothing; scoreboard rows: | doc | clauses | det | judgment | unenforced | untagged |
+write nothing; scoreboard rows:
+| doc | clauses | det | judgment | unenforced | untagged | façades | trigger |
+(the last two carry the Overview's "wiring status": which dispatch pages cite
+the doc, and whether any of them declares a file scope — both tree-derived,
+so the file stays reproducible from a checkout)
 ```
 
 ## Failure Modes

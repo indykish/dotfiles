@@ -68,6 +68,23 @@ ledger_count() {
   printf '%s' "${n:-0}"
 }
 
+# The five census numbers for one document, space-separated:
+#   clauses det judgment unenforced untagged
+# Returns 1 without output when the path is absent, so a caller reports the
+# missing registration rather than printing zeroes that look like a clean doc.
+ledger_doc_counts() {
+  local path="$1"
+  local clauses det judgment unenforced untagged
+  [ -f "$path" ] || return 1
+  clauses="$(ledger_count "$path" "$NORMATIVE_PATTERN")"
+  det="$(ledger_count "$path" "$DETERMINISTIC_TAG")"
+  judgment="$(ledger_count "$path" "$JUDGMENT_TAG")"
+  unenforced="$(ledger_count "$path" "$UNENFORCED_TAG")"
+  untagged=$(( clauses - $(ledger_tagged_total "$path") ))
+  [ "$untagged" -lt 0 ] && untagged=0
+  printf '%s %s %s %s %s' "$clauses" "$det" "$judgment" "$unenforced" "$untagged"
+}
+
 # Every tagged clause in a file, by class.
 ledger_tagged_total() {
   local file="$1"
@@ -178,4 +195,39 @@ ledger_facades_citing() {
     [ -f "$page" ] || continue
     grep -qF "$doc" "$page" 2>/dev/null && printf '%s\n' "$(basename "$page" .md)"
   done
+}
+
+# Whether anything can carry a rule doc into a diff mechanically:
+#   mechanical — a citing façade declares a file scope
+#   latent     — every citing façade is prose the agent must choose to read
+#   uncited    — no façade page names the doc at all
+# Tree-only, with no history in it, so the scoreboard stays a pure function of
+# the checkout.
+TRIGGER_MECHANICAL="mechanical"
+TRIGGER_LATENT="latent"
+TRIGGER_UNCITED="uncited"
+
+ledger_doc_trigger() {
+  local doc="$1" stem script cited=1
+  while IFS= read -r stem; do
+    [ -n "$stem" ] || continue
+    cited=0
+    script="$LEDGER_ROOT/dispatch/$stem.sh"
+    [ -f "$script" ] || continue
+    [ -n "$(ledger_facade_globs "$script")" ] || continue
+    printf '%s' "$TRIGGER_MECHANICAL"
+    return
+  done < <(ledger_facades_citing "$doc")
+  [ "$cited" -eq 0 ] && { printf '%s' "$TRIGGER_LATENT"; return; }
+  printf '%s' "$TRIGGER_UNCITED"
+}
+
+# The citing façade stems as one comma-joined field, or an em dash when none.
+ledger_doc_facade_list() {
+  local doc="$1" stem stems=""
+  while IFS= read -r stem; do
+    [ -n "$stem" ] || continue
+    stems="${stems:+$stems,}$stem"
+  done < <(ledger_facades_citing "$doc")
+  printf '%s' "${stems:-—}"
 }

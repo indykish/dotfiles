@@ -46,6 +46,7 @@ mk_root() {
 
 run_ledger() { ORLY_ROOT="$1" bash "$LEDGER" --census 2>&1; }
 run_reach()  { ORLY_ROOT="$1" bash "$LEDGER" --reachability 2>&1; }
+run_check()  { ORLY_ROOT="$1" bash "$LEDGER" --check 2>&1; }
 
 # A façade executable is a file plus one dispatch_init line. Fixtures that need
 # a working scope get one; the structural case deliberately omits it.
@@ -55,7 +56,7 @@ mk_facade() {
     > "$root/dispatch/$stem.sh"
 }
 
-printf '%sledger evals — fixture-pinned census + reachability behaviour%s\n\n' "$BO" "$X"
+printf '%sledger evals — fixture-pinned census, reachability, scoreboard%s\n\n' "$BO" "$X"
 
 # Dimension 1.1 — one row per registered doc, columns machine-parseable.
 sb="$(mk_root)"; out="$(run_ledger "$sb")"; rc=$?
@@ -127,14 +128,46 @@ else
   bad "ledger_reachability_structural_red" "exit=$rc (want 1) naming write_scopeless.sh"
 fi
 
-# Invariant 1 — read-only: neither report may write into its own root.
+# Dimension 3.1 — the scoreboard is a pure function of the tree. A timestamp or
+# a commit hash in the render would show up here as a diff between two runs one
+# second apart, and would make every unrelated commit a stale-scoreboard red.
+sb="$(mk_root)"
+ORLY_ROOT="$sb" bash "$LEDGER" --write "$sb/first.md" >/dev/null
+ORLY_ROOT="$sb" bash "$LEDGER" --write "$sb/second.md" >/dev/null
+if diff -q "$sb/first.md" "$sb/second.md" >/dev/null 2>&1; then
+  ok "ledger_write_deterministic — two renders of one tree are byte-identical"
+else
+  bad "ledger_write_deterministic" "$(diff "$sb/first.md" "$sb/second.md" | head -3)"
+fi
+
+# Dimension 3.2 — currency: an absent scoreboard reds, a rendered one greens,
+# and editing a registered doc without regenerating reds again. Regeneration is
+# the only way back to green, so the committed numbers cannot drift from source.
+sb="$(mk_root)"
+run_check "$sb" >/dev/null; absent_rc=$?
+mkdir -p "$sb/docs"
+ORLY_ROOT="$sb" bash "$LEDGER" --write "$sb/docs/RULE_ENFORCEMENT.md" >/dev/null
+run_check "$sb" >/dev/null; fresh_rc=$?
+printf 'A caller MUST now do one more thing.\n' >> "$sb/docs/CHANGELOG_VOICE.md"
+out_stale="$(run_check "$sb")"; stale_rc=$?
+ORLY_ROOT="$sb" bash "$LEDGER" --write "$sb/docs/RULE_ENFORCEMENT.md" >/dev/null
+run_check "$sb" >/dev/null; regen_rc=$?
+if [ "$absent_rc" -eq 1 ] && [ "$fresh_rc" -eq 0 ] && [ "$stale_rc" -eq 1 ] \
+   && [ "$regen_rc" -eq 0 ] && printf '%s' "$out_stale" | grep -q -- '--write'; then
+  ok "ledger_check_currency — absent 1, fresh 0, stale 1 with the fix command, regenerated 0"
+else
+  bad "ledger_check_currency" "absent=$absent_rc fresh=$fresh_rc stale=$stale_rc regen=$regen_rc"
+fi
+
+# Invariant 1 — read-only: no reporting mode may write into its own root.
 sb="$(mk_root)"; mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"
 before="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"
 run_ledger "$sb" >/dev/null
 run_reach "$sb" >/dev/null
+run_check "$sb" >/dev/null
 after="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"
 if [ "$before" = "$after" ]; then
-  ok "ledger_census_read_only — fixture root byte-identical after census + reachability"
+  ok "ledger_census_read_only — fixture root byte-identical after census, reachability, check"
 else
   bad "ledger_census_read_only" "a read-only mode mutated its root"
 fi

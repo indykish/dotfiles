@@ -14,6 +14,7 @@ audit:
 	@bash evals/dispatch/coverage.sh
 	@bash evals/dispatch/run.sh
 	@bash evals/ledger/run.sh
+	@bash audits/rule-ledger.sh --check
 
 # What each rule document actually enforces: one row per registered doc,
 # clause census by enforcement class, then the fire count of every façade scope
