@@ -2,6 +2,8 @@
 import { join, resolve } from "node:path";
 
 import { GateReport, isGateName, recordOverride, runGate, runGates } from "./gates";
+import { install, InstallResult } from "./install";
+import { lockDrift, LOCK_PATH, readLock, staleVersion } from "./lockfile";
 import { isString, OrlyError, readJsonObject, RulesModel } from "./model";
 import { Renderer } from "./render";
 import { doctorAgentHomes, syncGlobal } from "./repository";
@@ -15,6 +17,11 @@ const ACCEPT_DIRTY_FLAG = "--accept-dirty";
 const REASON_FLAG = "--reason";
 const PIPE_OUTPUT = "pipe";
 const PACKAGE_MANIFEST = "package.json";
+const PROFILE_FLAG = "--profile";
+const FORCE_FLAG = "--force";
+const NO_HOOKS_FLAG = "--no-hooks";
+const JSON_FLAG = "--json";
+const JSON_INDENT = 2;
 const PASS_GLYPH = "🟢";
 const FAIL_GLYPH = "🔴";
 const PR_GATE = "pr";
@@ -55,6 +62,8 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
     requireGlobalOnly(rest, "doctor checks the root rules and home links: orly doctor [--global]");
     return doctorGlobal(model);
   }
+  if (command === "init") return materialise(model, rest, true);
+  if (command === "update") return materialise(model, rest, false);
   if (command === "render") return render(model, rest);
   if (command === "verify") return verify(model, rest);
   if (command === "gate") return gate(model, rest);
@@ -88,10 +97,42 @@ function override(args: string[]): number {
 // The published manifest is the single version source — nothing in the sources
 // carries a second copy that could disagree with what was installed.
 async function printVersion(model: RulesModel): Promise<number> {
+  console.log(await packageVersion(model));
+  return 0;
+}
+
+async function packageVersion(model: RulesModel): Promise<string> {
   const manifest = await readJsonObject(join(model.root, PACKAGE_MANIFEST));
   if (!isString(manifest.version)) throw new OrlyError(`${PACKAGE_MANIFEST} carries no version string`);
-  console.log(manifest.version);
-  return 0;
+  return manifest.version;
+}
+
+// init picks the profile; update re-materialises whatever the lock already
+// pinned, so a rule change costs one command and never a re-decision.
+async function materialise(model: RulesModel, args: string[], isInit: boolean): Promise<number> {
+  model.validate();
+  const targetRoot = projectRoot();
+  const lock = await readLock(targetRoot);
+  if (!isInit && !lock) throw new OrlyError(`no ${LOCK_PATH} here — run \`orly init\` first`);
+  const named = optionalValue(args, PROFILE_FLAG);
+  if (named !== undefined && !(named in model.profiles)) throw new OrlyError(`unknown profile: ${named} (available: ${Object.keys(model.profiles).sort().join(", ")})`);
+
+  const result = await install(model, {
+    targetRoot,
+    profile: isInit ? named : lock?.profile,
+    force: args.includes(FORCE_FLAG),
+    installHooks: !args.includes(NO_HOOKS_FLAG),
+    orlyVersion: await packageVersion(model),
+  });
+  if (args.includes(JSON_FLAG)) console.log(JSON.stringify(result, undefined, JSON_INDENT));
+  else printInstall(result);
+  return result.ok ? 0 : 1;
+}
+
+function printInstall(result: InstallResult): void {
+  for (const error of result.errors) console.log(`${FAIL_GLYPH} ${error.path}: ${error.message} — ${error.suggestion}`);
+  if (!result.ok) return;
+  console.log(`${PASS_GLYPH} profile ${result.profile}: ${result.written.length} written, ${result.skipped.length} already current (${result.packs.length} packs)`);
 }
 
 function printGate(report: GateReport): void {
@@ -101,18 +142,31 @@ function printGate(report: GateReport): void {
 
 function projectRoot(): string {
   const result = Bun.spawnSync(["git", "rev-parse", "--show-toplevel"], { stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
-  if (result.exitCode !== 0) throw new OrlyError("not inside a Git repository");
+  if (result.exitCode !== 0) throw new OrlyError(`not inside a Git repository: ${process.cwd()} — run \`git init\` first`);
   return result.stdout.toString().trim();
 }
 
 async function doctorGlobal(model: RulesModel): Promise<number> {
   const errors = await doctorAgentHomes(model);
+  errors.push(...(await doctorInstall(model)));
   if (errors.length > 0) {
     for (const error of errors) console.log(`${FAIL_GLYPH} ${error}`);
     return 1;
   }
   console.log(`${PASS_GLYPH} root AGENTS.md is current and every agent home links to it`);
+  if (await readLock(projectRoot())) console.log(`${PASS_GLYPH} this repository's installed ruleset matches ${LOCK_PATH}`);
   return 0;
+}
+
+// A repository with no lock was never installed into — silence, not a finding.
+// One that has a lock must still match it, or the rules it claims to enforce
+// are not the rules on disk.
+async function doctorInstall(model: RulesModel): Promise<string[]> {
+  const targetRoot = projectRoot();
+  const lock = await readLock(targetRoot);
+  if (!lock) return [];
+  const stale = staleVersion(lock, await packageVersion(model));
+  return [...(await lockDrift(targetRoot, lock)), ...(stale ? [stale] : [])];
 }
 
 async function render(model: RulesModel, args: string[]): Promise<number> {
@@ -167,6 +221,11 @@ Gates (read-only; no PR without every criterion green or a recorded override):
   orly gate <work|verify|pr>        run one gate
   orly override <CRITERION> --reason <REASON>
                                     empty commit with an Orly-Override trailer
+
+Install (the repository is the unit — no checkout of this package required):
+  orly init [--profile <NAME>] [--force] [--no-hooks] [--json]
+                                    materialise rules, gates, hooks, and the lock
+  orly update [--force] [--json]    re-materialise at the installed engine version
 
 Rules (one render target — the root AGENTS.md every agent home links to):
   orly sync [--global]              render the root rules + relink agent homes

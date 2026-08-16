@@ -125,13 +125,13 @@ The registry has always declared where each pack's files should land; nothing ev
 
 **Implementation default:** materialise into the repository rather than resolving from the installed package at runtime, because vendored files need no JavaScript toolchain in a Rust or Zig repository, no `PATH`, and no network inside a hook — a `git clone` in a fleet container carries the complete rule set. The accepted cost is M01's zero-sync-commit property; `update` plus lock-drift reporting is what replaces it.
 
-- **Dimension 2.1** — `init` in a fresh repository produces `AGENTS.md`, the pack files at their declared targets, hooks, and the lock → Test `test_init_materialises_fresh_repository`
-- **Dimension 2.2** — a second `init` over the first produces a byte-identical tree → Test `test_init_is_idempotent`
-- **Dimension 2.3** — only the selected profile's packs are materialised, and no file is written whose own citations are absent → Test `test_init_materialises_coherent_pack_closure`
-- **Dimension 2.4** — `init` sets `core.hooksPath` and the installed hooks keep the `GIT_DIR`-unsetting preamble → Test `test_init_installs_scoped_hooks`
-- **Dimension 2.5** — `doctor` reports drift when a materialised file is edited, and is silent when it is not → Test `test_doctor_detects_materialised_drift`
+- **Dimension 2.1** — DONE — `init` in a fresh repository produces `AGENTS.md`, the pack files at their declared targets, hooks, and the lock → Test `test_init_materialises_fresh_repository`
+- **Dimension 2.2** — DONE — a second `init` over the first produces a byte-identical tree → Test `test_init_is_idempotent`
+- **Dimension 2.3** — DONE — only the selected profile's packs are materialised, and no file is written whose own citations are absent → Test `test_init_materialises_coherent_pack_closure`
+- **Dimension 2.4** — DONE — `init` sets `core.hooksPath` and the installed hooks keep the `GIT_DIR`-unsetting preamble → Test `test_init_installs_scoped_hooks`
+- **Dimension 2.5** — DONE — `doctor` reports drift when a materialised file is edited, and is silent when it is not → Test `test_doctor_detects_materialised_drift`
 - **Dimension 2.6** — `update` moves a repository from an older pinned version to the current one and reports what changed → Test `test_update_repins_and_reports`
-- **Dimension 2.7** — `--json` emits the structured result; the human path emits none of it → Test `test_install_json_contract`
+- **Dimension 2.7** — DONE — `--json` emits the structured result; the human path emits none of it → Test `test_install_json_contract`
 - **Dimension 2.8** — the accepted-and-ignored `--global` flag is rejected as unknown, with a message naming the replacement, and no tracked file still references it (RULE NDC; no compatibility alias) → Test `test_global_flag_rejected_and_unreferenced`
 
 ### §3 — Persona and product become opt-in packs

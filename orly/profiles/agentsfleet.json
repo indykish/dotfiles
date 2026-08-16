@@ -13,7 +13,6 @@
     "domain.auth",
     "domain.documentation",
     "domain.changelog",
-    "domain.architecture",
     "workflow.specifications",
     "workflow.governance",
     "product.agentsfleet"

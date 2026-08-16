@@ -21,6 +21,14 @@
           "target": "dispatch/lib.sh"
         },
         {
+          "source": "dispatch/lifecycle.md",
+          "target": "dispatch/lifecycle.md"
+        },
+        {
+          "source": "dispatch/name_architecture.md",
+          "target": "dispatch/name_architecture.md"
+        },
+        {
           "source": "audits/ufs.sh",
           "target": "audits/ufs.sh"
         },
@@ -203,15 +211,6 @@
         {
           "source": "docs/CHANGELOG_VOICE.md",
           "target": "docs/CHANGELOG_VOICE.md"
-        }
-      ]
-    },
-    "domain.architecture": {
-      "extensions": [],
-      "managed_files": [
-        {
-          "source": "dispatch/name_architecture.md",
-          "target": "dispatch/name_architecture.md"
         }
       ]
     },
