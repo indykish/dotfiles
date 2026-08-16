@@ -137,7 +137,7 @@ Non-empty output = hard fail.
 | New `logging.scoped(.tag)` call | Scope is a Zig enum literal — adding a new tag is freeform. `event` must be snake_case `verb_noun`. |
 | New `err`/`warn` log mapping to a domain failure | `error_code=UZ-XXX-NNN` field required. Registry entry must land in same commit. |
 | Per-iteration / hot-loop log | Use `debug` (hidden by default), not `info`. |
-| `info` level | Event must appear in the `info` allow-list (see `~/Projects/dotfiles/docs/LOGGING_STANDARD.md` §10A.L4). Otherwise downgrade to `debug` or justify. |
+| `info` level | No allow-list — `info` is open (§4 rule 2). Two checks instead: a boundary-crossing operation needs its `_started`/`_completed`\|`_failed` pair on every exit path (rule 1), and a per-iteration path is `debug` (rule 3). |
 | `console.log`/`std.debug.print` in non-test source | Forbidden. Convert to logger or delete before commit. |
 | `std.log.scoped` outside `src/logging/` | Migration target. The `log` named module's `scoped` API is the only non-test entry point; flip the file's alias and migrate every call site in the same commit. |
 | `msg=` field | ≤ 300 chars. Stack traces emit as separate `event=stack_trace` debug record. |
@@ -184,7 +184,7 @@ LOGGING GATE: <file>
 
 > [DETERMINISTIC → LOG]
 
-`audits/logging.sh` runs as part of `make lint`. Mechanical enforcement; reviewer responsibility for severity-level subjective calls and PII spot-checks (allow-list and msg-length are mechanical).
+`audits/logging.sh` runs as part of `make lint`. It greps `std.log.*`, `console.*` and raw stderr writes — it does NOT see calls through the `log` named module's `scoped()`, which is where every structured emit in `agentsfleet` goes, so a clean run is not evidence that §4/§5 hold. Mechanical today: `std.debug.print`/`console.log` presence, `std.log.scoped` outside `src/lib/logging/`, msg-length. Reviewer-side: severity choice, entry/exit pairing, `error_code` on scoped-logger calls, and PII spot-checks.
 
 #### Family
 

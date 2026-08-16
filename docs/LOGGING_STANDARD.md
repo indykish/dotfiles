@@ -74,17 +74,66 @@ Five levels. Use them as defined; do not invent intermediate levels.
 |---|---|---|---|
 | `err` | Operation failed; user/operator action required; data may be inconsistent. | DB connection lost, auth failure, panic recovery, syscall failure that breaks a request. | always emitted |
 | `warn` | Operation succeeded but with degraded behaviour, or an expected failure on a recoverable path. | Retry succeeded after one failure; cache miss to slow path; deprecated endpoint hit. | always emitted |
-| `info` | Operationally significant lifecycle events. | Server start, server stop, request bookends, worker pool resized, batch boundary crossed. | emitted in production |
-| `debug` | Diagnostic detail useful to developers but noisy for operators. | Per-iteration tool calls, intermediate state in a multi-step pipeline, cache lookup outcomes. | hidden by default; opt-in via env var (see §7) |
+| `info` | Operation boundaries and operationally significant state changes. | Server start/stop, an operation's `_started`/`_completed` pair, migration applied, batch boundary, a subsystem coming up. | emitted in production |
+| `debug` | Exhaustive diagnostic detail — the level you switch **on** to debug. | Per-iteration tool calls, full request/response shapes, every branch of a multi-step pipeline, cache lookup outcomes. | hidden by default; opt-in via env var (see §7) |
 | `trace` | Per-byte / per-event firehose. | Bytes-on-the-wire, parser tokens, allocator events. | hidden by default; opt-in only; rarely written |
 
-**Happy-path silence rule** — successful operations are silent unless they are *operationally significant*. A request handler returning 200 to a client is **not** operationally significant; an endpoint receiving its first request after a deploy **is**.
+`info` has three rules, in this order. The first is a duty to log, the second a
+licence, the third the only prohibition.
 
-Concrete tests for whether an event deserves `info`:
+**1. REQUIRED — bracket every boundary-crossing operation.** An operation that
+crosses a process, network, datastore, or subprocess boundary, or that bookends a
+lifecycle phase, MUST emit `<thing>_started` on entry and exactly one of
+`<thing>_completed` / `<thing>_failed` on **every** exit path, carrying an id
+that correlates the pair. Boot phases, migrations, lease lifecycle, outbound
+vendor calls, subprocess execution, subsystem startup and shutdown all qualify.
 
-- **Would an operator paging at 3am want to see this?** If no → not `info`.
-- **Does it bookend a phase the operator might want to bisect?** (server start, server stop, migration applied, batch boundary) → `info`.
-- **Is this per-request or per-iteration?** → not `info`. Use `debug`, hidden by default, on-demand via env var.
+This one is a requirement rather than advice because the failure it prevents is
+invisible until an incident: an entry with no exit means a hang reads exactly
+like work that was never reached, and that is the state an operator cannot
+debug. An exit with no entry is the same defect from the other side — you cannot
+tell how long it took or whether it ran twice. Adding the second half of a pair
+is never scope creep.
+
+It is narrow on purpose. It binds operations that can *hang*, not functions. Do
+not manufacture a `_started` for a pure computation, an accessor, or anything
+that cannot fail slowly.
+
+**2. OPEN — everything else is the engineer's judgement.** There is no allow-list
+of permitted event names, and none may be introduced. An engineer who judges a
+state change worth an operator's attention logs it at `info` and owes nobody a
+justification; a reviewer asking for its removal owes a concrete reason. The cost
+of a missing `info` is an incident nobody can bisect. The cost of an extra one is
+a line in a log. Those are not symmetric, so the default is to log it.
+
+**3. PROHIBITED — per-iteration paths are `debug`.** A loop body, a per-row step,
+a per-chunk callback: these flood collectors and drown the records that matter.
+`debug` is not a lesser level, it is the level with a volume switch. A sweep that
+reaps 4,000 workspaces logs each one at `debug` and its outcome at `info`.
+
+### `err` and `warn` are unconditional
+
+Both are **always emitted**, in every build and every environment, and there is
+no volume argument against either. If a code path can fail, its failure is
+logged — a silent `catch {}` on a path that can genuinely fail is the defect,
+not the log line that would have named it. §5 governs what the record carries;
+this rule governs that the record exists at all.
+
+There is no `fatal` level (§11). A condition that ends the process is `err`
+immediately before the exit, so the last line an operator reads is the reason.
+
+### Detail and redaction
+
+`info` carries the fields that make a significant event actionable — ids,
+counts, outcomes, durations, the resolved configuration source. It is not a bare
+event name. `debug` carries whatever it takes to diagnose: full payload shapes,
+every branch taken, intermediate state.
+
+**Redaction is level-independent.** §6 applies identically at `debug` and at
+`trace`. "Exhaustive" describes *volume and breadth*, never permission to log a
+credential: a secret that only appears when debugging is on is still a secret in
+a log file, and debugging is on precisely when something is already going wrong.
+Log the source (`source=env:OPENAI_API_KEY`), never the value, at every level.
 
 `note` is **NOT** a level. Bun has it; we do not. Five levels only.
 
@@ -245,7 +294,7 @@ Failure modes the audit script and reviewer must close. These are **not aspirati
 | L1 | "Temporary debug print, I'll remove later" | `logging.sh` greps `std.debug.print` and `console.log` / `console.debug` / `console.info` in non-test source unconditionally. Found in commit → gate fails. No "temporary" carve-out. |
 | L2 | "`std.log.scoped` is fine, `obs.scoped` is just a wrapper" | `std.log.scoped` is **forbidden** in `src/**/*.zig` outside `src/lib/logging/`. Only `obs.scoped` is callable. Audit flags every `std.log.` call site. |
 | L3 | "I added `error_code=UZ-NEW-001` — registry entry coming next commit" | The registry entry **must land in the same commit** as the first reference. `error-codes.sh` runs against the staged diff; missing entry = blocking. |
-| L4 | "This per-iteration event matters for debugging — `info`-level" | `info` allow-list is fixed: `server_started`, `server_stopped`, `request_received`, `request_completed`, `worker_pool_resized`, `migration_applied`, `batch_started`, `batch_completed`. Anything else at `info` → audit warning; reviewer must justify or downgrade to `debug`. |
+| L4 | "This per-iteration event matters for debugging — `info`-level" | Per-iteration and per-row paths are `debug`, no exception: a loop body is not a boundary, and `debug` is the level with a volume switch. This closes the ONLY `info` prohibition — there is no allow-list of event names and none may be reintroduced (§4). The inverse rationalization is closed too: "this operation is obviously fine, no need to log it" does not survive §4 rule 1, which requires a `_started`/`_completed`\|`_failed` pair on every boundary-crossing operation. Reviewer checks the pair and the loop, never the spelling. |
 | L5 | "Operator needs the full stack trace in `msg=`" | `msg=` capped at 300 chars; total fields per record capped at 15. Stack traces emit as a separate `event=stack_trace` record at `debug` level, correlated by `correlation_id`, not stuffed into `msg`. |
 | L6 | "Embedded newlines because I copy-pasted output" | Audit greps for raw newline byte inside quoted logfmt values. Must be `\n` literal (two chars). |
 | L7 | "Auto-mode is on, the gate block is ceremony" | **Auto-mode does NOT cover gate skips.** Skip without an explicit user-given override = automatic violation. No size threshold lets an edit bypass the gate. |
