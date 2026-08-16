@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -156,6 +156,96 @@ describe("install", () => {
     const second = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(second.ok).toBe(true);
+  });
+
+  // Adversarial review, reproduced: a repository the user cloned can commit a
+  // symlink at a path init would otherwise write to. mkdirSync/writeFile/
+  // rename all follow an existing symlink silently — without this refusal,
+  // every managed file materialises through it into wherever the symlink
+  // points, outside the repository entirely, with `ok: true` and no warning.
+  test("refuses when a managed file's path is a symlink escaping the target repository", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    const outside = mkdtempSync(join(tmpdir(), "orly-install-outside-"));
+    try {
+      symlinkSync(outside, join(repo, "dispatch"));
+
+      const result = await install(model, { targetRoot: repo, profile: CACHE_KIT, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
+      expect(result.ok).toBe(false);
+      expect(result.errors.some((error) => error.message.includes("outside the target repository"))).toBe(true);
+      expect(existsSync(join(outside, "write_rust.md"))).toBe(false);
+      expect(existsSync(join(repo, "AGENTS.md"))).toBe(false);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  test("refuses when the hooks directory path is a symlink escaping the target repository", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    const outside = mkdtempSync(join(tmpdir(), "orly-install-outside-hooks-"));
+    try {
+      symlinkSync(outside, join(repo, ".githooks"));
+
+      const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
+      expect(result.ok).toBe(false);
+      expect(result.errors.some((error) => error.message.includes("outside the target repository"))).toBe(true);
+      expect(existsSync(join(outside, "pre-commit"))).toBe(false);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  test("refuses when the .oracle lock directory path is a symlink escaping the target repository", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    const outside = mkdtempSync(join(tmpdir(), "orly-install-outside-oracle-"));
+    try {
+      symlinkSync(outside, join(repo, ".oracle"));
+
+      const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: false, orlyVersion: "0.4.0" });
+
+      expect(result.ok).toBe(false);
+      expect(result.errors.some((error) => error.message.includes("outside the target repository"))).toBe(true);
+      expect(existsSync(join(outside, "ruleset.lock"))).toBe(false);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  // Adversarial review, reproduced with a real cross-filesystem mount: staging
+  // in the OS tmp dir means `rename(2)` can be asked to cross a filesystem
+  // boundary, which it cannot do — every install against a target on a
+  // different filesystem than $TMPDIR (an external drive, a devcontainer's
+  // bind-mounted workspace) hard-crashed with EXDEV. Staging inside the
+  // target's own .oracle/ makes that structurally impossible to reintroduce:
+  // assert no stage directory or leftover ever appears outside the target.
+  test("stages inside the target repository, not the OS tmp dir", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    const tmpBefore = readdirSync(tmpdir()).filter((name) => name.startsWith("orly-install-"));
+
+    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
+    expect(result.ok).toBe(true);
+    const tmpAfter = readdirSync(tmpdir()).filter((name) => name.startsWith("orly-install-"));
+    expect(tmpAfter).toEqual(tmpBefore);
+  });
+
+  // The bug this milestone's own atomicity test caught while fixing the
+  // above: cleaning up an empty .oracle/ on a refused install must not also
+  // fire on the success path, where .oracle/ is legitimately empty for one
+  // instant before the caller writes ruleset.lock into it.
+  test("a successful install leaves .oracle/ intact for the lock the caller writes next", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+
+    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
+    expect(result.ok).toBe(true);
+    expect(existsSync(join(repo, ".oracle", "ruleset.lock"))).toBe(true);
   });
 
   test("the written lock records a hash and mode for every materialised file", async () => {

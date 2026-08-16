@@ -43,7 +43,6 @@
     "orly/fixtures/",
     "orly/src/",
     "orly/registry.json",
-    "orly/repositories.json",
     "AGENTS.md",
     "SOUL.md"
   ],

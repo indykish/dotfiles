@@ -1,8 +1,8 @@
 import { lstatSync, readlinkSync, realpathSync, symlinkSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
-import { isString, OrlyError, RulesModel } from "./model";
+import { isBelow, isString, OrlyError, RulesModel } from "./model";
 import { Renderer } from "./render";
 
 const AGENT_HOME_TARGETS = [
@@ -12,7 +12,6 @@ const AGENT_HOME_TARGETS = [
   ".amp/AGENTS.md",
 ];
 const AGENTS_FILENAME = "AGENTS.md";
-const PARENT_SEGMENT = "..";
 
 export function repositoryPath(model: RulesModel, name: string): string {
   const value = model.repository(name).path;
@@ -88,9 +87,4 @@ function pathExists(path: string): boolean {
   } catch {
     return false;
   }
-}
-
-function isBelow(path: string, root: string): boolean {
-  const candidate = relative(root, path);
-  return candidate === "" || (!candidate.startsWith(PARENT_SEGMENT) && !isAbsolute(candidate));
 }

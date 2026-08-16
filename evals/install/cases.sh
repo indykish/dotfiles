@@ -31,6 +31,30 @@ install_package_allowlist_excludes_personal_files() {
   if [[ -n "$extra_bin" ]]; then
     bad "$name" "non-product bin entries shipped: $(printf '%s' "$extra_bin" | tr '\n' ' ')"; return
   fi
+
+  # Adversarial review: names this machine's own project layout (private
+  # directory names, no secret) and buys nothing for a stranger's install —
+  # kernel is already the fallback when nothing in it would have matched.
+  if printf '%s\n' "$paths" | grep -qxF "orly/repositories.json"; then
+    bad "$name" "orly/repositories.json ships the maintainer's own project registry"; return
+  fi
+  ok "$name"
+}
+
+# The fix for the above: RulesModel.load() must treat a missing
+# repositories.json as "no repositories registered", not an install failure —
+# it is the normal state for everyone except this engine's own maintainer.
+install_works_with_no_repositories_json_shipped() {
+  local name="validate and init both work from a payload with no repositories.json"
+  local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"
+  if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
+  if [[ -e "$pkg/orly/repositories.json" ]]; then bad "$name" "repositories.json is present — test premise broken"; return; fi
+
+  local out; out="$(run_packed "$pkg" "$repo" validate)"
+  if [[ "$out" != *"registry and profiles valid"* ]]; then bad "$name" "validate failed: $out"; return; fi
+
+  out="$(run_packed "$pkg" "$repo" init)"
+  if [[ "$out" != *"profile kernel"* ]]; then bad "$name" "init did not fall back to kernel: $out"; return; fi
   ok "$name"
 }
 

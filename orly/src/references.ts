@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 
-import { OrlyError } from "./model";
+import { isBelow, OrlyError } from "./model";
 
 const PACK_LINE = /^(.*?)[ \t]*<!--[ \t]*oracle-packs:([^>]+)[ \t]*-->[ \t]*$/;
 const PACK_START = /^[ \t]*<!--[ \t]*oracle-packs:start ([^>]+)[ \t]*-->[ \t]*$/;
@@ -98,9 +98,4 @@ function markdownTarget(rawTarget: string): string | undefined {
   const target = decodeURIComponent(first.split("#", 1)[0] ?? "");
   if (!target || isAbsolute(target) || /^(https?:|mailto:|app:)/.test(target)) return undefined;
   return target;
-}
-
-function isBelow(path: string, root: string): boolean {
-  const candidate = relative(root, path);
-  return candidate === "" || (!candidate.startsWith("..") && !isAbsolute(candidate));
 }

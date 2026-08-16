@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, lstatSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { isObject, isString, normalizedMode, objectValue, OrlyError, readJsonObject, stringArray } from "./model";
+import { assertWritableInside, isObject, isString, normalizedMode, objectValue, OrlyError, readJsonObject, stringArray } from "./model";
 
 const ORACLE_DIRECTORY = ".oracle";
 export const LOCK_PATH = `${ORACLE_DIRECTORY}/ruleset.lock`;
@@ -64,6 +64,7 @@ export async function readLock(targetRoot: string): Promise<Lockfile | undefined
 }
 
 export async function writeLock(targetRoot: string, lock: Lockfile): Promise<string> {
+  assertWritableInside(targetRoot, LOCK_PATH, "lock");
   const path = lockPath(targetRoot);
   mkdirSync(dirname(path), { recursive: true });
   await Bun.write(path, `${JSON.stringify(lock, undefined, JSON_INDENT)}${NEWLINE}`);

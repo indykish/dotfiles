@@ -1,5 +1,5 @@
-import { chmodSync, existsSync, lstatSync, readdirSync } from "node:fs";
-import { basename, join } from "node:path";
+import { chmodSync, existsSync, lstatSync, readdirSync, realpathSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, relative } from "node:path";
 
 import { validateActiveRule, validateCommands, validateRelativePath, validateSurfaces } from "./validation";
 
@@ -15,8 +15,46 @@ const REGISTRY_RULES_LABEL = "registry rules";
 const CORE_DOCUMENTS_LABEL = "core documents";
 const MANAGED_FILES_LABEL = "managed files";
 const ACTIVE_STATE = "active";
+const PARENT_SEGMENT = "..";
 
 export class OrlyError extends Error {}
+
+// The one boundary check every filesystem-writing path in orly relies on —
+// previously three independent copies (repository.ts, references.ts, and an
+// install.ts symlink-escape check found by adversarial review), which is
+// itself a risk: a security check that can drift out of sync across copies.
+export function isBelow(path: string, root: string): boolean {
+  const candidate = relative(root, path);
+  return candidate === "" || (!candidate.startsWith(PARENT_SEGMENT) && !isAbsolute(candidate));
+}
+
+// A destination a caller has not yet written may not exist; find the nearest
+// ancestor that does, so its real (symlink-resolved) location can be checked
+// before anything is created under it.
+export function nearestExistingAncestor(path: string): string {
+  let current = path;
+  while (!existsSync(current)) {
+    const parent = dirname(current);
+    if (parent === current) return current;
+    current = parent;
+  }
+  return current;
+}
+
+// A committed symlink inside a target repository — planted by that
+// repository's own author, not the invoking user — otherwise lets any
+// materialising write follow it and land outside the target entirely.
+// mkdirSync/writeFile/rename all follow symlinks silently; this must run
+// before every one of them, not just once at the top of an operation.
+export function assertWritableInside(root: string, relativeTarget: string, kind: string): void {
+  const destination = join(root, relativeTarget);
+  const ancestor = nearestExistingAncestor(dirname(destination));
+  const resolvedAncestor = realpathSync(ancestor);
+  const resolvedRoot = realpathSync(root);
+  if (!isBelow(resolvedAncestor, resolvedRoot)) {
+    throw new OrlyError(`refusing to write ${kind} outside the target repository: ${relativeTarget} resolves through a symlink to ${resolvedAncestor}`);
+  }
+}
 
 export class RulesModel {
   readonly root: string;
@@ -43,7 +81,7 @@ export class RulesModel {
     for (const filename of readdirSync(profileRoot).filter((name) => name.endsWith(JSON_EXTENSION)).sort()) {
       profiles[basename(filename, JSON_EXTENSION)] = await readJsonObject(join(profileRoot, filename));
     }
-    const repositories = await readJsonObject(join(root, "orly/repositories.json"));
+    const repositories = await readOptionalRepositories(join(root, "orly/repositories.json"));
     return new RulesModel(root, registry, profiles, repositories);
   }
 
@@ -177,6 +215,15 @@ export class RulesModel {
     validateRelativePath(source, `${label} source`, errors);
     if (!existsSync(join(this.root, source))) errors.push(`${label} source is missing: ${source}`);
   }
+}
+
+// The published package ships no repositories.json — it names only this
+// machine's own checkouts, which a stranger's install has no use for and
+// this repo's owner has no reason to publish. Its absence is the normal
+// case for anyone but the engine's own maintainer, not a broken install.
+export async function readOptionalRepositories(path: string): Promise<JsonObject> {
+  if (!existsSync(path)) return { schema_version: 1, repositories: {} };
+  return readJsonObject(path);
 }
 
 export async function readJsonObject(path: string): Promise<JsonObject> {

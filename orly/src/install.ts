@@ -1,10 +1,9 @@
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, renameSync, rmSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
 
 import { UNSCOPED_ENVIRONMENT } from "./git_env";
-import { applyMode, buildLock, hashContent, LockEntry, modeLabel, readLock, writeLock } from "./lockfile";
-import { isString, JsonObject, objectArray, objectValue, OrlyError, RulesModel, stringArray } from "./model";
+import { applyMode, buildLock, hashContent, LOCK_PATH, LockEntry, modeLabel, readLock, writeLock } from "./lockfile";
+import { assertWritableInside, isString, JsonObject, objectArray, objectValue, OrlyError, RulesModel, stringArray } from "./model";
 import { referenceClosureErrors, renderProfileText } from "./references";
 import { Renderer } from "./render";
 
@@ -23,6 +22,8 @@ const PIPE_OUTPUT = "pipe";
 const HOOK_GATES = [["pre-commit", "work"], ["pre-push", "verify"]] as const;
 const GIT_CONFIG_SUBCOMMAND = "config";
 const HOOKS_PATH_KEY = "core.hooksPath";
+const MANAGED_FILE_KIND = "managed file";
+const HOOK_KIND = "hook";
 
 export type InstallError = { path: string; message: string; suggestion: string };
 
@@ -64,6 +65,8 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   const skipped: string[] = [];
 
   for (const file of planned) {
+    const escape = escapesTarget(targetRoot, file.target, MANAGED_FILE_KIND);
+    if (escape) { refusals.push(escape); continue; }
     const path = join(targetRoot, file.target);
     if (!existsSync(path)) { written.push(file.target); continue; }
     const actual = hashContent(await Bun.file(path).bytes());
@@ -75,7 +78,13 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   if (options.installHooks) {
     const claim = hooksClaimedByAnother(targetRoot);
     if (claim && !options.force) refusals.push(claim);
+    for (const [name] of HOOK_GATES) {
+      const escape = escapesTarget(targetRoot, `${HOOKS_DIRECTORY}/${name}`, HOOK_KIND);
+      if (escape) refusals.push(escape);
+    }
   }
+  const lockEscape = escapesTarget(targetRoot, LOCK_PATH, "lock");
+  if (lockEscape) refusals.push(lockEscape);
   if (refusals.length > 0) return { ok: false, profile: profileName, packs, written: [], skipped, errors: refusals };
 
   const closure = await stageAndCommit(model, targetRoot, planned, written);
@@ -89,6 +98,22 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   return { ok: true, profile: profileName, packs, written: written.sort(), skipped: skipped.sort(), errors: [] };
 }
 
+// A committed symlink inside the target repository — planted by that
+// repository's own author, not the person running init — otherwise lets a
+// managed-file or hook write follow it and land anywhere the invoking user
+// can write. Checked up front, before anything is staged, so it reports as
+// a normal refusal rather than a mid-write failure; assertWritableInside
+// runs again at the actual write as a last-line guard against a target
+// that changed underneath the run.
+function escapesTarget(targetRoot: string, target: string, kind: string): InstallError | undefined {
+  try {
+    assertWritableInside(targetRoot, target, kind);
+    return undefined;
+  } catch (error) {
+    return { path: target, message: error instanceof Error ? error.message : String(error), suggestion: "remove or fix the symlink in the target repository before installing" };
+  }
+}
+
 function refusal(target: string, wasManaged: boolean): InstallError {
   return wasManaged
     ? { path: target, message: "managed file was edited in place since it was installed", suggestion: "revert the edit, or re-run with --force to overwrite it" }
@@ -98,9 +123,31 @@ function refusal(target: string, wasManaged: boolean): InstallError {
 // The payload is written to a scratch directory and only moved into the target
 // once every file exists and every reference it names resolves. Reference
 // closure runs against the staged tree, so a pack whose façade cites a document
-// no selected pack provides is caught before anything lands.
+// no selected pack provides is caught before anything lands. The scratch
+// directory lives inside the target's own .oracle/ — not the OS tmp dir —
+// because `rename(2)` cannot cross a filesystem boundary: an OS tmp dir and
+// the target repository are routinely on different filesystems (a mounted
+// external drive, a devcontainer's bind-mounted workspace over a tmpfs
+// /tmp), and staging there turned every such install into a hard EXDEV
+// crash instead of the atomic move this function exists to guarantee.
 async function stageAndCommit(model: RulesModel, targetRoot: string, planned: PlannedFile[], written: string[]): Promise<InstallError[]> {
-  const stage = mkdtempSync(join(tmpdir(), STAGE_PREFIX));
+  const stagingParent = join(targetRoot, dirname(LOCK_PATH));
+  const stagingParentExisted = existsSync(stagingParent);
+  mkdirSync(stagingParent, { recursive: true });
+  const stage = mkdtempSync(join(stagingParent, STAGE_PREFIX));
+
+  // A refusal must leave the target exactly as it found it, and staging now
+  // lives inside it: remove .oracle/ too if this run is the one that created
+  // it and it is still empty on the failure path — a fresh empty directory
+  // left behind is as much a footprint as a written file. The success path
+  // must NOT run this: .oracle/ is still empty at this point (the caller
+  // writes ruleset.lock into it right after stageAndCommit returns), so an
+  // unconditional check would delete a directory the next step needs.
+  const cleanupStagingParentIfEmpty = () => {
+    rmSync(stage, { recursive: true, force: true });
+    if (!stagingParentExisted && existsSync(stagingParent) && readdirSync(stagingParent).length === 0) rmSync(stagingParent, { recursive: true, force: true });
+  };
+
   try {
     for (const file of planned) {
       const path = join(stage, file.target);
@@ -110,18 +157,24 @@ async function stageAndCommit(model: RulesModel, targetRoot: string, planned: Pl
     }
     const markdown = planned.filter((file) => extname(file.target) === MARKDOWN_EXTENSION).map((file) => join(stage, file.target));
     const missing = await referenceClosureErrors(stage, markdown);
-    if (missing.length > 0) return missing.map((message) => ({ path: AGENTS_FILENAME, message, suggestion: "select the pack that provides the cited file, or amend the citation" }));
+    if (missing.length > 0) {
+      cleanupStagingParentIfEmpty();
+      return missing.map((message) => ({ path: AGENTS_FILENAME, message, suggestion: "select the pack that provides the cited file, or amend the citation" }));
+    }
 
     const targets = new Set(written);
     for (const file of planned.filter((candidate) => targets.has(candidate.target))) {
+      assertWritableInside(targetRoot, file.target, MANAGED_FILE_KIND);
       const destination = join(targetRoot, file.target);
       mkdirSync(dirname(destination), { recursive: true });
       renameSync(join(stage, file.target), destination);
       applyMode(destination, file.mode);
     }
-    return [];
-  } finally {
     rmSync(stage, { recursive: true, force: true });
+    return [];
+  } catch (error) {
+    cleanupStagingParentIfEmpty();
+    throw error;
   }
 }
 
@@ -142,6 +195,7 @@ function hooksClaimedByAnother(targetRoot: string): InstallError | undefined {
 // consumer needs is the gate engine, reached through the binary that installed
 // it — with a PATH fallback so a relocated checkout still resolves.
 async function installHooks(targetRoot: string): Promise<{ written: string[]; all: string[] }> {
+  for (const [name] of HOOK_GATES) assertWritableInside(targetRoot, `${HOOKS_DIRECTORY}/${name}`, HOOK_KIND);
   const directory = join(targetRoot, HOOKS_DIRECTORY);
   mkdirSync(directory, { recursive: true });
   const written: string[] = [];
