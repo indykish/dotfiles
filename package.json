@@ -1,0 +1,53 @@
+{
+  "name": "@indykish/orly",
+  "version": "0.4.0",
+  "description": "Repository-scoped engineering harness: renders agent rules, materialises the gates that enforce them, and proves the PR boundary — for any coding agent.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "orly": "bin/orly"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/indykish/dotfiles.git"
+  },
+  "homepage": "https://github.com/indykish/dotfiles#readme",
+  "bugs": {
+    "url": "https://github.com/indykish/dotfiles/issues"
+  },
+  "keywords": [
+    "agents",
+    "coding-agent",
+    "governance",
+    "git-hooks",
+    "lint",
+    "claude",
+    "codex",
+    "opencode",
+    "amp"
+  ],
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "files": [
+    "bin/orly",
+    ".githooks/",
+    "dispatch/",
+    "audits/",
+    "docs/*.md",
+    "docs/greptile-learnings/",
+    "orly/core/",
+    "orly/packs/",
+    "orly/profiles/",
+    "orly/schemas/",
+    "orly/fixtures/",
+    "orly/src/",
+    "orly/registry.json",
+    "orly/repositories.json",
+    "AGENTS.md",
+    "SOUL.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

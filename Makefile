@@ -1,4 +1,4 @@
-.PHONY: audit test-audit llmevals ledger \
+.PHONY: audit test-audit llmevals ledger install-evals \
         dispatch-coverage dispatch-evals dispatch-parity ledger-evals
 
 # Run the deterministic audit chain (all green):
@@ -15,6 +15,12 @@ audit:
 	@bash evals/dispatch/run.sh
 	@bash evals/ledger/run.sh
 	@bash audits/rule-ledger.sh --check
+	@bash evals/install/run.sh
+
+# Installability in isolation — the payload boundary and a packed tarball
+# proving itself against a scratch HOME with no dotfiles checkout in reach.
+install-evals:
+	@bash evals/install/run.sh
 
 # What each rule document actually enforces: one row per registered doc,
 # clause census by enforcement class. Reports; never gates on counts.

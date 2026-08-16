@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 import { GateReport, isGateName, recordOverride, runGate, runGates } from "./gates";
-import { OrlyError, RulesModel } from "./model";
+import { isString, OrlyError, readJsonObject, RulesModel } from "./model";
 import { Renderer } from "./render";
 import { doctorAgentHomes, syncGlobal } from "./repository";
 import { verifyAllProfiles, writeEvidence } from "./verify";
@@ -14,6 +14,7 @@ const NOT_REQUIRED_RESULT = "not-required";
 const ACCEPT_DIRTY_FLAG = "--accept-dirty";
 const REASON_FLAG = "--reason";
 const PIPE_OUTPUT = "pipe";
+const PACKAGE_MANIFEST = "package.json";
 const PASS_GLYPH = "🟢";
 const FAIL_GLYPH = "🔴";
 const PR_GATE = "pr";
@@ -36,6 +37,7 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
     printHelp();
     return command ? 0 : 1;
   }
+  if (command === "--version" || command === "-v") return printVersion(model);
   if (command === "validate") {
     model.validate();
     console.log("orly: registry and profiles valid");
@@ -80,6 +82,15 @@ function override(args: string[]): number {
   if (!reason) throw new OrlyError(`${REASON_FLAG} is required and must not be empty — an override without a reason is not a record`);
   recordOverride(projectRoot(), criterion, reason);
   console.log(`🟡 recorded override of ${criterion} as an empty commit — it rides the branch into the PR`);
+  return 0;
+}
+
+// The published manifest is the single version source — nothing in the sources
+// carries a second copy that could disagree with what was installed.
+async function printVersion(model: RulesModel): Promise<number> {
+  const manifest = await readJsonObject(join(model.root, PACKAGE_MANIFEST));
+  if (!isString(manifest.version)) throw new OrlyError(`${PACKAGE_MANIFEST} carries no version string`);
+  console.log(manifest.version);
   return 0;
 }
 
@@ -162,5 +173,6 @@ Rules (one render target — the root AGENTS.md every agent home links to):
   orly doctor [--global]            root currency + home links
   orly render --profile <NAME>      print a profile's render (stdout)
   orly verify --all                 per-profile determinism + root currency
-  orly validate                     registry and profile shape`);
+  orly validate                     registry and profile shape
+  orly --version                    the installed package version`);
 }

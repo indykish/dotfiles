@@ -56,9 +56,11 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 |------|--------|-----|
 | `package.json` | CREATE | §1 repo-root manifest: `@indykish/orly`, version, `bin`, and the `files` allowlist that is the product boundary |
 | `orly/package.json` | EDIT | §1 demoted to a workspace-internal dev manifest; version and publish fields move to the root |
+| `bin/orly` | EDIT | §1 the shim hard-execs `bun` with no guard — on a machine without it the one-command install dies with a bare `command not found` instead of naming the fix |
 | `orly/src/install.ts` | CREATE | §2 materialise a profile's packs into a target repository; the shared engine behind `init` and `update` |
 | `orly/src/lockfile.ts` | CREATE | §2 `.oracle/ruleset.lock` read/write, content hashing, and the drift comparison `doctor` consumes |
 | `orly/src/install.test.ts`, `orly/src/lockfile.test.ts` | CREATE | §2 unit and in-process sandbox cases |
+| `orly/src/cli.test.ts` | EDIT | §1 the version-from-manifest case; §2 the new verbs |
 | `orly/src/cli.ts` | EDIT | §2 register `init` and `update`; `--json` rendering; §2.8 drop the accepted-and-ignored `--global` flag |
 | `orly/src/repository.ts` | EDIT | §2 agent-home linking becomes one caller of the shared installer, not the distribution model |
 | `orly/src/render.ts`, `orly/src/references.ts` | EDIT | §3 core documents become pack-gated so persona can be deselected; §4 reference closure resolves against the consuming repository root |
@@ -113,9 +115,9 @@ Publishing needs one artifact that carries everything it names. The engine's cor
 
 **Implementation default:** package name `@indykish/orly` (scoped, matching the existing `@indykish/oracle` precedent), version seeded at `0.4.0`, `bin.orly` → `bin/orly`.
 
-- **Dimension 1.1** — the published payload contains the engine and excludes every personal file → Test `test_pack_allowlist_excludes_personal_files`
-- **Dimension 1.2** — the packaged tarball, extracted to a scratch directory, runs `orly validate` successfully with no dotfiles checkout present → Test `test_packed_tarball_validates_standalone`
-- **Dimension 1.3** — the root manifest version is the single source of truth; `orly --version` reports it → Test `test_version_reported_from_manifest`
+- **Dimension 1.1** — DONE — the published payload contains the engine and excludes every personal file → Test `test_pack_allowlist_excludes_personal_files`
+- **Dimension 1.2** — DONE — the packaged tarball, extracted to a scratch directory, runs `orly validate` successfully with no dotfiles checkout present → Test `test_packed_tarball_validates_standalone`
+- **Dimension 1.3** — DONE — the root manifest version is the single source of truth; `orly --version` reports it → Test `test_version_reported_from_manifest`
 
 ### §2 — `orly init` and `orly update` materialise the harness into a repository
 

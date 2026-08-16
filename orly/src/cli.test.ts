@@ -16,6 +16,14 @@ describe("orly command", () => {
     expect(output).not.toContain("oracle-rules");
   });
 
+  test("reports the version carried by the package manifest", async () => {
+    const result = Bun.spawnSync([COMMAND, "--version"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
+    const manifest = (await Bun.file(resolve(ROOT, "package.json")).json()) as { version: string };
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.toString().trim()).toBe(manifest.version);
+  });
+
   test("validates the registry", () => {
     const result = Bun.spawnSync([COMMAND, "validate"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
 
