@@ -54,6 +54,8 @@ Nine cross-cutting gate cards dissolve into this façade. Each is preserved verb
 
 **Caps:** file ≤ 350 lines · function ≤ 50 lines · method ≤ 70 lines.
 
+**350 is a ceiling, not a budget.** A file at 340 is not therefore correct. Split whenever your own rubric — unit-test coverage, simplicity, optimisation, performance, concurrency, adversarial review — says two files beat one; two files of ~150 lines is a good outcome, not an over-split. A file with no headroom left for the tests that would cover it is already too long, whatever `wc -l` reports.
+
 **Triggers** — every Write/Edit that net-adds lines to a source file:
 `.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml`/`.toml` (when carrying code). If the file extension is ambiguous, the gate FIRES by default — opt-out requires the user override below.
 
@@ -69,7 +71,8 @@ Nine cross-cutting gate cards dissolve into this façade. Each is preserved verb
 2. Net delta: `+added - removed`.
 3. Projected: `current + delta`.
 4. If projected > 350, **STOP**. Split first: extract a cohesive block to a sibling file using the repo's `<module>_<concern>.<ext>` convention (`agent_list.js` beside `agent.js`). Then apply the original edit.
-5. Function sub-gate: project post-edit line count for any touched function. If > 50 (function) or > 70 (method), split into named helpers **before** writing.
+5. Projected ≤ 350 does not end the check. Ask the rubric above whether this should be two files — most often it should because there is no room left for the tests. Split now, before the edit, not on arrival at the cap.
+6. Function sub-gate: project post-edit line count for any touched function. If > 50 (function) or > 70 (method), split into named helpers **before** writing.
 
 #### Splitting conventions
 
@@ -77,6 +80,7 @@ Nine cross-cutting gate cards dissolve into this façade. Each is preserved verb
 
 - Files named after the concern extracted (`agent_list.js` not `agent2.js`).
 - Helper function names describe the step (`normalizeCursor()` not `helperA()`).
+- The first cut on an over-long source file is its inline tests and test support — fakes, stubs, harnesses — to a `_test` sibling. It frees the most lines for the least risk, and coverage instruments count test support written inline as product.
 
 #### Required output
 
