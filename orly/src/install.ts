@@ -17,6 +17,7 @@ const MARKDOWN_EXTENSION = ".md";
 const MODE_EXECUTABLE = "0755";
 const MODE_REGULAR = "0644";
 const GIT_COMMAND = "git";
+const GIT_REPO_FLAG = "-C";
 const PIPE_OUTPUT = "pipe";
 const HOOK_GATES = [["pre-commit", "work"], ["pre-push", "verify"]] as const;
 
@@ -229,13 +230,13 @@ function expandHome(path: string): string {
 
 function requireWorkTree(targetRoot: string): void {
   if (!existsSync(targetRoot)) throw new OrlyError(`target directory does not exist: ${targetRoot}`);
-  const result = Bun.spawnSync([GIT_COMMAND, "-C", targetRoot, "rev-parse", "--show-toplevel"], { stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT, env: UNSCOPED_ENVIRONMENT });
+  const result = Bun.spawnSync([GIT_COMMAND, GIT_REPO_FLAG, targetRoot, "rev-parse", "--show-toplevel"], { stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT, env: UNSCOPED_ENVIRONMENT });
   if (result.exitCode !== 0) throw new OrlyError(`not a git repository: ${targetRoot} — run \`git init\` first`);
   const top = resolve(result.stdout.toString().trim());
   if (top !== targetRoot) throw new OrlyError(`install at the repository root, not a subdirectory: ${relative(top, targetRoot)}`);
 }
 
 function runGit(targetRoot: string, args: string[]): void {
-  const result = Bun.spawnSync([GIT_COMMAND, "-C", targetRoot, ...args], { stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT, env: UNSCOPED_ENVIRONMENT });
+  const result = Bun.spawnSync([GIT_COMMAND, GIT_REPO_FLAG, targetRoot, ...args], { stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT, env: UNSCOPED_ENVIRONMENT });
   if (result.exitCode !== 0) throw new OrlyError(`git ${args.join(" ")} failed: ${result.stderr.toString().trim()}`);
 }

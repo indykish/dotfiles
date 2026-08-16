@@ -5,6 +5,10 @@
     "SOUL.md"
   ],
   "packs": {
+    "persona.indy": {
+      "extensions": [],
+      "managed_files": []
+    },
     "universal.authoring": {
       "extensions": [],
       "managed_files": [

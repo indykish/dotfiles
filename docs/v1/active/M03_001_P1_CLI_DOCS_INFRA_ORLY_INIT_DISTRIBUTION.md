@@ -138,10 +138,10 @@ The registry has always declared where each pack's files should land; nothing ev
 
 A stranger must not inherit Kishore's address tags, banned-vocabulary list, judgment notes, or agentsfleet's vault names and file paths — the leak is already observable, since cache-kit's generated `AGENTS.md` tells a Rust crate its project name is `agentsfleet`. Core documents become pack-gated the same way section content already is, `SOUL.md`'s body is fenced into a new `persona.indy` pack, the persona-bearing sections of the operating model are fenced alongside it, and a `kernel` profile selects neither persona nor product. `msid-ui.sh` moves out of `universal.authoring` into the surfaces that own it, so no Rust crate receives a UI gate again. The 38-byte headroom problem dissolves as a side effect: the kernel render is materially smaller than the full one.
 
-- **Dimension 3.1** — the `kernel` profile's render contains no persona token and no product token → Test `test_kernel_render_excludes_persona_and_product`
-- **Dimension 3.2** — the `global` render is byte-identical to today's `AGENTS.md` apart from §4's path changes → Test `test_global_render_unchanged_by_pack_split`
-- **Dimension 3.3** — a profile selecting `persona.indy` renders the fenced body in full → Test `test_persona_pack_renders_when_selected`
-- **Dimension 3.4** — the rendered kernel is under the size cap with margin → Test `test_kernel_render_within_size_cap`
+- **Dimension 3.1** — DONE — the `kernel` profile's render contains no persona token and no product token → Test `test_kernel_render_excludes_persona_and_product`
+- **Dimension 3.2** — DONE — the `global` render is byte-identical to today's `AGENTS.md` apart from §4's path changes → Test `test_global_render_unchanged_by_pack_split`
+- **Dimension 3.3** — DONE — a profile selecting `persona.indy` renders the fenced body in full → Test `test_persona_pack_renders_when_selected`
+- **Dimension 3.4** — DONE — the rendered kernel is under the size cap with margin → Test `test_kernel_render_within_size_cap`
 - **Dimension 3.5** — a Rust-only profile receives no UI or Zig gate → Test `test_rust_profile_excludes_foreign_gates`
 
 ### §4 — Rule citations resolve inside the consuming repository

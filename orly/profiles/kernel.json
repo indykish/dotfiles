@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "name": "dotfiles",
+  "name": "kernel",
   "packs": [
     "universal.authoring",
     "language.zig",
@@ -16,33 +16,15 @@
     "domain.documentation",
     "domain.changelog",
     "workflow.specifications",
-    "workflow.governance",
-    "product.agentsfleet",
-    "persona.indy"
+    "workflow.governance"
   ],
   "commands": {
     "conform": [
       [
-        "make",
-        "audit"
+        "sh",
+        "-c",
+        "echo 'orly: no conform command configured yet — set commands.conform in your profile' >&2; exit 1"
       ]
-    ],
-    "verify.unit": [
-      [
-        "bun",
-        "test",
-        "orly/src"
-      ]
-    ]
-  },
-  "surfaces": {
-    "user": [
-      "orly/src/",
-      "bin/"
-    ],
-    "docs": [
-      "README.md",
-      "docs/"
     ]
   }
 }
