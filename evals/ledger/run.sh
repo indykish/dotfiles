@@ -233,6 +233,27 @@ else
   bad "ledger_precommit_wiring" "no guarded doc-read.sh invocation in .githooks/pre-commit"
 fi
 
+# Dimension 5.1 — the pilot. LOGGING_STANDARD is the doc whose 2-of-34 ratio
+# motivated the milestone; every clause in it now carries a class, so the
+# scoreboard reports a real ratio instead of a backlog.
+row="$(ORLY_ROOT="$ROOT" bash "$LEDGER" --census 2>&1 | grep 'LOGGING_STANDARD')"
+if printf '%s' "$row" | grep -q 'untagged=0' && ! printf '%s' "$row" | grep -q 'det=0 '; then
+  ok "ledger_pilot_fully_classified — LOGGING_STANDARD untagged=0 with a non-zero deterministic count"
+else
+  bad "ledger_pilot_fully_classified" "row: $row"
+fi
+
+# Dimension 5.1b — the grammar the pilot uses is the grammar the dispatch tier
+# already writes. If a block tag under a heading stopped covering its section,
+# the façade pages would silently read as untagged too.
+counts="$(bash -c 'source "'"$ROOT"'/audits/rule-ledger-lib.sh"; ledger_doc_counts "'"$ROOT"'/dispatch/write_any.md"')"
+det_block="$(printf '%s' "$counts" | cut -d' ' -f2)"
+if [ -n "$det_block" ] && [ "$det_block" -gt 0 ]; then
+  ok "ledger_block_tag_scope — dispatch/write_any.md reads $det_block deterministic clauses from block tags"
+else
+  bad "ledger_block_tag_scope" "counts: $counts (want a non-zero deterministic column)"
+fi
+
 # Invariant 1 — read-only: no reporting mode may write into its own root.
 sb="$(mk_root)"; mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"
 before="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"

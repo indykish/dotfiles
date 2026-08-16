@@ -6,21 +6,26 @@ regenerates this file and fails on any difference. To update it, run
 
 | Rule document | clauses | deterministic | judgment | unenforced | untagged | façades | trigger |
 |---|--:|--:|--:|--:|--:|---|---|
-| `docs/LOGGING_STANDARD.md` | 41 | 0 | 0 | 0 | 41 | write_any | mechanical |
-| `docs/REST_API_DESIGN_GUIDELINES.md` | 81 | 0 | 0 | 0 | 81 | write_any,write_http,write_sql | mechanical |
-| `docs/SCHEMA_CONVENTIONS.md` | 17 | 0 | 0 | 0 | 17 | write_sql | mechanical |
-| `docs/DOCUMENTATION_RULES.md` | 23 | 0 | 0 | 0 | 23 | write_changelog,write_documentation | latent |
-| `docs/LIFECYCLE_PATTERNS.md` | 27 | 0 | 0 | 0 | 27 | write_zig | mechanical |
+| `docs/LOGGING_STANDARD.md` | 26 | 3 | 10 | 13 | 0 | write_any | mechanical |
+| `docs/REST_API_DESIGN_GUIDELINES.md` | 74 | 0 | 0 | 0 | 74 | write_any,write_http,write_sql | mechanical |
+| `docs/SCHEMA_CONVENTIONS.md` | 16 | 0 | 0 | 0 | 16 | write_sql | mechanical |
+| `docs/DOCUMENTATION_RULES.md` | 20 | 0 | 0 | 0 | 20 | write_changelog,write_documentation | latent |
+| `docs/LIFECYCLE_PATTERNS.md` | 22 | 0 | 0 | 0 | 22 | write_zig | mechanical |
 | `docs/CHANGELOG_VOICE.md` | 3 | 0 | 0 | 0 | 3 | write_changelog,write_documentation | latent |
-| `docs/VERIFY_TIERS.md` | 7 | 0 | 0 | 0 | 7 | lifecycle | latent |
-| `docs/greptile-learnings/RULES.md` | 150 | 0 | 0 | 0 | 150 | write_any,write_sql,write_ts_adhere_bun,write_zig | mechanical |
-| **corpus** | **349** | **0** | **0** | **0** | **349** | | |
+| `docs/VERIFY_TIERS.md` | 4 | 0 | 0 | 0 | 4 | lifecycle | latent |
+| `docs/greptile-learnings/RULES.md` | 113 | 0 | 0 | 0 | 113 | write_any,write_sql,write_ts_adhere_bun,write_zig | mechanical |
+| **corpus** | **278** | **3** | **10** | **13** | **252** | | |
 
 ## How to read this
 
 - **clauses** — lines carrying a normative keyword (MUST / NEVER / ALWAYS /
-  Forbidden / Required / SHALL / Do not). A keyword heuristic, not a parse: the
-  number informs a reader and never gates a build.
+  Forbidden / Required / SHALL / Do not), outside headings and markdown tables.
+  Headings are titles; a table row's `always` is usually a column value, not an
+  obligation. A keyword heuristic, not a parse: the number informs a reader and
+  never gates a build.
+- **how a clause gets its class** — a tag alone on its line covers every clause
+  under it until the next heading; a tag at the end of a sentence covers that
+  sentence. Same grammar the `dispatch/*.md` façades already use.
 - **deterministic** — clauses tagged `[DETERMINISTIC → CODE]`: a script decides,
   and the agent cannot talk its way past the verdict.
 - **judgment** — clauses tagged `[JUDGMENT → CODE]`: only an agent can weigh

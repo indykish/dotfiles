@@ -132,7 +132,9 @@ Derives each façade's file-glob set from the `dispatch_init` lines in `dispatch
 
 Every normative clause in `docs/LOGGING_STANDARD.md` gains a class tag: `[DETERMINISTIC → LOG]` where `audits/logging.sh` enforces it, `[DETERMINISTIC → TODO-CHECK]` where mechanizable but unwired, `[JUDGMENT → …]` where only an agent can decide, `[UNENFORCED → reason]` for the acknowledged rest. Prose otherwise untouched. This proves the grammar on the doc whose 2-of-34 ratio motivated the milestone; the remaining corpus is deliberately follow-up work, one doc per PR.
 
-- **Dimension 5.1** — census row for LOGGING_STANDARD reports `untagged=0` → Test `ledger_pilot_fully_classified`
+- **Dimension 5.1** — DONE — census row for LOGGING_STANDARD reports `untagged=0` → Test `ledger_pilot_fully_classified`
+
+**What the pilot changed about §1's counter.** Tagging a real document proved a line-per-tag model wrong twice, and both fixes landed here rather than being worked around in prose: (1) markdown table rows and headings are no longer counted as clauses — `| ts_ms | u64 | always | … |` is a column value, and a heading is a title; (2) a tag alone on its line now covers every clause under it until the next heading, the same block grammar `dispatch/*.md` already uses, so a paragraph-shaped rule takes one tag instead of one per line. Verified against the already-tagged tier: `dispatch/write_any.md` reads back 6 deterministic clauses from its block tags → Test `ledger_block_tag_scope`.
 
 ## Interfaces
 
@@ -249,6 +251,8 @@ N/A — no files deleted; no symbols removed. (S9 covers the inverse: no created
 ## Discovery (consult log)
 
 - **Consults** — Architecture / Legacy-Design / gate-flag triage: the question asked + Indy's decision.
+  - Aug 16, 2026: 03:10 PM — runtime coverage. Indy: "how will other coding editors opencode, amp, codex do that … that is my concern." Checked each runtime's real surface on this machine: codex exposes only a turn-ended `notify` (already bound to Computer Use), amp's settings carry no tool-event surface, opencode has a plugin system but no configured plugin; only Claude Code has a per-read hook. Presented three options; Indy chose the command path for all four — the DOC READ GATE requires `audits/doc-read.sh log <path>`, which every runtime can run, and the Claude hook stays as the version an agent cannot fake. Lands as §4b.
+  - Aug 16, 2026: 03:05 PM — clause-count honesty (§5). Reaching `untagged=0` by tagging table rows would have put 15 meaningless tags in a rule doc, so the counter changed instead: headings and table rows stop counting as clauses, and block tags cover their section. The reader-facing number got more truthful; no gate weakened (parity and structural reds are untouched).
   - Aug 16, 2026: 02:40 PM — hook cost. Indy asked what the dotfiles pre-commit and pre-push actually run, then ruled: "make audit in pre push." Pre-commit now carries only the §4 doc-read check (one grep over the staged list, one read of a local record); the full audit stays on pre-push, where the corpus is about to reach someone else. No enforcement is lost — a push cannot skip it.
   - Aug 16, 2026: 02:05 PM — gate-flag triage, out-of-scope edit. `orly/src/gates.test.ts:158` (end-to-end gate walk) ran 5.5s–12.7s against bun's 5s default, reddening pre-commit's `make audit` while every assertion passed. Asked fix-or-defer; Indy chose "Raise that one test to 30s" over a suite-wide `bunfig.toml` default or waiting out machine load. Applied as a named constant on that one test; assertions untouched.
 - **Metrics review** — events added, extra events found during `/review`, analytics/funnel playbook update or the explicit no-change reason.

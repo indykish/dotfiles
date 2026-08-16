@@ -47,6 +47,13 @@ EXCLUDED_PREFIXES=(
 # keyword inside an example block costs nothing but a slightly high number.
 NORMATIVE_PATTERN='\b(MUST|NEVER|ALWAYS|Forbidden|Required|SHALL|Do not|Don.t)\b'
 
+# Markdown table rows are excluded from the clause count. In a rule doc a table
+# is usually a field reference — `| ts_ms | u64 | always | ... |` — where the
+# keyword is a column VALUE, not an obligation, and counting those makes a
+# fully-triaged document look permanently unfinished. Rules stated inside a
+# table restate prose stated elsewhere; they are still read, just not counted.
+TABLE_ROW_PATTERN='^[[:space:]]*\|'
+
 # Enforcement classes. The first two already exist in dispatch/*.md
 # (docs/DISPATCH_ARCHITECTURE.md §6); UNENFORCED is added by this milestone so
 # an acknowledged-prose clause is distinguishable from one nobody has triaged.
@@ -56,42 +63,66 @@ UNENFORCED_TAG='\[UNENFORCED → [^]]+\]'
 
 LEDGER_ROOT="${ORLY_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
-# Count lines matching a pattern in a file; 0 when the file is absent so a
-# caller can report a missing path rather than dying on it.
-ledger_count() {
-  local file="$1" pattern="$2"
-  local n
-  [ -f "$file" ] || { printf '0'; return; }
-  # grep -c exits 1 on zero matches; capture first, then normalise, so a
-  # legitimate zero never concatenates with a fallback.
-  n="$(grep -ciE "$pattern" "$file" 2>/dev/null | tr -d ' \n')"
-  printf '%s' "${n:-0}"
+# A tag alone on its line (the `> [DETERMINISTIC → FLL]` form dispatch/*.md
+# already uses) covers every clause under it until the next heading. A tag at
+# the end of a sentence covers that sentence only. Both are needed: a rule doc
+# states some rules as a tagged section and others as one-line asides, and
+# forcing either shape onto the other would mean editing prose to satisfy a
+# counter.
+STANDALONE_TAG_PATTERN='^[[:space:]]*>?[[:space:]]*\[(DETERMINISTIC|JUDGMENT|UNENFORCED) → [^]]+\][[:space:]]*$'
+HEADING_PATTERN='^#{1,6} '
+CLASS_DETERMINISTIC="det"
+CLASS_JUDGMENT="judgment"
+CLASS_UNENFORCED="unenforced"
+
+# Line numbers of every line in a file matching a pattern, one per line.
+ledger_line_numbers() {
+  grep -nE "$2" "$1" 2>/dev/null | cut -d: -f1
+}
+
+# Clause line numbers: keyword lines that are not table rows. Case-insensitive,
+# because a rule reads the same whether the author shouted it or not.
+ledger_clause_lines() {
+  grep -niE "$NORMATIVE_PATTERN" "$1" 2>/dev/null \
+    | grep -vE '^[0-9]+:[[:space:]]*\|' | cut -d: -f1
 }
 
 # The five census numbers for one document, space-separated:
 #   clauses det judgment unenforced untagged
 # Returns 1 without output when the path is absent, so a caller reports the
 # missing registration rather than printing zeroes that look like a clean doc.
+#
+# One pass down the file carrying the section's block tag: a heading clears it,
+# a standalone tag sets it, and every clause takes the tag on its own line
+# first, the block's second, nothing third. Nothing third is the backlog.
 ledger_doc_counts() {
   local path="$1"
-  local clauses det judgment unenforced untagged
+  local line total block="" class
+  local clauses=0 det=0 judgment=0 unenforced=0 untagged=0
   [ -f "$path" ] || return 1
-  clauses="$(ledger_count "$path" "$NORMATIVE_PATTERN")"
-  det="$(ledger_count "$path" "$DETERMINISTIC_TAG")"
-  judgment="$(ledger_count "$path" "$JUDGMENT_TAG")"
-  unenforced="$(ledger_count "$path" "$UNENFORCED_TAG")"
-  untagged=$(( clauses - $(ledger_tagged_total "$path") ))
-  [ "$untagged" -lt 0 ] && untagged=0
-  printf '%s %s %s %s %s' "$clauses" "$det" "$judgment" "$unenforced" "$untagged"
-}
+  local is_heading=() is_clause=() line_class=() standalone=()
+  for line in $(ledger_line_numbers "$path" "$HEADING_PATTERN"); do is_heading[$line]=1; done
+  for line in $(ledger_clause_lines "$path"); do is_clause[$line]=1; done
+  for line in $(ledger_line_numbers "$path" "$STANDALONE_TAG_PATTERN"); do standalone[$line]=1; done
+  for line in $(ledger_line_numbers "$path" "$DETERMINISTIC_TAG"); do line_class[$line]="$CLASS_DETERMINISTIC"; done
+  for line in $(ledger_line_numbers "$path" "$JUDGMENT_TAG"); do line_class[$line]="$CLASS_JUDGMENT"; done
+  for line in $(ledger_line_numbers "$path" "$UNENFORCED_TAG"); do line_class[$line]="$CLASS_UNENFORCED"; done
 
-# Every tagged clause in a file, by class.
-ledger_tagged_total() {
-  local file="$1"
-  local n
-  [ -f "$file" ] || { printf '0'; return; }
-  n="$(grep -oE "$DETERMINISTIC_TAG|$JUDGMENT_TAG|$UNENFORCED_TAG" "$file" 2>/dev/null | wc -l | tr -d ' \n')"
-  printf '%s' "${n:-0}"
+  total="$(wc -l < "$path" | tr -d ' ')"
+  for (( line = 1; line <= total; line++ )); do
+    [ -n "${is_heading[$line]:-}" ] && { block=""; continue; }
+    [ -n "${standalone[$line]:-}" ] && { block="${line_class[$line]:-}"; continue; }
+    [ -n "${is_clause[$line]:-}" ] || continue
+    class="${line_class[$line]:-$block}"
+    clauses=$(( clauses + 1 ))
+    case "$class" in
+      "$CLASS_DETERMINISTIC") det=$(( det + 1 )) ;;
+      "$CLASS_JUDGMENT") judgment=$(( judgment + 1 )) ;;
+      "$CLASS_UNENFORCED") unenforced=$(( unenforced + 1 )) ;;
+      *) untagged=$(( untagged + 1 )) ;;
+    esac
+  done
+  printf '%s %s %s %s %s' "$clauses" "$det" "$judgment" "$unenforced" "$untagged"
 }
 
 # docs/*.md paths any dispatch façade tells the agent to read. Both the bare

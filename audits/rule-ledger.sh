@@ -189,8 +189,13 @@ scoreboard_legend() {
 ## How to read this
 
 - **clauses** — lines carrying a normative keyword (MUST / NEVER / ALWAYS /
-  Forbidden / Required / SHALL / Do not). A keyword heuristic, not a parse: the
-  number informs a reader and never gates a build.
+  Forbidden / Required / SHALL / Do not), outside headings and markdown tables.
+  Headings are titles; a table row's `always` is usually a column value, not an
+  obligation. A keyword heuristic, not a parse: the number informs a reader and
+  never gates a build.
+- **how a clause gets its class** — a tag alone on its line covers every clause
+  under it until the next heading; a tag at the end of a sentence covers that
+  sentence. Same grammar the `dispatch/*.md` façades already use.
 - **deterministic** — clauses tagged `[DETERMINISTIC → CODE]`: a script decides,
   and the agent cannot talk its way past the verdict.
 - **judgment** — clauses tagged `[JUDGMENT → CODE]`: only an agent can weigh
