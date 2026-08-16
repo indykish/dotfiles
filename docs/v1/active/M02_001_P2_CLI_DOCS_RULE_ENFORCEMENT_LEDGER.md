@@ -99,9 +99,9 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 
 A registry array in `rule-ledger-lib.sh` names the docs-tier rule files (LOGGING_STANDARD, REST_API_DESIGN_GUIDELINES, SCHEMA_CONVENTIONS, DOCUMENTATION_RULES, LIFECYCLE_PATTERNS, CHANGELOG_VOICE, VERIFY_TIERS, greptile-learnings/RULES.md). Census emits one row per entry: normative-clause count (keyword-line heuristic: MUST / NEVER / ALWAYS / Forbidden / Required / SHALL), tag counts by class, and untagged remainder. Counts inform; they never gate. **Implementation default:** the parity guard is the only census red — a `docs/*.md` cited as a rule read by any `dispatch/*.md` façade but absent from the registry (architecture docs and TEMPLATE.md sit on an explicit exclude list).
 
-- **Dimension 1.1** — census prints exactly one row per registered doc, machine-parseable columns → Test `ledger_census_rows`
-- **Dimension 1.2** — an unregistered-but-cited doc turns census red naming the doc and the registry file → Test `ledger_census_parity_red`
-- **Dimension 1.3** — the `[UNENFORCED → reason]` tag class parses and counts separately from untagged → Test `ledger_unenforced_class`
+- **Dimension 1.1** — DONE — census prints exactly one row per registered doc, machine-parseable columns → Test `ledger_census_rows`
+- **Dimension 1.2** — DONE — an unregistered-but-cited doc turns census red naming the doc and the registry file → Test `ledger_census_parity_red`
+- **Dimension 1.3** — DONE — the `[UNENFORCED → reason]` tag class parses and counts separately from untagged → Test `ledger_unenforced_class`
 
 ### §2 — Trigger reachability (`--reachability`)
 
