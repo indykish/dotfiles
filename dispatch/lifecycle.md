@@ -50,6 +50,24 @@ into a separate tree.
 
 ## Bootstrap & milestone gates
 
+- **Complete `.oracle/orly.json` on first sight.** `orly init` seeds it
+  mechanically — it reads the Makefile (following `include` one level) and
+  `package.json` scripts, matches a fixed list of target names, and writes what
+  it matched. It finds the obvious ones and misses the rest, and it never
+  guesses `surfaces`.
+  First session in a repository whose config is still that seed:
+  1. Read the build files properly. Fill every `verify.*` the repository really
+     has — the tiering is fixed (`conform` + `verify.unit` are the fast tier,
+     every other `verify.*` is slow and skips on prose-only branches).
+  2. Set `surfaces.user` and `surfaces.docs` to real path prefixes, or the docs
+     gate can never fire and a user-visible change ships undocumented.
+  3. Add any opt-in pack the repository's own sources cannot imply
+     (`persona.indy`, `product.agentsfleet`, `workflow.governance`), then run
+     `orly update` so they materialise.
+  4. Commit it. Every teammate and every later session reads this file, and
+     `orly` never rewrites it — so an edit here is permanent.
+  A seeded-but-uncompleted config is why `orly gate` reports a repository with
+  no declared commands: the fix is this list, not another `orly init`.
 - **Priming:** (1) Human runs `playbooks/founding/01_bootstrap/001_playbook.md`.
   (2) Agent runs `./playbooks/founding/02_preflight/00_gate.sh` (green before
   next). (3) Agent runs `playbooks/founding/03_priming_infra/001_playbook.md`.

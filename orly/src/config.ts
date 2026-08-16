@@ -21,6 +21,9 @@ const RUN_SUBCOMMAND = "run";
 const MAKEFILE = "Makefile";
 const PACKAGE_MANIFEST = "package.json";
 const SCRIPTS_FIELD = "scripts";
+const LINT_ALL_TARGET = "lint-all";
+const LINT_TARGET = "lint";
+const BUILD_TARGET = "build";
 const TEXT_ENCODING = "utf8";
 const TARGET_PATTERN = /^([A-Za-z0-9][A-Za-z0-9_.-]*):/;
 const INCLUDE_PATTERN = /^-?include\s+(\S+)/;
@@ -37,14 +40,14 @@ const SCAN_DEPTH = 4;
 
 // A Makefile target or package script orly knows how to map onto a gate
 // command. The first match wins, so the more specific name is listed first.
-const CONFORM_TARGETS = ["harness-verify", "conform", "audit", "lint-all", "lint"];
+const CONFORM_TARGETS = ["harness-verify", "conform", "audit", LINT_ALL_TARGET, LINT_TARGET];
 const VERIFY_TARGETS: Array<[string, string[]]> = [
-  ["verify.lint", ["lint-all", "lint"]],
+  ["verify.lint", [LINT_ALL_TARGET, LINT_TARGET]],
   ["verify.unit", ["test-unit-all", "test-unit", "test"]],
   ["verify.integration", ["test-integration"]],
   ["verify.memory", ["memleak"]],
   ["verify.version", ["check-version"]],
-  ["verify.build", ["build"]],
+  ["verify.build", [BUILD_TARGET]],
 ];
 
 export type RepoConfig = {
