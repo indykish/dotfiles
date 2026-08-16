@@ -166,6 +166,7 @@ NAMED_SCENARIOS=(
   "Allocator & concurrency discipline"  # Scenario 25
   "Rules propagation"        # Scenario 26
   "Rule-path"                # Scenario 27
+  "Rule-enforcement ledger"  # Scenario 28
 )
 
 # Check 14 — the Rule-extension protocol must enumerate all four wiring steps.

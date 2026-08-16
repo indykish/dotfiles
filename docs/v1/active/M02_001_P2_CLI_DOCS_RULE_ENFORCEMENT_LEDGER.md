@@ -62,8 +62,10 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `Makefile` | EDIT | `audit` target gains `rule-ledger.sh --check`; new `ledger` convenience target prints census + reachability |
 | `evals/ledger/run.sh` | CREATE | fixture-driven pass+fail cases for every deterministic behaviour below |
 | `evals/ledger/fixtures/` | CREATE | minimal doc/tag/read-log fixtures the runner consumes |
-| `audits/agents-md.md` | EDIT | one new scenario question grading the ledger semantics (rule-extension protocol step 2) |
+| `audits/agents-md.md` | EDIT | Scenario 28 grading the ledger semantics + recorded doc-read (rule-extension protocol step 2) |
 | `audits/data.sh` | EDIT | scenario-count parity for the new question |
+| `orly/core/operating-model.md` | EDIT | §4b — DOC READ GATE requires the recorded read; three justification tails trimmed to fit the 32,768-byte cap |
+| `AGENTS.md` (generated) | EDIT | re-rendered by `orly sync --global`; all four agent homes carry §4b |
 | `docs/DISPATCH_ARCHITECTURE.md` | EDIT | §6 records the docs-tier extension: `[UNENFORCED → …]` class + registry array location |
 | `orly/src/gates.test.ts` | EDIT | the end-to-end walk carries a 30s timeout — bun's 5s default reds pre-commit on a loaded machine while every assertion still holds; Indy-approved carve-out, see Discovery |
 
@@ -127,6 +129,12 @@ Derives each façade's file-glob set from the `dispatch_init` lines in `dispatch
 - **Dimension 4.1** — DONE — `log` appends valid JSONL; concurrent appends never corrupt (append-only, one line per call) → Test `ledger_readlog_append`
 - **Dimension 4.2** — DONE — `check` red lists exactly the unread triggered docs; green when all logged since HEAD; exit 0 + warn when the log file is absent → Test `ledger_readlog_check_matrix`
 - **Dimension 4.3** — DONE — pre-commit invokes `check` only when staged files match source extensions → Test `ledger_precommit_wiring`
+
+### §4b — The record works in every runtime, not just the hooked one
+
+Folded in mid-milestone on Indy's call (Discovery, Aug 16). A `PostToolUse` hook binds Claude Code alone; codex exposes only a turn-ended `notify`, amp has no tool-event surface, and opencode's plugin system is unconfigured — so three of four runtimes would commit unchecked while the scoreboard claimed the read was mechanized. The DOC READ GATE therefore requires the read to be **recorded**, not merely claimed: `bash audits/doc-read.sh log <path>`, which any runtime can run and Claude Code's hook runs automatically. `check` is unchanged — a hook-written row and a command-written row are the same line in the same file.
+
+- **Dimension 4.4** — DONE — the rendered `AGENTS.md` (and therefore all four agent homes) carries the recorded-read requirement → Test `ledger_doc_read_command_documented`
 
 ### §5 — Pilot tagging: LOGGING_STANDARD
 

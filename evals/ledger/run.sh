@@ -254,6 +254,15 @@ else
   bad "ledger_block_tag_scope" "counts: $counts (want a non-zero deterministic column)"
 fi
 
+# Dimension 4.4 — the command path. A hook binds one runtime; the rule text
+# binds all four, so the requirement has to be IN the rendered rules, not only
+# in this repository's settings file.
+if grep -q 'doc-read.sh log' "$ROOT/AGENTS.md"; then
+  ok "ledger_doc_read_command_documented — AGENTS.md requires the recorded read"
+else
+  bad "ledger_doc_read_command_documented" "AGENTS.md never names audits/doc-read.sh log"
+fi
+
 # Invariant 1 — read-only: no reporting mode may write into its own root.
 sb="$(mk_root)"; mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"
 before="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"
