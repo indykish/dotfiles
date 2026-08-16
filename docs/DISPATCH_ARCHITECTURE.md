@@ -38,7 +38,7 @@ Scope: `~/Projects/dotfiles` operating model + cross-repo rule-doc references
 | Dissolve `docs/gates/` + rename `*_RULES.md` (single act) | **Staged, non-destructive migration** (§9): scaffold → prove equivalence → atomic switchover. `make audit` never goes red mid-flight. Rollback defined. |
 | `make audit` "ALL CHECKS PASSED" as an acceptance bullet | The audit/hook/harness **rewrites are first-class deliverables** (§8, §13) and edit the harness → **explicit Indy sign-off required** (Hard-Safety rule). |
 | "nothing unique dies" on merge | A **mechanical merge-loss proof** (`merge-coverage.sh`, §6.5). No card deleted until its delta-landed assertion is green. |
-| `🟡` = JUDGMENT-open | **Glyph collision fixed** — `HARNESS_VERIFY_OUTPUT.md:19` already uses `🟡` for "violations addressed." v2 introduces **`🔵 DECIDE`** for judgment-open (§3.1). |
+| `🟡` = JUDGMENT-open | **Glyph collision fixed** — `HARNESS_VERIFY_OUTPUT.md:19` already uses `🟡` for "violations addressed." v2 introduces **`🤔 DECIDE`** for judgment-open (§3.1). |
 | JUDGMENT "mitigated" / "blocks the turn" | Honestly scoped: **proven for DETERMINISTIC, attested-by-honor for JUDGMENT.** A `HARNESS_VERIFY` JUDGMENT row makes the *attestation* auditable (§11). |
 | Helper-absent → `🟣`, exit 0 | A DETERMINISTIC helper that is **absent hard-fails RED** (§10) — no silent green no-op. |
 | `.git/hooks/pre-commit` backstop | Wired to **`.githooks/pre-commit`** (`core.hooksPath` = `.githooks`, confirmed) — `.git/hooks/` never runs on a fresh clone. |
@@ -93,7 +93,7 @@ SPACE      │     prose dispatcher: "writing zig? adhere to this."    │
            │            │ DETERMINISTIC tags link to ↓               │
 DETERM. ──▶│  dispatch/write_zig.sh   façade for the MACHINE        │
 SPACE      │     owns the threshold values; runs the checkable       │
-           │     subset → 🟢/🔴 + 🔵 judgment nudges                  │
+           │     subset → 🟢/🔴 + 🤔 judgment nudges                  │
            │            │ calls ↓                                    │
            │  audits/*.sh  +  inline checks (the leaf checks) │
            └─────────────────────────────────────────────────────────┘
@@ -141,7 +141,7 @@ and the coherence audit skips them; their tagged subsections carry the real code
    500, the 351 fixture flips to pass and `dispatch-evals` goes red. The
    **fixture**, not the tag, is the drift detector.
 
-### 3.1 · Signal semantics (🟢 / 🔴 / 🔵) — and the glyph-collision fix
+### 3.1 · Signal semantics (🟢 / 🔴 / 🤔) — and the glyph-collision fix
 
 `HARNESS_VERIFY_OUTPUT.md:19` already defines `🟡 = violations addressed` (a
 resolved-but-noted deterministic state, e.g. `LENGTH GATE | 🟡 files at cap`).
@@ -154,15 +154,15 @@ meanings:
 | 🟢 GREEN | deterministic check passed | proceed | 0 |
 | 🔴 RED | deterministic check failed | STOP, fix code, re-run | 1 (blocks) |
 | 🟡 YELLOW | deterministic violation **addressed** (informational) | note it; existing meaning, unchanged | 0 |
-| 🔵 DECIDE | judgment-only rule; no script can decide | read linked §, make the call, **state the verdict in chat** | 0 (does NOT block script) |
+| 🤔 DECIDE | judgment-only rule; no script can decide | read linked §, make the call, **state the verdict in chat** | 0 (does NOT block script) |
 
 **Why a new glyph, not re-glyphing `🟡`:** re-glyphing the established
 "violations addressed" cells touches an audited doc and retrains every agent on a
-symbol they already know. `🔵` is additive — a new concept gets a new glyph. The
+symbol they already know. `🤔` is additive — a new concept gets a new glyph. The
 fix still requires a one-line `HARNESS_VERIFY_OUTPUT.md` legend update and an
-`audits/agents-md.md` question pinning `🔵` (§8, §13).
+`audits/agents-md.md` question pinning `🤔` (§8, §13).
 
-**🔵 blocks the TURN, not the script** — see §11 for how that is made auditable
+**🤔 blocks the TURN, not the script** — see §11 for how that is made auditable
 rather than honor-only.
 
 ## 4 · Two worked gates (the concrete shape)
@@ -186,7 +186,7 @@ write_zig.md §Tagged unions for result types:
     [JUDGMENT → TGU]
 write_zig.sh:  dispatch_judgment "TGU" "result w/ failure modes? union(enum)…"
 eval:  evals/llms — scenario asserts union(enum), not optional struct
-run:  TGU 🔵 DECIDE — result w/ failure modes? union(enum), not optional-field
+run:  TGU 🤔 DECIDE — result w/ failure modes? union(enum), not optional-field
 → agent decides, states verdict in chat; CONFORM audits the attestation.
 ```
 
@@ -303,7 +303,7 @@ A card is not deleted until its delta-landed assertion is green. Preserve any
 | Plane | When | Invocation |
 |---|---|---|
 | Latent | EXECUTE, about to write | agent reads `write_zig.md`; runs `write_zig.sh <file>` (scoped to the touched file, NOT `--all`) |
-| Anchor | CONFORM (end-of-turn) | `write_zig.sh --staged`; 🔴 → back to EXECUTE; 🔵 → state verdict |
+| Anchor | CONFORM (end-of-turn) | `write_zig.sh --staged`; 🔴 → back to EXECUTE; 🤔 → state verdict |
 | Backstop | COMMIT | **`.githooks/pre-commit`** (core.hooksPath, confirmed) runs `dispatch/*.sh --staged` — **dotfiles repo only;** product repos keep the 8 leaf audits (Reading A, §10.7) |
 | Audit | pre-push + `make audit` | `dispatch-coverage.sh` + `merge-coverage.sh` wired into the SAME chain as `agents-md.sh` |
 | Evals | pre-push + `make` | deterministic fixtures + live smoke; full `make llmevals` is explicit |
@@ -345,7 +345,7 @@ against `feat/dispatch-architecture`:
 | `docs/ZIG_RULES.md` | `:415` | refs BUN_RULES §2 | `git rm` (deleted; cross-ref already resolved in the merged `write_zig.md`) |
 | `audits/logging.sh` | `:152` | fail message cites `BUN_RULES §10` | →`write_ts_adhere_bun.md §logging` |
 | `skills/kishore-spec-new/SKILL.md` | `:63` | names `ZIG_RULES.md`/`BUN_RULES.md` as per-surface rule files | →façades (verify sync scope before assuming it ships to product repos) |
-| `docs/HARNESS_VERIFY_OUTPUT.md` | `:19,26-36` | `🟡 = violations addressed` | add `🔵 DECIDE` legend + JUDGMENT row (§11) |
+| `docs/HARNESS_VERIFY_OUTPUT.md` | `:19,26-36` | `🟡 = violations addressed` | add `🤔 DECIDE` legend + JUDGMENT row (§11) |
 
 **Magnitude:** ~30+ edits across ~16 files, all in one atomic commit. This is the
 work v1 never scoped — it is the dominant cost, not a footnote.
@@ -462,7 +462,7 @@ tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
 
 ## 11 · JUDGMENT enforcement — honest, and made auditable
 
-`dispatch_judgment` prints a `🔵` row and exits 0. No script can decide a taste
+`dispatch_judgment` prints a `🤔` row and exits 0. No script can decide a taste
 question, and faking determinism on one is the anti-goal. So the claim is scoped
 honestly: **DETERMINISTIC rules are proven; JUDGMENT rules are attested.** v2
 makes the *attestation* auditable rather than pure honor-system:
@@ -471,14 +471,14 @@ makes the *attestation* auditable rather than pure honor-system:
   `data.sh:62-67`). **Honest scope:** the audit check is `grep -qF "$kw"
   AGENTS.md` (`agents-md.sh:117`) — it verifies the row *exists* in the prose
   (so CONFORM always lists a judgment line), NOT that a *specific turn*
-  answered its `🔵`. Per-turn answering is **not machine-checked** — claiming
+  answered its `🤔`. Per-turn answering is **not machine-checked** — claiming
   otherwise was the overclaim the coverage pass flagged.
 - **The machine backstop is the deferred ledger, not this row.** A turn-scoped
-  verdict ledger that `pre-commit` refuses until each `🔵` has a `CODE: applied|N/A`
+  verdict ledger that `pre-commit` refuses until each `🤔` has a `CODE: applied|N/A`
   ack is the only thing that mechanically blocks an unanswered judgment. Deferred
   to §16 Q1 — without it, judgment adherence is attested + comprehension-probed
   (§6.2), not enforced. Stated plainly, not dressed up.
-- **Cross-agent caveat:** headless non-Orly agents (codex/amp/opencode) emit `🔵`
+- **Cross-agent caveat:** headless non-Orly agents (codex/amp/opencode) emit `🤔`
   to stdout with no chat audience; the comprehension probe (§6.2) is the only
   signal for them. The turn-verdict ritual is interactive-Orly best-effort.
 
@@ -507,7 +507,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 7. No rule lost on merge — `merge-coverage.sh` (§6.5).
 8. No naked codes — one canonical gloss list (§6.4).
 9. No silent green — absent DETERMINISTIC helper → 🔴 (§10).
-10. One glyph, one meaning — `🟡` addressed, `🔵` decide (§3.1).
+10. One glyph, one meaning — `🟡` addressed, `🤔` decide (§3.1).
 
 ## 13 · Acceptance criteria
 
@@ -515,7 +515,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 - [ ] `dispatch/{lib,write_zig,write_ts_adhere_bun,write_sql,write_any}.{sh}` exist
 - [ ] `dispatch/{write_zig,write_ts_adhere_bun,write_sql,write_any}.md` exist; every § tagged; thresholds single-sourced in the `.sh`
 - [ ] `file-length` fn≤50 / method≤70 sub-cap **implemented as a leaf check OR honestly tagged `[JUDGMENT]`** — named explicitly, not collapsed into "300/350"
-- [ ] glyph `🔵 DECIDE` defined; `🟡` left as "violations addressed"
+- [ ] glyph `🤔 DECIDE` defined; `🟡` left as "violations addressed"
 
 **Evals & proofs**
 - [ ] `evals/dispatch/` fixtures: every DETERMINISTIC rule pass+fail; every prose bound pinned
@@ -532,7 +532,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 - [ ] `agents-md.sh`: checks #1/#8/#9b derive the mixed end-state; parity `index == 5 process bodies + 4 dispatch`; empty-set guard → "exactly the 5 process cards present"; hook-trigger check greps `dispatch/` + `docs/gates/`
 - [ ] `.githooks/pre-commit` + `pre-push` repointed (NOT `.git/hooks/`)
 - [ ] `evals/test-agents-md.sh` rewritten: sandbox + negative cases prove the NEW coherence audit bites
-- [ ] `HARNESS_VERIFY_OUTPUT.md` JUDGMENT row + `🔵` legend; `audits/agents-md.md` question pinning `🔵` and the dispatch model
+- [ ] `HARNESS_VERIFY_OUTPUT.md` JUDGMENT row + `🤔` legend; `audits/agents-md.md` question pinning `🤔` and the dispatch model
 - [ ] `bin/link-agents-md` repointed + `dispatch:dispatch` added + propagation test
 
 **Migration & references**
@@ -553,8 +553,8 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 | Unique gate prose lost on merge | `merge-coverage.sh` blocks deletion until delta lands (§6.5) |
 | `llmevals` dies on empty `docs/gates/` under `set -e` | `build_context` repointed to `dispatch/` in Stage 2 (§6.2, §8) |
 | Dispatch never reaches `agentsfleet` | added to `link-agents-md`; dispatch ship into product repos (§10) |
-| `🔵` judgment silently ignored | CONFORM JUDGMENT row audited; Large Language Model (LLM) judge evaluation samples adherence (§11) |
-| Glyph ambiguity | `🟡` and `🔵` disjoint, pinned by invariance question (§3.1) |
+| `🤔` judgment silently ignored | CONFORM JUDGMENT row audited; Large Language Model (LLM) judge evaluation samples adherence (§11) |
+| Glyph ambiguity | `🟡` and `🤔` disjoint, pinned by invariance question (§3.1) |
 | Backstop never runs on fresh clone | wired to `.githooks/` (core.hooksPath), not `.git/hooks/` (§7) |
 
 ## 15 · Discovery (consult log)
@@ -575,14 +575,14 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
   in-dotfiles blast radius (§8), downgraded drift claim + semantic anchor (§3),
   merge-loss proof (§6.5), execution-location model (§10), glyph fix (§3.1),
   honest JUDGMENT (§11), `.githooks` wiring (§7).
-- **Decisions made this turn (Orly, pick-and-proceed):** (a) `🔵` for judgment
+- **Decisions made this turn (Orly, pick-and-proceed):** (a) `🤔` for judgment
   rather than re-glyph `🟡` — additive, lower blast radius; (b) staged migration
   over single atomic diff — keeps `make audit` green and gives free rollback;
   (c) dispatch ship into product repos via `link-agents-md` — the only way the Zig
   checks run against real `*.zig`. Indy to confirm or redirect.
 - **Stage-2 sign-off (Indy, Jun 04, 2026):** *"stage-2 yes signed off"* — context:
   authorizes the Stage-2 atomic switchover to edit `audit-*.sh` + `.githooks` (a
-  harness/gate), satisfying the Hard-Safety harness-patch rule. The `🔵` glyph and
+  harness/gate), satisfying the Hard-Safety harness-patch rule. The `🤔` glyph and
   the JUDGMENT ledger remain open (§16, Q1/Q2).
 
 ## 16 · Decisions (was: open questions)
@@ -590,7 +590,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 1. **JUDGMENT hardening — DEFERRED** (Indy, Jun 04, 2026: *"I defer the ledger,
    its complicated"*). v2 ships judgment as **attested + comprehension-probed**
    (§11); the turn-scoped verdict ledger is a possible later hardening, not v2 scope.
-2. **`🔵` glyph — pending confirm** (default: accept `🔵 DECIDE`, leaving `🟡` as
+2. **`🤔` glyph — pending confirm** (default: accept `🤔 DECIDE`, leaving `🟡` as
    "violations addressed"; alternative is re-glyphing `🟡` in
    `HARNESS_VERIFY_OUTPUT.md`). Cosmetic/semantic only — a colored-circle swap.
 3. **Stage-2 sign-off — GRANTED** (Indy, Jun 04, 2026, §15): the Stage-2 atomic

@@ -101,7 +101,7 @@ expect_fail() {
   rm -rf "$sb"
 }
 
-printf '%s🧬 Negative-test harness for agents-md.sh (dispatch model)%s\n\n' "$B$BO" "$X"
+printf '%s🧲 Negative-test harness for agents-md.sh (dispatch model)%s\n\n' "$B$BO" "$X"
 
 check_baseline
 echo

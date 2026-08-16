@@ -13,7 +13,7 @@ This is the prose the AGENT consults before writing ANY source file (`*.zig` / `
 
 - 🟢 pass — deterministic check passed.
 - 🔴 fail — deterministic check failed (or helper absent); STOP, fix, rerun.
-- 🔵 DECIDE — judgment-only; no script can decide, the agent reads the section and makes the call (blocks the TURN, not the script).
+- 🤔 DECIDE — judgment-only; no script can decide, the agent reads the section and makes the call (blocks the TURN, not the script).
 - 🟣 delegated — the checker runs only in the product repo, not in dotfiles.
 
 **Tag legend** — each section heading below carries one of:

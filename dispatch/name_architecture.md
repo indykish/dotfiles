@@ -3,12 +3,12 @@
 This is the prose the AGENT reads **before naming an architectural element or
 describing a data flow**. Like `verify`, it has **no deterministic `.sh` half** —
 no script can detect the moment an agent is *about to name a stream* or *assert a
-cardinality*. It is a pure **🔵 judgment** dispatch grounded in `docs/architecture/`.
+cardinality*. It is a pure **🤔 judgment** dispatch grounded in `docs/architecture/`.
 (This is the former Architecture Consult & Update gate absorbed into the dispatch model.)
 
 **Signal legend:**
 
-- 🔵 DECIDE — judgment-only; the agent greps the relevant `docs/architecture/`
+- 🤔 DECIDE — judgment-only; the agent greps the relevant `docs/architecture/`
   topic file and grounds its naming/flow claim in it. Blocks the *turn*, not a
   commit.
 

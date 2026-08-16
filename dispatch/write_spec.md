@@ -9,7 +9,7 @@ the dispatch model — `~/Projects/dotfiles/docs/TEMPLATE.md` remains the canoni
 
 - 🟢 / 🔴 — `audits/spec-template.sh` mechanically passes/fails the prohibited-pattern and
   required-section checks.
-- 🔵 DECIDE — whether a required section is *meaningfully filled* (not just
+- 🤔 DECIDE — whether a required section is *meaningfully filled* (not just
   present) is the agent's judgment at author time.
 
 ## Trigger — every Edit/Write to

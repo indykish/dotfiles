@@ -11,7 +11,7 @@
 #   dispatch/write_zig.sh --staged           # staged *.zig (CONFORM, pre-commit)
 #
 # Layering:  AGENTS.md → write_zig.md (latent) → write_zig.sh (this) → audits/*.sh
-# Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script)
+# Signals:   🟢 pass · 🔴 fail (blocks) · 🤔 DECIDE (judgment; blocks the TURN, not the script)
 # Exit:      0 = mechanical gates pass · 1 = ≥1 failed · 2 = usage error.
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"

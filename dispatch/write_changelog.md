@@ -4,13 +4,13 @@ This is the prose the AGENT reads after `write_documentation.md` and
 `~/Projects/dotfiles/docs/DOCUMENTATION_RULES.md`, **before writing any `<Update>` entry in the
 changelog** (`~/Projects/docs/changelog.mdx`). Like `verify` and
 `name_architecture`, it has **no deterministic `.sh` half** — voice is a judgment
-call no script can grade. It is a pure **🔵 judgment** dispatch: the agent reads
+call no script can grade. It is a pure **🤔 judgment** dispatch: the agent reads
 this, drafts the entry, and self-audits against the rules below. The deep
 reference is `~/Projects/dotfiles/docs/CHANGELOG_VOICE.md` (Mintlify-style) — read it before writing.
 
 **Signal legend:**
 
-- 🔵 DECIDE — judgment-only; the agent writes to the voice below and self-audits.
+- 🤔 DECIDE — judgment-only; the agent writes to the voice below and self-audits.
   No script gates it — it blocks the *turn* (the changelog entry), not a commit.
 - 🟣 delegated — the changelog itself lives in `~/Projects/docs` (its own repo +
   own-branch flow per AGENTS.md Operational defaults); dotfiles carries only the

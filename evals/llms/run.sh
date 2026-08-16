@@ -61,7 +61,7 @@ source "$HERE/agents.sh"
 source "$HERE/fixtures.sh"
 
 # ---------------------------------------------------------------------------
-printf '%s🧬 AGENTS.md cross-agent Large Language Model (LLM) evaluation%s  (mode=%s threshold=%s%%)\n\n' "$B$BO" "$X" "$MODE" "$THRESHOLD"
+printf '%s🧲 AGENTS.md cross-agent Large Language Model (LLM) evaluation%s  (mode=%s threshold=%s%%)\n\n' "$B$BO" "$X" "$MODE" "$THRESHOLD"
 
 [[ -f "$FIXTURES" ]] || { echo "${R}FAIL${X}: fixtures missing: $FIXTURES" >&2; exit 2; }
 validate_fixtures || { echo "${R}FAIL${X}: fixture validation failed" >&2; exit 2; }

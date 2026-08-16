@@ -14,7 +14,7 @@
 # Signal semantics (printed in every row — see DISPATCH_ARCHITECTURE.md, Signal semantics):
 #   🟢 GREEN    deterministic check passed                → proceed         (exit 0)
 #   🔴 RED      deterministic check failed / helper absent → STOP, fix, rerun (exit 1)
-#   🔵 DECIDE   judgment-only; no script can decide        → agent reads §, makes
+#   🤔 DECIDE   judgment-only; no script can decide        → agent reads §, makes
 #               the call, states the verdict in chat; blocks the TURN, not the
 #               script (exit 0). 🟡 is reserved for "violations addressed" in
 #               HARNESS_VERIFY_OUTPUT.md and is never emitted here.
@@ -26,7 +26,7 @@
 #   dispatch_length_gate <cap>                # inline length check
 #   dispatch_run_helper <CODE> <script.sh>    # delegate to audits/<script.sh>
 #   dispatch_delegate <CODE> "<command>"      # print a DELEGATED row (in-repo only)
-#   dispatch_judgment <CODE> "<question>"     # print a 🔵 DECIDE (judgment) row
+#   dispatch_judgment <CODE> "<question>"     # print a 🤔 DECIDE (judgment) row
 #   dispatch_verdict                          # final ✅/❌ line; exits with status
 #
 # CODE is a rule code (UFS, FLL, TGU…). Every CODE prints with its gloss from
@@ -194,13 +194,13 @@ dispatch_delegate() {
 }
 
 # A judgment gate that NO script can pass/fail (architecture, legacy-design,
-# greptile, tagged-unions). 🔵 DECIDE = open question, NOT a failure: exit stays 0
+# greptile, tagged-unions). 🤔 DECIDE = open question, NOT a failure: exit stays 0
 # but the TURN is incomplete until the agent states a verdict in chat (Signal semantics).
-# 🔵 (not 🟡) so it never collides with HARNESS_VERIFY's "violations addressed" 🟡.
+# 🤔 (not 🟡) so it never collides with HARNESS_VERIFY's "violations addressed" 🟡.
 # Faking determinism on a taste decision is the anti-goal.
 dispatch_judgment() {
   local code="$1" question="$2" g; g="$(dispatch_gloss "$code")"
-  printf '  %-8s 🔵 DECIDE — %s: %s\n' "$code" "$g" "$question"
+  printf '  %-8s 🤔 DECIDE — %s: %s\n' "$code" "$g" "$question"
 }
 
 dispatch_verdict() {

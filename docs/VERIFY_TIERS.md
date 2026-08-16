@@ -21,7 +21,7 @@ Test Delta: unit <N₀>→<N₁> (+x) · integration <M₀>→<M₁> (+y) vs CHO
 Lacking:    <changed surfaces whose tests did not grow, or "none">
 ```
 
-- **Delta is deterministic; Lacking is judgment (🔵)** — walk the diff's changed modules and name every one whose coverage did not move (e.g. "EgressScope Linux paths — integration lane pending"). "none" must be earned, not defaulted.
+- **Delta is deterministic; Lacking is judgment (🤔)** — walk the diff's changed modules and name every one whose coverage did not move (e.g. "EgressScope Linux paths — integration lane pending"). "none" must be earned, not defaulted.
 - **Zero/negative unit delta while the diff adds non-trivial code** → justify in the row (pure refactor, test consolidation) or return to EXECUTE. Deleting tests to go green is a violation, not a justification.
 - Spec predates this rule (no `Test Baseline:` line) → reconstruct from the branch point (run the counter at the CHORE(open) commit or on `origin/main`) and add the line to the spec in the same commit as the VERIFY report.
 

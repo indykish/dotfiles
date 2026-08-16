@@ -6,7 +6,7 @@ This is the prose the AGENT reads before writing any `schema/*.sql` file. It pai
 
 - 🟢 pass — deterministic check passed.
 - 🔴 fail — deterministic check failed (or helper absent); STOP, fix, rerun.
-- 🔵 DECIDE — judgment-only; no script can decide, the agent reads the section and makes the call (blocks the TURN, not the script).
+- 🤔 DECIDE — judgment-only; no script can decide, the agent reads the section and makes the call (blocks the TURN, not the script).
 - 🟣 delegated — the checker runs only in the product repo, not in dotfiles.
 
 **Tag legend** — each section heading below carries one of:
@@ -85,7 +85,7 @@ For pre-v2.0.0 path, all three rm- lines appear. For v2.0.0+, replace with `migr
 
 > [container]
 
-These rules are **not** dissolved — they remain in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`. STS/NSQ/SGR are enforced by the GREPTILE GATE until a leaf check is wired (`TODO-CHECK`); ITF additionally surfaces as a `🔵 DECIDE` judgment row in `write_sql.sh`. Summarised here so the SQL author sees the full surface in one place; RULES.md stays canonical (read it for the full text + `Ref:` provenance).
+These rules are **not** dissolved — they remain in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`. STS/NSQ/SGR are enforced by the GREPTILE GATE until a leaf check is wired (`TODO-CHECK`); ITF additionally surfaces as a `🤔 DECIDE` judgment row in `write_sql.sh`. Summarised here so the SQL author sees the full surface in one place; RULES.md stays canonical (read it for the full text + `Ref:` provenance).
 
 ### RULE STS — No static strings in SQL schema
 

@@ -10,7 +10,7 @@
 #   dispatch/write_any.sh --staged       # staged source (CONFORM, pre-commit)
 #
 # Layering:  AGENTS.md → write_any.md (latent) → write_any.sh (this) → audits/*.sh
-# Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script) · 🟣 delegated
+# Signals:   🟢 pass · 🔴 fail (blocks) · 🤔 DECIDE (judgment; blocks the TURN, not the script) · 🟣 delegated
 # Exit:      0 = mechanical gates pass · 1 = ≥1 failed · 2 = usage error.
 #
 # Leaf modes are verified against each script's own arg-parser (lib.sh warns the

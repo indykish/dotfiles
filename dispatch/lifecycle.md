@@ -4,7 +4,7 @@ Read this at a lifecycle stage transition: CHORE(open), PLAN, EXECUTE onboarding
 CHORE(close), LAND, worktree setup, or milestone bootstrap. The generated
 `AGENTS.md` carries each stage's binding essence; this façade carries the
 runbooks — the checklists, recipes, and output formats an agent needs only at
-that moment. 🔵 judgment-only — no `.sh` pair; CONFORM's deterministic gates and
+that moment. 🤔 judgment-only — no `.sh` pair; CONFORM's deterministic gates and
 `orly gate` remain the mechanical anchors.
 
 Section-scan first (`grep -n "^## " dispatch/lifecycle.md`); read the stage you

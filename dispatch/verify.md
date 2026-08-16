@@ -3,13 +3,13 @@
 This is the prose the AGENT reads **before emitting any message that asserts work
 is verified**. Unlike `write_zig` / `write_any`, `verify` has **no deterministic
 `.sh` half** — no script can detect the moment an agent is *about to claim done*.
-It is a pure **🔵 judgment** dispatch: the agent reads this, runs the canonical
+It is a pure **🤔 judgment** dispatch: the agent reads this, runs the canonical
 `make` targets, and emits the verdict block. The trigger is a *claim*, not a file
 edit. (This is the former Verification gate absorbed into the dispatch model.)
 
 **Signal legend:**
 
-- 🔵 DECIDE — judgment-only; the agent must run the targets below and report
+- 🤔 DECIDE — judgment-only; the agent must run the targets below and report
   honestly. No script gates this — it blocks the *turn*, not a commit.
 - 🟣 delegated — the `make` targets themselves live in the product repo; dotfiles
   carries only the discipline of *which* targets are canonical and when.
