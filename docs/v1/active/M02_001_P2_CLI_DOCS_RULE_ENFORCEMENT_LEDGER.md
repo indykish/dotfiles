@@ -127,7 +127,9 @@ Derives each façade's file-glob set from the `dispatch_init` lines in `dispatch
 **Implementation default — expected set is façade pages only.** A staged file expects `dispatch/<stem>.md` for every façade whose `dispatch_init` scope it matches. The rule docs those façades delegate to (`SCHEMA_CONVENTIONS` from `write_sql`, `REST_API_DESIGN_GUIDELINES` from `write_http`) are deliberately excluded: their reads are conditional on the diff's shape, so requiring them would red honest work. Widening the set is follow-up work, once the narrow set has run clean for a milestone.
 
 - **Dimension 4.1** — DONE — `log` appends valid JSONL; concurrent appends never corrupt (append-only, one line per call) → Test `ledger_readlog_append`
-- **Dimension 4.2** — DONE — `check` red lists exactly the unread triggered docs; green when all logged since HEAD; exit 0 + warn when the log file is absent → Test `ledger_readlog_check_matrix`
+- **Dimension 4.2** — DONE — `check` red lists exactly the unread triggered docs; green when each was read at its current content; exit 0 + warn when the log file is absent → Tests `ledger_readlog_check_matrix`, `ledger_readlog_content_keyed`
+
+**Validity is keyed to content, not to a clock** — changed after dogfooding, which is also how it was found. The first cut counted a read as valid if it happened since the HEAD commit. That is wrong in both directions: it forces a re-read of an unchanged façade every time an unrelated commit lands (it blocked three of this milestone's own commits), and it keeps counting a read taken *before* the façade was edited, which is the case that actually matters. `log` now records the document's blob hash and `check` compares it to the file on disk: unchanged document, earlier read still counts; edited document, every prior read is void the same second.
 - **Dimension 4.3** — DONE — pre-commit invokes `check` only when staged files match source extensions → Test `ledger_precommit_wiring`
 
 ### §4b — The record works in every runtime, not just the hooked one

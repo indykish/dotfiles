@@ -65,13 +65,22 @@ repo_relative() {
 # invocation is why two agents in two sessions cannot corrupt each other: the
 # order rows land in does not change which paths the set contains.
 run_log() {
-  local path="$1" relative log
+  local path="$1" relative log blob
   relative="$(repo_relative "$path")" || return 0
   [ -n "$relative" ] || return 0
   log="$(read_log_path)" || return 0
   mkdir -p "$(dirname "$log")" 2>/dev/null || return 0
-  printf '{"ts":%s,"path":"%s"}\n' "$(date +%s)" "$relative" >> "$log"
+  blob="$(content_hash "$relative")"
+  printf '{"ts":%s,"path":"%s","blob":"%s"}\n' "$(date +%s)" "$relative" "$blob" >> "$log"
   return 0
+}
+
+# The content a read actually saw. Validity is keyed to this rather than to a
+# clock: an unchanged document does not need re-reading because a commit
+# happened, and a changed one voids every prior read the same second it is
+# edited — which a timestamp window silently fails to do.
+content_hash() {
+  git -C "$LEDGER_ROOT" hash-object "$LEDGER_ROOT/$1" 2>/dev/null || printf 'unknown'
 }
 
 # Façade pages the staged files trigger, one per line. Same glob map the
@@ -89,17 +98,17 @@ expected_facade_pages() {
   done < <(ledger_facade_scripts)
 }
 
-# Paths recorded since the last commit. Reads before HEAD belong to work that
-# already shipped, so they cannot vouch for what is staged now.
-reads_since_head() {
-  local log="$1" since line ts path
-  since="$(git -C "$LEDGER_ROOT" log -1 --format=%ct 2>/dev/null)"
-  [ -n "$since" ] || since=0
+# Paths whose recorded read saw the content that is on disk now. A row written
+# against an older version of the document proves the agent read something
+# else, so it does not count — and rows from before this milestone, which carry
+# no blob, cannot prove anything and are ignored.
+current_reads() {
+  local log="$1" line path blob
   while IFS= read -r line; do
-    ts="${line#*\"ts\":}"; ts="${ts%%,*}"
+    case "$line" in *'"blob":"'*) ;; *) continue ;; esac
     path="${line#*\"path\":\"}"; path="${path%%\"*}"
-    case "$ts" in ''|*[!0-9]*) continue ;; esac
-    [ "$ts" -ge "$since" ] && printf '%s\n' "$path"
+    blob="${line#*\"blob\":\"}"; blob="${blob%%\"*}"
+    [ "$blob" = "$(content_hash "$path")" ] && printf '%s\n' "$path"
   done < "$log"
 }
 
@@ -133,14 +142,14 @@ run_check() {
   # producer takes SIGPIPE the moment grep matches and exits, and the pipeline
   # then reports 141 — which reads exactly like "not found" and reds a doc that
   # was read.
-  reads_since_head "$log" | sort -u > "$recorded"
+  current_reads "$log" | sort -u > "$recorded"
 
   while IFS= read -r page; do
     grep -qxF "$page" "$recorded" && continue
-    printf '  %s🔴%s DOC READ: %s triggered by the staged diff, unread since HEAD\n' "$R" "$X" "$page"
+    printf '  %s🔴%s DOC READ: %s triggered by the staged diff, not read at its current content\n' "$R" "$X" "$page"
     unread=1
   done < "$expected"
-  [ "$unread" -eq 0 ] && printf '  %s🟢%s DOC READ: every triggered façade was read since HEAD\n' "$G" "$X"
+  [ "$unread" -eq 0 ] && printf '  %s🟢%s DOC READ: every triggered façade was read at its current content\n' "$G" "$X"
   return "$unread"
 }
 

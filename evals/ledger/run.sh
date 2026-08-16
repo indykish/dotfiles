@@ -163,7 +163,7 @@ fi
 # --- §4 doc-read record ------------------------------------------------------
 
 # A fixture repository: the census fixtures, a façade whose scope is '*.sh', and
-# one commit, so HEAD has a timestamp for the "read since HEAD" window.
+# one commit, so the check has a real repository to read staged files from.
 mk_repo() {
   local sb; sb="$(mk_root)"
   mk_facade "$sb" "write_fixture" "dispatch_init \"FIX\" '*.sh'"
@@ -185,7 +185,7 @@ run_doc_read "$sb" log "dispatch/write_fixture.md" >/dev/null
 run_doc_read "$sb" log "docs/LOGGING_STANDARD.md" >/dev/null
 run_doc_read "$sb" log "/etc/hosts" >/dev/null
 rows="$(wc -l < "$(repo_log "$sb")" | tr -d ' ')"
-shaped="$(grep -cE '^\{"ts":[0-9]+,"path":"[^"]+"\}$' "$(repo_log "$sb")")"
+shaped="$(grep -cE '^\{"ts":[0-9]+,"path":"[^"]+","blob":"[0-9a-f]+"\}$' "$(repo_log "$sb")")"
 if [ "$rows" -eq 2 ] && [ "$shaped" -eq 2 ]; then
   ok "ledger_readlog_append — 2 well-formed rows, the out-of-tree path dropped"
 else
@@ -220,6 +220,26 @@ if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q 'nothing staged triggers'; th
   ok "ledger_readlog_untriggered — a prose-only diff needs no read"
 else
   bad "ledger_readlog_untriggered" "exit=$rc out: $out"
+fi
+
+# Dimension 4.2c — validity is keyed to content, not to a clock. Reading a
+# façade and then editing it must void the read: the agent saw a different
+# document. A timestamp window silently passes this case, which is why it was
+# replaced.
+sb="$(mk_repo)"
+printf '#!/bin/sh\necho hi\n' > "$sb/tool.sh"
+git -C "$sb" add tool.sh >/dev/null 2>&1
+run_doc_read "$sb" log "dispatch/write_fixture.md" >/dev/null
+run_doc_read "$sb" check >/dev/null; before_rc=$?
+printf '\nA new rule the agent has never seen.\n' >> "$sb/dispatch/write_fixture.md"
+out_after="$(run_doc_read "$sb" check)"; after_rc=$?
+run_doc_read "$sb" log "dispatch/write_fixture.md" >/dev/null
+run_doc_read "$sb" check >/dev/null; reread_rc=$?
+if [ "$before_rc" -eq 0 ] && [ "$after_rc" -eq 1 ] && [ "$reread_rc" -eq 0 ] \
+   && printf '%s' "$out_after" | grep -q 'current content'; then
+  ok "ledger_readlog_content_keyed — editing the façade voids the read; re-reading restores it"
+else
+  bad "ledger_readlog_content_keyed" "before=$before_rc edited=$after_rc reread=$reread_rc"
 fi
 
 # Dimension 4.3 — the wiring itself. A check nothing invokes is a check nobody
