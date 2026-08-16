@@ -267,3 +267,17 @@ install_refuses_outside_a_repository() {
   if [[ -e "$sb/AGENTS.md" ]]; then bad "$name" "wrote into a non-repository"; return; fi
   ok "$name"
 }
+
+# An unregistered repository is the common case — no repositories.json entry,
+# no name. It must still install something useful without the caller knowing
+# a profile name exists.
+install_defaults_to_kernel_when_unregistered() {
+  local name="init with no --profile defaults to kernel in an unregistered repository"
+  local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"
+  if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
+
+  local out; out="$(run_packed "$pkg" "$repo" init)"
+  if [[ "$out" != *"profile kernel"* ]]; then bad "$name" "did not default to kernel: $out"; return; fi
+  [[ -f "$repo/dispatch/write_rust.md" ]] || { bad "$name" "kernel install missing a language façade"; return; }
+  ok "$name"
+}

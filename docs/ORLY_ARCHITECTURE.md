@@ -1,7 +1,9 @@
 # Orly architecture
 
 Orly does two jobs. It renders one rules file, and it proves the boundary
-before a Pull Request (PR) opens. It stores nothing.
+before a Pull Request (PR) opens. What it stores where is the one thing that
+has changed shape since this document was first written — see "Why it's
+materialised" below; the gates section after it is unaffected.
 
 ## Topology
 
@@ -21,23 +23,47 @@ orly/core/operating-model.md   orly/packs/**   orly/profiles/*.json
    opencode, amp       ─┘                  exit 0 or 1
 ```
 
-One generated artifact: the root `AGENTS.md`. Every agent home links to it, so a
-rule edit is one commit here and reaches every session in every repository at
-once. Consumer repositories keep one hand-written `AGENTS.md` with project facts
-and no copies. Their gate scripts run from `$ORLY_ROOT` (default
-`~/Projects/dotfiles`); their rule pages are read from the same checkout.
+One generated artifact on this machine: the root `AGENTS.md`. Every agent home
+here links to it, so a rule edit is one commit and reaches every session in
+this checkout at once — that property is local to Kishore's own machine and
+unaffected by anything below.
 
-## Why nothing is stored
+Every other repository gets its rules a different way: `orly init` materialises
+the selected profile's packs — rendered `AGENTS.md`, the rule docs, the gate
+scripts, the hooks that run them — into that repository, and writes
+`.oracle/ruleset.lock` recording the engine version and a content hash per
+file. `orly update` re-materialises against the currently installed engine
+version; `orly doctor` reports drift between the lock and disk instead of
+silently tolerating it. A materialised repository needs no checkout of this
+one, on any machine, to read its own rules or run its own gates.
 
-The earlier model copied 44 files into each repository and tracked them with a
-Secure Hash Algorithm 256-bit (SHA-256) manifest. It cost a re-baseline commit
-on every edit, it invalidated every lock when the tool itself was refactored,
-and three of four repositories were stale anyway. The manifest was also a hash
-ledger inside git, which is already one.
+## Why it's materialised
 
-So orly derives instead of storing. `orly verify --all` re-renders each profile
-twice and compares, then compares the committed `AGENTS.md` against a fresh
-render. Determinism and currency, no stored hashes.
+An earlier model (M01) rejected storing per-repository copies: it had cost a
+re-baseline commit on every edit, a SHA-256 manifest that invalidated whenever
+the tool itself changed, and drift nobody caught — three of four consumer
+repositories were stale anyway. The fix at the time was to derive instead of
+store: one rendered `AGENTS.md`, symlinked into every agent home, with gate
+scripts resolved live from this checkout via `$ORLY_ROOT`.
+
+That traded the storage cost for a distribution cost undiscovered until a
+second engineer tried to install the harness without this checkout present —
+the symlink and `$ORLY_ROOT` both require a copy of `~/Projects/dotfiles` at a
+known path, which is exactly what a fresh machine, a Continuous Integration
+(CI) runner, or a remote fleet container does not have. `orly init` (M03)
+restores storage, but not the failure mode that got it removed: `orly update`
+turns a rule change into one command per repository instead of the manual
+sync M01 rejected, and the lock makes staleness a reported condition —
+`orly doctor` — instead of a silent one. cache-kit.rs is the evidence for both
+failure modes in the same repository: its `.oracle/` snapshot from the
+pre-thin model sat frozen for four weeks with no update path, and its
+generated `AGENTS.md` told a Rust crate its project name was `agentsfleet` —
+a persona/product leak M03 also closes, by fencing both behind opt-in packs a
+`kernel` profile never selects.
+
+`orly verify --all` still re-renders each profile twice and compares, then
+compares the committed root `AGENTS.md` against a fresh render — that
+determinism proof is unchanged by any of this.
 
 ## Gates
 

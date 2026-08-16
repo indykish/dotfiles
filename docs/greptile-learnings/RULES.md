@@ -678,14 +678,14 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 
 **Rule:** Every new HTTP handler in `src/http/handlers/*.zig` takes `hx: Hx` as its first parameter and uses `hx.ok(status, body)` and `hx.fail(code, detail)` for responses. Do NOT introduce new call sites of `common.writeJson(res, ...)` or `common.errorResponse(res, code, msg, req_id)` — those are internal implementation details of Hx. Internal-500 helpers (`common.internalDbError`, `common.internalOperationError`, `common.internalDbUnavailable`) stay public because they have fixed codes + messages; call them directly with `hx.res, hx.req_id`.
 **Why:** M18_002 completed the sweep from `handleXxx(ctx, req, res, ...)` to `innerXxx(hx, req, ...)`. Re-introducing raw `common.writeJson`/`common.errorResponse` drags back the old signature and bypasses the JSON envelope / RFC 7807 contract that `Hx` enforces. Greptile will flag reviews that do this.
-**Do:** `hx.ok(.ok, .{ .field = value })` / `hx.fail(ec.ERR_INVALID_REQUEST, "detail")`. See `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` §8 for the canonical handler shape.
+**Do:** `hx.ok(.ok, .{ .field = value })` / `hx.fail(ec.ERR_INVALID_REQUEST, "detail")`. See `docs/REST_API_DESIGN_GUIDELINES.md` §8 for the canonical handler shape.
 **Don't:** `common.writeJson(hx.res, .ok, body)` or `common.errorResponse(hx.res, code, msg, hx.req_id)`. If you find yourself writing either, you either need to add a missing method to `Hx` (rare — only `ok` and `fail` earn their place) or the helper should not be public at all.
 **Tags:** zig, http, handlers, hx, api-style
-**Ref:** M18_002 §5.1–5.2 — full sweep of 18 handler files to inner*/hx. Canonical guide: `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` §8.
+**Ref:** M18_002 §5.1–5.2 — full sweep of 18 handler files to inner*/hx. Canonical guide: `docs/REST_API_DESIGN_GUIDELINES.md` §8.
 
 ## RULE RAD — New HTTP endpoints must pass the REST API Design Guidelines checklist
 
-**Rule:** Before writing any new HTTP handler or adding/modifying an endpoint, read `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` and verify each of the following:
+**Rule:** Before writing any new HTTP handler or adding/modifying an endpoint, read `docs/REST_API_DESIGN_GUIDELINES.md` and verify each of the following:
 1. **No verbs in URL** (§7) — use HTTP method for the action. Exception: Google Custom Method colon-action (`resource:verb`) is allowed for RPC-style actions; document the exception in the spec.
 2. **Response fields** (§1 + §8) — no `ack` or redundant acknowledgement fields (HTTP 200 is the ack); no `is_` boolean prefix; use `_at` suffix for timestamps; snake_case throughout.
 3. **Error shape** (§10) — 400/401/403/404/500 with `{error, message}` JSON body.
@@ -693,15 +693,15 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 5. **Correct HTTP method** (§4) — GET=read, POST=create/action, PUT=replace, PATCH=partial-update, DELETE=remove.
 6. **Versioning** (§6) — all routes under `/v1/` (or the current version prefix).
 
-**Why:** M23_001 steer endpoint shipped with `ack: true` (redundant) and `run_steered` (ambiguous dual-semantics). Caught only in post-build audit against ~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md. A pre-write checklist would have caught both at design time.
+**Why:** M23_001 steer endpoint shipped with `ack: true` (redundant) and `run_steered` (ambiguous dual-semantics). Caught only in post-build audit against docs/REST_API_DESIGN_GUIDELINES.md. A pre-write checklist would have caught both at design time.
 **Do:** Paste the six-point checklist into the PLAN surface-area section and tick each item before EXECUTE.
 **Don't:** Write the handler and check guidelines afterward — the response shape is the hardest thing to change once tests and OpenAPI are written against it.
 **Tags:** zig, http, api-design, rest, naming
-**Ref:** M23_001 `agent_steer_http.zig` — `ack` dropped, `run_steered` split into `message_queued` + `execution_active` after post-build audit. `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md`.
+**Ref:** M23_001 `agent_steer_http.zig` — `ack` dropped, `run_steered` split into `message_queued` + `execution_active` after post-build audit. `docs/REST_API_DESIGN_GUIDELINES.md`.
 
 ## RULE HGD — Every new handler must follow the REST API Design Guidelines before writing any code
 
-**Rule:** Before writing any new `inner*` handler function, read `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` in full and verify:
+**Rule:** Before writing any new `inner*` handler function, read `docs/REST_API_DESIGN_GUIDELINES.md` in full and verify:
 1. Function named `inner<Resource><Action>` (not `handle*`, not `do*`).
 2. First parameter is `hx: Hx` (value, not pointer) — never build your own arena.
 3. Responses via `hx.ok(status, body)` and `hx.fail(error_code, detail)` only.
@@ -710,10 +710,10 @@ return switch (resp) { .integer => |n| n == 1, else => false };
 6. No `common.writeJson` or `common.errorResponse` at call sites (RULE HXX).
 
 **Why:** The canonical guide encodes the M18_002 handler shape and the complete route-registration checklist. New handlers that skip it reintroduce the old `handle*(ctx, req, res)` signature or roll their own arena and response building, breaking middleware propagation and Request for Comments (RFC) 7807 error-shape consistency.
-**Do:** Open `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md`, apply its quick checklist and §7–§8, then write the handler. Read RULE HXX alongside it.
+**Do:** Open `docs/REST_API_DESIGN_GUIDELINES.md`, apply its quick checklist and §7–§8, then write the handler. Read RULE HXX alongside it.
 **Don't:** Copy-paste a handler from before M18_002 (anything that takes `ctx *Context` as first param, or calls `common.writeJson` directly). Those are the old pattern.
 **Tags:** zig, http, handlers, hx, api-style
-**Ref:** `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` §7–§8. RULE HXX (same topic, handler signature). M18_002 full sweep.
+**Ref:** `docs/REST_API_DESIGN_GUIDELINES.md` §7–§8. RULE HXX (same topic, handler signature). M18_002 full sweep.
 
 ## RULE AWO — Workspace+agent path routes must verify agent-to-workspace ownership
 

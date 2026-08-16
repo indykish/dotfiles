@@ -275,7 +275,7 @@ immediately preceding the edit. **User-invokable only.** Generic "scope creep" /
 
 > [DETERMINISTIC → FLL]
 
-- Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` and apply to TypeScript via the **GREPTILE GATE**.
+- Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `docs/greptile-learnings/RULES.md` and apply to TypeScript via the **GREPTILE GATE**.
 - Frontend visual primitives live in the UI Component Substitution section of this façade (UI GATE).
 - Length caps live in `dispatch/write_any.md` (LENGTH GATE — file ≤ 350, fn ≤ 50, method ≤ 70 — same as every other source language).
 - This file is the **TypeScript / Bun-specific** layer that those universal rules cannot express. Scan its section headers at the first TS/JS touch (`grep -nE "^##+ "` — two-plus hashes, so nested cards surface) and read the sections the diff shape touches; on sub-task shape change, re-scan and read only newly-touched sections — never the full file.
@@ -438,7 +438,7 @@ audits/design-tokens.sh           # full-codebase scan (default)
 audits/design-tokens.sh --staged  # opt-in narrowing for iterative dev
 ```
 
-The script lives in the project repo at `audits/design-tokens.sh` (symlinked from `~/Projects/dotfiles/audits/`). It prints `file:line` + suggested token utility for every blocking violation and exits 1 on any.
+The script lives in the project repo at `audits/design-tokens.sh` (symlinked from `audits/`). It prints `file:line` + suggested token utility for every blocking violation and exits 1 on any.
 
 A clean run is required before CONFORM can advance.
 

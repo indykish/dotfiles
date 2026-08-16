@@ -2,6 +2,7 @@
   "schema_version": 1,
   "name": "mintlify-docs",
   "packs": [
+    "universal.authoring",
     "language.mdx",
     "domain.documentation",
     "domain.changelog"

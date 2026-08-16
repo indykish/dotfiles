@@ -180,13 +180,14 @@ cd orly && bun install --frozen-lockfile && cd .. && make audit
 
 [`orly/core/operating-model.md`](orly/core/operating-model.md) is the source.
 The renderer produces one artifact — the root [`AGENTS.md`](AGENTS.md) — and
-every agent home symlinks to it. Consumer repositories carry no copies; gates
-and rule pages resolve from this checkout, cited everywhere through the
-`~/Projects/dotfiles/` anchor. Sessions in any repository read them without a
-prompt: `.claude/settings.json` ships the allow-rule
-`Read(~/Projects/dotfiles/**)` (propagated to `~/.claude/settings.json` by the
-copy step above), and `make audit` (`audits/rule-paths.sh`) fails when the
-grant or an anchored citation drifts.
+every agent home on this machine symlinks to it, so an edit here reaches every
+session in this checkout at once. Any other repository gets its own copy a
+different way: `orly init` materialises the selected profile's rule pages and
+gate scripts into that repository, pinned by `.oracle/ruleset.lock`; `orly
+update` re-materialises against a newer engine version; `orly doctor` reports
+drift. Rule pages cite each other relative to the repository they were
+materialised into, never through this checkout's path — `make audit`
+(`audits/rule-paths.sh`) fails on a citation that still does.
 
 The dispatch index sends an agent to the smallest relevant rule page before an
 edit or claim:

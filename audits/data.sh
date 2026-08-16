@@ -129,7 +129,7 @@ LIFECYCLE_HEADERS=(
 LIFECYCLE_ANCHORS=(
   "Test Baseline:"
   '`pwd` + `git worktree list`'
-  "Indy-acked verbatim quote"
+  "user-acked verbatim quote"
   "make check-version"
   "RULE ORP"
   "git status -uall"

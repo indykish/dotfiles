@@ -159,13 +159,13 @@ expect_fail "review routing bites when /write-integration-test drops from the ch
   "/write-integration-test missing" \
   "perl -pi -e 's{/write-integration-test}{/wit-removed}g' AGENTS.md"
 
-expect_fail "rule-path residence bites when a façade anchor is stripped" \
-  "unanchored dotfiles-resident ref" \
-  "perl -pi -e 's{~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES}{docs/REST_API_DESIGN_GUIDELINES}g' dispatch/write_http.md"
+expect_fail "rule-path residence bites when a façade cites the absolute anchor" \
+  "anchored citation" \
+  "perl -pi -e 's{docs/REST_API_DESIGN_GUIDELINES}{~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES}g' dispatch/write_http.md"
 
 expect_fail "rule-path residence bites when the resolution doctrine is dropped" \
   "resolution doctrine missing" \
-  "perl -pi -e 's{Rule paths resolve from}{Rule paths came from}' AGENTS.md"
+  "perl -pi -e 's{Rule paths resolve relative to this repository}{Rule paths came from somewhere}' AGENTS.md"
 
 expect_fail "rule-path reachability bites when the settings Read grant is removed" \
   "lacks \"Read(~/Projects/dotfiles/**)\"" \

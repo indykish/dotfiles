@@ -15,8 +15,7 @@
     "domain.auth",
     "domain.documentation",
     "domain.changelog",
-    "workflow.specifications",
-    "workflow.governance"
+    "workflow.specifications"
   ],
   "commands": {
     "conform": [

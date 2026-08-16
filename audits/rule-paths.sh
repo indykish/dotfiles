@@ -1,19 +1,35 @@
 #!/usr/bin/env bash
 # rule-paths.sh — residence + reachability checks for the federated rule corpus.
 #
-# The incident this encodes: an agent in an agentsfleet worktree resolved the
-# AGENTS.md row "reads docs/REST_API_DESIGN_GUIDELINES.md" against its own
-# repository, found nothing (consumer repos carry no rule copies), and designed
-# an HTTP surface from memory instead of the guide. Two invariants close it:
+# The incident this encodes (M143): an agent in an agentsfleet worktree
+# resolved "reads docs/REST_API_DESIGN_GUIDELINES.md" against its own
+# repository, found nothing — under the old thin-distribution model, consumer
+# repos carried no rule copies at all — and designed an HTTP surface from
+# memory instead of the guide.
 #
-#   residence    — dotfiles-resident rule docs are cited through the
-#                  ~/Projects/dotfiles/ anchor in every surface an agent reads
-#                  from a consumer-repo working directory. AGENTS.md (byte-
-#                  capped) instead carries the resolution doctrine, zero
-#                  CWD-relative hrefs, and no residence-contradicting rows.
+# M03_001 closed that gap by materialising rule docs into every consuming
+# repository (`orly init`/`orly update`, keyed by the profile's selected
+# packs). A citation now resolving to a real local file IS the fix, so the
+# invariant inverts: the ~/Projects/dotfiles/ anchor becomes wrong wherever
+# it appears in a surface a materialised repository also carries — it names a
+# path that will not exist on any machine but this one.
+#
+#   residence    — dotfiles-resident rule docs are cited relative to the
+#                  installing repository, never through the
+#                  ~/Projects/dotfiles/ anchor, in every surface `orly init`
+#                  materialises. AGENTS.md (byte-capped) carries the new
+#                  resolution doctrine, zero CWD-relative hrefs, and no
+#                  residence-contradicting rows. Files that never leave this
+#                  checkout (RULE_PATH_ENGINE_ONLY — governance-editing
+#                  façades genuinely about the engine's own source) are
+#                  exempt; their absolute citations are correct.
 #   reachability — the settings allow-rule Read(~/Projects/dotfiles/**) exists
-#                  in the repo template AND the live ~/.claude copy, so the
-#                  anchored read never dies on a permission prompt.
+#                  in the repo template AND the live ~/.claude copy, so
+#                  Kishore's own machine-level tooling (skills, the
+#                  governance-editing workflow) never dies on a permission
+#                  prompt. Unrelated to residence: reachability is about this
+#                  machine, residence is about what a materialised repository
+#                  carries.
 #
 # Sourced by audits/agents-md.sh (labels: "rule-path residence",
 # "rule-path reachability"). Classifier: DOTFILES_RESIDENT in audits/data.sh.
@@ -26,7 +42,16 @@ RULE_PATH_SURFACES=(
   "docs/TEMPLATE.md"
   "docs/EXECUTE_DOC_READS.md"
   "docs/greptile-learnings/RULES.md"
-  "skills/kishore-spec-new/SKILL.md"
+)
+
+# Governance-editing façades describe how to edit THIS engine's own source
+# (orly/**, the registry, the rendered AGENTS.md) — a workflow that only ever
+# runs inside this checkout. Their absolute citations are correct, not a
+# residual of the old model; a materialised copy would never satisfy them
+# because there is nothing to materialise (a consumer never receives
+# orly/core/, orly/registry.json, or this checkout's own dispatch/edit_rules.md).
+RULE_PATH_ENGINE_ONLY=(
+  "dispatch/edit_rules.md"
 )
 
 check_rule_residence() {
@@ -34,7 +59,7 @@ check_rule_residence() {
   local agents="$root/AGENTS.md"   # separate line: $root must be set before it expands here
 
   # (a) resolution doctrine present in the rendered rules.
-  grep -qF 'Rule paths resolve from `~/Projects/dotfiles/`' "$agents" \
+  grep -qF 'Rule paths resolve relative to this repository' "$agents" \
     || { echo "FAIL: resolution doctrine missing from AGENTS.md"; rc=1; }
 
   # (b) zero CWD-relative markdown hrefs — AGENTS.md is served as
@@ -51,7 +76,8 @@ check_rule_residence() {
   done
 
   # (c) no AGENTS.md line may pair a resident doc with "(product repo)" — the
-  # misread that sent the M143 agent to the wrong repository.
+  # misread that sent the M143 agent to the wrong repository. Still a real
+  # mistake under the new model: a doc this array names IS materialised here.
   local alt
   alt=$(IFS='|'; printf '%s' "${names[*]%.md}")
   if grep -E "docs/(${alt})\.md" "$agents" | grep -qF '(product repo)'; then
@@ -59,23 +85,22 @@ check_rule_residence() {
     rc=1
   fi
 
-  # (d) surfaces without a byte cap anchor every resident reference
-  # (self-references exempt: a doc naming itself is unambiguous).
-  local f rel n parts falt hits
-  for f in "$root"/dispatch/*.md "${RULE_PATH_SURFACES[@]/#/${root}/}"; do
+  # (d) surfaces materialised by orly init must cite resident docs relative to
+  # the installing repository — never through the ~/Projects/dotfiles/ anchor,
+  # which names a path absent on every machine but this one. Engine-only
+  # façades (RULE_PATH_ENGINE_ONLY) are exempt: their absolute citations are
+  # correct because nothing is ever materialised to satisfy them.
+  local f rel is_exempt e hits
+  for f in "$agents" "$root"/dispatch/*.md "${RULE_PATH_SURFACES[@]/#/${root}/}"; do
     [[ -f "$f" ]] || continue
     rel="${f#"$root"/}"
-    parts=()
-    for n in "${names[@]}"; do
-      [[ "docs/$n" == "$rel" ]] || parts+=("${n%.md}")
-    done
-    falt=$(IFS='|'; printf '%s' "${parts[*]}")
-    hits=$(LC_ALL=C perl -sne \
-      'while (/(?<!dotfiles\/)\bdocs\/(?:$a)\.md/g) { printf "  %s:%d: %s\n", $ARGV, $., $& }' \
-      -- -a="$falt" "$f" 2>/dev/null)
+    is_exempt=0
+    for e in "${RULE_PATH_ENGINE_ONLY[@]}"; do [[ "$e" == "$rel" ]] && is_exempt=1; done
+    [[ "$is_exempt" -eq 1 ]] && continue
+    hits=$(LC_ALL=C grep -noE '~/Projects/dotfiles/(docs|dispatch|audits)/[A-Za-z0-9_./-]+\.(md|sh)' "$f" | head -5)
     if [[ -n "$hits" ]]; then
-      echo "FAIL: unanchored dotfiles-resident ref(s) in $rel:"
-      printf '%s\n' "$hits" | head -5
+      echo "FAIL: anchored citation in $rel (should resolve relative to the installing repository):"
+      printf '  %s\n' "$hits"
       rc=1
     fi
   done

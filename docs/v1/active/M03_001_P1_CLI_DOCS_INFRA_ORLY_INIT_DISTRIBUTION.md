@@ -65,7 +65,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `orly/src/repository.ts` | EDIT | §2 agent-home linking becomes one caller of the shared installer, not the distribution model |
 | `orly/src/render.ts`, `orly/src/references.ts` | EDIT | §3 core documents become pack-gated so persona can be deselected; §4 reference closure resolves against the consuming repository root |
 | `orly/registry.json` | EDIT | §3 new `persona.indy` pack; `msid-ui.sh` moves out of `universal.authoring` into the surfaces that own it |
-| `orly/profiles/global.json`, `dotfiles.json` | EDIT | §3 select `persona.indy` explicitly rather than inheriting it |
+| `orly/profiles/global.json`, `dotfiles.json`, `mintlify-docs.json` | EDIT | §3 select `persona.indy` explicitly; §4 `mintlify-docs` gained `universal.authoring`, the pack owning `dispatch/lifecycle.md`, which the core model cites unconditionally — caught by the per-profile install eval sweep |
 | `orly/profiles/kernel.json` | CREATE | §3 the stranger's profile — kernel packs only, no persona, no product surface |
 | `SOUL.md` | EDIT | §3 body fenced into the `persona.indy` pack; zero prose changes |
 | `orly/core/operating-model.md` | EDIT | §3 persona sections fenced; §4 the rule-path anchor doctrine rewritten repository-relative; §2.8 `--global` references dropped |
@@ -82,10 +82,9 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 
 ## Applicable Rules
 
-- **`~/Projects/dotfiles/docs/greptile-learnings/RULES.md`** — **ORP** (the citation re-point in §4 is a rename across ~130 sites; blast-radius grep first, word-boundary, no path filter), **NDC** (§2.8 deletes the no-op `--global` rather than leaving it accepted-and-ignored), **NLR** (touch-it-fix-it on every file §4 re-points), **UFS** (all new path segments, lock keys, and the schema version are named constants appearing once), **FLL** (`install.ts` splits before 350 lines; materialisation and hook installation are separable), **JCL** (`--json` output is a stable structured contract, not a pretty-printer), **EMS** (every failure below names the offending path and the recovery command), **TST-NAM** (test identifiers carry no milestone number), **GLS** (installed dispatchers must not glob their own materialised copies)
+- **`~/Projects/dotfiles/docs/greptile-learnings/RULES.md`** — **ORP** (§4's citation re-point is a rename across ~130 sites; blast-radius grep first, word-boundary, no path filter), **NDC** (§2.8 deletes the no-op `--global`), **NLR** (touch-it-fix-it on every file §4 re-points), **UFS** (new path segments, lock keys, and the schema version are named constants appearing once), **FLL** (`install.ts` splits before 350 lines), **JCL** (`--json` is a stable structured contract), **EMS** (every failure names the offending path and the recovery command), **TST-NAM**, **GLS** (installed dispatchers must not glob their own materialised copies)
 - `dispatch/edit_rules.md` — fires on every edit to `orly/**`, `dispatch/`, `audits/`, and the generated `AGENTS.md`; **no agent override**. Requires `make audit`, the `audits/agents-md.md` questionnaire, live comprehension evaluation because §3 and §4 change render semantics, and generated evidence.
-- `dispatch/write_ts_adhere_bun.md` — every file under `orly/src/`; TS FILE SHAPE DECISION at PLAN for `install.ts` and `lockfile.ts`.
-- `dispatch/write_shell.md` — the installed hooks and `evals/install/*.sh`: quoted expansions, array arguments, temp-file cleanup, no untrusted `eval`.
+- `dispatch/write_ts_adhere_bun.md` — every file under `orly/src/`; TS FILE SHAPE DECISION at PLAN for `install.ts` and `lockfile.ts`. `dispatch/write_shell.md` applies the same to the installed hooks and `evals/install/*.sh`.
 - `dispatch/write_spec.md` — this file.
 
 ## Applicable Gates
@@ -148,10 +147,10 @@ A stranger must not inherit Kishore's address tags, banned-vocabulary list, judg
 
 Every rule citation currently names an absolute path under one home directory, and an audit asserts that anchor as an invariant — so removing the folder tie means inverting the check that exists to preserve it. Citations become repository-relative, resolving identically for Kishore, a colleague, a CI runner, and a fleet container. The audit inverts to assert the new property and stops reading the developer's live agent settings, so the same repository contents grade the same way on every machine.
 
-- **Dimension 4.1** — no rendered profile cites an absolute home-directory path → Test `test_no_render_cites_absolute_home_path`
-- **Dimension 4.2** — every path a render cites resolves inside the consuming repository after `init` → Test `test_reference_closure_resolves_repo_relative`
-- **Dimension 4.3** — the audit grades identically with an absent or unrelated `$HOME` → Test `test_audit_independent_of_live_agent_settings`
-- **Dimension 4.4** — the blast-radius grep for the old anchor returns zero hits in rendered and rule surfaces → Test `test_anchor_sweep_clean`
+- **Dimension 4.1** — DONE — no rendered profile cites an absolute home-directory path → Test `test_no_render_cites_absolute_home_path`
+- **Dimension 4.2** — DONE — every path a render cites resolves inside the consuming repository after `init` → Test `test_reference_closure_resolves_repo_relative`
+- **Dimension 4.3** — DONE — the audit grades identically with an absent or unrelated `$HOME` → Test `test_audit_independent_of_live_agent_settings`
+- **Dimension 4.4** — DONE — the blast-radius grep for the old anchor returns zero hits in rendered and rule surfaces → Test `test_anchor_sweep_clean`
 
 ### §5 — A release gate, and an install story that matches reality
 
@@ -285,8 +284,7 @@ orly doctor
 
 ## Out of Scope
 
-- **agentsfleet adoption** — its own workstream (M03_002) and its own Pull Request there; this spec ships the installer, not the adoption. Its governance CI step is decided at that time, as one line in an existing workflow.
-- **cache-kit adoption** — M03_003, which also completes M01's deferred Dimension 6.2 by replacing the frozen `.oracle/` snapshot rather than deleting it.
+- **agentsfleet adoption** — its own workstream (M03_002) and its own PR; this spec ships the installer, not the adoption. Governance CI is decided at that time, as one line in an existing workflow. **cache-kit adoption** — M03_003, which also completes M01's deferred Dimension 6.2 by replacing the frozen `.oracle/` snapshot rather than deleting it.
 - **Mechanising the remaining rule corpus** — the ledger reports 26 of 278 clauses classified; converting more prose to checks pays only once installation works.
 - **Removing the personal-machine layer** — `bin/link-bin-dotfiles`, `update-skills`, and the 1Password provisioning stay as they are; §5 only separates them in the README so a colleague can skip them.
 

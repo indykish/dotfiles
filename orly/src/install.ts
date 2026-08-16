@@ -11,6 +11,7 @@ import { Renderer } from "./render";
 const AGENTS_FILENAME = "AGENTS.md";
 const HOOKS_DIRECTORY = ".githooks";
 const GLOBAL_PROFILE = "global";
+const KERNEL_PROFILE = "kernel";
 const REGISTRY_PACKS_LABEL = "registry packs";
 const STAGE_PREFIX = "orly-install-";
 const MARKDOWN_EXTENSION = ".md";
@@ -211,8 +212,9 @@ function selectedPackNames(model: RulesModel, profileName: string, profile: Json
   return [...stringArray(profile.packs, `profile ${profileName} packs`)].sort();
 }
 
-// A repository already registered here keeps its profile; anything else must
-// say which rules it wants, because guessing wrong installs the wrong gates.
+// A repository already registered here keeps its profile. Anything else gets
+// the kernel default — every language and domain pack, nothing named or
+// personal — so a fresh clone never needs to know a profile name exists.
 function inferProfile(model: RulesModel, targetRoot: string): string {
   const repositories = objectValue(model.repositories.repositories, "repositories");
   for (const [name, value] of Object.entries(repositories)) {
@@ -221,6 +223,7 @@ function inferProfile(model: RulesModel, targetRoot: string): string {
       return String(objectValue(value, name).profile);
     }
   }
+  if (KERNEL_PROFILE in model.profiles) return KERNEL_PROFILE;
   throw new OrlyError(`no profile registered for ${targetRoot} — pass --profile <NAME> (available: ${Object.keys(model.profiles).sort().join(", ")})`);
 }
 
