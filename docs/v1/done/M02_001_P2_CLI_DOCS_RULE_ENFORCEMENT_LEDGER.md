@@ -16,7 +16,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 **Milestone:** M02
 **Workstream:** 001
 **Date:** Aug 16, 2026
-**Status:** IN_PROGRESS
+**Status:** DONE
 **Priority:** P2 — governance tooling; no customer surface, but it converts "is my LOGGING_STANDARD adhered to?" from a model's claim into a committed scoreboard
 **Categories:** CLI, DOCS
 **Batch:** B1 — no parallel siblings
@@ -100,7 +100,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 
 ## Sections (implementation slices)
 
-### §1 — Clause census (`--census`)
+### §1 — Clause census (`--census`) — DONE
 
 A registry array in `rule-ledger-lib.sh` names the docs-tier rule files (LOGGING_STANDARD, REST_API_DESIGN_GUIDELINES, SCHEMA_CONVENTIONS, DOCUMENTATION_RULES, LIFECYCLE_PATTERNS, CHANGELOG_VOICE, VERIFY_TIERS, greptile-learnings/RULES.md). Census emits one row per entry: normative-clause count (keyword-line heuristic: MUST / NEVER / ALWAYS / Forbidden / Required / SHALL), tag counts by class, and untagged remainder. Counts inform; they never gate. **Implementation default:** the parity guard is the only census red — a `docs/*.md` cited as a rule read by any `dispatch/*.md` façade but absent from the registry (architecture docs and TEMPLATE.md sit on an explicit exclude list).
 
@@ -117,14 +117,14 @@ The half worth keeping answers from the tree and now gates inside `--census`: a 
 - **Dimension 2.1** — REMOVED — fire counts over history. Nothing consumed them; "has this fired lately" depends on what happened to get committed recently, not on whether the rule can fire at all.
 - **Dimension 2.2** — DONE — a façade whose `.sh` yields no derivable globs is a structural red naming the file, checked by the census → Test `ledger_census_facade_scope_red`
 
-### §3 — Committed scoreboard (`--write` / `--check`)
+### §3 — Committed scoreboard (`--write` / `--check`) — DONE
 
 `--write docs/RULE_ENFORCEMENT.md` renders the census as a markdown table plus a legend; `--check` regenerates to a temp file and byte-compares, red with the exact fix command. Wired into `make audit`.
 
 - **Dimension 3.1** — DONE — `--write` is deterministic: two runs on the same tree are byte-identical; no timestamps, no commit hashes → Test `ledger_write_deterministic`
 - **Dimension 3.2** — DONE — editing a registered doc without regenerating turns `make audit` red; regenerating clears it → Test `ledger_check_currency`
 
-### §4 — Mechanized doc-read record
+### §4 — Mechanized doc-read record — DONE
 
 `audits/doc-read.sh log <path>` appends `{ts, path}` JSONL rows to `.git/orly/doc-reads.jsonl` (repo-local, never committed); a `PostToolUse` hook on the Read tool feeds it. `check` computes the expected doc set for staged source files from the same glob map §2 uses, keeps logged rows newer than the HEAD commit timestamp, and reds on the missing set. **Implementation default:** log absent (agent without hook support — codex, amp, opencode) → one 🟠 warn line, exit 0; partial mechanization stated honestly beats a false red. The `📖 DOC READ` proof-line remains required in chat — the log is evidence, not a replacement.
 
@@ -136,7 +136,7 @@ The half worth keeping answers from the tree and now gates inside `--census`: a 
 **Validity is keyed to content, not to a clock** — changed after dogfooding, which is also how it was found. The first cut counted a read as valid if it happened since the HEAD commit. That is wrong in both directions: it forces a re-read of an unchanged façade every time an unrelated commit lands (it blocked three of this milestone's own commits), and it keeps counting a read taken *before* the façade was edited, which is the case that actually matters. `log` now records the document's blob hash and `check` compares it to the file on disk: unchanged document, earlier read still counts; edited document, every prior read is void the same second.
 - **Dimension 4.3** — DONE — pre-commit invokes `check` only when staged files match source extensions → Test `ledger_precommit_wiring`
 
-### §4b — The record works in every runtime, not just the hooked one
+### §4b — The record works in every runtime, not just the hooked one — DONE
 
 Folded in mid-milestone on Indy's call (Discovery, Aug 16). A `PostToolUse` hook binds Claude Code alone; codex exposes only a turn-ended `notify`, amp has no tool-event surface, and opencode's plugin system is unconfigured — so three of four runtimes would commit unchecked while the scoreboard claimed the read was mechanized. The DOC READ GATE therefore requires the read to be **recorded**, not merely claimed: `bash audits/doc-read.sh log <path>`, which any runtime can run and Claude Code's hook runs automatically. `check` is unchanged — a hook-written row and a command-written row are the same line in the same file.
 
@@ -145,7 +145,7 @@ Folded in mid-milestone on Indy's call (Discovery, Aug 16). A `PostToolUse` hook
 
 **Why 4.5 is a test and not a promise** (Indy, Aug 16: *"I dont want this to tied to any tool, since they would keep removing features"*). Vendors add and remove hook APIs. A read hook is therefore treated as an accelerator, never a dependency: delete `.claude/settings.json`'s Read hook entirely and the gate behaves identically — the agent runs `bash audits/doc-read.sh log <path>`, the record is the same line in the same file, `check` cannot tell the difference. The eval enforces the boundary so the coupling cannot creep back in a later commit; its negative control (injecting `CLAUDE_PROJECT_DIR` into the hook) was confirmed to fail the suite.
 
-### §5 — Pilot tagging: LOGGING_STANDARD
+### §5 — Pilot tagging: LOGGING_STANDARD — DONE
 
 Every normative clause in `docs/LOGGING_STANDARD.md` gains a class tag: `[DETERMINISTIC → LOG]` where `audits/logging.sh` enforces it, `[DETERMINISTIC → TODO-CHECK]` where mechanizable but unwired, `[JUDGMENT → …]` where only an agent can decide, `[UNENFORCED → reason]` for the acknowledged rest. Prose otherwise untouched. This proves the grammar on the doc whose 2-of-34 ratio motivated the milestone; the remaining corpus is deliberately follow-up work, one doc per PR.
 
@@ -228,16 +228,16 @@ the same commit. All tree-derived — the file reproduces from a checkout.
 
 | # | Criterion (observable outcome) | Verify (copy-paste) | Expected | Priority | Graded (VERIFY) |
 |---|--------------------------------|---------------------|----------|----------|-----------------|
-| R1 | Ledger eval suite green (§1–§5) | `bash evals/ledger/run.sh` | exit 0 | P0 | |
-| R2 | Diff stays inside Files Changed | `git diff --name-only origin/master...HEAD` | 0 paths missing from the Files Changed table | P0 | |
-| R3 | Scoreboard exists and is current (§3) | `bash audits/rule-ledger.sh --check` | exit 0 | P0 | |
-| R4 | Census reports the pilot fully classified (§5) | `bash audits/rule-ledger.sh --census \| grep 'LOGGING_STANDARD'` | contains `untagged=0` | P0 | |
-| R5 | Scoreboard names the enforcing script (§3) | `grep 'LOGGING_STANDARD' docs/RULE_ENFORCEMENT.md` | contains `` `LOG` `` → `` `logging.sh` `` | P0 | |
-| R6 | Governance audit green with new rows | `make audit` | `ALL CHECKS PASSED` | P0 | |
-| R7 | Read-only modes write nothing (§1,§2,§3-check,§4-check) | `git status --porcelain=v1 -uall` before/after each mode | identical output | P0 | |
-| S7 | No secrets | `gitleaks detect` | exit 0 | P0 | |
-| S8 | No oversize source file | `git diff --name-only origin/master...HEAD \| grep -E '\.(sh\|ts)$' \| xargs -I{} sh -c 'wc -l "{}" 2>/dev/null' \| awk '$1>350'` | no output | P0 | |
-| S9 | Orphan sweep | every created file invoked by audit, hook, Makefile, or eval — `grep -rn 'rule-ledger\|doc-read' Makefile .githooks .claude/settings.json evals` | ≥1 caller per created script | P0 | |
+| R1 | Ledger eval suite green (§1–§5) | `bash evals/ledger/run.sh` | exit 0 | P0 | ✅ `23 passed, 0 failed` (exit 0) |
+| R2 | Diff stays inside Files Changed | `git diff --name-only origin/master...HEAD` | 0 paths missing from the Files Changed table | P0 | ✅ 19 paths, all in the table (the spec file itself excepted) |
+| R3 | Scoreboard exists and is current (§3) | `bash audits/rule-ledger.sh --check` | exit 0 | P0 | ✅ exit 0 — `🟢 docs/RULE_ENFORCEMENT.md matches the tree` |
+| R4 | Census reports the pilot fully classified (§5) | `bash audits/rule-ledger.sh --census \| grep 'LOGGING_STANDARD'` | contains `untagged=0` | P0 | ✅ `untagged=0` |
+| R5 | Scoreboard names the enforcing script (§3) | `grep 'LOGGING_STANDARD' docs/RULE_ENFORCEMENT.md` | contains `` `LOG` `` → `` `logging.sh` `` | P0 | ✅ `` `LOG` `` → `` `logging.sh` `` |
+| R6 | Governance audit green with new rows | `make audit` | `ALL CHECKS PASSED` | P0 | ✅ `ALL CHECKS PASSED` + `DISPATCH COVERAGE: ALL CHECKS PASSED` (exit 0) |
+| R7 | Read-only modes write nothing (§1,§2,§3-check,§4-check) | `git status --porcelain=v1 -uall` before/after each mode | identical output | P0 | ✅ status identical before/after census, check, doc-read check |
+| S7 | No secrets | `gitleaks detect` | exit 0 | P0 | ✅ `no leaks found` |
+| S8 | No oversize source file | `git diff --name-only origin/master...HEAD \| grep -E '\.(sh\|ts)$' \| xargs -I{} sh -c 'wc -l "{}" 2>/dev/null' \| awk '$1>350'` | no output | P0 | ✅ no output (largest: doc_read_cases.sh 207) |
+| S9 | Orphan sweep | every created file invoked by audit, hook, Makefile, or eval — `grep -rn 'rule-ledger\|doc-read' Makefile .githooks .claude/settings.json evals` | ≥1 caller per created script | P0 | ✅ 8 callers across Makefile, .githooks, settings.json, evals |
 
 **Grading protocol (VERIFY):** run the Verify command verbatim; grade ONLY from its output. Graded = ✅/❌ + the one decisive output line. **Ship gate:** every row graded, every P0 ✅ → eligible for CHORE(close); any ❌ or empty cell → return to EXECUTE; a P1 ❌ ships only with an Indy-acked deferral quote in Discovery.
 
@@ -282,6 +282,11 @@ N/A — no files deleted; no symbols removed. (S9 covers the inverse: no created
   - Aug 16, 2026: 03:05 PM — clause-count honesty (§5). Reaching `untagged=0` by tagging table rows would have put 15 meaningless tags in a rule doc, so the counter changed instead: headings and table rows stop counting as clauses, and block tags cover their section. The reader-facing number got more truthful; no gate weakened (parity and structural reds are untouched).
   - Aug 16, 2026: 02:40 PM — hook cost. Indy asked what the dotfiles pre-commit and pre-push actually run, then ruled: "make audit in pre push." Pre-commit now carries only the §4 doc-read check (one grep over the staged list, one read of a local record); the full audit stays on pre-push, where the corpus is about to reach someone else. No enforcement is lost — a push cannot skip it.
   - Aug 16, 2026: 02:05 PM — gate-flag triage, out-of-scope edit. `orly/src/gates.test.ts:158` (end-to-end gate walk) ran 5.5s–12.7s against bun's 5s default, reddening pre-commit's `make audit` while every assertion passed. Asked fix-or-defer; Indy chose "Raise that one test to 30s" over a suite-wide `bunfig.toml` default or waiting out machine load. Applied as a named constant on that one test; assertions untouched.
-- **Metrics review** — events added, extra events found during `/review`, analytics/funnel playbook update or the explicit no-change reason.
-- **Skill-chain outcomes** — `/write-unit-test`, `/review`, `kishore-babysit-prs` results (order per `AGENTS.md` CHORE(close); iteration counts, findings dispositioned).
-- **Deferrals** — every "deferred to follow-up" needs an **Indy-acked verbatim quote** here, format `> Indy (YYYY-MM-DD HH:MM): "<quote>" — context: <which item, why>`.
+- **Metrics review** — none. Internal governance tooling; the Metrics table records "not applicable" and `/review` surfaced no event surface to add.
+- **Skill-chain outcomes**
+  - `/write-unit-test` — Change-set mode, Shell stack. Diff ledger 25/25 resolved (22 tested, 3 `won't-test`: colour-code branches, `--help` wording, the `content_hash` fallback before it was made fail-closed). Four declared-but-unasserted contracts found and pinned: the 0/1/2 exit matrix, the zero-fire warn, the write-abort, `uncited` vs `latent`. Mutation-checked 2/2 killed. Harness split to `lib.sh` at 316 lines.
+  - `/write-integration-test` — not applicable, stated rather than skipped: the skill's scope is a service layer over real Postgres/Redis/HTTP, none of which this diff has. The equivalent real-I/O tier is already the eval suite — every doc-read case builds an actual git repository, stages actual files, and runs the actual hook path rather than a fake.
+  - `/review` — three findings, all fixed and pinned, none deferred. (1) CRITICAL: the scoreboard claimed "pure function of the tree" but `sort` collates by locale, so `make audit`'s byte-compare would red for a contributor with a different `LC_ALL` as soon as a doc carries two codes — `LC_ALL=C` pinned, mutation-checked. (2) `doc-read.sh log` wrote invalid JSON for a legal filename containing `"` — escaped both ways. (3) `content_hash` returned a placeholder on git failure, so two failures compared equal and a deleted façade validated as read — now fails closed.
+  - `kishore-babysit-prs` — runs after the PR opens.
+- **Deferrals** — none. Every item in Out of Scope was scoped out at authoring time, not deferred mid-flight; the one dimension dropped after implementation (2.1, fire counts) was Indy's review call and is recorded in §2 with the reason, not carried as debt.
+- **Security note** — a `GITLAB_PERSONAL_ACCESS_TOKEN` was printed to the transcript by an over-broad `env | grep` in the prior session. Indy (Aug 16, 2026): "i dont intend to rotate gitlab since its behind m private vpn" — closed, not outstanding. The GitHub token from the same leak was rotated.
