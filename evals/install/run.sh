@@ -75,6 +75,8 @@ run_packed() {
 
 # shellcheck source=cases.sh
 source "$(dirname "${BASH_SOURCE[0]}")/cases.sh"
+# shellcheck source=release_cases.sh
+source "$(dirname "${BASH_SOURCE[0]}")/release_cases.sh"
 
 printf '\n%sinstall evals%s (root: %s)\n\n' "$BO" "$X" "$ROOT"
 for case_name in $(declare -F | awk '{print $3}' | grep '^install_' | sort); do

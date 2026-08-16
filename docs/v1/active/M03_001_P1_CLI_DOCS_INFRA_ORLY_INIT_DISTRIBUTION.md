@@ -75,10 +75,16 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `audits/agents-md.md` | EDIT | §4 questionnaire scenario grading the portable-path semantics (rule extension protocol step 2) |
 | `.githooks/pre-commit`, `.githooks/pre-push` | EDIT | §2 become the templates `init` installs; parameterised on the package root |
 | `.github/workflows/harness.yml` | CREATE | §5 the release gate for the published package — this repository only |
-| `evals/install/run.sh`, `evals/install/cases.sh` | CREATE | §2/§4 sandbox proofs: fresh-repo install, idempotency, drift, update, portability greps |
+| `evals/install/run.sh`, `cases.sh`, `release_cases.sh` | CREATE | §2/§4/§5 sandbox proofs: fresh-repo install, idempotency, drift, update, portability greps, release artifacts; split at the 350-line cap once §5's cases landed |
 | `Makefile` | EDIT | §2 `install-evals` target; `audit` gains the new eval and the packaging boundary check |
 | `README.md` | EDIT | §5 the ten-step walkthrough collapses to one command; personal-machine steps move to their own optional section |
 | `docs/ORLY_ARCHITECTURE.md` | EDIT | §5 record the machine-scoped → repository-scoped inversion, the lock, and what supersedes M01 §4 |
+| `dispatch/write_any.md`, `write_documentation.md`, `write_changelog.md`, `write_sql.md`, `write_spec.md`, `write_http.md`, `write_zig.md`, `write_ts_adhere_bun.md`, `lifecycle.md`, `edit_rules.md` | EDIT | §2/§4 anchor citations re-pointed relative to the installing repository (the sweep this milestone's Provenance line undercounted — ~120 sites, not the handful named at authoring); `write_any.md` and `lifecycle.md` additionally fence agentsfleet-only content; `edit_rules.md` only loses its `--global` mention (§2.8), its own citation of `ORLY_ARCHITECTURE.md` stays absolute (engine-only, exempt) |
+| `docs/TEMPLATE.md`, `EXECUTE_DOC_READS.md`, `greptile-learnings/RULES.md` | EDIT | §4 the same anchor re-point applied to the docs tier's own internal citations |
+| `docs/RULE_ENFORCEMENT.md` | EDIT | §4 regenerated — the anchor strip changed clause byte content the ledger scoreboard tracks |
+| `bin/update-skills` | EDIT | §2.8 its two `orly sync/doctor --global` call sites, found live-broken by the flag removal, not by inspection |
+| `orly/profiles/agentsfleet.json` | EDIT | §4 dropped the one-file `domain.architecture` pack (folded into `universal.authoring`) alongside `dotfiles.json` |
+| `evals/test-agents-md.sh` | EDIT | §4 two negative cases encoded the pre-inversion polarity; fixed to assert the new one |
 
 ## Applicable Rules
 
