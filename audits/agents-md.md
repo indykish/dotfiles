@@ -77,6 +77,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 4.7c (test fixtures) | Are test fixtures, mock returns, and assertion arguments **not** RULE UFS exceptions — i.e. wire-format strings and semantic numerics in test code must use the named constant just like production code does? | YES |
 | 4.8 (Shell) | Are shell scripts subject to the File & Function Length Gate (≤350 / ≤50 / ≤70)? | YES |
 | 4.8a (Length) | Is 350 a **ceiling rather than a budget** — must a source file be split below the cap whenever the agent's own rubric (test coverage, simplicity, optimisation, performance, concurrency, adversarial review) says two files beat one, with two ~150-line files a good outcome rather than an over-split, and is a file with no headroom left for its own tests already too long? | YES |
+| 4.8b (Length scope) | Does the File & Function Length Gate cover **test files and extensionless executables** too — no `.test.`/`_test`/`/tests/` carve-out anywhere, and an extensionless staged file carrying a shebang gated by `dispatch_add_shebang_files` because an ambiguous extension makes the gate fire by default? | YES |
 | 4.9 (Shell) | Must `gitleaks` pass before any commit/push? | YES |
 | 4.10 (CI) | Are CI/CD edits (`.github/workflows/**`, deploy configs) **forbidden without explicit user approval** even in auto mode? | YES |
 | 4.11 (Bun) | For `*.ts`/`*.tsx`/`*.js`/`*.jsx` edits, does AGENTS.md route to `dispatch/write_ts_adhere_bun.md` (TS FILE SHAPE DECISION at PLAN, const/import/Bun-primitive discipline)? | YES |

@@ -118,6 +118,24 @@ dispatch_resolve_files() {
   fi
 }
 
+# write_any.md §Triggers: "If the file extension is ambiguous, the gate FIRES by
+# default." Extension globs cannot express that, so an extensionless staged file
+# carrying a shebang is added here instead. Universal dispatch only — a language
+# dispatch must never claim a file its gates cannot parse.
+dispatch_add_shebang_files() {
+  [ "${1:-}" = "--staged" ] || return 0
+  local f base path firstline
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    base="${f##*/}"
+    case "$base" in *.*) continue ;; esac
+    path="$TARGET_ROOT/$f"; [ -f "$path" ] || path="$f"; [ -f "$path" ] || continue
+    IFS= read -r firstline < "$path" || true
+    case "$firstline" in "#!"*) DISPATCH_FILES+=("$f") ;; esac
+  done < <(git -C "$TARGET_ROOT" diff --cached --name-only --diff-filter=ACMRT \
+            | grep -vE '(^|/)(vendor|third_party|node_modules|\.zig-cache|dist|build|\.next)/' || true)
+}
+
 dispatch_header() {
   if [ "${#DISPATCH_FILES[@]}" -eq 0 ]; then
     printf '%s DISPATCH: no files in scope — nothing to dispatch.\n' "$DISPATCH_LANG"

@@ -59,7 +59,7 @@ Nine cross-cutting gate cards dissolve into this façade. Each is preserved verb
 **Triggers** — every Write/Edit that net-adds lines to a source file:
 `.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml`/`.toml` (when carrying code). If the file extension is ambiguous, the gate FIRES by default — opt-out requires the user override below.
 
-**Exempt:** `vendor/`, `node_modules/`, `third_party/` (upstream); `.md` files; **everything under `docs/**`** (documentation tree — any extension); published API artefacts under `public/` (loose ≤ 400-line advisory on path YAMLs); per-repo extensions in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`.
+**Exempt:** `vendor/`, `node_modules/`, `third_party/` (upstream); `.md` files; **everything under `docs/**`** (documentation tree — any extension); published API artefacts under `public/` (loose ≤ 400-line advisory on path YAMLs); per-repo extensions in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`. **Test files are NOT exempt** — a test file over the cap splits by concern like any other; the self-audit below and `dispatch_length_gate` both count them, and an exclusion added to one surface but not the other is how a 418-line test file hid.
 
 **Override:** `LENGTH GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
@@ -98,12 +98,17 @@ LENGTH GATE: <file> N+Δ=<N+Δ> (cap 350, headroom <H>) | fn:<name> <F> lines (c
 
 ```bash
 git diff --name-only origin/main \
-  | grep -v -E '\.md$|^docs/|^vendor/|_test\.|\.test\.|\.spec\.|/tests?/' \
-  | xargs -I{} sh -c 'wc -l "{}"' \
+  | grep -E '\.(zig|js|jsx|ts|tsx|py|rs|go|sh|sql)$' \
+  | grep -v -E '^(docs|vendor|third_party)/|/node_modules/|/fixtures?/' \
+  | xargs -I{} sh -c 'wc -l "{}" 2>/dev/null' \
   | awk '$1 > 350 { print "❌ " $2 ": " $1 " lines (limit 350)" }'
 ```
 
-Non-empty output = hard fail.
+Non-empty output = hard fail. The extension allowlist mirrors `dispatch_init`'s
+globs so the two surfaces agree; gate fixtures are excluded because some exist
+precisely to sit over the cap. Extensionless executables (`bin/*` scripts) carry
+no extension to match here — `dispatch/write_any.sh --staged` picks those up via
+shebang and is the authoritative check.
 
 #### fn/method sub-cap is a separate check
 

@@ -23,6 +23,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 dispatch_init "ANY" '*.zig' '*.ts' '*.tsx' '*.js' '*.jsx' '*.py' '*.rs' '*.go' '*.sh' '*.sql'
 dispatch_resolve_files "$@"
+dispatch_add_shebang_files "$@"    # extensionless executables — ambiguous extension ⇒ gate fires
 dispatch_header
 
 # ── deterministic gates ────────────────────────────────────────────
