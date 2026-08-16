@@ -363,3 +363,33 @@ install_architecture_doc_records_supersession() {
   if [[ -n "$missing" ]]; then bad "$name" "missing: $missing"; return; fi
   ok "$name"
 }
+
+# The release gate this repository lacked: make audit ran on the developer's
+# machine only, behind a hooksPath that has to be set by hand. The workflow
+# runs the exact same command on a fresh runner; prove the command it invokes
+# genuinely fails on a real defect, and that the workflow names no path that
+# only exists on this machine.
+install_ci_workflow_gates_on_a_real_defect() {
+  local name="the CI workflow's audit step fails on a seeded governance violation"
+  local workflow="$ROOT/.github/workflows/harness.yml"
+  [[ -f "$workflow" ]] || { bad "$name" "no .github/workflows/harness.yml"; return; }
+  grep -q "make audit" "$workflow" || { bad "$name" "workflow does not run make audit"; return; }
+
+  local leaked
+  leaked="$(grep -E '/Users/|~/Projects' "$workflow" || true)"
+  if [[ -n "$leaked" ]]; then bad "$name" "workflow names a developer-only path: $leaked"; return; fi
+
+  # The workflow's own command, run against a tree with AGENTS.md staled out —
+  # the same failure a stale render on any branch would trip in CI.
+  local sb; sb="$(mk_sandbox)"
+  cp -R "$ROOT"/. "$sb/repo" 2>/dev/null
+  rm -rf "$sb/repo/.git"
+  printf 'stale\n' >> "$sb/repo/AGENTS.md"
+  local out code
+  out="$(cd "$sb/repo" && make audit 2>&1)"; code=$?
+  if [[ "$code" -eq 0 ]]; then bad "$name" "make audit did not catch the seeded staleness"; return; fi
+  if [[ "$out" != *"stale"* && "$out" != *"REGRESSION"* ]]; then
+    bad "$name" "failure did not name the staleness: ${out: -200}"; return
+  fi
+  ok "$name"
+}
