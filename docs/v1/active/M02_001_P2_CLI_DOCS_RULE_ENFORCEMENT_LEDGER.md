@@ -63,6 +63,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `evals/dispatch/coverage.sh` | EDIT | reads the tag grammar from `rule-ledger-lib.sh` instead of its own copy (the spec's "do not modify it" is superseded by Indy's dedup call — Discovery) |
 | `evals/ledger/run.sh` | CREATE | fixture-driven pass+fail cases for every deterministic behaviour below |
 | `evals/ledger/lib.sh` | CREATE | fixture builders + reporting, split from the runner at the length rule's "ceiling, not a budget" — the cases read as a list of behaviours |
+| `evals/ledger/doc_read_cases.sh` | CREATE | §4 read-record cases; split at 345/350 lines, and they are a separate concern (each needs a real git repository, the census cases do not) |
 | `docs/DISPATCH_ARCHITECTURE.md` §6.6 | EDIT | the docs-tier extension: `[UNENFORCED → reason]`, block-tag scope, what counts as a clause, registry location |
 | `audits/agents-md.md` | EDIT | Scenario 28 grading the ledger semantics + recorded doc-read (rule-extension protocol step 2) |
 | `audits/data.sh` | EDIT | scenario-count parity for the new question |
@@ -218,6 +219,9 @@ the same commit. All tree-derived — the file reproduces from a checkout.
 | contract | gate (fixture) | `ledger_reachability_zero_fire_warns` | dormant scope → 🟠, exit 0 (never a red) |
 | contract | gate (fixture) | `ledger_write_aborts_on_missing_doc` | render abort → exit 1 **and** no file written |
 | contract | gate (fixture) | `ledger_trigger_uncited` | `uncited` and `latent` reported apart |
+| review | gate (fixture) | `ledger_write_locale_stable` | multi-code rows identical under `LC_ALL=C` and `en_US.UTF-8` |
+| review | gate (fixture) | `ledger_readlog_escapes_path` | `we"ird.md` writes parseable JSON |
+| review | gate (fixture) | `ledger_readlog_fails_closed` | an unhashable path records no row |
 | regression | gate (repo) | `make audit` | existing chain stays green with the new rows added |
 
 ## Acceptance Rubric (single scoring surface)

@@ -71,8 +71,19 @@ run_log() {
   log="$(read_log_path)" || return 0
   mkdir -p "$(dirname "$log")" 2>/dev/null || return 0
   blob="$(content_hash "$relative")"
-  printf '{"ts":%s,"path":"%s","blob":"%s"}\n' "$(date +%s)" "$relative" "$blob" >> "$log"
+  # A hash we could not compute proves nothing was read at a known version.
+  # Recording it would let two failures compare equal and validate a read of a
+  # file that is no longer there.
+  [ -n "$blob" ] || return 0
+  printf '{"ts":%s,"path":"%s","blob":"%s"}\n' "$(date +%s)" "$(json_escape "$relative")" "$blob" >> "$log"
   return 0
+}
+
+# Backslash and double quote are legal in a POSIX filename and illegal raw in a
+# JSON string. Unescaped, `we"ird.md` writes a row no parser can read — and this
+# one mis-splits it, reporting a path that was never read.
+json_escape() {
+  printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
 }
 
 # The content a read actually saw. Validity is keyed to this rather than to a
@@ -80,7 +91,7 @@ run_log() {
 # happened, and a changed one voids every prior read the same second it is
 # edited — which a timestamp window silently fails to do.
 content_hash() {
-  git -C "$LEDGER_ROOT" hash-object "$LEDGER_ROOT/$1" 2>/dev/null || printf 'unknown'
+  git -C "$LEDGER_ROOT" hash-object "$LEDGER_ROOT/$1" 2>/dev/null || printf ''
 }
 
 # Façade pages the staged files trigger, one per line. Same glob map the
@@ -98,6 +109,10 @@ expected_facade_pages() {
   done < <(ledger_facade_scripts)
 }
 
+json_unescape() {
+  printf '%s' "$1" | sed -e 's/\\"/"/g' -e 's/\\\\/\\/g'
+}
+
 # Paths whose recorded read saw the content that is on disk now. A row written
 # against an older version of the document proves the agent read something
 # else, so it does not count — and rows from before this milestone, which carry
@@ -106,8 +121,10 @@ current_reads() {
   local log="$1" line path blob
   while IFS= read -r line; do
     case "$line" in *'"blob":"'*) ;; *) continue ;; esac
-    path="${line#*\"path\":\"}"; path="${path%%\"*}"
-    blob="${line#*\"blob\":\"}"; blob="${blob%%\"*}"
+    blob="${line##*\"blob\":\"}"; blob="${blob%%\"*}"
+    [ -n "$blob" ] || continue
+    path="${line#*\"path\":\"}"; path="${path%\",\"blob\":\"$blob\"\}}"
+    path="$(json_unescape "$path")"
     [ "$blob" = "$(content_hash "$path")" ] && printf '%s\n' "$path"
   done < "$log"
 }

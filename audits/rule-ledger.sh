@@ -11,13 +11,19 @@
 # neither the registry nor the exclusion list, or a registered path missing from
 # disk — both mean the ledger is lying about coverage.
 #
-# Reachability answers the other half: a rule that reads perfectly still governs
-# nothing if its façade's scope never meets a file. Fire counts are advisory —
-# a dormant surface is a human call — but a façade that declares no scope at all
-# is structural, because nothing it says can ever reach a diff.
+# The census answers the other half too: a rule that reads perfectly still
+# governs nothing if its façade declares no scope, because nothing it says can
+# ever reach a diff. That is structural, and answerable from the tree.
 #
 # Exit: 0 clean · 1 structural violation · 2 usage error. Writes nothing.
 set -uo pipefail
+
+# `sort` orders by locale, and this script's output is byte-compared by
+# `make audit`. Without a pinned collation the scoreboard is a function of the
+# tree AND the contributor's LC_ALL: `LC_ALL=C` sorts `A-Z B-X a_y`, en_US.UTF-8
+# sorts `a_y A-Z B-X`. Invisible while every document carries one code, and a
+# guaranteed spurious red the moment one carries two.
+export LC_ALL=C
 
 # A hook exports GIT_DIR/GIT_INDEX_FILE at the repository it fired in; any git
 # a child runs would silently retarget there. The library resolves LEDGER_ROOT
