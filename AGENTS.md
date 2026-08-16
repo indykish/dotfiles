@@ -91,7 +91,7 @@ Auto-memory is **disabled** (`autoMemoryEnabled: false` + `CLAUDE_CODE_DISABLE_A
 
 ## Auto-mode autonomy
 
-Default gates commit/push/PR on explicit ask. **Auto mode + a forward-looking start instruction** ("start on M40"/"ship it"/"drive to PR") = standing authorization, granting without re-asking: `git commit` (focused, conventional, gitleaks-clean), `git push origin <feature-branch>` (non-force), `gh pr create` (after CHORE(close)). **Action-triggered guards still block.** **Investigation framing** ("look at this"/"what's going on"/"review this") = investigate, not authorize; drive forward only on action verbs.
+Default gates commit/push/PR on explicit ask. **Auto mode + a forward-looking start instruction** ("start on M40"/"ship it"/"drive to PR") = standing authorization, granting without re-asking: `git commit` (focused, conventional, gitleaks-clean), `git push origin <feature-branch>` (non-force), `gh pr create` (after CHORE(close); ready). **Action-triggered guards still block.** **Investigation framing** ("look at this"/"what's going on"/"review this") = investigate, not authorize; drive forward only on action verbs.
 
 ---
 
@@ -226,7 +226,7 @@ Required when spec involved — after last COMMIT, before PR. Also runs when par
 | 2 | REVIEW | gstack `/review` — every runtime, same route; address findings or record a user-acked deferral; reviewer unavailable → Session Notes: *"skipped — <reason> <ts>; rerun before merge"* |
 | 3 | After every push | `kishore-babysit-prs` — CI check runs + greptile inline threads + PR-level summary; stops on two consecutive empty polls with CI green; never `gh pr checks --watch` for greptile |
 
-**PR budget — one per milestone.** A draft plus one follow-up is the ceiling. Fold new scope into the open PR (reopen `done/`→`active/` if needed) rather than opening a third.
+**PR budget — one per milestone.** One ready PR plus one follow-up is the ceiling. Fold new scope into the open PR (reopen `done/`→`active/` if needed), not a third.
 
 **Required outputs** — full checklist in `dispatch/lifecycle.md`: all Dimensions/Sections `DONE` (`IN_PROGRESS` if parked) · spec → `docs/v*/done/` iff complete · new changelog `<Update>` **and** the affected `~/Projects/docs/` pages revised · `docs/architecture/**` diff or Session-Notes why-not · PR `## Session notes` (decisions, deferrals, skill + babysit outcomes) · orphan sweep (RULE ORP) · ephemeral `HANDOFF*` docs deleted · `git status -uall` audit, **empty post-commit** before the PR · version sync (`make check-version` passes).
 
