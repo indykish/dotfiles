@@ -263,6 +263,22 @@ else
   bad "ledger_doc_read_command_documented" "AGENTS.md never names audits/doc-read.sh log"
 fi
 
+# Dimension 4.5 — runtime neutrality, as a regression test rather than a
+# promise. Vendors add and remove hook features; the day one disappears, the
+# gate must behave identically. So no file on the enforcement path may name a
+# runtime, its env vars, or its payload shape — that coupling lives only in
+# per-runtime configuration, which is deletable without touching enforcement.
+neutral=1
+for f in "$ROOT/audits/doc-read.sh" "$ROOT/.githooks/pre-commit" \
+         "$ROOT/audits/rule-ledger.sh" "$ROOT/audits/rule-ledger-lib.sh"; do
+  grep -nE 'PostToolUse|CLAUDE_PROJECT_DIR|tool_input|\.claude/' "$f" >/dev/null 2>&1 && {
+    bad "ledger_doc_read_runtime_neutral" "$f names a runtime-specific hook surface"
+    neutral=0
+    break
+  }
+done
+[ "$neutral" -eq 1 ] && ok "ledger_doc_read_runtime_neutral — enforcement path names no agent runtime"
+
 # Invariant 1 — read-only: no reporting mode may write into its own root.
 sb="$(mk_root)"; mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"
 before="$(find "$sb" -type f | sort | xargs shasum 2>/dev/null | shasum)"

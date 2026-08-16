@@ -6,10 +6,16 @@
 #
 # The DOC READ GATE asks an agent to read the façade its edit triggers, and
 # then asks the same agent whether it did. That is a claim about itself
-# compared against nothing. `log` is fed by a PostToolUse hook on the Read
-# tool, so the record is written by the harness rather than by the model;
-# `check` computes which façade pages the staged files trigger and reports the
-# ones nobody read since the last commit.
+# compared against nothing. `log` records the read and `check` compares the
+# record against the façades the staged files trigger.
+#
+# NOTHING HERE MAY DEPEND ON AN AGENT RUNTIME. `log` is a shell command any
+# agent can run; a runtime that also has a read hook (Claude Code today) can
+# call it automatically, and a runtime that removes that feature tomorrow
+# changes nothing — the agent runs the command, the record is identical, the
+# gate behaves the same. Vendor-shaped configuration stays out of this file and
+# out of .githooks/, and an eval fails the build if it appears
+# (evals/ledger/run.sh, ledger_doc_read_runtime_neutral).
 #
 # The record lives in the git directory, never in the tree: it is evidence
 # about one working copy, not shared history. When it is absent — an agent

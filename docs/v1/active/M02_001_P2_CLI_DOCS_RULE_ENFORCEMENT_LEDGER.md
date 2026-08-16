@@ -135,6 +135,9 @@ Derives each façade's file-glob set from the `dispatch_init` lines in `dispatch
 Folded in mid-milestone on Indy's call (Discovery, Aug 16). A `PostToolUse` hook binds Claude Code alone; codex exposes only a turn-ended `notify`, amp has no tool-event surface, and opencode's plugin system is unconfigured — so three of four runtimes would commit unchecked while the scoreboard claimed the read was mechanized. The DOC READ GATE therefore requires the read to be **recorded**, not merely claimed: `bash audits/doc-read.sh log <path>`, which any runtime can run and Claude Code's hook runs automatically. `check` is unchanged — a hook-written row and a command-written row are the same line in the same file.
 
 - **Dimension 4.4** — DONE — the rendered `AGENTS.md` (and therefore all four agent homes) carries the recorded-read requirement → Test `ledger_doc_read_command_documented`
+- **Dimension 4.5** — DONE — no file on the enforcement path (`audits/doc-read.sh`, `.githooks/pre-commit`, the ledger scripts) names a runtime, its env vars, or its payload shape; that coupling is confined to per-runtime configuration, which is deletable without touching enforcement → Test `ledger_doc_read_runtime_neutral`
+
+**Why 4.5 is a test and not a promise** (Indy, Aug 16: *"I dont want this to tied to any tool, since they would keep removing features"*). Vendors add and remove hook APIs. A read hook is therefore treated as an accelerator, never a dependency: delete `.claude/settings.json`'s Read hook entirely and the gate behaves identically — the agent runs `bash audits/doc-read.sh log <path>`, the record is the same line in the same file, `check` cannot tell the difference. The eval enforces the boundary so the coupling cannot creep back in a later commit; its negative control (injecting `CLAUDE_PROJECT_DIR` into the hook) was confirmed to fail the suite.
 
 ### §5 — Pilot tagging: LOGGING_STANDARD
 
