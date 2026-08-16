@@ -1,6 +1,6 @@
 # Governance-edit dispatch
 
-Read this file before editing Oracle's operating model, rule registry, profiles,
+Read this file before editing Oracle's operating model, rule registry, packs,
 generated instructions, dispatch pages, audits, or governance hooks.
 
 The canonical propagation design lives in
@@ -26,7 +26,7 @@ when the reason is recorded in the newest commit message.
 ## Required action
 
 1. Run `orly validate`.
-2. Render the dotfiles profile into the repository root.
+2. Render this repository's rules into its root.
 3. Run `make audit`; fix every failure.
 4. Answer every question in `audits/agents-md.md` against the generated rules.
 5. Run `make llmevals CHECK=1` before commit. Live comprehension stays off the
@@ -37,7 +37,7 @@ when the reason is recorded in the newest commit message.
 7. Emit the invariance report before declaring the work complete.
 
 Render command (writes the root `AGENTS.md` and relinks agent homes;
-`orly render --profile <NAME>` only prints to stdout):
+`orly render` only prints to stdout):
 
 ```bash
 orly sync

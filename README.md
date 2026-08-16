@@ -18,11 +18,13 @@ your language and domain — from `docs/greptile-learnings/RULES.md` for any
 source file down to language-specific façades — pinned by
 `.oracle/ruleset.lock`. No dotfiles checkout, no prepared `$HOME`, works the
 same on a fresh machine, a Continuous Integration (CI) runner, or a remote
-fleet container. `--profile <NAME>` picks a narrower rule set if one is
-registered for your repository; the default (`kernel`) carries every
-language and domain pack, none of Kishore's own address handles or
-agentsfleet's product surface. `orly update` re-materialises against a newer
-engine version; `orly doctor` reports drift.
+fleet container. Which packs you get is read from your own sources — a Rust
+crate receives the Rust rules and never the Zig ones — and never includes
+Kishore's address handles or agentsfleet's product surface. `orly init` also
+seeds `.oracle/orly.json` with the gate commands it can find in your Makefile
+or `package.json`; complete it, commit it, and every teammate shares it.
+`orly update` re-materialises against a newer engine version; `orly doctor`
+reports drift.
 
 ## Kishore's own machine (optional)
 
@@ -132,13 +134,17 @@ The root [`AGENTS.md`](AGENTS.md) is the only generated file.
 it. A rule edit is one commit here — every agent session in every repository
 reads it immediately.
 
-#### 7. Register a repository
+#### 7. Install into a repository
 
-Add its path and profile to `orly/repositories.json`. The profile declares the
-repository's commands (`conform`, `verify.*`) and optional `surfaces{user,docs}`
-prefixes for the docs gate. This registers the repository for `orly gate`'s
-command resolution — it does not install anything there; run `orly init`
-inside that repository separately to materialise its rules.
+```bash
+cd ~/Projects/<repo> && orly init
+```
+
+Materialises that repository's rules from its own sources and seeds
+`.oracle/orly.json` with the gate commands it finds. Complete that file — the
+real `conform`/`verify.*` set, and `surfaces.user`/`surfaces.docs` for the docs
+gate — then commit it. Nothing is registered anywhere; the repository carries
+its own answer, so a teammate's clone gates identically.
 
 #### 8. Gate the work
 
@@ -150,7 +156,7 @@ orly gate
 🔆 gate work
    🟢 git.branch: on feat/example
    🟢 git.tree: clean (active spec excluded)
-   🟢 repo.profile: agentsfleet -> agentsfleet
+   🟢 repo.config: 6 command(s) declared
 ...
 🟢 PR boundary open — CHORE(close) is the next motion
 ```
@@ -203,10 +209,10 @@ cd orly && bun install --frozen-lockfile && cd .. && make audit
 The renderer produces one artifact — the root [`AGENTS.md`](AGENTS.md) — and
 every agent home on this machine symlinks to it, so an edit here reaches every
 session in this checkout at once. Any other repository gets its own copy a
-different way: `orly init` materialises the selected profile's rule pages and
-gate scripts into that repository, pinned by `.oracle/ruleset.lock`; `orly
-update` re-materialises against a newer engine version; `orly doctor` reports
-drift. Rule pages cite each other relative to the repository they were
+different way: `orly init` materialises the rule pages and gate scripts its own
+sources select, pinned by `.oracle/ruleset.lock` and configured by
+`.oracle/orly.json`; `orly update` re-materialises against a newer engine
+version; `orly doctor` reports drift. Rule pages cite each other relative to the repository they were
 materialised into, never through this checkout's path — `make audit`
 (`audits/rule-paths.sh`) fails on a citation that still does.
 
@@ -233,7 +239,7 @@ and [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md).
 | Path | Contents |
 |---|---|
 | [`AGENTS.md`](AGENTS.md) | Generated rules — the file every agent home links to. |
-| [`orly/`](orly/) | The gate engine, renderer, profiles, and fixtures (Bun + TypeScript). |
+| [`orly/`](orly/) | The gate engine, renderer, pack registry, and fixtures (Bun + TypeScript). |
 | [`SOUL.md`](SOUL.md) | Orly's judgment layer — reply-shape rules, reading-Indy defaults, pre-send checklist; rendered into `AGENTS.md` by `orly sync`. Each rule once; `AGENTS.md` holds the gates. |
 | [`SOUL_LOG.md`](SOUL_LOG.md) | The evidence behind `SOUL.md` — precedent log of Kishore's verbatim calls, opened on demand, appended at the moment of correction. |
 | [`dispatch/`](dispatch/) | Rule pages keyed to the work at hand. |

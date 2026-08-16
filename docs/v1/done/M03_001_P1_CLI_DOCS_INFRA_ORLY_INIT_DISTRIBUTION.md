@@ -66,8 +66,12 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `orly/src/model.ts` | EDIT | §2 `/review` pass — a shared `isBelow`/`assertWritableInside` boundary check, deduped from two pre-existing copies, wired into every write site so a symlinked target repository cannot redirect a write outside it |
 | `orly/src/render.ts`, `orly/src/references.ts` | EDIT | §3 core documents become pack-gated so persona can be deselected; §4 reference closure resolves against the consuming repository root |
 | `orly/registry.json` | EDIT | §3 new `persona.indy` pack; `msid-ui.sh` moves out of `universal.authoring` into the surfaces that own it |
-| `orly/profiles/global.json`, `dotfiles.json`, `mintlify-docs.json` | EDIT | §3 select `persona.indy` explicitly; §4 `mintlify-docs` gained `universal.authoring`, the pack owning `dispatch/lifecycle.md`, which the core model cites unconditionally — caught by the per-profile install eval sweep |
-| `orly/profiles/kernel.json` | CREATE | §3 the stranger's profile — kernel packs only, no persona, no product surface |
+| `orly/profiles/*.json` | DELETE | §6 all six profiles leave with the concept — selection is the repository's own sources plus its `.oracle/orly.json` opt-ins |
+| `orly/repositories.json` | DELETE | §6 a private list of Kishore's checkout paths that gate required and the payload excluded — the reason a first contributor could never go green |
+| `orly/src/config.ts` | CREATE | §6 `.oracle/orly.json` read/write, extension-driven pack selection, and the Makefile/`package.json` command sniff |
+| `.oracle/orly.json` | CREATE | §6 this repository's own declaration: its opt-in packs, `conform`/`verify.*`, and docs surfaces |
+| `orly/src/surfaces.ts`, `verify.ts`, `validation.ts` | EDIT | §6 take the surfaces object and pack list directly; the profile parameter they threaded is gone |
+| `dispatch/lifecycle.md` | EDIT | §6 the first-session runbook for completing the seeded config |
 | `SOUL.md` | EDIT | §3 body fenced into the `persona.indy` pack; zero prose changes |
 | `orly/core/operating-model.md` | EDIT | §3 persona sections fenced; §4 the rule-path anchor doctrine rewritten repository-relative; §2.8 `--global` references dropped |
 | `AGENTS.md` | EDIT | §3/§4 regenerated render (never hand-edited) |
@@ -167,6 +171,19 @@ This repository now publishes an artifact other repositories depend on, and its 
 - **Dimension 5.2** — DONE — the README's harness install is a single command block, with machine setup in its own optional section → Test `test_readme_harness_install_is_one_command`
 - **Dimension 5.3** — DONE — the architecture document describes the repository-scoped model and names the superseded thin model → Test `test_architecture_doc_records_supersession`
 
+### §6 — The repository declares itself; the registry and profiles are deleted
+
+Folded in after §1–§5 shipped, on Kishore's direction, when the first-contributor walkthrough was actually run and failed. `orly gate` resolved a repository's commands through `orly/repositories.json` — Kishore's private list of his own checkout paths, excluded from the npm payload by §1 — so a stranger's clone was structurally "not registered" and could never go green. The registry answered one question, "which profile is this checkout", that the repository can answer for itself: file extensions select the language packs, the Makefile and `package.json` seed the gate commands, and both land in `.oracle/orly.json` beside the lock. Profiles disappear as a concept, not just as a lookup — six profile files, `--profile`, `inferProfile`, `repositoryFor`, `repositoryPath`, `profileName`, `model.profiles`, `model.repositories`, and their validators all leave, and `repo.profile` becomes `repo.config`.
+
+- **Dimension 6.1** — DONE — a repository with no registry entry installs and gates green with no name, flag, or lookup → Test `install_selects_packs_from_repository_sources`
+- **Dimension 6.2** — DONE — pack selection reads the repository's own sources: a Rust crate receives the Rust façade and no Zig one → Test `a Rust repository receives no Zig façade and no foreign gate`
+- **Dimension 6.3** — DONE — selection is idempotent; orly's own materialised files are excluded from the scan, so shell gate scripts never select the shell pack on the next install → Test `install > a second install over the same target reports zero writes`
+- **Dimension 6.4** — DONE — `orly init` seeds `.oracle/orly.json` once and never rewrites it, so a hand edit survives every later `orly update` → Test `install > a second install over the same target reports zero writes`
+- **Dimension 6.5** — DONE — the gate reads the config at its feet, and a linked worktree resolves the config its checkout committed → Test `a linked worktree resolves the config its checkout committed`
+- **Dimension 6.6** — DONE — a repository with no config is red and names `orly init`, never a file the user cannot create → Test `a repository with no orly config is red, and names the install command`
+- **Dimension 6.7** — DONE — reference closure ignores citations inside HTML comments, so a template's per-surface menu does not force every repository to take every language pack → Test `every language selection installs with zero dangling references`
+- **Dimension 6.8** — DONE — the first session completes the seeded config; the runbook lives in `dispatch/lifecycle.md` → recorded in the Bootstrap section of that façade
+
 ## Interfaces
 
 ```
@@ -260,16 +277,17 @@ orly doctor
 | R1 | A fresh repository installs in one command with no dotfiles checkout (§1, §2) | `bash evals/install/run.sh` | `0 failed` | P0 | ✅ `21 passed / 0 failed` |
 | R2 | The published payload carries no personal file (§1) | `npm pack --dry-run --json \| grep -cE '"path": *"(\.zshrc\|\.claude/\|Library/)'` | `0` | P0 | ✅ `0` |
 | R3 | No render cites an absolute home path (§4) | `bin/orly render --profile kernel \| grep -c '/Users/'` | `0` | P0 | ✅ `0` |
-| R4 | The kernel render excludes persona and product (§3) | `bin/orly render --profile kernel \| grep -ciE 'agentsfleet\|ZMB_'` | `0` | P0 | ✅ `0` |
+| R4 | A stranger's install excludes persona and product (§3, §6) | `orly init` in a fresh repo, then `grep -ciE 'agentsfleet\|ZMB_' AGENTS.md` | `0` | P0 | ✅ `0` — opt-in packs are never inferred |
 | R5 | Drift and stale pins are detected (§2) | `bash evals/install/run.sh drift` | `0 failed` | P0 | ✅ `2 passed / 0 failed` |
 | R6 | The audit grades identically under a scratch `$HOME` (§4) | `HOME=$(mktemp -d) bash audits/rule-paths.sh` | exit 0 | P0 | ✅ `exit 0` |
-| R7 | Diff stays inside Files Changed | `git diff --name-only bc0fe0a...HEAD` (M02's tip — the real base; master doesn't carry M02 yet) | 0 paths missing from the Files Changed table | P0 | ✅ `orly/src/model.ts` was missing, added as an EDIT row; every other path already listed |
+| R7 | Diff stays inside Files Changed | `git diff --name-only bc0fe0a...HEAD` (M02's tip — the real base; master doesn't carry M02 yet) | 0 paths missing from the Files Changed table | P0 | ✅ `orly/src/model.ts` added at REVIEW; §6's deletions and `config.ts`/`.oracle/orly.json` added at fold-in |
 | S1 | Unit tests pass | `cd orly && bun test src` | exit 0 | P0 | ✅ `96 pass / 0 fail` |
 | S2 | Full audit chain clean | `make audit` | `ALL CHECKS PASSED` | P0 | ✅ `ALL CHECKS PASSED` |
 | S3 | Cross-agent rule comprehension holds after the pack split | `make llmevals` | threshold met across all four agents | P0 | ✅ `make llmevals SMOKE=1` — claude=1/1, amp=1/1, opencode=1/1, codex unavailable (auth/quota, excluded from gate) — matches the pre-push smoke convention |
 | S7 | No secrets | `gitleaks detect` | exit 0 | P0 | ✅ `no leaks found`, exit 0 |
 | S8 | No oversize source file | `git diff --name-only bc0fe0a...HEAD \| grep -v '\.md$' \| xargs wc -l 2>/dev/null \| awk '$1>350 && $2!="total"'` | no output | P0 | ✅ no output |
 | S9 | Orphan sweep | Dead Code Sweep greps below | 0 matches | P0 | ✅ see Dead Code Sweep grading below |
+| R8 | A first contributor installs and gates green with no registry, name, or flag (§6) | `orly init` then `orly gate work` in a fresh repo | `repo.config` green | P0 | ✅ `🟢 repo.config: 2 command(s) declared` — was structurally impossible before §6 |
 
 **Grading protocol (VERIFY):** run the Verify command verbatim; grade ONLY from its output. Graded = ✅/❌ + the one decisive output line (`342 passed`); long evidence goes to PR Session Notes with a pointer here. **Ship gate:** every row graded, every P0 ✅ → eligible for CHORE(close); any ❌ or empty cell → return to EXECUTE; a P1 ❌ ships only with an Indy-acked deferral quote in Discovery.
 
@@ -288,6 +306,7 @@ orly doctor
 | `--global` | `git grep -n -w -- '--global' \| grep -v '\.git/'` | 0 matches |
 | the absolute rule-path anchor as a *citation* (not a self-reference) | `git grep -n -F '~/Projects/dotfiles/' -- 'dispatch/*.md' 'docs/*.md' 'orly/core/*.md' 'AGENTS.md'` | every hit is one of: a persona-fenced self-reference to this checkout (`SOUL.md`/`SOUL_LOG.md` source, the symlinked-dotfiles-edits bullet), `dispatch/edit_rules.md`'s one engine-only exemption, `dispatch/lifecycle.md`'s skill-file reference (separate distribution), a scope-boundary exclusion in `LOGGING_STANDARD.md`, or a historical post-mortem in `docs/DISPATCH_ARCHITECTURE.md` about a mechanism (`bin/link-agents-md`) that no longer exists — zero are live "go read this file" citations |
 | `requireGlobalOnly` | `git grep -n -w 'requireGlobalOnly'` | 0 matches |
+| the profile concept (§6) | `git grep -nE 'repositoryFor\|repositoryPath\|profileName\|inferProfile\|model\.profiles\|model\.repositories\|--profile'` | 0 matches outside `docs/v1/` history |
 
 ## Out of Scope
 
@@ -326,6 +345,7 @@ orly doctor
 - **Skill-chain outcomes:**
   - `/write-unit-test` — audited coverage against the Files Changed table's own claim (install.test.ts/lockfile.test.ts declared CREATE, never written). Wrote both: lockfile.test.ts (22 tests, every exported pure function) and install.test.ts (13 tests, in-process against the real registry). Found and fixed a real bug while writing the "rejects outside a git repo" test: `requireWorkTree` compared git's realpath'd output against an unresolved `targetRoot`, so any install from a symlinked path (routine on macOS — `$TMPDIR`, often `~/Projects` itself) would falsely refuse its own repository root. Unit suite 53 → 87 tests.
   - `/write-integration-test` — most of the skill's nine tiers (T2-T3 DB/HTTP, T5 DB concurrency, T7 streaming, T9 client-daemon) are N/A for a CLI installer with no server or database; mapped what applies (T1 real-dependency wiring, T3-as-state-assertions, T4 failure injection, T6-as-atomicity, T8-as-json-contract) against the existing 19-case shell sandbox suite, which already is this milestone's integration tier (real npm-packed binary, real git subprocess, real filesystem). Found the Files Changed table's own Failure Modes claim — "hooksPath already claimed → refuse to retarget" — was declared but never implemented; `installHooks()` unconditionally overwrote `core.hooksPath`. Implemented the refusal, added the multi-profile sweep (proven by hand mid-session, never a re-runnable case) as a permanent eval. Shell suite 19 → 20 cases, install.test.ts 13 → 16.
+  - **§6 fold-in (Aug 17, 2026)** — Kishore asked why a repository had to be registered at all. Running the first-contributor walkthrough proved it: `orly init` succeeded, then `orly gate` returned `🔴 repo.profile: repository is not registered in orly/repositories.json` — a file excluded from the npm payload, so unobtainable by anyone but Kishore. His direction, verbatim: *"if something is not needed and complicating things it must be deleted and must be part of this PR"* and *"so dont use profile but rather packs"*. The registry, all six profiles, and the profile vocabulary were deleted rather than patched.
   - `/review` — adversarial pass against the diff (base `bc0fe0a`) found four issues, all resolved:
     1. **CRITICAL, reproduced.** A committed symlink in the target repository let `orly init` write materialised files through it to anywhere the invoking user could write. Fixed by extracting a shared `isBelow`/`assertWritableInside` boundary check into `model.ts` (deduped from two pre-existing copies) and wiring it into every write site — managed files, hooks, lock. Red-green proof: 3 new tests in `install.test.ts` fail with the check disabled, pass with it restored.
     2. **MEDIUM, reproduced with a real mounted volume.** Staging in the OS temp directory crashed with a cross-device link error (`EXDEV`) when the target repository lives on a different filesystem (external drives, some devcontainer/CI layouts). Fixed by staging inside `targetRoot/.oracle/` instead. That introduced a follow-on bug — staging there left an empty `.oracle/` behind even on a refused install, breaking the "leaves target untouched" atomicity guarantee — caught by the existing atomicity test and fixed in the same pass.

@@ -219,15 +219,17 @@ Gates (read-only; no PR without every criterion green or a recorded override):
                                     empty commit with an Orly-Override trailer
 
 Install (the repository is the unit — no checkout of this package required):
-  orly init [--profile <NAME>] [--force] [--no-hooks] [--json]
-                                    materialise rules, gates, hooks, and the lock
+  orly init [--force] [--no-hooks] [--json]
+                                    materialise rules, gates, hooks, the lock,
+                                    and a seeded .oracle/orly.json
   orly update [--force] [--json]    re-materialise at the installed engine version
 
 Rules (one render target — the root AGENTS.md every agent home links to):
   orly sync                         render the root rules + relink agent homes
   orly doctor                       root currency + home links
-  orly render --profile <NAME>      print a profile's render (stdout)
-  orly verify --all                 per-profile determinism + root currency
-  orly validate                     registry and profile shape
+  orly render [--project-root <DIR>]
+                                    print a repository's render (stdout)
+  orly verify --all                 render determinism + root currency
+  orly validate                     registry shape
   orly --version                    the installed package version`);
 }

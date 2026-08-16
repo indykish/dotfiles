@@ -3,6 +3,7 @@ import { dirname, extname, join, relative } from "node:path";
 
 import { readLock } from "./lockfile";
 import { assertWritableInside, isObject, JsonObject, objectValue, OrlyError, readJsonObject, RulesModel, stringArray } from "./model";
+import { validateCommands, validateSurfaces } from "./validation";
 
 const ORACLE_DIRECTORY = ".oracle";
 export const CONFIG_PATH = `${ORACLE_DIRECTORY}/orly.json`;
@@ -69,12 +70,7 @@ export async function readConfig(targetRoot: string): Promise<RepoConfig | undef
   if (!existsSync(path)) return undefined;
   const value = await readJsonObject(path);
   if (value.schema_version !== CONFIG_SCHEMA_VERSION) throw new OrlyError(`${CONFIG_PATH} schema_version must equal ${CONFIG_SCHEMA_VERSION}`);
-  return {
-    schema_version: CONFIG_SCHEMA_VERSION,
-    packs: stringArray(value[PACKS_FIELD] ?? [], `${CONFIG_PATH} ${PACKS_FIELD}`),
-    commands: readCommands(value[COMMANDS_FIELD]),
-    surfaces: isObject(value.surfaces) ? value.surfaces : undefined,
-  };
+  return parseConfig(value);
 }
 
 // Gate criteria evaluate synchronously — they read exit codes and files, never
@@ -84,7 +80,18 @@ export function readConfigSync(targetRoot: string): RepoConfig | undefined {
   if (!existsSync(path)) return undefined;
   const value: unknown = JSON.parse(readFileSync(path, TEXT_ENCODING));
   if (!isObject(value)) throw new OrlyError(`${CONFIG_PATH} must be a JSON object`);
+  return parseConfig(value);
+}
+
+// One shape check for both readers: the declared commands and surfaces are what
+// `orly gate` runs and diffs against, so a malformed one fails here by name
+// rather than as a confusing red criterion later.
+function parseConfig(value: JsonObject): RepoConfig {
   if (value.schema_version !== CONFIG_SCHEMA_VERSION) throw new OrlyError(`${CONFIG_PATH} schema_version must equal ${CONFIG_SCHEMA_VERSION}`);
+  const errors: string[] = [];
+  if (value[COMMANDS_FIELD] !== undefined) validateCommands(CONFIG_PATH, value[COMMANDS_FIELD], errors);
+  validateSurfaces(CONFIG_PATH, value.surfaces, errors);
+  if (errors.length > 0) throw new OrlyError(errors.join("\n"));
   return {
     schema_version: CONFIG_SCHEMA_VERSION,
     packs: stringArray(value[PACKS_FIELD] ?? [], `${CONFIG_PATH} ${PACKS_FIELD}`),

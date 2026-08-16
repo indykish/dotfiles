@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, lstatSync, readdirSync, realpathSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative } from "node:path";
 
-import { validateActiveRule, validateCommands, validateRelativePath, validateSurfaces } from "./validation";
+import { validateActiveRule, validateRelativePath } from "./validation";
 
 export type JsonObject = Record<string, unknown>;
 
