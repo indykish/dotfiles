@@ -326,8 +326,8 @@ siblings.
 |---|---|---|
 | 26.1 | Is `orly/registry.json` the canonical profile and pack registry, with `orly/core/operating-model.md` as the global operating-model source? | YES |
 | 26.2 | Do agent-home links (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, OpenCode) point at the rendered root `AGENTS.md` in `~/Projects/dotfiles`, making a new global render immediately visible to installed agents? | YES |
-| 26.3 | Are project rules ordinary tracked snapshots with `.oracle/ruleset.lock`, rather than symbolic links into dotfiles? | YES |
-| 26.4 | Does repository synchronization require a clean tree and `AGENTS.project.md`, and refuse sibling-worktree mutation? | YES |
+| 26.3 | Do consumer repositories carry **no** orly-managed files — one hand-authored `AGENTS.md` plus gate scripts resolved from `ORLY_ROOT` — rather than tracked rule snapshots, a committed ruleset ledger, or symbolic links into dotfiles? | YES |
+| 26.4 | Does `orly sync --global` render only the root `AGENTS.md` and relink the agent homes, with no per-repository synchronization or adoption verb, and never mutate a consumer repository or sibling worktree? | YES |
 | 26.5 | Does the `agentsfleet` profile map CONFORM to `make harness-verify` while VERIFY remains behavior proof? | YES |
 | 26.6 | Does `README.md` document initialization, explicit synchronization, status, and doctor commands for new repositories? | YES |
 | 26.7 | Does `orly gate pr` discover a spec closed to `done/` on the branch (its `Branch:` header names the branch) and run the spec criteria — including `spec.moved`, `spec.baseline`, `spec.ordering`, and `spec.deferrals` — instead of skip-passing as spec-less? | YES |

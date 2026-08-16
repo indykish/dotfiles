@@ -63,5 +63,5 @@ mutates a consumer repository or sibling worktree.
   Audit:         ✅ all checks passed
   Questionnaire: ✅ <N>/<N> YES
   Comprehension: ✅ pass
-  Evidence:      ✅ current commit + registry digest
+  Evidence:      ✅ current commit
 ```
