@@ -20,6 +20,11 @@
 # (§16 Decision 6 / the delegate is exercised by the product harness instead).
 set -uo pipefail
 
+# Sandboxes must be their own repositories: an inherited GIT_DIR/GIT_INDEX_FILE
+# from a hook redirects `git -C "$sb" add` into the caller's real index.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_PREFIX \
+      GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FX="$ROOT/evals/dispatch/fixtures"
 
