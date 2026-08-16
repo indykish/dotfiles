@@ -18,7 +18,7 @@
 #               the call, states the verdict in chat; blocks the TURN, not the
 #               script (exit 0). 🟡 is reserved for "violations addressed" in
 #               HARNESS_VERIFY_OUTPUT.md and is never emitted here.
-#   ⚪ N/A       delegated check — runs only in the product repo, not dotfiles
+#   🟣 N/A       delegated check — runs only in the product repo, not dotfiles
 #
 # Source this, then call:
 #   dispatch_init "<LANG>" <ext-glob...>      # e.g. dispatch_init "ZIG" '*.zig'
@@ -170,9 +170,9 @@ dispatch_length_gate() {
 #   dispatch_run_helper DEINIT deinit-pairs.sh --staged
 dispatch_run_helper() {
   local code="$1" script="$2" mode="${3:-}" g; g="$(dispatch_gloss "$code")"
-  # An absent DETERMINISTIC helper is 🔴, never a silent ⚪/0: a deleted or
+  # An absent DETERMINISTIC helper is 🔴, never a silent 🟣/0: a deleted or
   # un-synced leaf must NOT pass as a green no-op (DISPATCH_ARCHITECTURE.md §10).
-  # ⚪ is reserved for dispatch_delegate (checks that legitimately don't run here).
+  # 🟣 is reserved for dispatch_delegate (checks that legitimately don't run here).
   if [ ! -f "$DISPATCH_SCRIPTS/$script" ]; then
     printf '  %-8s 🔴 %s — DETERMINISTIC helper absent (audits/%s) — cannot verify\n' "$code" "$g" "$script"
     DISPATCH_RC=1
@@ -190,7 +190,7 @@ dispatch_run_helper() {
 # A gate that can only run inside the project repo (not dotfiles). Print, don't run.
 dispatch_delegate() {
   local code="$1" cmd="$2" g; g="$(dispatch_gloss "$code")"
-  printf '  %-8s ⚪ %s — DELEGATED → %s\n' "$code" "$g" "$cmd"
+  printf '  %-8s 🟣 %s — DELEGATED → %s\n' "$code" "$g" "$cmd"
 }
 
 # A judgment gate that NO script can pass/fail (architecture, legacy-design,

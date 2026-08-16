@@ -17,23 +17,23 @@ Non-empty = address before CONFORM passes.
 
 ## Required output
 
-Verdict cells use ✅ pass · ⚪ n/a · 🔴 fail · 🟡 violations addressed.
+Verdict cells use ✅ pass · 🟣 n/a · 🔴 fail · 🟡 violations addressed.
 
 ```
-🚧 CONFORM: <branch>
+🔴 CONFORM: <branch>
 | Gate                 | Verdict                       |
-| FILE SHAPE           | ✅ pass | ⚪ n/a               |
-| PUB GATE             | ✅ pass | ⚪ n/a               |
+| FILE SHAPE           | ✅ pass | 🟣 n/a               |
+| PUB GATE             | ✅ pass | 🟣 n/a               |
 | LENGTH GATE          | ✅ pass | 🟡 files at cap: …    |
 | MILESTONE-ID GATE    | ✅ pass — combined audit, 0 hits |
-| ZIG GATE             | ✅ pass | ⚪ n/a               |
-| UI GATE              | ✅ pass | ⚪ n/a               |
+| ZIG GATE             | ✅ pass | 🟣 n/a               |
+| UI GATE              | ✅ pass | 🟣 n/a               |
 | DESIGN TOKEN GATE    | ✅ pass | 🟡 N arbitraries addressed | 🔴 N unresolved |
 | UFS GATE             | ✅ pass | 🟡 N violations addressed | 🔴 N unresolved |
-| SCHEMA GUARD         | ✅ pass | ⚪ n/a               |
+| SCHEMA GUARD         | ✅ pass | 🟣 n/a               |
 | GREPTILE GATE        | ✅ pass | 🟡 N violations addressed |
-| Architecture consult | ✅ doc updated same commit | ⚪ n/a |
-| Coverage             | ✅ backend N% ≥ min · UI N% ≥ min | ⚪ n/a |
+| Architecture consult | ✅ doc updated same commit | 🟣 n/a |
+| Coverage             | ✅ backend N% ≥ min · UI N% ≥ min | 🟣 n/a |
 | /write-unit-test     | ✅ clean | 🟡 N tests added   |
 ```
 

@@ -12,7 +12,7 @@ reference is `~/Projects/dotfiles/docs/CHANGELOG_VOICE.md` (Mintlify-style) — 
 
 - 🔵 DECIDE — judgment-only; the agent writes to the voice below and self-audits.
   No script gates it — it blocks the *turn* (the changelog entry), not a commit.
-- ⚪ delegated — the changelog itself lives in `~/Projects/docs` (its own repo +
+- 🟣 delegated — the changelog itself lives in `~/Projects/docs` (its own repo +
   own-branch flow per AGENTS.md Operational defaults); dotfiles carries only the
   voice discipline.
 

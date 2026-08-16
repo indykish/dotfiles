@@ -293,7 +293,7 @@ if [ "$FAIL" -eq 0 ]; then
   exit 0
 fi
 
-printf "🚧 UFS GATE — %d violation(s):\n" "${#violations[@]}" >&2
+printf "🔴 UFS GATE — %d violation(s):\n" "${#violations[@]}" >&2
 for v in "${violations[@]}"; do
   printf "  %s\n" "$v" >&2
 done

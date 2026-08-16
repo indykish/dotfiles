@@ -57,7 +57,7 @@ mutates a consumer repository or sibling worktree.
 ## Required output
 
 ```text
-🌟 EDIT_RULES DISPATCH: <branch> @ <head>
+📐 EDIT_RULES DISPATCH: <branch> @ <head>
   Registry:      ✅ valid
   Generated:     ✅ byte-stable
   Audit:         ✅ all checks passed

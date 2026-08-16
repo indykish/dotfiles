@@ -7,7 +7,7 @@ This is the prose the AGENT reads before writing any `*.ts` / `*.tsx` / `*.js` /
 - 🟢 pass — deterministic check passed.
 - 🔴 fail — deterministic check failed (or helper absent); STOP, fix, rerun.
 - 🔵 DECIDE — judgment-only; no script can decide, the agent reads the section and makes the call (blocks the TURN, not the script).
-- ⚪ delegated — the checker runs only in the product repo, not in dotfiles.
+- 🟣 delegated — the checker runs only in the product repo, not in dotfiles.
 
 **Tag legend** — each section heading below carries one of:
 
@@ -284,7 +284,7 @@ immediately preceding the edit. **User-invokable only.** Generic "scope creep" /
 
 > [container]
 
-The TypeScript-relevant gate cards (`ui-substitution`, `design-token`) dissolve into this façade. Their prose is preserved verbatim below (headings demoted one level; words unchanged), and — matching `write_zig.md` — each subsection carries its own enforcement tag (`UIS` for the UI gate, `DTK` for the design-token gate). The mechanical checks delegate to `make lint`: the audit scripts (`msid-ui.sh`, `design-tokens.sh`) scan `ui/packages/**`, which exists in the product repo, not in dotfiles, so the dispatch emits `⚪ DELEGATED` for them here.
+The TypeScript-relevant gate cards (`ui-substitution`, `design-token`) dissolve into this façade. Their prose is preserved verbatim below (headings demoted one level; words unchanged), and — matching `write_zig.md` — each subsection carries its own enforcement tag (`UIS` for the UI gate, `DTK` for the design-token gate). The mechanical checks delegate to `make lint`: the audit scripts (`msid-ui.sh`, `design-tokens.sh`) scan `ui/packages/**`, which exists in the product repo, not in dotfiles, so the dispatch emits `🟣 DELEGATED` for them here.
 
 ### UI Component Substitution (UI GATE)
 

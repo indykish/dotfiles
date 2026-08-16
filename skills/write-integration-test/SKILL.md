@@ -367,9 +367,9 @@ After the suite, produce:
 | T4 Failure injection           | yes      | 3/8   | 🔴     |
 | T5 Concurrency & isolation     | yes      | 2/2   | ✅     |
 | T6 Resource lifecycle          | yes      | 1/2   | 🟡     |
-| T7 Streaming / transport       | n/a      | —     | ⚪     |
+| T7 Streaming / transport       | n/a      | —     | 🟣     |
 | T8 API rules & schema          | yes      | 1/1   | ✅     |
-| T9 Client-daemon supervision   | n/a      | —     | ⚪     |
+| T9 Client-daemon supervision   | n/a      | —     | 🟣     |
 Mode:        Smoke | Standard | Hardening
 Scenario axis: positive ✅ · negative ✅ · invalid 🟡 · flaky-conn ✅ · kill/restart ✅ · concurrency ✅
 Harness:     ✅ port bind-and-hold · ✅ teardown catalog-derived (survives a new schema)
@@ -383,7 +383,7 @@ Complexity:  ✅ round-trips constant n→10n; p95 42ms < 50ms budget vs baselin
 Refactor proposals surfaced: none (or "1 — <one-line summary>")
 ```
 
-Legend: `✅` met · `🟡` partially met (specify gaps) · `🔴` missing required (block) · `⚪` not applicable (state why)
+Legend: `✅` met · `🟡` partially met (specify gaps) · `🔴` missing required (block) · `🟣` not applicable (state why)
 
 ## Definition of Done
 

@@ -197,7 +197,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 | 14.2 | Is there an explicit skip-list of undergrad-CS staples (API, URL, HTTP, JSON, SQL, DNS) that need NO expansion? | YES |
 | 14.3 | Does AGENTS.md require a pre-send self-check scanning outgoing text for unexpanded acronyms (regex `\b[A-Z][A-Z0-9]{1,5}\b`), treating skip as on par with skipping a gate (`ACRONYM CHECK: SKIPPED per user override (reason: ...)`)? | YES |
 | 14.4 | Does the tone rule permit dry humour and swear words, while requiring that technical clarity is never traded for it? | YES |
-| 14.5 | Does the verification done-message use ✅ / 🔴 / ⚠️ glyphs and the explicit format defined in `dispatch/verify.md`? | YES |
+| 14.5 | Does the verification done-message use ✅ / 🔴 / 🟠 glyphs and the explicit format defined in `dispatch/verify.md`? | YES |
 | 14.6 | Does AGENTS.md identify the human as Kishore (casual handle Indy) and the agent as Oracle (casual handle Orly), with address tags 🤠 Indy / 🦉 Orly so addressing resolves unambiguously? | YES |
 
 ### Scenario 15 — Architecture-edit ordering

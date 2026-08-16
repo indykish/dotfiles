@@ -26,7 +26,7 @@ are entering, not the whole file.
 The root `bun install` hydrates the workspace (`ui/packages/*`); `cli/` is its
 own Bun project needing install + build. `git worktree add` fires
 `.githooks/post-checkout` → symlinks `~/.config/agentsfleet/{ui,runner}.env.local`
-into the tree; on ⚠ run `provision-env-1password`, re-link. Post-merge:
+into the tree; on 🟠 run `provision-env-1password`, re-link. Post-merge:
 `git worktree remove ../agentsfleet-mNN-name`.
 
 **Mid-stream spec → ask before hydrating (default: same tree).** A spec created

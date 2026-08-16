@@ -10,7 +10,7 @@
 #   dispatch/write_sql.sh --staged                  # staged schema/*.sql (CONFORM, pre-commit)
 #
 # Layering:  AGENTS.md → write_sql.md (latent) → write_sql.sh (this) → audits/*.sh
-# Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script) · ⚪ delegated
+# Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script) · 🟣 delegated
 # Exit:      0 = mechanical gates pass · 1 = ≥1 failed · 2 = usage error.
 #
 # Note: STS/NSQ/SGR are mechanizable SQL-hygiene rules with no leaf check wired yet

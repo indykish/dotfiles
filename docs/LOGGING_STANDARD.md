@@ -298,7 +298,7 @@ Failure modes the audit script and reviewer must close. These are **not aspirati
 | L5 | "Operator needs the full stack trace in `msg=`" | `msg=` capped at 300 chars; total fields per record capped at 15. Stack traces emit as a separate `event=stack_trace` record at `debug` level, correlated by `correlation_id`, not stuffed into `msg`. |
 | L6 | "Embedded newlines because I copy-pasted output" | Audit greps for raw newline byte inside quoted logfmt values. Must be `\n` literal (two chars). |
 | L7 | "Auto-mode is on, the gate block is ceremony" | **Auto-mode does NOT cover gate skips.** Skip without an explicit user-given override = automatic violation. No size threshold lets an edit bypass the gate. |
-| L8 | "I read this doc at session start; subsequent edits don't need re-print" | Gate fires **per-edit**. The printed `🚧 LOGGING GATE` block is required before every triggered Edit/Write, not once per session. |
+| L8 | "I read this doc at session start; subsequent edits don't need re-print" | Gate fires **per-edit**. The printed `🔴 LOGGING GATE` block is required before every triggered Edit/Write, not once per session. |
 | L9 | "Fix-pass touches every line; printing per-line is noise" | Fix-pass produces **one combined gate block per file**, not per-line. The block lists all violations addressed in that file. Still required, just consolidated. |
 
 These are enforced by `logging.sh` (mechanical) and the dispatch façade (`dispatch/write_any.md`, Logging Gate — output discipline). When in conflict, the façade wins — it is the enforcement layer.

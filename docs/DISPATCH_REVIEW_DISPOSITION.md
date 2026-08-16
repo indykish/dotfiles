@@ -25,7 +25,7 @@ Severity: P0 9R/10P · P1 10R/6P · P2 2R/1P.
 | 3 | P0 | cross-repo | dispatch/write_zig.sh delegates to leaf scripts that cannot run where the dispatch lives —  | partial | §0, §10, §10.3, §13, §6.3, §7 |
 | 4 | P0 | determinism-feasibility | `--staged` file discovery and leaf-check scope read two different git repos — CWD vs RESOLVE | partial | §0, §10, §10.4, §7 |
 | 5 | P0 | drift-coherence | Coherence audit proves symbol presence, not rule enforcement — the central anti-drift claim  | resolved | §0, §1, §12, §2, §3, §3.1, §4, §6.1, §6.3 |
-| 6 | P0 | drift-coherence | Missing leaf helper returns exit 0 with a ⚪ row — a deterministic check silently becomes a n | partial | §0, §10, §12, §14, §6.3 |
+| 6 | P0 | drift-coherence | Missing leaf helper returns exit 0 with a 🟣 row — a deterministic check silently becomes a n | partial | §0, §10, §12, §14, §6.3 |
 | 7 | P0 | drift-coherence | Dissolving docs/gates/ and renaming ZIG_RULES.md/BUN_RULES.md detonates the in-repo invarian | resolved | §0, §11, §8, §9 |
 | 8 | P0 | ergonomics-robustness | Invariance audit's gate-parity check hard-fails the moment docs/gates/ is dissolved — the ve | resolved | §0, §13, §8, §9 |
 | 9 | P0 | ergonomics-robustness | DOTFILES_RESIDENT and seven referencing docs still point at docs/ZIG_RULES.md / BUN_RULES.md | partial | §6.5, §8 |

@@ -25,7 +25,7 @@ changelog entries read this dispatch first, then `write_changelog.md`.
 
 ## Enforcement
 
-⚪ **Delegated.** Each repository owns its checker because a fresh clone must not
+🟣 **Delegated.** Each repository owns its checker because a fresh clone must not
 depend on files in a developer's home directory. Dotfiles owns the rule and the
 read trigger. Repository hooks own mechanical enforcement.
 

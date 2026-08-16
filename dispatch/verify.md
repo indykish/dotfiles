@@ -11,7 +11,7 @@ edit. (This is the former Verification gate absorbed into the dispatch model.)
 
 - 🔵 DECIDE — judgment-only; the agent must run the targets below and report
   honestly. No script gates this — it blocks the *turn*, not a commit.
-- ⚪ delegated — the `make` targets themselves live in the product repo; dotfiles
+- 🟣 delegated — the `make` targets themselves live in the product repo; dotfiles
   carries only the discipline of *which* targets are canonical and when.
 
 ## Trigger
@@ -85,7 +85,7 @@ lines verbatim. No "I ran it, trust me."
 **Skipped (environment constraint, not a pass):**
 
 ```
-⚠️ <target> skipped per environment constraint (reason: ...)
+🟠 <target> skipped per environment constraint (reason: ...)
 ```
 
 A skipped target MUST be surfaced — never dressed up as "tests pass".
@@ -104,7 +104,7 @@ missing from the table counts as ❌.
 |---|---|
 | ✅ | Verified — all required targets passed |
 | 🔴 | Verification failed — at least one target failed |
-| ⚠️ | Skipped per environment constraint — read the reason |
+| 🟠 | Skipped per environment constraint — read the reason |
 | 🧪 | Lint / unit / integration test |
 | 🧩 | Integration test (cross-process) |
 | 🎯 | Cross-compile target |

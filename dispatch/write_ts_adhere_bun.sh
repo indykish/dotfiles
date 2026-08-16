@@ -11,7 +11,7 @@
 #   dispatch/write_ts_adhere_bun.sh --staged          # staged TS/JS (CONFORM, pre-commit)
 #
 # Layering:  AGENTS.md → write_ts_adhere_bun.md (latent) → write_ts_adhere_bun.sh (this) → audits/*.sh
-# Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script) · ⚪ delegated
+# Signals:   🟢 pass · 🔴 fail (blocks) · 🔵 DECIDE (judgment; blocks the TURN, not the script) · 🟣 delegated
 # Exit:      0 = mechanical gates pass · 1 = ≥1 failed · 2 = usage error.
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"

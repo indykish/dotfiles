@@ -61,7 +61,7 @@ source "$HERE/agents.sh"
 source "$HERE/fixtures.sh"
 
 # ---------------------------------------------------------------------------
-printf '%s🧠 AGENTS.md cross-agent Large Language Model (LLM) evaluation%s  (mode=%s threshold=%s%%)\n\n' "$B$BO" "$X" "$MODE" "$THRESHOLD"
+printf '%s🧬 AGENTS.md cross-agent Large Language Model (LLM) evaluation%s  (mode=%s threshold=%s%%)\n\n' "$B$BO" "$X" "$MODE" "$THRESHOLD"
 
 [[ -f "$FIXTURES" ]] || { echo "${R}FAIL${X}: fixtures missing: $FIXTURES" >&2; exit 2; }
 validate_fixtures || { echo "${R}FAIL${X}: fixture validation failed" >&2; exit 2; }
@@ -133,7 +133,7 @@ for agent in "${TARGETS[@]}"; do
     echo; echo "${BO}── $agent ──${X} ${B}(resumed from journal)${X}"
     case "$jstatus" in
       UNAVAIL) UNAVAIL="$UNAVAIL $agent"; REPORT="$REPORT$agent=UNAVAIL "
-               echo "  ${Y}⚠ unavailable${X} (journalled)" ;;
+               echo "  ${Y}🟠 unavailable${X} (journalled)" ;;
       *) GRADED=$((GRADED + 1)); REPORT="$REPORT$agent=$jcorrect/$jtotal "
          [[ "$jstatus" == PASS ]] && echo "  ${G}→ $jcorrect/$jtotal PASS (journalled)${X}" \
            || { echo "  ${R}→ $jcorrect/$jtotal FAIL (journalled)${X}"; OVERALL_OK=0; } ;;
@@ -150,7 +150,7 @@ for agent in "${TARGETS[@]}"; do
     # log + exclude from the gate (don't score it 0 and sink the suite).
     if is_unavailable "$out"; then
       unavailable=1; rm -f "$pf" "$out"
-      printf '  %s⚠ unavailable%s: %s emitted a credit/auth/quota error — excluded from gate\n' "$Y" "$X" "$agent"
+      printf '  %s🟠 unavailable%s: %s emitted a credit/auth/quota error — excluded from gate\n' "$Y" "$X" "$agent"
       break
     fi
     total=$((total+1))

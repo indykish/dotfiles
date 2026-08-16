@@ -40,14 +40,14 @@ Scope: `~/Projects/dotfiles` operating model + cross-repo rule-doc references
 | "nothing unique dies" on merge | A **mechanical merge-loss proof** (`merge-coverage.sh`, §6.5). No card deleted until its delta-landed assertion is green. |
 | `🟡` = JUDGMENT-open | **Glyph collision fixed** — `HARNESS_VERIFY_OUTPUT.md:19` already uses `🟡` for "violations addressed." v2 introduces **`🔵 DECIDE`** for judgment-open (§3.1). |
 | JUDGMENT "mitigated" / "blocks the turn" | Honestly scoped: **proven for DETERMINISTIC, attested-by-honor for JUDGMENT.** A `HARNESS_VERIFY` JUDGMENT row makes the *attestation* auditable (§11). |
-| Helper-absent → `⚪`, exit 0 | A DETERMINISTIC helper that is **absent hard-fails RED** (§10) — no silent green no-op. |
+| Helper-absent → `🟣`, exit 0 | A DETERMINISTIC helper that is **absent hard-fails RED** (§10) — no silent green no-op. |
 | `.git/hooks/pre-commit` backstop | Wired to **`.githooks/pre-commit`** (`core.hooksPath` = `.githooks`, confirmed) — `.git/hooks/` never runs on a fresh clone. |
 | Dispatch run in dotfiles; leaf checks "just run" | **Execution-location model defined** (§10): `bin/link-agents-md` **symlinks** (confirmed `:160,176`), so the dispatch runs in the product repo against a symlink back to dotfiles. `DISPATCH_ROOT` (target repo) is derived from `git rev-parse --show-toplevel`, NOT `BASH_SOURCE` — so a symlinked dispatch scopes to the repo it runs in, not dotfiles. |
 | fn≤50 / method≤70 sub-cap | **Not silently dropped** — `dispatch_length_gate` is file-cap only today (`lib.sh:107`); v2 names the sub-cap as a delegated/[JUDGMENT] decision in §13. |
 
 > **This doc is the TARGET STATE, not current code.** The dispatch WIP on this
 > branch (`dispatch/lib.sh`, `dispatch/write_zig.sh`) is v1-era: it still emits
-> `🟡` for judgment, returns `⚪`/exit 0 on an absent helper, derives
+> `🟡` for judgment, returns `🟣`/exit 0 on an absent helper, derives
 > `DISPATCH_ROOT` from `BASH_SOURCE`, and wires `ufs.sh --all`. Every such
 > correction below is *specified here and implemented during the staged
 > migration* (§9), not already present. A second adversarial pass (Jun 04, 21
@@ -443,7 +443,7 @@ tree and pass **vacuously**, exactly the bug propagation was supposed to cure.
    real code. `evals/dispatch/` fixtures are the only place these checks
    are provable in dotfiles (it has no `*.zig`).
 5. **`dispatch_run_helper` hard-fails (🔴, `DISPATCH_RC=1`) on an absent
-   DETERMINISTIC helper** — never `⚪`/exit 0. `⚪` is reserved for
+   DETERMINISTIC helper** — never `🟣`/exit 0. `🟣` is reserved for
    `dispatch_delegate`. `dispatch-coverage.sh` enforces helper presence (§6.3).
 6. Add a `link-agents-md` propagation test + a **staleness note:** symlinks are always
    current; a product-repo *real-file* override triggers `link-agents-md`'s existing
@@ -524,7 +524,7 @@ DETERMINISTIC half; the JUDGMENT half is "attested + eval-sampled."
 - [ ] `evals/dispatch/merge-coverage.sh` clean (every deleted card's delta landed)
 - [ ] one canonical gloss list (`RULES.md` ↔ `lib.sh`); `FLL`/`LENGTH` dup removed
 
-- [ ] `dispatch/lib.sh`: `DISPATCH_HOME` (BASH_SOURCE) vs `TARGET_ROOT` (`git rev-parse --show-toplevel`) split (§10); absent DETERMINISTIC helper → 🔴 not ⚪/0
+- [ ] `dispatch/lib.sh`: `DISPATCH_HOME` (BASH_SOURCE) vs `TARGET_ROOT` (`git rev-parse --show-toplevel`) split (§10); absent DETERMINISTIC helper → 🔴 not 🟣/0
 - [ ] `docs/EXECUTE_DOC_READS.md`: doc-reads trigger rows for the NET-NEW façades (`write_sql.md`, `write_any.md`), not just repointed zig/ts rows
 
 **Harness rewrites (first-class; Stage-2; Indy sign-off)**

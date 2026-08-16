@@ -14,7 +14,7 @@ This is the prose the AGENT consults before writing ANY source file (`*.zig` / `
 - 🟢 pass — deterministic check passed.
 - 🔴 fail — deterministic check failed (or helper absent); STOP, fix, rerun.
 - 🔵 DECIDE — judgment-only; no script can decide, the agent reads the section and makes the call (blocks the TURN, not the script).
-- ⚪ delegated — the checker runs only in the product repo, not in dotfiles.
+- 🟣 delegated — the checker runs only in the product repo, not in dotfiles.
 
 **Tag legend** — each section heading below carries one of:
 
@@ -43,7 +43,7 @@ Triggers on every `Edit`/`Write` to a source file in any language: `*.zig`, `*.t
 
 > [container]
 
-Nine cross-cutting gate cards dissolve into this façade. Each is preserved verbatim below (title demoted to a tagged `###`, subsections demoted to `####` and tagged with the card's code — except the file-length card's fn/method sub-cap, which is a `TODO-CHECK` subsection per §13). Five carry deterministic codes: `FLL` (inline) and `UFS`/`LOG`/`MSID` run here via leaf helpers, while `ERR` is deterministic-but-**delegated** — its leaf needs the product-repo `error_registry.zig`, so `write_any.sh` emits `⚪ DELEGATED` and the product harness runs it. Four are judgment gates (`GRP`/`NLR`/`NLG`/`LDC`).
+Nine cross-cutting gate cards dissolve into this façade. Each is preserved verbatim below (title demoted to a tagged `###`, subsections demoted to `####` and tagged with the card's code — except the file-length card's fn/method sub-cap, which is a `TODO-CHECK` subsection per §13). Five carry deterministic codes: `FLL` (inline) and `UFS`/`LOG`/`MSID` run here via leaf helpers, while `ERR` is deterministic-but-**delegated** — its leaf needs the product-repo `error_registry.zig`, so `write_any.sh` emits `🟣 DELEGATED` and the product harness runs it. Four are judgment gates (`GRP`/`NLR`/`NLG`/`LDC`).
 
 ### File & Function Length Gate (LENGTH GATE)
 
