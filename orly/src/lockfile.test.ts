@@ -55,7 +55,7 @@ describe("modeLabel / applyMode", () => {
 
 describe("buildLock", () => {
   test("sorts packs and file entries regardless of insertion order", () => {
-    const lock = buildLock("0.4.0", "cache-kit", ["language.shell", "domain.documentation"], {
+    const lock = buildLock("0.4.0", ["language.shell", "domain.documentation"], {
       "dispatch/write_shell.md": { sha256: "b", mode: "0644" },
       "AGENTS.md": { sha256: "a", mode: "0644" },
     });
@@ -63,11 +63,11 @@ describe("buildLock", () => {
     expect(Object.keys(lock.files)).toEqual(["AGENTS.md", "dispatch/write_shell.md"]);
   });
 
-  test("carries schema_version 1 and the given profile/version verbatim", () => {
-    const lock = buildLock("1.2.3", "kernel", [], {});
-    expect(lock.schema_version).toBe(1);
+  test("carries the schema version and the given packs/version verbatim", () => {
+    const lock = buildLock("1.2.3", ["language.rust"], {});
+    expect(lock.schema_version).toBe(2);
     expect(lock.orly_version).toBe("1.2.3");
-    expect(lock.profile).toBe("kernel");
+    expect(lock.packs).toEqual(["language.rust"]);
   });
 });
 
@@ -79,32 +79,32 @@ describe("readLock / writeLock", () => {
 
   test("writeLock then readLock round-trips the same shape", async () => {
     const root = temporaryDirectory();
-    const lock = buildLock("0.4.0", "cache-kit", ["language.rust"], { "dispatch/write_rust.md": { sha256: "abc", mode: "0644" } });
+    const lock = buildLock("0.4.0", ["language.rust"], { "dispatch/write_rust.md": { sha256: "abc", mode: "0644" } });
     await writeLock(root, lock);
     expect(await readLock(root)).toEqual(lock);
   });
 
   test("writeLock creates the .oracle/ parent directory", async () => {
     const root = temporaryDirectory();
-    await writeLock(root, buildLock("0.4.0", "kernel", [], {}));
+    await writeLock(root, buildLock("0.4.0", [], {}));
     expect(Bun.file(lockPath(root)).size).toBeGreaterThan(0);
   });
 
   test("a lock with the wrong schema_version throws, naming the expected version", async () => {
     const root = temporaryDirectory();
-    await Bun.write(lockPath(root), JSON.stringify({ schema_version: 2, orly_version: "0.4.0", profile: "kernel", packs: [], files: {} }));
-    expect(readLock(root)).rejects.toThrow("schema_version must equal 1");
+    await Bun.write(lockPath(root), JSON.stringify({ schema_version: 3, orly_version: "0.4.0", packs: [], files: {} }));
+    expect(readLock(root)).rejects.toThrow("schema_version must equal 2");
   });
 
   test("a lock missing orly_version throws rather than silently defaulting", async () => {
     const root = temporaryDirectory();
-    await Bun.write(lockPath(root), JSON.stringify({ schema_version: 1, profile: "kernel", packs: [], files: {} }));
-    expect(readLock(root)).rejects.toThrow("orly_version and profile strings");
+    await Bun.write(lockPath(root), JSON.stringify({ schema_version: 2, packs: [], files: {} }));
+    expect(readLock(root)).rejects.toThrow("an orly_version string");
   });
 
   test("a file entry missing sha256 throws, naming the offending path", async () => {
     const root = temporaryDirectory();
-    await Bun.write(lockPath(root), JSON.stringify({ schema_version: 1, orly_version: "0.4.0", profile: "kernel", packs: [], files: { "AGENTS.md": { mode: "0644" } } }));
+    await Bun.write(lockPath(root), JSON.stringify({ schema_version: 2, orly_version: "0.4.0", packs: [], files: { "AGENTS.md": { mode: "0644" } } }));
     expect(readLock(root)).rejects.toThrow("AGENTS.md");
   });
 });
@@ -113,7 +113,7 @@ describe("lockDrift", () => {
   test("a repository whose files match the lock reports no drift", async () => {
     const root = temporaryDirectory();
     const path = await writeFixture("AGENTS.md", "rules\n", root);
-    const lock = buildLock("0.4.0", "kernel", [], { "AGENTS.md": { sha256: hashContent(await Bun.file(path).bytes()), mode: modeLabel(path) } });
+    const lock = buildLock("0.4.0", [], { "AGENTS.md": { sha256: hashContent(await Bun.file(path).bytes()), mode: modeLabel(path) } });
     expect(await lockDrift(root, lock)).toEqual([]);
   });
 
@@ -122,7 +122,7 @@ describe("lockDrift", () => {
     const path = await writeFixture("AGENTS.md", "rules\n", root);
     const original = hashContent(await Bun.file(path).bytes());
     await Bun.write(path, "rules\nedited by hand\n");
-    const lock = buildLock("0.4.0", "kernel", [], { "AGENTS.md": { sha256: original, mode: modeLabel(path) } });
+    const lock = buildLock("0.4.0", [], { "AGENTS.md": { sha256: original, mode: modeLabel(path) } });
     const findings = await lockDrift(root, lock);
     expect(findings).toHaveLength(1);
     expect(findings[0]).toContain("AGENTS.md");
@@ -131,7 +131,7 @@ describe("lockDrift", () => {
 
   test("a deleted managed file is reported as missing, not silently dropped", async () => {
     const root = temporaryDirectory();
-    const lock = buildLock("0.4.0", "kernel", [], { "dispatch/write_rust.md": { sha256: "does-not-matter", mode: "0644" } });
+    const lock = buildLock("0.4.0", [], { "dispatch/write_rust.md": { sha256: "does-not-matter", mode: "0644" } });
     const findings = await lockDrift(root, lock);
     expect(findings).toHaveLength(1);
     expect(findings[0]).toContain("dispatch/write_rust.md");
@@ -142,7 +142,7 @@ describe("lockDrift", () => {
     const root = temporaryDirectory();
     const path = await writeFixture("hook.sh", "#!/bin/sh\n", root);
     applyMode(path, "0755");
-    const lock = buildLock("0.4.0", "kernel", [], { "hook.sh": { sha256: hashContent(await Bun.file(path).bytes()), mode: "0755" } });
+    const lock = buildLock("0.4.0", [], { "hook.sh": { sha256: hashContent(await Bun.file(path).bytes()), mode: "0755" } });
     applyMode(path, "0644");
     const findings = await lockDrift(root, lock);
     expect(findings).toHaveLength(1);
@@ -151,7 +151,7 @@ describe("lockDrift", () => {
 
   test("findings are sorted, so output is stable across runs", async () => {
     const root = temporaryDirectory();
-    const lock = buildLock("0.4.0", "kernel", [], {
+    const lock = buildLock("0.4.0", [], {
       "zzz.md": { sha256: "x", mode: "0644" },
       "aaa.md": { sha256: "y", mode: "0644" },
     });
@@ -163,12 +163,12 @@ describe("lockDrift", () => {
 
 describe("staleVersion", () => {
   test("a lock pinned to the installed version reports no staleness", () => {
-    const lock = buildLock("0.4.0", "kernel", [], {});
+    const lock = buildLock("0.4.0", [], {});
     expect(staleVersion(lock, "0.4.0")).toBeUndefined();
   });
 
   test("an older pin names both versions and the fix command", () => {
-    const lock = buildLock("0.3.0", "kernel", [], {});
+    const lock = buildLock("0.3.0", [], {});
     const message = staleVersion(lock, "0.4.0");
     expect(message).toContain("0.3.0");
     expect(message).toContain("0.4.0");

@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
 import { join, resolve } from "node:path";
 
+import { localSelection } from "./config";
 import { GateReport, isGateName, recordOverride, runGate, runGates } from "./gates";
 import { install, InstallResult } from "./install";
 import { lockDrift, LOCK_PATH, readLock, staleVersion } from "./lockfile";
 import { isString, OrlyError, readJsonObject, RulesModel } from "./model";
 import { Renderer } from "./render";
 import { doctorAgentHomes, syncGlobal } from "./repository";
-import { verifyAllProfiles, writeEvidence } from "./verify";
+import { verifyRenders, writeEvidence } from "./verify";
 
 const ALL_FLAG = "--all";
 const PASS_RESULT = "pass";
@@ -16,7 +17,6 @@ const ACCEPT_DIRTY_FLAG = "--accept-dirty";
 const REASON_FLAG = "--reason";
 const PIPE_OUTPUT = "pipe";
 const PACKAGE_MANIFEST = "package.json";
-const PROFILE_FLAG = "--profile";
 const FORCE_FLAG = "--force";
 const NO_HOOKS_FLAG = "--no-hooks";
 const JSON_FLAG = "--json";
@@ -46,7 +46,7 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
   if (command === "--version" || command === "-v") return printVersion(model);
   if (command === "validate") {
     model.validate();
-    console.log("orly: registry and profiles valid");
+    console.log("orly: registry valid");
     return 0;
   }
   if (command === "sync") {
@@ -106,19 +106,15 @@ async function packageVersion(model: RulesModel): Promise<string> {
   return manifest.version;
 }
 
-// init picks the profile; update re-materialises whatever the lock already
-// pinned, so a rule change costs one command and never a re-decision.
+// Both verbs materialise the same way: the repository's own `.oracle/orly.json`
+// names its packs and commands, so neither asks the caller who this repo is.
 async function materialise(model: RulesModel, args: string[], isInit: boolean): Promise<number> {
   model.validate();
   const targetRoot = projectRoot();
   const lock = await readLock(targetRoot);
   if (!isInit && !lock) throw new OrlyError(`no ${LOCK_PATH} here — run \`orly init\` first`);
-  const named = optionalValue(args, PROFILE_FLAG);
-  if (named !== undefined && !(named in model.profiles)) throw new OrlyError(`unknown profile: ${named} (available: ${Object.keys(model.profiles).sort().join(", ")})`);
-
   const result = await install(model, {
     targetRoot,
-    profile: isInit ? named : lock?.profile,
     force: args.includes(FORCE_FLAG),
     installHooks: !args.includes(NO_HOOKS_FLAG),
     orlyVersion: await packageVersion(model),
@@ -131,7 +127,7 @@ async function materialise(model: RulesModel, args: string[], isInit: boolean): 
 function printInstall(result: InstallResult): void {
   for (const error of result.errors) console.log(`${FAIL_GLYPH} ${error.path}: ${error.message} — ${error.suggestion}`);
   if (!result.ok) return;
-  console.log(`${PASS_GLYPH} profile ${result.profile}: ${result.written.length} written, ${result.skipped.length} already current (${result.packs.length} packs)`);
+  console.log(`${PASS_GLYPH} ${result.written.length} written, ${result.skipped.length} already current (${result.packs.length} packs)`);
 }
 
 function printGate(report: GateReport): void {
@@ -170,16 +166,17 @@ async function doctorInstall(model: RulesModel): Promise<string[]> {
 
 async function render(model: RulesModel, args: string[]): Promise<number> {
   model.validate();
-  const profile = optionValue(args, "--profile");
   const projectRootPath = optionalValue(args, "--project-root");
-  const text = await new Renderer(model).renderText(profile, projectRootPath ? resolve(projectRootPath) : undefined);
+  const target = projectRootPath ? resolve(projectRootPath) : model.root;
+  const local = await localSelection(model, target);
+  const text = await new Renderer(model).renderText(local.packs, local.commands, projectRootPath ? target : undefined);
   console.log(text);
   return 0;
 }
 
 async function verify(model: RulesModel, args: string[]): Promise<number> {
   if (!args.includes(ALL_FLAG)) throw new OrlyError("verify requires --all");
-  const checks = await verifyAllProfiles(model);
+  const checks = await verifyRenders(model);
   for (const check of checks) console.log(`${check.result === PASS_RESULT ? PASS_GLYPH : FAIL_GLYPH} ${check.name}${check.detail ? `: ${check.detail}` : ""}`);
   if (args.includes("--write-evidence")) {
     const result = optionalValue(args, "--llm-result") ?? NOT_REQUIRED_RESULT;

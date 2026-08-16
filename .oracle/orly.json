@@ -1,6 +1,5 @@
 {
   "schema_version": 1,
-  "name": "kernel",
   "packs": [
     "universal.authoring",
     "language.zig",
@@ -15,15 +14,17 @@
     "domain.auth",
     "domain.documentation",
     "domain.changelog",
-    "workflow.specifications"
+    "workflow.specifications",
+    "workflow.governance",
+    "product.agentsfleet",
+    "persona.indy"
   ],
   "commands": {
-    "conform": [
-      [
-        "sh",
-        "-c",
-        "echo 'orly: no conform command configured yet — set commands.conform in your profile' >&2; exit 1"
-      ]
-    ]
+    "conform": [["make", "audit"]],
+    "verify.unit": [["bun", "test", "orly/src"]]
+  },
+  "surfaces": {
+    "user": ["orly/src/", "bin/"],
+    "docs": ["README.md", "docs/"]
   }
 }

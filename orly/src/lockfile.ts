@@ -6,7 +6,7 @@ import { assertWritableInside, isObject, isString, normalizedMode, objectValue, 
 const ORACLE_DIRECTORY = ".oracle";
 export const LOCK_PATH = `${ORACLE_DIRECTORY}/ruleset.lock`;
 
-const LOCK_SCHEMA_VERSION = 1;
+const LOCK_SCHEMA_VERSION = 2;
 const HASH_ALGORITHM = "sha256";
 const HASH_ENCODING = "hex";
 const MODE_EXECUTABLE = "0755";
@@ -21,7 +21,6 @@ export type LockEntry = { sha256: string; mode: string };
 export type Lockfile = {
   schema_version: number;
   orly_version: string;
-  profile: string;
   packs: string[];
   files: Record<string, LockEntry>;
 };
@@ -40,8 +39,8 @@ export function applyMode(path: string, mode: string): void {
   chmodSync(path, Number.parseInt(mode, OCTAL));
 }
 
-export function buildLock(orlyVersion: string, profile: string, packs: string[], files: Record<string, LockEntry>): Lockfile {
-  return { schema_version: LOCK_SCHEMA_VERSION, orly_version: orlyVersion, profile, packs: [...packs].sort(), files: sortEntries(files) };
+export function buildLock(orlyVersion: string, packs: string[], files: Record<string, LockEntry>): Lockfile {
+  return { schema_version: LOCK_SCHEMA_VERSION, orly_version: orlyVersion, packs: [...packs].sort(), files: sortEntries(files) };
 }
 
 export function lockPath(targetRoot: string): string {
@@ -53,11 +52,10 @@ export async function readLock(targetRoot: string): Promise<Lockfile | undefined
   if (!existsSync(path)) return undefined;
   const value = await readJsonObject(path);
   if (value.schema_version !== LOCK_SCHEMA_VERSION) throw new OrlyError(`${LOCK_PATH} schema_version must equal ${LOCK_SCHEMA_VERSION}`);
-  if (!isString(value.orly_version) || !isString(value.profile)) throw new OrlyError(`${LOCK_PATH} must carry orly_version and profile strings`);
+  if (!isString(value.orly_version)) throw new OrlyError(`${LOCK_PATH} must carry an orly_version string`);
   return {
     schema_version: LOCK_SCHEMA_VERSION,
     orly_version: value.orly_version,
-    profile: value.profile,
     packs: stringArray(value.packs, `${LOCK_PATH} packs`),
     files: readEntries(objectValue(value.files, `${LOCK_PATH} files`)),
   };

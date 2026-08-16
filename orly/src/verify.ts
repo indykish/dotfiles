@@ -1,7 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { RulesModel } from "./model";
+import { localSelection } from "./config";
+import { objectValue, RulesModel } from "./model";
 import { Renderer } from "./render";
 
 const PASS_RESULT = "pass";
@@ -16,19 +17,21 @@ export type VerificationCheck = {
 // Two proofs: every profile renders the same bytes twice (determinism), and
 // the committed root AGENTS.md matches its render (currency). No stored
 // hashes — the render itself is the reference.
-export async function verifyAllProfiles(model: RulesModel): Promise<VerificationCheck[]> {
+export async function verifyRenders(model: RulesModel): Promise<VerificationCheck[]> {
   model.validate();
   const checks: VerificationCheck[] = [];
   const renderer = new Renderer(model);
-  for (const profileName of Object.keys(model.profiles).sort()) {
-    const first = await renderer.renderText(profileName);
-    const second = await renderer.renderText(profileName);
+  const local = await localSelection(model, model.root);
+  const everything = Object.keys(objectValue(model.registry.packs, "registry packs")).sort();
+  for (const [name, packs] of [["local", local.packs], ["all", everything]] as Array<[string, string[]]>) {
+    const first = await renderer.renderText(packs, local.commands);
+    const second = await renderer.renderText(packs, local.commands);
     checks.push({
-      name: `render.${profileName}.idempotent`,
+      name: `render.${name}.idempotent`,
       result: first === second ? PASS_RESULT : FAIL_RESULT,
     });
   }
-  const errors = await renderer.rootErrors();
+  const errors = await renderer.rootErrors(local.packs, local.commands);
   checks.push({ name: "generated.root.current", result: errors.length === 0 ? PASS_RESULT : FAIL_RESULT, detail: errors.join("; ") });
   return checks;
 }

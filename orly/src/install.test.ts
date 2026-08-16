@@ -10,18 +10,18 @@ import { RulesModel } from "./model";
 
 afterEach(cleanupTemporaryDirectories);
 
-const KERNEL = "kernel";
-const CACHE_KIT = "cache-kit";
 
 describe("install", () => {
-  test("materialises the selected profile's packs, hooks, and a lock into a fresh repository", async () => {
+  test("materialises the packs its own sources imply, hooks, and a lock into a fresh repository", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
+    await Bun.write(join(repo, "src/lib.rs"), "pub fn main() {}\n");
 
-    const result = await install(model, { targetRoot: repo, profile: CACHE_KIT, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(true);
-    expect(result.profile).toBe(CACHE_KIT);
+    expect(result.packs).toContain("language.rust");
+    expect(result.packs).not.toContain("language.zig");
     expect(existsSync(join(repo, "AGENTS.md"))).toBe(true);
     expect(existsSync(join(repo, "dispatch/write_rust.md"))).toBe(true);
     expect(existsSync(join(repo, ".githooks/pre-commit"))).toBe(true);
@@ -31,9 +31,9 @@ describe("install", () => {
   test("a second install over the same target reports zero writes", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
-    await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
-    const second = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    const second = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(second.ok).toBe(true);
     expect(second.written).toEqual([]);
@@ -43,10 +43,11 @@ describe("install", () => {
   test("refuses to overwrite a hand-edited managed file without --force, naming the offending path", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
-    await install(model, { targetRoot: repo, profile: CACHE_KIT, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    await Bun.write(join(repo, "src/lib.rs"), "pub fn main() {}\n");
+    await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
     await Bun.write(join(repo, "dispatch/write_rust.md"), "hand-edited\n");
 
-    const result = await install(model, { targetRoot: repo, profile: CACHE_KIT, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(false);
     expect(result.errors).toHaveLength(1);
@@ -58,10 +59,11 @@ describe("install", () => {
   test("--force overwrites a hand-edited managed file", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
-    await install(model, { targetRoot: repo, profile: CACHE_KIT, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    await Bun.write(join(repo, "src/lib.rs"), "pub fn main() {}\n");
+    await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
     await Bun.write(join(repo, "dispatch/write_rust.md"), "hand-edited\n");
 
-    const result = await install(model, { targetRoot: repo, profile: CACHE_KIT, force: true, installHooks: true, orlyVersion: "0.4.0" });
+    const result = await install(model, { targetRoot: repo, force: true, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(true);
     expect(await Bun.file(join(repo, "dispatch/write_rust.md")).text()).not.toBe("hand-edited\n");
@@ -71,7 +73,7 @@ describe("install", () => {
     const model = await RulesModel.load(ROOT);
     const notARepo = mkdtempSync(join(tmpdir(), "orly-install-not-a-repo-"));
     try {
-      expect(install(model, { targetRoot: notARepo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" })).rejects.toThrow("git init");
+      expect(install(model, { targetRoot: notARepo, force: false, installHooks: true, orlyVersion: "0.4.0" })).rejects.toThrow("git init");
     } finally {
       rmSync(notARepo, { recursive: true, force: true });
     }
@@ -79,14 +81,15 @@ describe("install", () => {
 
   test("rejects a target directory that does not exist at all", async () => {
     const model = await RulesModel.load(ROOT);
-    expect(install(model, { targetRoot: join(tmpdir(), "orly-install-never-created"), profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" })).rejects.toThrow("does not exist");
+    expect(install(model, { targetRoot: join(tmpdir(), "orly-install-never-created"), force: false, installHooks: true, orlyVersion: "0.4.0" })).rejects.toThrow("does not exist");
   });
 
-  test("rejects an unknown profile before writing anything", async () => {
+  test("rejects an unknown pack named by the repository's own config, before writing anything", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
+    await Bun.write(join(repo, ".oracle/orly.json"), JSON.stringify({ schema_version: 1, packs: ["language.cobol"], commands: {} }));
 
-    expect(install(model, { targetRoot: repo, profile: "not-a-real-profile", force: false, installHooks: true, orlyVersion: "0.4.0" })).rejects.toThrow("unknown profile");
+    expect(install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" })).rejects.toThrow("unknown pack");
     expect(existsSync(join(repo, "AGENTS.md"))).toBe(false);
   });
 
@@ -94,7 +97,7 @@ describe("install", () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
 
-    await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe(".githooks");
     for (const hook of ["pre-commit", "pre-push"]) {
@@ -107,7 +110,7 @@ describe("install", () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
 
-    await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: false, orlyVersion: "0.4.0" });
+    await install(model, { targetRoot: repo, force: false, installHooks: false, orlyVersion: "0.4.0" });
 
     expect(existsSync(join(repo, ".githooks"))).toBe(false);
     expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe("");
@@ -118,7 +121,7 @@ describe("install", () => {
     const repo = newRepository();
     git(repo, "config", "core.hooksPath", "some-other-tools-hooks");
 
-    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(false);
     expect(result.errors.some((error) => error.path === "core.hooksPath")).toBe(true);
@@ -131,7 +134,7 @@ describe("install", () => {
     const repo = newRepository();
     git(repo, "config", "core.hooksPath", "some-other-tools-hooks");
 
-    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: false, orlyVersion: "0.4.0" });
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: false, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(true);
     expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe("some-other-tools-hooks");
@@ -142,7 +145,7 @@ describe("install", () => {
     const repo = newRepository();
     git(repo, "config", "core.hooksPath", "some-other-tools-hooks");
 
-    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: true, installHooks: true, orlyVersion: "0.4.0" });
+    const result = await install(model, { targetRoot: repo, force: true, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(true);
     expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe(".githooks");
@@ -151,9 +154,9 @@ describe("install", () => {
   test("re-running init after it already set hooksPath is not a claim by another tool", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
-    await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
-    const second = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    const second = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(second.ok).toBe(true);
   });
@@ -170,7 +173,7 @@ describe("install", () => {
     try {
       symlinkSync(outside, join(repo, "dispatch"));
 
-      const result = await install(model, { targetRoot: repo, profile: CACHE_KIT, force: false, installHooks: true, orlyVersion: "0.4.0" });
+      const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
       expect(result.ok).toBe(false);
       expect(result.errors.some((error) => error.message.includes("outside the target repository"))).toBe(true);
@@ -188,7 +191,7 @@ describe("install", () => {
     try {
       symlinkSync(outside, join(repo, ".githooks"));
 
-      const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+      const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
       expect(result.ok).toBe(false);
       expect(result.errors.some((error) => error.message.includes("outside the target repository"))).toBe(true);
@@ -205,7 +208,7 @@ describe("install", () => {
     try {
       symlinkSync(outside, join(repo, ".oracle"));
 
-      const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: false, orlyVersion: "0.4.0" });
+      const result = await install(model, { targetRoot: repo, force: false, installHooks: false, orlyVersion: "0.4.0" });
 
       expect(result.ok).toBe(false);
       expect(result.errors.some((error) => error.message.includes("outside the target repository"))).toBe(true);
@@ -227,7 +230,7 @@ describe("install", () => {
     const repo = newRepository();
     const tmpBefore = readdirSync(tmpdir()).filter((name) => name.startsWith("orly-install-"));
 
-    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(true);
     const tmpAfter = readdirSync(tmpdir()).filter((name) => name.startsWith("orly-install-"));
@@ -242,7 +245,7 @@ describe("install", () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
 
-    const result = await install(model, { targetRoot: repo, profile: KERNEL, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(true);
     expect(existsSync(join(repo, ".oracle", "ruleset.lock"))).toBe(true);
@@ -251,12 +254,13 @@ describe("install", () => {
   test("the written lock records a hash and mode for every materialised file", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
+    await Bun.write(join(repo, "src/lib.rs"), "pub fn main() {}\n");
 
-    await install(model, { targetRoot: repo, profile: CACHE_KIT, force: false, installHooks: true, orlyVersion: "0.4.0" });
+    await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     const lock = await readLock(repo);
     expect(lock).toBeDefined();
-    expect(lock?.profile).toBe(CACHE_KIT);
+    expect(lock?.packs).toContain("language.rust");
     expect(lock?.files["dispatch/write_rust.md"]?.sha256.length).toBeGreaterThan(0);
     expect(lock?.files["dispatch/write_rust.md"]?.mode).toBe("0644");
   });
@@ -278,12 +282,10 @@ describe("install", () => {
         packs: { broken: { extensions: [], managed_files: [{ source: "broken.md", target: "broken.md" }] } },
         rules: [],
       };
-      const profiles = { broken: { schema_version: 1, name: "broken", packs: ["broken"], commands: { conform: [["true"]] } } };
-      const repositories = { schema_version: 1, repositories: {} };
-      const model = new RulesModel(engineRoot, registry, profiles, repositories);
+      const model = new RulesModel(engineRoot, registry);
       const repo = newRepository();
 
-      const result = await install(model, { targetRoot: repo, profile: "broken", force: false, installHooks: true, orlyVersion: "0.4.0" });
+      const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
       expect(result.ok).toBe(false);
       expect(result.errors[0]?.message).toContain("missing dispatch reference");
@@ -312,12 +314,10 @@ describe("install", () => {
         },
         rules: [],
       };
-      const profiles = { conflict: { schema_version: 1, name: "conflict", packs: ["a", "b"], commands: { conform: [["true"]] } } };
-      const repositories = { schema_version: 1, repositories: {} };
-      const model = new RulesModel(engineRoot, registry, profiles, repositories);
+      const model = new RulesModel(engineRoot, registry);
       const repo = newRepository();
 
-      expect(install(model, { targetRoot: repo, profile: "conflict", force: false, installHooks: true, orlyVersion: "0.4.0" })).rejects.toThrow("packs disagree on shared.md");
+      expect(install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" })).rejects.toThrow("packs disagree on shared.md");
     } finally {
       rmSync(engineRoot, { recursive: true, force: true });
     }

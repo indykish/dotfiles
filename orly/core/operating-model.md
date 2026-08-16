@@ -117,7 +117,7 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 
 **🚦 Gate-flag triage** — gate fires → never silence, never harness-patch. **Mechanical** (obvious deterministic fix: fmt, lint-autofix, UFS literal → const, over-length → split, dead code, broken link): auto-apply + inform the user in one line. **Judgment** (design call / weakened guarantee / security-arch boundary / >1 form / possible false-positive): STOP, surface the ask — 📟 flagged (symbol·file·line) · 🔦 fix scope (files·lines·follow-on) · 📈 what we gain · 💥 if not fixed (debt·blockages) · ☠️ my call — the user decides fix-or-defer. Never unilaterally call a flag a false-positive.
 
-**Rule paths resolve relative to this repository's root.** Every `dispatch/…`, `docs/…`, and `audits/…` path a rule cites is a real file here — `orly init`/`orly update` materialised it from the packs your profile selected. A path your repo lacks means your profile doesn't select that pack, not that the reference is broken.
+**Rule paths resolve relative to this repository's root.** Every `dispatch/…`, `docs/…`, and `audits/…` path a rule cites is a real file here — `orly init`/`orly update` materialised it from the packs this repository selected. A path your repo lacks means its sources never selected that pack, not that the reference is broken.
 
 **Dispatch index — full rule prose in each `dispatch/<entry>.md` façade. Read the façade when its trigger fires — sectioned: scan headers, read the sections the diff touches.** Trigger-surface extensions: `*.zig`, `*.ts`, `*.tsx`, `*.js`, `*.jsx`, `*.py`, `*.rs`, `*.go`, `*.sh`, `*.sql`, `*.mdx`, and public OpenAPI prose. Latent `.md` per entry, deterministic `.sh` where mechanisable. Signals: 🟢 pass · 🟠 warn · 🔴 fail · 🛑 blocked · 🔥 critical · 🤔 judgment-only · 🟣 delegated. Output glyphs: 🧲 eval · 🛍️ evidence · 👮 security · ⛈️ rule · 💡 info · 📌 note. The router below **is** the gate set.
 
@@ -202,14 +202,14 @@ Edit only approved scope; no opportunistic refactors. Stay in active worktree. C
 
 ### CONFORM
 
-Runs after EXECUTE, before VERIFY. Invokes the active profile's `conform` commands and aggregates every gate verdict. Any 🔴 returns to EXECUTE; the lifecycle does not advance.
+Runs after EXECUTE, before VERIFY. Invokes the `conform` commands the repository declares in `.oracle/orly.json` and aggregates every gate verdict. Any 🔴 returns to EXECUTE; the lifecycle does not advance.
 <!-- oracle-packs:start product.agentsfleet -->
-The `agentsfleet` profile maps this stage to `make harness-verify`; its output block and end-of-turn audit detail live in `docs/HARNESS_VERIFY_OUTPUT.md`. Required rows: FILE SHAPE, PUB GATE, LENGTH GATE, MILESTONE-ID GATE, ZIG GATE, UI GATE, DESIGN TOKEN GATE, UFS GATE, SCHEMA GUARD, GREPTILE GATE, Architecture consult, Coverage, and `/write-unit-test`.
+In `agentsfleet` this stage is `make harness-verify`; its output block and end-of-turn audit detail live in `docs/HARNESS_VERIFY_OUTPUT.md`. Required rows: FILE SHAPE, PUB GATE, LENGTH GATE, MILESTONE-ID GATE, ZIG GATE, UI GATE, DESIGN TOKEN GATE, UFS GATE, SCHEMA GUARD, GREPTILE GATE, Architecture consult, Coverage, and `/write-unit-test`.
 <!-- oracle-packs:end -->
 
 ### VERIFY
 
-Run the active profile's verification commands from the repository-command table. A package-scoped command never replaces a listed one.
+Run the repository's declared `verify.*` commands from `.oracle/orly.json`. A package-scoped command never replaces a listed one.
 <!-- oracle-packs:start product.agentsfleet -->
 The `agentsfleet` output block and exact tiers live in `docs/VERIFY_TIERS.md`. **FIRST: `/write-unit-test`** audits diff coverage. **LAST: the Test Delta row** compares against the CHORE(open) baseline; zero or negative unit growth on a code-adding diff needs justification or a return to EXECUTE. Paste memory-leak evidence into PR Session Notes or cite its Continuous Integration (CI) URL. After refactors, list newly dead code before removing it.
 <!-- oracle-packs:end -->

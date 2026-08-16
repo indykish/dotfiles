@@ -8,6 +8,8 @@ const PACK_START = /^[ \t]*<!--[ \t]*oracle-packs:start ([^>]+)[ \t]*-->[ \t]*$/
 const PACK_END = /^[ \t]*<!--[ \t]*oracle-packs:end[ \t]*-->[ \t]*$/;
 const MARKDOWN_LINK = /\[[^\]]*\]\(([^)]+)\)/g;
 const DISPATCH_REFERENCE = /dispatch\/[A-Za-z0-9_.-]+\.md/g;
+const COMMENT_OPEN = "<!--";
+const COMMENT_CLOSE = "-->";
 const NEWLINE = "\n";
 
 export function renderProfileText(
@@ -66,8 +68,16 @@ export async function referenceClosureErrors(
   for (const sourcePath of renderedPaths.filter((path) => extname(path) === ".md").sort()) {
     const relativeSource = relative(outputRoot, sourcePath).replaceAll("\\", "/");
     const content = await Bun.file(sourcePath).text();
+    let inComment = false;
     for (const [index, line] of content.split(/\r?\n/).entries()) {
       const lineNumber = index + 1;
+      const commented = inComment;
+      inComment = commentStateAfter(line, inComment);
+      // A path inside an HTML comment is authoring guidance — `docs/TEMPLATE.md`
+      // lists a per-surface menu of dispatch façades a spec author might cite.
+      // Grading those as live citations would force every repository to carry
+      // every language pack just to satisfy a comment naming the alternatives.
+      if (commented || inComment) continue;
       for (const match of line.matchAll(MARKDOWN_LINK)) {
         const rawTarget = match[1] ?? "";
         const target = markdownTarget(rawTarget);
@@ -83,6 +93,18 @@ export async function referenceClosureErrors(
     }
   }
   return [...errors].sort();
+}
+
+// Whether the line leaves the scanner inside an HTML comment. Pack markers open
+// and close on one line, so they never flip the state; a `<!-- tpl:` block that
+// runs to a later `-->` does.
+function commentStateAfter(line: string, inComment: boolean): boolean {
+  let open = inComment;
+  for (let index = 0; index < line.length; index += 1) {
+    if (!open && line.startsWith(COMMENT_OPEN, index)) { open = true; index += COMMENT_OPEN.length - 1; continue; }
+    if (open && line.startsWith(COMMENT_CLOSE, index)) { open = false; index += COMMENT_CLOSE.length - 1; }
+  }
+  return open;
 }
 
 function packNames(value: string, knownPacks: Set<string>, source: string, lineNumber: number): string[] {

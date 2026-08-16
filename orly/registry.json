@@ -154,7 +154,9 @@
       ]
     },
     "domain.sql": {
-      "extensions": [],
+      "extensions": [
+        ".sql"
+      ],
       "managed_files": [
         {
           "source": "dispatch/write_sql.md",

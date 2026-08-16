@@ -44,7 +44,6 @@ export function validateCommands(profileName: string, value: unknown, errors: st
 export function validateActiveRule(
   key: string,
   rule: JsonObject,
-  profiles: Record<string, JsonObject>,
   root: string,
   errors: string[],
 ): void {
@@ -54,7 +53,6 @@ export function validateActiveRule(
   }
   if (rule.decision === "repository") {
     if (!isString(rule.command) || rule.command.length === 0) errors.push(`repository rule ${key} needs a command name`);
-    else for (const [name, profile] of Object.entries(profiles)) if (Array.isArray(profile.packs) && profile.packs.includes(rule.pack) && (!isObject(profile.commands) || !(rule.command in profile.commands))) errors.push(`profile ${name} selects ${String(rule.pack)} but lacks ${rule.command}`);
     return;
   }
   if (rule.decision !== "judgment") errors.push(`rule ${key} has invalid decision ${String(rule.decision)}`);

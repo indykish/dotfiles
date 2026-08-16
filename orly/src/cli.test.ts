@@ -28,6 +28,6 @@ describe("orly command", () => {
     const result = Bun.spawnSync([COMMAND, "validate"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.toString().trim()).toBe("orly: registry and profiles valid");
+    expect(result.stdout.toString().trim()).toBe("orly: registry valid");
   });
 });

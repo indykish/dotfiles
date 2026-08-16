@@ -55,12 +55,29 @@ packed_paths() {
 
 # An initialised repository with one commit, so gate criteria that read git
 # history have something to read.
+# Live dispatch citations in an installed tree. HTML comments are stripped
+# first: docs/TEMPLATE.md carries a per-surface menu of façades a spec author
+# might cite, and orly's own reference checker skips those for the same reason
+# — grading a menu as a citation would force every repository to take every
+# language pack.
+cited_dispatch_paths() {
+  local root="$1"
+  find "$root/AGENTS.md" "$root/dispatch" "$root/docs" -type f -name '*.md' 2>/dev/null \
+    | while read -r file; do perl -0777 -pe 's/<!--.*?-->//gs' "$file"; done \
+    | grep -oE 'dispatch/[A-Za-z0-9_.-]+\.md' | sort -u
+}
+
 mk_repo() {
   local sb; sb="$(mk_sandbox)"
   git -C "$sb" init -q -b main
   git -C "$sb" config user.email "evals@example.invalid"
   git -C "$sb" config user.name "install evals"
   printf '# fixture\n' > "$sb/README.md"
+  # Pack selection reads the repository's own sources, so the fixture carries
+  # the languages its assertions expect to see materialised.
+  mkdir -p "$sb/src"
+  printf 'pub fn main() {}\n' > "$sb/src/lib.rs"
+  printf '#!/usr/bin/env bash\necho fixture\n' > "$sb/run.sh"
   git -C "$sb" add -A >/dev/null 2>&1
   git -C "$sb" commit -qm "fixture baseline" >/dev/null 2>&1
   printf '%s' "$sb"

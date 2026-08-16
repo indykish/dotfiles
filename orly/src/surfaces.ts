@@ -12,7 +12,7 @@ const TEST_PATH = /(^|\/)tests?\/|\.test\.|_test\.|\.spec\./;
 const MARKDOWN = /\.(md|mdx)$/;
 // One fixed source-extension set across every repo: handlers (.zig), CLI and
 // UI TypeScript, OpenAPI YAML, scripts. A fixed set keeps the check identical
-// everywhere instead of drifting per profile.
+// everywhere instead of drifting per repository.
 const SOURCE_EXTENSIONS = /\.(zig|ts|tsx|js|jsx|mjs|py|rs|go|sh|sql|yaml|yml|json|toml)$/;
 
 export type SurfaceReport = {
@@ -24,10 +24,10 @@ export type SurfaceReport = {
 
 // Classify the branch diff once per inspection; every criterion reads this
 // report instead of running its own git commands.
-export function classifyBranch(root: string, profile: JsonObject): SurfaceReport {
+export function classifyBranch(root: string, surfaces: JsonObject | undefined): SurfaceReport {
   const changed = branchDiff(root);
-  const user = surfacePrefixes(profile, USER_FIELD);
-  const docs = surfacePrefixes(profile, DOCS_FIELD);
+  const user = surfacePrefixes(surfaces, USER_FIELD);
+  const docs = surfacePrefixes(surfaces, DOCS_FIELD);
   return {
     changed,
     code: changed.filter(isCode),
@@ -40,7 +40,7 @@ export function isCode(path: string): boolean {
   return !MARKDOWN.test(path) && (SOURCE_EXTENSIONS.test(path) || TEST_PATH.test(path));
 }
 
-// User surface: a profile-declared prefix, a real source file, and not a test —
+// User surface: a repository-declared prefix, a real source file, and not a test —
 // a test-only change under a user prefix must not demand a docs edit, or the
 // gate trains everyone to distrust it.
 export function isUserSurface(path: string, prefixes: string[]): boolean {
@@ -48,7 +48,7 @@ export function isUserSurface(path: string, prefixes: string[]): boolean {
   return SOURCE_EXTENSIONS.test(path) && !TEST_PATH.test(path) && !MARKDOWN.test(path);
 }
 
-// Docs: a profile-declared prefix, but never the spec tree — every milestone
+// Docs: a repository-declared prefix, but never the spec tree — every milestone
 // edits its own spec, so counting docs/v*/ would make the check auto-pass.
 export function isDocs(path: string, prefixes: string[]): boolean {
   if (SPEC_TREE.test(path)) return false;
@@ -78,10 +78,9 @@ function defaultBranchCandidates(root: string): string[] {
   return candidates;
 }
 
-function surfacePrefixes(profile: JsonObject, field: string): string[] {
-  const surfaces = profile[SURFACES_FIELD];
+function surfacePrefixes(surfaces: JsonObject | undefined, field: string): string[] {
   if (!isObject(surfaces) || !(field in surfaces)) return [];
-  return stringArray(surfaces[field], `profile ${String(profile.name)} ${SURFACES_FIELD}.${field}`);
+  return stringArray(surfaces[field], `${SURFACES_FIELD}.${field}`);
 }
 
 function gitOutput(root: string, command: string[]): string {

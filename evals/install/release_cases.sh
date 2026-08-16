@@ -12,23 +12,25 @@ install_refuses_outside_a_repository() {
   local pkg sb; pkg="$(packed_root)"; sb="$(mk_sandbox)"
   if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
 
-  local out; out="$(run_packed "$pkg" "$sb" init --profile cache-kit)"
+  local out; out="$(run_packed "$pkg" "$sb" init)"
   if [[ "$out" != *"git init"* ]]; then bad "$name" "error does not name the fix: $out"; return; fi
   if [[ -e "$sb/AGENTS.md" ]]; then bad "$name" "wrote into a non-repository"; return; fi
   ok "$name"
 }
 
-# An unregistered repository is the common case — no repositories.json entry,
-# no name. It must still install something useful without the caller knowing
-# a profile name exists.
-install_defaults_to_kernel_when_unregistered() {
-  local name="init with no --profile defaults to kernel in an unregistered repository"
+# A stranger's repository is the common case: nothing to register, no name to
+# pass. Pack selection reads the repository's own sources, so the Rust crate in
+# the fixture receives the Rust façade and never the Zig one.
+install_selects_packs_from_repository_sources() {
+  local name="init with no arguments selects packs from the repository's own sources"
   local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"
   if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
 
   local out; out="$(run_packed "$pkg" "$repo" init)"
-  if [[ "$out" != *"profile kernel"* ]]; then bad "$name" "did not default to kernel: $out"; return; fi
-  [[ -f "$repo/dispatch/write_rust.md" ]] || { bad "$name" "kernel install missing a language façade"; return; }
+  if [[ "$out" != *"written"* ]]; then bad "$name" "init did not report a materialisation: $out"; return; fi
+  [[ -f "$repo/dispatch/write_rust.md" ]] || { bad "$name" "the Rust source did not select the Rust façade"; return; }
+  [[ -f "$repo/dispatch/write_zig.md" ]] && { bad "$name" "a Zig façade was installed into a repository with no Zig"; return; }
+  [[ -f "$repo/.oracle/orly.json" ]] || { bad "$name" "init did not seed .oracle/orly.json"; return; }
   ok "$name"
 }
 
@@ -59,7 +61,7 @@ install_update_repins_across_a_version_bump() {
   local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"
   if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
 
-  run_packed "$pkg" "$repo" init --profile cache-kit >/dev/null
+  run_packed "$pkg" "$repo" init >/dev/null
   local before; before="$(python3 -c "import json;print(json.load(open('$repo/.oracle/ruleset.lock'))['orly_version'])")"
 
   # Simulate a newer engine: bump the packed copy's own version and touch a
@@ -144,30 +146,30 @@ install_ci_workflow_gates_on_a_real_defect() {
   ok "$name"
 }
 
-# Every registered profile must install cleanly into its own fresh sandbox —
-# proven by hand once this session when §4's fixes landed; this makes it a
-# permanent, re-runnable eval instead of a one-time manual sweep. Catches the
-# exact defect class §4 found (kernel still pulling an engine-only pack,
-# mintlify-docs missing the pack that owns a file it needed).
-install_every_registered_profile_installs_cleanly() {
-  local name="every registered profile installs with zero dangling references"
+# Every language a pack can select for must install cleanly into its own fresh
+# sandbox with zero dangling citations. Replaces the per-profile sweep: the
+# selection axis is now the repository's own sources, so the eval varies those.
+install_every_language_selection_installs_cleanly() {
+  local name="every language selection installs with zero dangling references"
   local pkg; pkg="$(packed_root)"
   if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
 
-  local profile broken=""
-  for profile in $(cd "$pkg" && ls orly/profiles/*.json | xargs -n1 basename | sed 's/\.json$//'); do
+  local sample broken=""
+  for sample in "src/lib.rs" "src/main.zig" "src/app.ts" "src/app.py" "docs/page.mdx" "schema/init.sql"; do
     local repo; repo="$(mk_repo)"
     local out code
-    out="$(run_packed "$pkg" "$repo" init --profile "$profile" 2>&1)"; code=$?
-    if [[ "$code" -ne 0 ]]; then broken+="$profile "; continue; fi
+    mkdir -p "$repo/$(dirname "$sample")"
+    printf '// fixture\n' > "$repo/$sample"
+    out="$(run_packed "$pkg" "$repo" init 2>&1)"; code=$?
+    if [[ "$code" -ne 0 ]]; then broken+="$sample "; continue; fi
 
     local cited dangling=""
     while read -r cited; do
       [[ -z "$cited" ]] && continue
       [[ -e "$repo/$cited" ]] || dangling+="$cited "
-    done < <(grep -rhoE 'dispatch/[A-Za-z0-9_.-]+\.md' "$repo/AGENTS.md" "$repo/dispatch" "$repo/docs" 2>/dev/null | sort -u)
-    [[ -n "$dangling" ]] && broken+="$profile(dangling:$dangling) "
+    done < <(cited_dispatch_paths "$repo")
+    [[ -n "$dangling" ]] && broken+="$sample(dangling:$dangling) "
   done
-  if [[ -n "$broken" ]]; then bad "$name" "broken profiles: $broken"; return; fi
+  if [[ -n "$broken" ]]; then bad "$name" "broken selections: $broken"; return; fi
   ok "$name"
 }

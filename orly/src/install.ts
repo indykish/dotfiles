@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, renameSy
 import { dirname, extname, join, relative, resolve } from "node:path";
 
 import { UNSCOPED_ENVIRONMENT } from "./git_env";
+import { CONFIG_PATH, readConfig, seedConfig, selectPacks, writeConfig } from "./config";
 import { applyMode, buildLock, hashContent, LOCK_PATH, LockEntry, modeLabel, readLock, writeLock } from "./lockfile";
 import { assertWritableInside, isString, JsonObject, objectArray, objectValue, OrlyError, RulesModel, stringArray } from "./model";
 import { referenceClosureErrors, renderProfileText } from "./references";
@@ -9,8 +10,6 @@ import { Renderer } from "./render";
 
 const AGENTS_FILENAME = "AGENTS.md";
 const HOOKS_DIRECTORY = ".githooks";
-const GLOBAL_PROFILE = "global";
-const KERNEL_PROFILE = "kernel";
 const REGISTRY_PACKS_LABEL = "registry packs";
 const STAGE_PREFIX = "orly-install-";
 const MARKDOWN_EXTENSION = ".md";
@@ -29,7 +28,6 @@ export type InstallError = { path: string; message: string; suggestion: string }
 
 export type InstallResult = {
   ok: boolean;
-  profile: string;
   packs: string[];
   written: string[];
   skipped: string[];
@@ -38,7 +36,6 @@ export type InstallResult = {
 
 export type InstallOptions = {
   targetRoot: string;
-  profile?: string | undefined;
   force: boolean;
   installHooks: boolean;
   orlyVersion: string;
@@ -53,12 +50,13 @@ type PlannedFile = { target: string; content: Uint8Array; mode: string };
 export async function install(model: RulesModel, options: InstallOptions): Promise<InstallResult> {
   const targetRoot = resolve(options.targetRoot);
   requireWorkTree(targetRoot);
-  const profileName = options.profile ?? inferProfile(model, targetRoot);
-  const profile = model.profile(profileName);
-  const packs = selectedPackNames(model, profileName, profile);
+  const existing = await readConfig(targetRoot);
+  const config = existing ?? await seedConfig(targetRoot);
+  const installed = await readLock(targetRoot);
+  const packs = selectPacks(model, targetRoot, config.packs, new Set(Object.keys(installed?.files ?? {})));
 
-  const planned = await planFiles(model, profileName, profile, packs);
-  const lock = await readLock(targetRoot);
+  const planned = await planFiles(model, packs, config.commands);
+  const lock = installed;
   const managed = new Set(Object.keys(lock?.files ?? {}));
   const refusals: InstallError[] = [];
   const written: string[] = [];
@@ -85,17 +83,18 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   }
   const lockEscape = escapesTarget(targetRoot, LOCK_PATH, "lock");
   if (lockEscape) refusals.push(lockEscape);
-  if (refusals.length > 0) return { ok: false, profile: profileName, packs, written: [], skipped, errors: refusals };
+  if (refusals.length > 0) return { ok: false, packs, written: [], skipped, errors: refusals };
 
   const closure = await stageAndCommit(model, targetRoot, planned, written);
-  if (closure.length > 0) return { ok: false, profile: profileName, packs, written: [], skipped, errors: closure };
+  if (closure.length > 0) return { ok: false, packs, written: [], skipped, errors: closure };
 
   const hooks = options.installHooks ? await installHooks(targetRoot) : { written: [], all: [] };
   written.push(...hooks.written);
   skipped.push(...hooks.all.filter((path) => !hooks.written.includes(path)));
   const entries = await lockEntries(targetRoot, planned, hooks.all);
-  await writeLock(targetRoot, buildLock(options.orlyVersion, profileName, packs, entries));
-  return { ok: true, profile: profileName, packs, written: written.sort(), skipped: skipped.sort(), errors: [] };
+  await writeLock(targetRoot, buildLock(options.orlyVersion, packs, entries));
+  if (!existing) { await writeConfig(targetRoot, config); written.push(CONFIG_PATH); }
+  return { ok: true, packs, written: written.sort(), skipped: skipped.sort(), errors: [] };
 }
 
 // A committed symlink inside the target repository — planted by that
@@ -247,7 +246,7 @@ async function lockEntries(targetRoot: string, planned: PlannedFile[], hooks: st
 // One entry per target, so two packs naming the same file collapse instead of
 // racing. Two packs naming DIFFERENT sources for one target is a registry bug
 // and stops the install rather than letting pack order decide the winner.
-async function planFiles(model: RulesModel, profileName: string, profile: JsonObject, packs: string[]): Promise<PlannedFile[]> {
+async function planFiles(model: RulesModel, packs: string[], commands: Record<string, string[][]>): Promise<PlannedFile[]> {
   const registryPacks = objectValue(model.registry.packs, REGISTRY_PACKS_LABEL);
   const known = new Set(Object.keys(registryPacks));
   const planned = new Map<string, PlannedFile>();
@@ -263,7 +262,7 @@ async function planFiles(model: RulesModel, profileName: string, profile: JsonOb
       planned.set(entry.target, { target: entry.target, content: await managedContent(path, entry.target, entry.source, packs, known), mode: modeLabel(path) });
     }
   }
-  const rendered = await new Renderer(model).renderText(profileName);
+  const rendered = await new Renderer(model).renderText(packs, commands);
   planned.set(AGENTS_FILENAME, { target: AGENTS_FILENAME, content: new TextEncoder().encode(rendered), mode: MODE_REGULAR });
   return [...planned.values()].sort((left, right) => left.target.localeCompare(right.target));
 }
@@ -276,31 +275,6 @@ async function managedContent(path: string, target: string, source: string, pack
   if (extname(target) !== MARKDOWN_EXTENSION) return bytes;
   const filtered = renderProfileText(new TextDecoder().decode(bytes), new Set(packs), known, source);
   return new TextEncoder().encode(`${filtered}\n`);
-}
-
-function selectedPackNames(model: RulesModel, profileName: string, profile: JsonObject): string[] {
-  const known = Object.keys(objectValue(model.registry.packs, REGISTRY_PACKS_LABEL));
-  if (profileName === GLOBAL_PROFILE) return known.sort();
-  return [...stringArray(profile.packs, `profile ${profileName} packs`)].sort();
-}
-
-// A repository already registered here keeps its profile. Anything else gets
-// the kernel default — every language and domain pack, nothing named or
-// personal — so a fresh clone never needs to know a profile name exists.
-function inferProfile(model: RulesModel, targetRoot: string): string {
-  const repositories = objectValue(model.repositories.repositories, "repositories");
-  for (const [name, value] of Object.entries(repositories)) {
-    const path = objectValue(value, `repository ${name}`).path;
-    if (isString(path) && resolve(expandHome(path)) === targetRoot && isString(objectValue(value, name).profile)) {
-      return String(objectValue(value, name).profile);
-    }
-  }
-  if (KERNEL_PROFILE in model.profiles) return KERNEL_PROFILE;
-  throw new OrlyError(`no profile registered for ${targetRoot} — pass --profile <NAME> (available: ${Object.keys(model.profiles).sort().join(", ")})`);
-}
-
-function expandHome(path: string): string {
-  return path.startsWith("~/") ? join(process.env.HOME ?? "", path.slice(2)) : path;
 }
 
 // git canonicalises symlinks in --show-toplevel; targetRoot, as handed in by

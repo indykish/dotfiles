@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { rmSync } from "node:fs";
+import { join } from "node:path";
 
-import { criteriaFor, repositoryFor, runCommand } from "./criteria";
+import { criteriaFor, runCommand } from "./criteria";
 import { cleanupTemporaryDirectories, modelFor, newRepository, newSpecRepository } from "./gates_test_support";
 
 const WORK = "work";
 const VERIFY = "verify";
 const PR = "pr";
-const REPO_PROFILE = "repo.profile";
+const REPO_CONFIG = "repo.config";
 
 afterEach(cleanupTemporaryDirectories);
 
@@ -24,7 +26,7 @@ describe("criteriaFor", () => {
 
   test("work evaluates the branch, the tree and the profile", async () => {
     const project = newSpecRepository();
-    expect(named(WORK, await contextFor(project))).toEqual(["git.branch", "git.tree", REPO_PROFILE]);
+    expect(named(WORK, await contextFor(project))).toEqual(["git.branch", "git.tree", REPO_CONFIG]);
   });
 
   test("verify pairs the spec dimensions with the fast command tier only", async () => {
@@ -60,9 +62,9 @@ describe("criteriaFor", () => {
     const context = { root: stranger, model: await modelFor(newSpecRepository()), acceptDirty: false };
 
     const results = criteriaFor(VERIFY, context).map((criterion) => criterion.evaluate(context));
-    const profile = results.find((result) => result.name === REPO_PROFILE);
-    expect(profile?.ok).toBeFalse();
-    expect(profile?.detail).toContain("not registered");
+    const config = results.find((result) => result.name === REPO_CONFIG);
+    expect(config?.ok).toBeFalse();
+    expect(config?.detail).toContain("orly init");
   });
 });
 
@@ -115,14 +117,21 @@ describe("runCommand", () => {
   });
 });
 
-describe("repositoryFor", () => {
-  test("resolves a registered checkout to its registry name", async () => {
+describe("repo.config", () => {
+  test("a repository with a config resolves its declared commands", async () => {
     const project = newSpecRepository();
-    expect(repositoryFor(await modelFor(project), project)).toBe("fixture");
+    const context = { root: project, model: await modelFor(project), acceptDirty: false };
+    const criterion = criteriaFor(WORK, context).find((entry) => entry.name === REPO_CONFIG);
+    expect(criterion?.evaluate(context).ok).toBeTrue();
   });
 
-  test("an unrelated checkout resolves to undefined", async () => {
-    const model = await modelFor(newSpecRepository());
-    expect(repositoryFor(model, newRepository())).toBeUndefined();
+  test("a repository with no config names the install command", async () => {
+    const project = newSpecRepository();
+    const context = { root: project, model: await modelFor(project), acceptDirty: false };
+    rmSync(join(project, ".oracle/orly.json"));
+    const criterion = criteriaFor(WORK, context).find((entry) => entry.name === REPO_CONFIG);
+    const verdict = criterion?.evaluate(context);
+    expect(verdict?.ok).toBeFalse();
+    expect(verdict?.detail).toContain("orly init");
   });
 });
