@@ -24,9 +24,6 @@ language and domain pack, none of Kishore's own address handles or
 agentsfleet's product surface. `orly update` re-materialises against a newer
 engine version; `orly doctor` reports drift.
 
-Not yet published — until then, clone this repository and run
-`bun bin/orly init` from inside the target repository instead of `bunx`.
-
 ## Kishore's own machine (optional)
 
 Nothing below this line is needed to use the harness in another repository.
