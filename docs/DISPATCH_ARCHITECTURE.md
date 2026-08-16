@@ -298,6 +298,37 @@ adversarial pass flagged:
 A card is not deleted until its delta-landed assertion is green. Preserve any
 `audits/agents-md.md` scenario that quotes a deleted body verbatim (§11).
 
+### 6.6 The docs tier — same grammar, one more class (M02_001)
+
+Everything above governs `dispatch/`. The `docs/` rule tier sat outside every
+coverage glob: hundreds of normative clauses with no enforcement class, no
+report, and no signal when a trigger went dead. `audits/rule-ledger.sh` extends
+this model there, reusing the tag grammar rather than forking it.
+
+**One new class.** `[DETERMINISTIC → CODE]` and `[JUDGMENT → CODE]` keep their
+meanings. `[UNENFORCED → reason]` is added, and its reason is prose on purpose:
+a clause nobody checks should say *why* in the place a reader meets it. The
+class exists so acknowledged prose is distinguishable from a clause nobody has
+triaged — without it, both read as "untagged" and the backlog lies.
+
+**Tag scope.** A tag alone on its line covers every clause beneath it until the
+next heading; a tag at the end of a sentence covers that sentence. The `docs/`
+tier is paragraph-shaped where `dispatch/` is section-shaped, and forcing one
+tag per line would have meant editing prose to satisfy a counter.
+
+**What counts as a clause.** A line carrying a normative keyword, outside
+headings and markdown tables — a heading is a title, and a table row's `always`
+is usually a column value. The count is a keyword heuristic and never gates:
+the only reds are structural (a cited-but-unregistered doc, a registered path
+missing from disk, a façade `.sh` with no `dispatch_init` scope, a stale
+scoreboard).
+
+**Where the registry lives.** `REGISTERED_DOCS` / `EXCLUDED_DOCS` /
+`EXCLUDED_PREFIXES` in `audits/rule-ledger-lib.sh`. A `docs/*.md` cited by a
+façade and absent from both lists is a parity red — silence is the one outcome
+not allowed, because it under-reports the corpus. The generated scoreboard is
+`docs/RULE_ENFORCEMENT.md`, currency-checked by `make audit`.
+
 ## 7 · Firing planes (corrected wiring + latency)
 
 | Plane | When | Invocation |

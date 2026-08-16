@@ -16,46 +16,8 @@ unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_PREFIX \
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 LEDGER="$ROOT/audits/rule-ledger.sh"
 DOC_READ="$ROOT/audits/doc-read.sh"
-REGISTERED=(
-  "docs/LOGGING_STANDARD.md" "docs/REST_API_DESIGN_GUIDELINES.md"
-  "docs/SCHEMA_CONVENTIONS.md" "docs/DOCUMENTATION_RULES.md"
-  "docs/LIFECYCLE_PATTERNS.md" "docs/CHANGELOG_VOICE.md"
-  "docs/VERIFY_TIERS.md" "docs/greptile-learnings/RULES.md"
-)
-
-if [[ -t 1 ]]; then G=$'\033[32m'; R=$'\033[31m'; BO=$'\033[1m'; X=$'\033[0m'
-else G=''; R=''; BO=''; X=''; fi
-PASS=0; FAIL=0; SANDBOXES=()
-cleanup() { local d; for d in "${SANDBOXES[@]+"${SANDBOXES[@]}"}"; do rm -rf "$d"; done; }
-trap cleanup EXIT
-
-ok()   { printf '  %sPASS%s  %s\n' "$G" "$X" "$1"; PASS=$((PASS + 1)); }
-bad()  { printf '  %sFAIL%s  %s — %s\n' "$R" "$X" "$1" "$2" >&2; FAIL=$((FAIL + 1)); }
-
-# A fixture root carrying every registered doc, so a case under test is the
-# only thing that can turn the census red.
-mk_root() {
-  local sb; sb="$(mktemp -d)"; SANDBOXES+=("$sb")
-  mkdir -p "$sb/dispatch" "$sb/docs/greptile-learnings"
-  local doc
-  for doc in "${REGISTERED[@]}"; do
-    printf '# fixture\n\nThe caller MUST do the thing.\n' > "$sb/$doc"
-  done
-  printf '# façade\n\nReads `docs/LOGGING_STANDARD.md` first.\n' > "$sb/dispatch/write_fixture.md"
-  printf '%s' "$sb"
-}
-
-run_ledger() { ORLY_ROOT="$1" bash "$LEDGER" --census 2>&1; }
-run_reach()  { ORLY_ROOT="$1" bash "$LEDGER" --reachability 2>&1; }
-run_check()  { ORLY_ROOT="$1" bash "$LEDGER" --check 2>&1; }
-
-# A façade executable is a file plus one dispatch_init line. Fixtures that need
-# a working scope get one; the structural case deliberately omits it.
-mk_facade() {
-  local root="$1" stem="$2" init="$3"
-  printf '#!/usr/bin/env bash\nsource "$(dirname "$0")/lib.sh"\n%s\n' "$init" \
-    > "$root/dispatch/$stem.sh"
-}
+# shellcheck source=evals/ledger/lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 printf '%sledger evals — census, reachability, scoreboard, doc-read%s\n\n' "$BO" "$X"
 
@@ -162,21 +124,6 @@ fi
 
 # --- §4 doc-read record ------------------------------------------------------
 
-# A fixture repository: the census fixtures, a façade whose scope is '*.sh', and
-# one commit, so the check has a real repository to read staged files from.
-mk_repo() {
-  local sb; sb="$(mk_root)"
-  mk_facade "$sb" "write_fixture" "dispatch_init \"FIX\" '*.sh'"
-  git -C "$sb" init -q
-  git -C "$sb" config user.email "evals@example.invalid"
-  git -C "$sb" config user.name "ledger evals"
-  git -C "$sb" add -A >/dev/null 2>&1
-  git -C "$sb" commit -qm "fixture baseline" >/dev/null 2>&1
-  printf '%s' "$sb"
-}
-
-run_doc_read() { local root="$1"; shift; ORLY_ROOT="$root" bash "$DOC_READ" "$@" 2>&1; }
-repo_log() { printf '%s/.git/orly/doc-reads.jsonl' "$1"; }
 
 # Dimension 4.1 — append-only, one row per call. Two sessions writing at once
 # stay legible because no call ever rewrites what another wrote.
@@ -298,6 +245,70 @@ for f in "$ROOT/audits/doc-read.sh" "$ROOT/.githooks/pre-commit" \
   }
 done
 [ "$neutral" -eq 1 ] && ok "ledger_doc_read_runtime_neutral — enforcement path names no agent runtime"
+
+# --- contract surfaces the spec declares and nothing asserted ----------------
+
+# The Interfaces block promises "0 clean · 1 violation/stale · 2 usage". A
+# misuse that exits 1 instead of 2 is indistinguishable from a real violation
+# to any caller that branches on the code — make/hook/CI included.
+usage_codes_ok=1
+usage_note=""
+check_code() {
+  local want="$1" got="$2" what="$3"
+  [ "$got" -eq "$want" ] && return 0
+  usage_codes_ok=0; usage_note="$usage_note $what=$got(want $want)"
+}
+check_code 2 "$(exit_code_of bash "$LEDGER")" "no-mode"
+check_code 2 "$(exit_code_of bash "$LEDGER" --nonsense)" "unknown-arg"
+check_code 2 "$(exit_code_of bash "$LEDGER" --reachability -n notanumber)" "n-nonnumeric"
+check_code 2 "$(exit_code_of bash "$LEDGER" --reachability -n 0)" "n-zero"
+check_code 2 "$(exit_code_of bash "$LEDGER" --write)" "write-no-target"
+check_code 0 "$(exit_code_of bash "$LEDGER" --help)" "help"
+check_code 2 "$(exit_code_of bash "$DOC_READ")" "doc-read-no-mode"
+check_code 2 "$(exit_code_of bash "$DOC_READ" log)" "log-no-path"
+check_code 2 "$(exit_code_of bash "$DOC_READ" log a b)" "log-extra-arg"
+check_code 2 "$(exit_code_of bash "$DOC_READ" check extra)" "check-extra-arg"
+if [ "$usage_codes_ok" -eq 1 ]; then
+  ok "ledger_usage_exit_codes — every misuse exits 2, --help exits 0"
+else
+  bad "ledger_usage_exit_codes" "$usage_note"
+fi
+
+# Failure Modes row "Zero-fire false alarm" — a dormant surface warns, never
+# reds. A façade for a language this repository does not author yet must not
+# fail anyone's build.
+sb="$(mk_root)"
+mk_facade "$sb" "write_dormant" "dispatch_init \"DORM\" '*.nothing-matches-this'"
+out="$(run_reach "$sb")"; rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q '🟠 no fire in the window'; then
+  ok "ledger_reachability_zero_fire_warns — dormant scope warns 🟠 and exits 0"
+else
+  bad "ledger_reachability_zero_fire_warns" "exit=$rc (want 0 with a 🟠 line)"
+fi
+
+# Failure Modes row "Renamed/deleted rule doc" on the WRITE path: a render that
+# cannot see the whole corpus must not leave a half-true scoreboard on disk.
+# Writing a lying file is worse than writing nothing.
+sb="$(mk_root)"; rm -f "$sb/docs/VERIFY_TIERS.md"
+target="$sb/docs/RULE_ENFORCEMENT.md"
+ORLY_ROOT="$sb" bash "$LEDGER" --write "$target" >/dev/null 2>&1; write_rc=$?
+if [ "$write_rc" -eq 1 ] && [ ! -f "$target" ]; then
+  ok "ledger_write_aborts_on_missing_doc — exit 1 and no scoreboard written"
+else
+  bad "ledger_write_aborts_on_missing_doc" "exit=$write_rc target-exists=$([ -f "$target" ] && echo yes || echo no)"
+fi
+
+# The trigger column's third state. `uncited` and `latent` are different
+# findings — nothing points at the doc at all, versus a façade points at it but
+# declares no scope — and collapsing them would hide an orphaned rule doc.
+sb="$(mk_root)"
+ORLY_ROOT="$sb" bash "$LEDGER" --write "$sb/board.md" >/dev/null
+if grep -q 'VERIFY_TIERS.md.*uncited' "$sb/board.md" \
+   && grep -q 'LOGGING_STANDARD.md.*latent' "$sb/board.md"; then
+  ok "ledger_trigger_uncited — uncited and latent are reported apart"
+else
+  bad "ledger_trigger_uncited" "$(grep -E 'VERIFY_TIERS|LOGGING_STANDARD' "$sb/board.md" | head -2)"
+fi
 
 # Invariant 1 — read-only: no reporting mode may write into its own root.
 sb="$(mk_root)"; mk_facade "$sb" "write_scoped" "dispatch_init \"FIX\" '*.fixture'"

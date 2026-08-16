@@ -61,6 +61,8 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `.githooks/pre-commit` | EDIT | §4 invoke `doc-read.sh check` when source files are staged; `make audit` moves out to pre-push on Indy's call (see Discovery) |
 | `Makefile` | EDIT | `audit` target gains `rule-ledger.sh --check`; new `ledger` convenience target prints census + reachability |
 | `evals/ledger/run.sh` | CREATE | fixture-driven pass+fail cases for every deterministic behaviour below |
+| `evals/ledger/lib.sh` | CREATE | fixture builders + reporting, split from the runner at the length rule's "ceiling, not a budget" — the cases read as a list of behaviours |
+| `docs/DISPATCH_ARCHITECTURE.md` §6.6 | EDIT | the docs-tier extension: `[UNENFORCED → reason]`, block-tag scope, what counts as a clause, registry location |
 | `evals/ledger/fixtures/` | CREATE | minimal doc/tag/read-log fixtures the runner consumes |
 | `audits/agents-md.md` | EDIT | Scenario 28 grading the ledger semantics + recorded doc-read (rule-extension protocol step 2) |
 | `audits/data.sh` | EDIT | scenario-count parity for the new question |
@@ -208,6 +210,14 @@ so the file stays reproducible from a checkout)
 | 4.2 | gate (fixture) | `ledger_readlog_check_matrix` | missing-read → exit 1 listing docs; all-read → exit 0; no log → exit 0 + 🟠 |
 | 4.3 | gate (grep) | `ledger_precommit_wiring` | `.githooks/pre-commit` carries the guarded invocation |
 | 5.1 | gate (repo) | `ledger_pilot_fully_classified` | LOGGING_STANDARD census row shows `untagged=0` |
+| 4.2c | gate (fixture) | `ledger_readlog_content_keyed` | read → edit façade → check exit 1; re-read → exit 0 |
+| 4.4 | gate (repo) | `ledger_doc_read_command_documented` | rendered `AGENTS.md` names `doc-read.sh log` |
+| 4.5 | gate (repo) | `ledger_doc_read_runtime_neutral` | no enforcement file names a runtime; negative control confirmed |
+| 5.1b | gate (repo) | `ledger_block_tag_scope` | `dispatch/write_any.md` yields >0 deterministic clauses from block tags |
+| contract | gate (repo) | `ledger_usage_exit_codes` | every misuse of both scripts exits 2; `--help` exits 0 |
+| contract | gate (fixture) | `ledger_reachability_zero_fire_warns` | dormant scope → 🟠, exit 0 (never a red) |
+| contract | gate (fixture) | `ledger_write_aborts_on_missing_doc` | render abort → exit 1 **and** no file written |
+| contract | gate (fixture) | `ledger_trigger_uncited` | `uncited` and `latent` reported apart |
 | regression | gate (repo) | `make audit` | existing chain stays green with the new rows added |
 
 ## Acceptance Rubric (single scoring surface)
