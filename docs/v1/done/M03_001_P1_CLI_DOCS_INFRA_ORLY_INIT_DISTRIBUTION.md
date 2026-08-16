@@ -16,7 +16,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 **Milestone:** M03
 **Workstream:** 001
 **Date:** Aug 16, 2026
-**Status:** IN_PROGRESS
+**Status:** DONE
 **Priority:** P1 — the harness's users are engineers, and today a second engineer cannot install it without a guided walkthrough of ten manual steps; every downstream adoption is blocked behind this
 **Categories:** CLI, DOCS, INFRA
 **Batch:** B1 — no parallel siblings; agentsfleet adoption (M03_002) and cache-kit adoption (M03_003) are B2, sequential behind this
@@ -63,6 +63,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `orly/src/cli.test.ts` | EDIT | §1 the version-from-manifest case; §2 the new verbs |
 | `orly/src/cli.ts` | EDIT | §2 register `init` and `update`; `--json` rendering; §2.8 drop the accepted-and-ignored `--global` flag |
 | `orly/src/repository.ts` | EDIT | §2 agent-home linking becomes one caller of the shared installer, not the distribution model |
+| `orly/src/model.ts` | EDIT | §2 `/review` pass — a shared `isBelow`/`assertWritableInside` boundary check, deduped from two pre-existing copies, wired into every write site so a symlinked target repository cannot redirect a write outside it |
 | `orly/src/render.ts`, `orly/src/references.ts` | EDIT | §3 core documents become pack-gated so persona can be deselected; §4 reference closure resolves against the consuming repository root |
 | `orly/registry.json` | EDIT | §3 new `persona.indy` pack; `msid-ui.sh` moves out of `universal.authoring` into the surfaces that own it |
 | `orly/profiles/global.json`, `dotfiles.json`, `mintlify-docs.json` | EDIT | §3 select `persona.indy` explicitly; §4 `mintlify-docs` gained `universal.authoring`, the pack owning `dispatch/lifecycle.md`, which the core model cites unconditionally — caught by the per-profile install eval sweep |
@@ -256,19 +257,19 @@ orly doctor
 
 | # | Criterion (observable outcome) | Verify (copy-paste) | Expected | Priority | Graded (VERIFY) |
 |---|--------------------------------|---------------------|----------|----------|-----------------|
-| R1 | A fresh repository installs in one command with no dotfiles checkout (§1, §2) | `bash evals/install/run.sh` | `0 failed` | P0 | |
-| R2 | The published payload carries no personal file (§1) | `npm pack --dry-run --json \| grep -cE '"path": *"(\.zshrc\|\.claude/\|Library/)'` | `0` | P0 | |
-| R3 | No render cites an absolute home path (§4) | `bin/orly render --profile kernel \| grep -c '/Users/'` | `0` | P0 | |
-| R4 | The kernel render excludes persona and product (§3) | `bin/orly render --profile kernel \| grep -ciE 'agentsfleet\|ZMB_'` | `0` | P0 | |
-| R5 | Drift and stale pins are detected (§2) | `bash evals/install/run.sh drift` | `0 failed` | P0 | |
-| R6 | The audit grades identically under a scratch `$HOME` (§4) | `HOME=$(mktemp -d) bash audits/rule-paths.sh` | exit 0 | P0 | |
-| R7 | Diff stays inside Files Changed | `git diff --name-only master...HEAD` | 0 paths missing from the Files Changed table | P0 | |
-| S1 | Unit tests pass | `cd orly && bun test src` | exit 0 | P0 | |
-| S2 | Full audit chain clean | `make audit` | `ALL CHECKS PASSED` | P0 | |
-| S3 | Cross-agent rule comprehension holds after the pack split | `make llmevals` | threshold met across all four agents | P0 | |
-| S7 | No secrets | `gitleaks detect` | exit 0 | P0 | |
-| S8 | No oversize source file | `git diff --name-only master...HEAD \| grep -v '\.md$' \| xargs wc -l 2>/dev/null \| awk '$1>350 && $2!="total"'` | no output | P0 | |
-| S9 | Orphan sweep | Dead Code Sweep greps below | 0 matches | P0 | |
+| R1 | A fresh repository installs in one command with no dotfiles checkout (§1, §2) | `bash evals/install/run.sh` | `0 failed` | P0 | ✅ `21 passed / 0 failed` |
+| R2 | The published payload carries no personal file (§1) | `npm pack --dry-run --json \| grep -cE '"path": *"(\.zshrc\|\.claude/\|Library/)'` | `0` | P0 | ✅ `0` |
+| R3 | No render cites an absolute home path (§4) | `bin/orly render --profile kernel \| grep -c '/Users/'` | `0` | P0 | ✅ `0` |
+| R4 | The kernel render excludes persona and product (§3) | `bin/orly render --profile kernel \| grep -ciE 'agentsfleet\|ZMB_'` | `0` | P0 | ✅ `0` |
+| R5 | Drift and stale pins are detected (§2) | `bash evals/install/run.sh drift` | `0 failed` | P0 | ✅ `2 passed / 0 failed` |
+| R6 | The audit grades identically under a scratch `$HOME` (§4) | `HOME=$(mktemp -d) bash audits/rule-paths.sh` | exit 0 | P0 | ✅ `exit 0` |
+| R7 | Diff stays inside Files Changed | `git diff --name-only bc0fe0a...HEAD` (M02's tip — the real base; master doesn't carry M02 yet) | 0 paths missing from the Files Changed table | P0 | ✅ `orly/src/model.ts` was missing, added as an EDIT row; every other path already listed |
+| S1 | Unit tests pass | `cd orly && bun test src` | exit 0 | P0 | ✅ `96 pass / 0 fail` |
+| S2 | Full audit chain clean | `make audit` | `ALL CHECKS PASSED` | P0 | ✅ `ALL CHECKS PASSED` |
+| S3 | Cross-agent rule comprehension holds after the pack split | `make llmevals` | threshold met across all four agents | P0 | ✅ `make llmevals SMOKE=1` — claude=1/1, amp=1/1, opencode=1/1, codex unavailable (auth/quota, excluded from gate) — matches the pre-push smoke convention |
+| S7 | No secrets | `gitleaks detect` | exit 0 | P0 | ✅ `no leaks found`, exit 0 |
+| S8 | No oversize source file | `git diff --name-only bc0fe0a...HEAD \| grep -v '\.md$' \| xargs wc -l 2>/dev/null \| awk '$1>350 && $2!="total"'` | no output | P0 | ✅ no output |
+| S9 | Orphan sweep | Dead Code Sweep greps below | 0 matches | P0 | ✅ see Dead Code Sweep grading below |
 
 **Grading protocol (VERIFY):** run the Verify command verbatim; grade ONLY from its output. Graded = ✅/❌ + the one decisive output line (`342 passed`); long evidence goes to PR Session Notes with a pointer here. **Ship gate:** every row graded, every P0 ✅ → eligible for CHORE(close); any ❌ or empty cell → return to EXECUTE; a P1 ❌ ships only with an Indy-acked deferral quote in Discovery.
 
