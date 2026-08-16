@@ -156,6 +156,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "p=$(jq -r '.tool_input.file_path // empty'); [ -n \"$p\" ] && bash \"$CLAUDE_PROJECT_DIR/audits/doc-read.sh\" log \"$p\"; exit 0",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PreToolUse": [

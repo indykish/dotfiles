@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+# doc-read.sh — turn the 📖 DOC READ proof-line into a set comparison.
+#
+#   audits/doc-read.sh log <path>   record that a file was read (hook target)
+#   audits/doc-read.sh check        staged source vs recorded reads
+#
+# The DOC READ GATE asks an agent to read the façade its edit triggers, and
+# then asks the same agent whether it did. That is a claim about itself
+# compared against nothing. `log` is fed by a PostToolUse hook on the Read
+# tool, so the record is written by the harness rather than by the model;
+# `check` computes which façade pages the staged files trigger and reports the
+# ones nobody read since the last commit.
+#
+# The record lives in the git directory, never in the tree: it is evidence
+# about one working copy, not shared history. When it is absent — an agent
+# runtime with no hook support — `check` warns and exits 0. Partial
+# mechanization stated honestly beats a red that means nothing.
+#
+# Exit: 0 clean or unenforceable · 1 unread trigger · 2 usage error.
+set -uo pipefail
+
+# A hook exports GIT_DIR/GIT_INDEX_FILE at the repository it fired in. This
+# script IS a hook target, so the scope dies before the first git call.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_PREFIX \
+      GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=audits/rule-ledger-lib.sh
+source "$HERE/rule-ledger-lib.sh"
+
+MODE_LOG="log"
+MODE_CHECK="check"
+LOG_RELATIVE_PATH="orly/doc-reads.jsonl"
+USAGE="usage: $0 log <path> | $0 check"
+
+if [[ -t 1 ]]; then G=$'\033[32m'; R=$'\033[31m'; Y=$'\033[33m'; X=$'\033[0m'
+else G=''; R=''; Y=''; X=''; fi
+
+# Where the record lives for this working copy. Empty when the caller is not
+# inside a repository at all, which only `log` tolerates.
+read_log_path() {
+  local git_dir
+  git_dir="$(git -C "$LEDGER_ROOT" rev-parse --absolute-git-dir 2>/dev/null)" || return 1
+  printf '%s/%s' "$git_dir" "$LOG_RELATIVE_PATH"
+}
+
+# Repo-relative form of a path, or nothing when it sits outside the tree — an
+# agent reading its own notes elsewhere on disk is not a doc read.
+repo_relative() {
+  local path="$1"
+  case "$path" in
+    "$LEDGER_ROOT"/*) printf '%s' "${path#"$LEDGER_ROOT"/}" ;;
+    /*) return 1 ;;
+    *) [ -e "$LEDGER_ROOT/$path" ] && printf '%s' "$path" ;;
+  esac
+}
+
+# One JSON Lines row per call, appended. Append-only with a single write per
+# invocation is why two agents in two sessions cannot corrupt each other: the
+# order rows land in does not change which paths the set contains.
+run_log() {
+  local path="$1" relative log
+  relative="$(repo_relative "$path")" || return 0
+  [ -n "$relative" ] || return 0
+  log="$(read_log_path)" || return 0
+  mkdir -p "$(dirname "$log")" 2>/dev/null || return 0
+  printf '{"ts":%s,"path":"%s"}\n' "$(date +%s)" "$relative" >> "$log"
+  return 0
+}
+
+# Façade pages the staged files trigger, one per line. Same glob map the
+# reachability report uses: a façade's scope is its dispatch_init line, so this
+# check and the ledger can never disagree about what fires.
+expected_facade_pages() {
+  local staged="$1" script stem globs
+  while IFS= read -r script; do
+    [ -n "$script" ] || continue
+    stem="$(basename "$script" .sh)"
+    [ -f "$LEDGER_ROOT/dispatch/$stem.md" ] || continue
+    globs="$(ledger_facade_globs "$script")"
+    [ -n "$globs" ] || continue
+    [ "$(ledger_match_count "$globs" < "$staged")" -gt 0 ] && printf 'dispatch/%s.md\n' "$stem"
+  done < <(ledger_facade_scripts)
+}
+
+# Paths recorded since the last commit. Reads before HEAD belong to work that
+# already shipped, so they cannot vouch for what is staged now.
+reads_since_head() {
+  local log="$1" since line ts path
+  since="$(git -C "$LEDGER_ROOT" log -1 --format=%ct 2>/dev/null)"
+  [ -n "$since" ] || since=0
+  while IFS= read -r line; do
+    ts="${line#*\"ts\":}"; ts="${ts%%,*}"
+    path="${line#*\"path\":\"}"; path="${path%%\"*}"
+    case "$ts" in ''|*[!0-9]*) continue ;; esac
+    [ "$ts" -ge "$since" ] && printf '%s\n' "$path"
+  done < "$log"
+}
+
+# File-scope so the EXIT trap can still see them: a trap fires after a
+# function's locals are gone, and `set -u` turns that into a spurious error on
+# the way out of a clean run.
+STAGED_FILE=""
+EXPECTED_FILE=""
+RECORDED_FILE=""
+cleanup_temporaries() { rm -f "$STAGED_FILE" "$EXPECTED_FILE" "$RECORDED_FILE"; }
+
+run_check() {
+  local log unread=0 page staged expected recorded
+  STAGED_FILE="$(mktemp)"; EXPECTED_FILE="$(mktemp)"; RECORDED_FILE="$(mktemp)"
+  staged="$STAGED_FILE"; expected="$EXPECTED_FILE"; recorded="$RECORDED_FILE"
+  trap cleanup_temporaries EXIT
+  git -C "$LEDGER_ROOT" diff --cached --name-only --diff-filter=ACMRT > "$staged" 2>/dev/null
+  expected_facade_pages "$staged" | sort -u > "$expected"
+
+  if [ ! -s "$expected" ]; then
+    printf '  %s🟢%s DOC READ: nothing staged triggers a façade\n' "$G" "$X"
+    return 0
+  fi
+  if ! log="$(read_log_path)" || [ ! -f "$log" ]; then
+    printf '  %s🟠%s DOC READ: no read record for this working copy — the agent runtime\n' "$Y" "$X"
+    printf '     has no Read hook, so the proof-line stays self-reported here\n'
+    return 0
+  fi
+
+  # Materialised once, and never piped into `grep -q`: under `pipefail` the
+  # producer takes SIGPIPE the moment grep matches and exits, and the pipeline
+  # then reports 141 — which reads exactly like "not found" and reds a doc that
+  # was read.
+  reads_since_head "$log" | sort -u > "$recorded"
+
+  while IFS= read -r page; do
+    grep -qxF "$page" "$recorded" && continue
+    printf '  %s🔴%s DOC READ: %s triggered by the staged diff, unread since HEAD\n' "$R" "$X" "$page"
+    unread=1
+  done < "$expected"
+  [ "$unread" -eq 0 ] && printf '  %s🟢%s DOC READ: every triggered façade was read since HEAD\n' "$G" "$X"
+  return "$unread"
+}
+
+case "${1:-}" in
+  "$MODE_LOG")
+    [ "$#" -eq 2 ] || { printf '%s\n' "$USAGE" >&2; exit 2; }
+    run_log "$2"
+    ;;
+  "$MODE_CHECK")
+    [ "$#" -eq 1 ] || { printf '%s\n' "$USAGE" >&2; exit 2; }
+    run_check
+    ;;
+  *) printf '%s\n' "$USAGE" >&2; exit 2 ;;
+esac

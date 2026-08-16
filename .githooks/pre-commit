@@ -1,24 +1,40 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# git exports its repository scope to every hook. Anything we invoke below —
-# make audit, the eval sandboxes, the orly suite — spawns its own git against
-# OTHER directories, and an inherited GIT_DIR/GIT_INDEX_FILE silently redirects
-# those calls at THIS repository: evals/dispatch/run.sh `git add -A` in a temp
-# sandbox staged fixture paths into the real index, and a linked worktree (whose
-# .git is a file) broke outright. The scope dies here, before anything is run.
+# git exports its repository scope to every hook. Anything we invoke below
+# spawns its own git against OTHER directories, and an inherited
+# GIT_DIR/GIT_INDEX_FILE silently redirects those calls at THIS repository:
+# evals/dispatch/run.sh `git add -A` in a temp sandbox staged fixture paths into
+# the real index, and a linked worktree (whose .git is a file) broke outright.
+# The scope dies here, before anything is run.
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_PREFIX \
       GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
 
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
-GOVERNANCE_PATTERN='^(AGENTS\.md|README\.md|Makefile|orly/|dispatch/|audits/(agents-md|data|parity-dispatch)|evals/|docs/(EXECUTE_DOC_READS|ORLY_ARCHITECTURE|HARNESS_VERIFY_OUTPUT)\.md|\.githooks/)'
+# `make audit` runs the whole orly suite plus every eval sandbox. It moved to
+# pre-push on Indy's call (Aug 16, 2026): the audit proves the rule corpus, and
+# a corpus cannot reach anyone else until it is pushed. Committing stays cheap;
+# pushing still cannot skip it.
+#
+# The trigger surface stays named here — AGENTS.md, dispatch/, audits/, evals/ —
+# so this hook still says out loud which layer a change touches, and where the
+# proof now happens. Announcing, not gating: the gate is pre-push.
+GOVERNANCE_PATTERN='^(AGENTS\.md|README\.md|Makefile|orly/|dispatch/|audits/|evals/|docs/(EXECUTE_DOC_READS|ORLY_ARCHITECTURE|HARNESS_VERIFY_OUTPUT)\.md|\.githooks/)'
 
 if git diff --cached --name-only | grep -qE "$GOVERNANCE_PATTERN"; then
-  echo "pre-commit: governance changed — running make audit" >&2
-  if ! make audit; then
-    echo "pre-commit: governance audit failed" >&2
+  echo "pre-commit: governance staged — make audit runs at push (.githooks/pre-push)" >&2
+fi
+
+# The doc-read check is the opposite kind of cost — one grep over the staged
+# list and one read of a local record — so it stays here, where the session
+# that did or did not read the façade is still the session committing.
+SOURCE_PATTERN='\.(zig|ts|tsx|js|jsx|py|rs|go|sh|sql)$'
+
+if git diff --cached --name-only | grep -qE "$SOURCE_PATTERN"; then
+  if ! bash audits/doc-read.sh check; then
+    echo "pre-commit: a triggered façade went unread — read it, or record why" >&2
     exit 1
   fi
 fi

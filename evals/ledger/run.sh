@@ -15,6 +15,7 @@ unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_PREFIX \
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 LEDGER="$ROOT/audits/rule-ledger.sh"
+DOC_READ="$ROOT/audits/doc-read.sh"
 REGISTERED=(
   "docs/LOGGING_STANDARD.md" "docs/REST_API_DESIGN_GUIDELINES.md"
   "docs/SCHEMA_CONVENTIONS.md" "docs/DOCUMENTATION_RULES.md"
@@ -56,7 +57,7 @@ mk_facade() {
     > "$root/dispatch/$stem.sh"
 }
 
-printf '%sledger evals — fixture-pinned census, reachability, scoreboard%s\n\n' "$BO" "$X"
+printf '%sledger evals — census, reachability, scoreboard, doc-read%s\n\n' "$BO" "$X"
 
 # Dimension 1.1 — one row per registered doc, columns machine-parseable.
 sb="$(mk_root)"; out="$(run_ledger "$sb")"; rc=$?
@@ -157,6 +158,79 @@ if [ "$absent_rc" -eq 1 ] && [ "$fresh_rc" -eq 0 ] && [ "$stale_rc" -eq 1 ] \
   ok "ledger_check_currency — absent 1, fresh 0, stale 1 with the fix command, regenerated 0"
 else
   bad "ledger_check_currency" "absent=$absent_rc fresh=$fresh_rc stale=$stale_rc regen=$regen_rc"
+fi
+
+# --- §4 doc-read record ------------------------------------------------------
+
+# A fixture repository: the census fixtures, a façade whose scope is '*.sh', and
+# one commit, so HEAD has a timestamp for the "read since HEAD" window.
+mk_repo() {
+  local sb; sb="$(mk_root)"
+  mk_facade "$sb" "write_fixture" "dispatch_init \"FIX\" '*.sh'"
+  git -C "$sb" init -q
+  git -C "$sb" config user.email "evals@example.invalid"
+  git -C "$sb" config user.name "ledger evals"
+  git -C "$sb" add -A >/dev/null 2>&1
+  git -C "$sb" commit -qm "fixture baseline" >/dev/null 2>&1
+  printf '%s' "$sb"
+}
+
+run_doc_read() { local root="$1"; shift; ORLY_ROOT="$root" bash "$DOC_READ" "$@" 2>&1; }
+repo_log() { printf '%s/.git/orly/doc-reads.jsonl' "$1"; }
+
+# Dimension 4.1 — append-only, one row per call. Two sessions writing at once
+# stay legible because no call ever rewrites what another wrote.
+sb="$(mk_repo)"
+run_doc_read "$sb" log "dispatch/write_fixture.md" >/dev/null
+run_doc_read "$sb" log "docs/LOGGING_STANDARD.md" >/dev/null
+run_doc_read "$sb" log "/etc/hosts" >/dev/null
+rows="$(wc -l < "$(repo_log "$sb")" | tr -d ' ')"
+shaped="$(grep -cE '^\{"ts":[0-9]+,"path":"[^"]+"\}$' "$(repo_log "$sb")")"
+if [ "$rows" -eq 2 ] && [ "$shaped" -eq 2 ]; then
+  ok "ledger_readlog_append — 2 well-formed rows, the out-of-tree path dropped"
+else
+  bad "ledger_readlog_append" "rows=$rows well-formed=$shaped (want 2 and 2)"
+fi
+
+# Dimension 4.2 — the matrix. No record cannot red: an agent runtime without
+# hook support would otherwise fail every commit for a mechanism it never had.
+sb="$(mk_repo)"
+printf '#!/bin/sh\necho hi\n' > "$sb/tool.sh"
+git -C "$sb" add tool.sh >/dev/null 2>&1
+out_absent="$(run_doc_read "$sb" check)"; absent_rc=$?
+run_doc_read "$sb" log "docs/CHANGELOG_VOICE.md" >/dev/null
+out_missing="$(run_doc_read "$sb" check)"; missing_rc=$?
+run_doc_read "$sb" log "dispatch/write_fixture.md" >/dev/null
+out_read="$(run_doc_read "$sb" check)"; read_rc=$?
+if [ "$absent_rc" -eq 0 ] && printf '%s' "$out_absent" | grep -q '🟠' \
+   && [ "$missing_rc" -eq 1 ] && printf '%s' "$out_missing" | grep -q 'dispatch/write_fixture.md' \
+   && [ "$read_rc" -eq 0 ] && printf '%s' "$out_read" | grep -q '🟢'; then
+  ok "ledger_readlog_check_matrix — no record 0 🟠, unread 1 naming the façade, read 0 🟢"
+else
+  bad "ledger_readlog_check_matrix" "absent=$absent_rc missing=$missing_rc read=$read_rc"
+fi
+
+# Dimension 4.2b — a staged diff that triggers nothing is green without a
+# record at all: the check reports on triggers, not on reading habits.
+sb="$(mk_repo)"
+printf 'notes\n' > "$sb/NOTES.txt"
+git -C "$sb" add NOTES.txt >/dev/null 2>&1
+out="$(run_doc_read "$sb" check)"; rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q 'nothing staged triggers'; then
+  ok "ledger_readlog_untriggered — a prose-only diff needs no read"
+else
+  bad "ledger_readlog_untriggered" "exit=$rc out: $out"
+fi
+
+# Dimension 4.3 — the wiring itself. A check nothing invokes is a check nobody
+# runs, so the hook's guarded call is part of the deliverable.
+hook="$ROOT/.githooks/pre-commit"
+if grep -q 'audits/doc-read.sh check' "$hook" \
+   && grep -q 'SOURCE_PATTERN' "$hook" \
+   && grep -q 'diff --cached --name-only' "$hook"; then
+  ok "ledger_precommit_wiring — pre-commit calls check behind a staged-source guard"
+else
+  bad "ledger_precommit_wiring" "no guarded doc-read.sh invocation in .githooks/pre-commit"
 fi
 
 # Invariant 1 — read-only: no reporting mode may write into its own root.

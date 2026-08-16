@@ -58,7 +58,7 @@ SPEC AUTHORING RULES (load-bearing — the one comment that survives):
 | `docs/RULE_ENFORCEMENT.md` | CREATE | §3 generated scoreboard — census table, one row per registered rule doc; currency-checked, never hand-edited |
 | `docs/LOGGING_STANDARD.md` | EDIT | §5 pilot: every normative clause gains a class tag; zero prose changes beyond tags |
 | `.claude/settings.json` | EDIT | §4 `PostToolUse` hook on Read → `audits/doc-read.sh log` |
-| `.githooks/pre-commit` | EDIT | §4 invoke `doc-read.sh check` when source files are staged |
+| `.githooks/pre-commit` | EDIT | §4 invoke `doc-read.sh check` when source files are staged; `make audit` moves out to pre-push on Indy's call (see Discovery) |
 | `Makefile` | EDIT | `audit` target gains `rule-ledger.sh --check`; new `ledger` convenience target prints census + reachability |
 | `evals/ledger/run.sh` | CREATE | fixture-driven pass+fail cases for every deterministic behaviour below |
 | `evals/ledger/fixtures/` | CREATE | minimal doc/tag/read-log fixtures the runner consumes |
@@ -122,9 +122,11 @@ Derives each façade's file-glob set from the `dispatch_init` lines in `dispatch
 
 `audits/doc-read.sh log <path>` appends `{ts, path}` JSONL rows to `.git/orly/doc-reads.jsonl` (repo-local, never committed); a `PostToolUse` hook on the Read tool feeds it. `check` computes the expected doc set for staged source files from the same glob map §2 uses, keeps logged rows newer than the HEAD commit timestamp, and reds on the missing set. **Implementation default:** log absent (agent without hook support — codex, amp, opencode) → one 🟠 warn line, exit 0; partial mechanization stated honestly beats a false red. The `📖 DOC READ` proof-line remains required in chat — the log is evidence, not a replacement.
 
-- **Dimension 4.1** — `log` appends valid JSONL; concurrent appends never corrupt (append-only, one line per call) → Test `ledger_readlog_append`
-- **Dimension 4.2** — `check` red lists exactly the unread triggered docs; green when all logged since HEAD; exit 0 + warn when the log file is absent → Test `ledger_readlog_check_matrix`
-- **Dimension 4.3** — pre-commit invokes `check` only when staged files match source extensions → Test `ledger_precommit_wiring`
+**Implementation default — expected set is façade pages only.** A staged file expects `dispatch/<stem>.md` for every façade whose `dispatch_init` scope it matches. The rule docs those façades delegate to (`SCHEMA_CONVENTIONS` from `write_sql`, `REST_API_DESIGN_GUIDELINES` from `write_http`) are deliberately excluded: their reads are conditional on the diff's shape, so requiring them would red honest work. Widening the set is follow-up work, once the narrow set has run clean for a milestone.
+
+- **Dimension 4.1** — DONE — `log` appends valid JSONL; concurrent appends never corrupt (append-only, one line per call) → Test `ledger_readlog_append`
+- **Dimension 4.2** — DONE — `check` red lists exactly the unread triggered docs; green when all logged since HEAD; exit 0 + warn when the log file is absent → Test `ledger_readlog_check_matrix`
+- **Dimension 4.3** — DONE — pre-commit invokes `check` only when staged files match source extensions → Test `ledger_precommit_wiring`
 
 ### §5 — Pilot tagging: LOGGING_STANDARD
 
@@ -247,6 +249,7 @@ N/A — no files deleted; no symbols removed. (S9 covers the inverse: no created
 ## Discovery (consult log)
 
 - **Consults** — Architecture / Legacy-Design / gate-flag triage: the question asked + Indy's decision.
+  - Aug 16, 2026: 02:40 PM — hook cost. Indy asked what the dotfiles pre-commit and pre-push actually run, then ruled: "make audit in pre push." Pre-commit now carries only the §4 doc-read check (one grep over the staged list, one read of a local record); the full audit stays on pre-push, where the corpus is about to reach someone else. No enforcement is lost — a push cannot skip it.
   - Aug 16, 2026: 02:05 PM — gate-flag triage, out-of-scope edit. `orly/src/gates.test.ts:158` (end-to-end gate walk) ran 5.5s–12.7s against bun's 5s default, reddening pre-commit's `make audit` while every assertion passed. Asked fix-or-defer; Indy chose "Raise that one test to 30s" over a suite-wide `bunfig.toml` default or waiting out machine load. Applied as a named constant on that one test; assertions untouched.
 - **Metrics review** — events added, extra events found during `/review`, analytics/funnel playbook update or the explicit no-change reason.
 - **Skill-chain outcomes** — `/write-unit-test`, `/review`, `kishore-babysit-prs` results (order per `AGENTS.md` CHORE(close); iteration counts, findings dispositioned).
