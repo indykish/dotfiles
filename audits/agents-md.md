@@ -179,6 +179,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 12.1 | Does auto-mode autonomy require BOTH auto-mode-active AND (active spec OR forward-looking start instruction) before commit/push/PR proceed without re-asking? | YES |
 | 12.2 | Do action-triggered guards still block under auto mode (autonomy bypasses none)? | YES |
+| 12.3 | Under standing authorization, does `gh pr create` default to `--draft`, requiring the user to explicitly ask for a ready PR? | NO |
 
 ### Scenario 13 — Ruleset changes (Invariance Suite meta-gate)
 

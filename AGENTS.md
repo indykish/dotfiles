@@ -91,7 +91,7 @@ Auto-memory is **disabled** (`autoMemoryEnabled: false` + `CLAUDE_CODE_DISABLE_A
 
 ## Auto-mode autonomy
 
-Default gates commit/push/PR on explicit ask. **Auto mode + a forward-looking start instruction** ("start on M40"/"ship it"/"drive to PR") = standing authorization, granting without re-asking: `git commit` (focused, conventional, gitleaks-clean), `git push origin <feature-branch>` (non-force), `gh pr create` (after CHORE(close); ready). **Action-triggered guards still block.** **Investigation framing** ("look at this"/"what's going on"/"review this") = investigate, not authorize; drive forward only on action verbs.
+Default gates commit/push/PR on explicit ask. **Auto mode + a forward-looking start instruction** ("start on M40"/"ship it"/"drive to PR") = standing authorization, granting without re-asking: `git commit` (focused, conventional, gitleaks-clean), `git push origin <feature-branch>` (non-force), `gh pr create` (after CHORE(close); omit `--draft` unless asked). **Action-triggered guards still block.** **Investigation framing** ("look at this"/"what's going on"/"review this") = investigate, not authorize; drive forward only on action verbs.
 
 ---
 
