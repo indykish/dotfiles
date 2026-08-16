@@ -46,7 +46,7 @@ export function names(report: { results: Array<{ name: string }> }): string[] {
 }
 
 export function orly(project: string, registry: string, ...args: string[]): { code: number; output: string } {
-  const result = Bun.spawnSync(["bun", join(ROOT, "orly/src/cli.ts"), "--root", registry, ...args], { cwd: project, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
+  const result = Bun.spawnSync(["bun", join(ROOT, "orly/src/cli.ts"), "--root", registry, ...args], { cwd: project, env: HERMETIC_ENVIRONMENT, stdout: PIPE_OUTPUT, stderr: PIPE_OUTPUT });
   return { code: result.exitCode, output: `${result.stdout.toString()}${result.stderr.toString()}` };
 }
 

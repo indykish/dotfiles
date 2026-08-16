@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
+# git exports its repository scope to every hook. Anything we invoke below —
+# make audit, the eval sandboxes, the orly suite — spawns its own git against
+# OTHER directories, and an inherited GIT_DIR/GIT_INDEX_FILE silently redirects
+# those calls at THIS repository: evals/dispatch/run.sh `git add -A` in a temp
+# sandbox staged fixture paths into the real index, and a linked worktree (whose
+# .git is a file) broke outright. The scope dies here, before anything is run.
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_PREFIX \
+      GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 

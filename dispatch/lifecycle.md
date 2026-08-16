@@ -29,17 +29,15 @@ own Bun project needing install + build. `git worktree add` fires
 into the tree; on 🟠 run `provision-env-1password`, re-link. Post-merge:
 `git worktree remove ../agentsfleet-mNN-name`.
 
-**dotfiles: ONE worktree, reused across specs.** Every agent-home symlink and
-every consumer's `ORLY_ROOT` resolves to `~/Projects/dotfiles`, so parallel
-dotfiles worktrees fragment propagation to the connected repos. Keep a single
-spec tree at `~/Projects/dotfiles-specs`, re-pointed at a new branch per spec
-(`git -C ~/Projects/dotfiles-specs checkout -b feat/mNN-name master`); never add
-a second. **Never run `orly sync --global` from it** — that relinks all four
-agent homes at a directory the post-merge cleanup deletes, leaving every agent
-on dangling rules. Verify a render there with `orly render --profile <NAME>`
-(stdout only); do the real `orly sync --global` from the main checkout after the
-merge. A spec whose diff leaves `orly/core/**` and `SOUL.md` untouched changes
-no rendered bytes and needs no render at all.
+**dotfiles takes NO worktree — feature branches in the main checkout.** Every
+agent-home symlink and every consumer's `ORLY_ROOT` resolves to
+`~/Projects/dotfiles`; a linked worktree's `.git` is a *file*, and the audit
+chain the hooks run spawns git against other directories. Under a hook that
+combination corrupted the real index and flipped `core.bare` (Aug 16, 2026).
+So: `git checkout -b feat/mNN-name` in `~/Projects/dotfiles` itself, and
+`orly sync --global` always renders the one true root. One stream at a time —
+a second concurrent agent coordinates in-session rather than forking a tree.
+This is the dotfiles exception; product repos keep the worktree recipe above.
 
 **Mid-stream spec → ask before hydrating (default: same tree).** A spec created
 inside an active worktree → ask Indy before spinning up a second one. Indy leans
