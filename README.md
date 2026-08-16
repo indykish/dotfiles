@@ -1,21 +1,44 @@
 # dotfiles
 
-macOS setup for shells, terminals, Git, and four coding agents — plus the
-rules and gates that govern work across Kishore's repositories.
+The rules and gates that govern work across Kishore's repositories — packaged
+as `@indykish/orly`, installable into any repository — plus, separately, the
+personal macOS setup (shells, terminals, Git, four coding agents) Kishore runs
+this checkout for.
+
+## Install the harness
+
+In the repository you want rules and gates enforced in:
+
+```bash
+bunx @indykish/orly init
+```
+
+Materialises the rendered rule pages, the gate scripts, and git hooks for
+your language and domain — from `docs/greptile-learnings/RULES.md` for any
+source file down to language-specific façades — pinned by
+`.oracle/ruleset.lock`. No dotfiles checkout, no prepared `$HOME`, works the
+same on a fresh machine, a Continuous Integration (CI) runner, or a remote
+fleet container. `--profile <NAME>` picks a narrower rule set if one is
+registered for your repository; the default (`kernel`) carries every
+language and domain pack, none of Kishore's own address handles or
+agentsfleet's product surface. `orly update` re-materialises against a newer
+engine version; `orly doctor` reports drift.
+
+Not yet published — until then, clone this repository and run
+`bun bin/orly init` from inside the target repository instead of `bunx`.
+
+## Kishore's own machine (optional)
+
+Nothing below this line is needed to use the harness in another repository.
+It sets up *this* checkout as Kishore's personal dotfiles + rule source: shell,
+Git, tmux, Starship, mise, Ghostty, iTerm2, and four coding agents' settings,
+plus the helpers that link, update, and doctor them.
 
 Helpers assume the clone lives at `~/Projects/dotfiles`. Defaults name
 Kishore's directories, keys, and email. Read each step before running it on
 another machine.
 
-## What you get
-
-- Shell, Git, tmux, Starship, mise, Ghostty, and iTerm2 settings.
-- Settings for Claude, Codex, OpenCode, and Amp.
-- Shared skills from [gstack](https://github.com/garrytan/gstack) plus [`skills/`](skills/).
-- The [`AGENTS.md`](AGENTS.md) operating model, rule pages, gates, and checks.
-- Helpers to link files, update agent tools, and write secrets from 1Password.
-
-## Before you begin
+### Before you begin
 
 ```bash
 brew install bun coreutils starship mise 1password-cli
@@ -25,15 +48,15 @@ You also need macOS with Zsh and Git, access to
 [indykish/dotfiles](https://github.com/indykish/dotfiles), and any coding
 agents already installed. Back up configuration you want to keep.
 
-## Set up a new machine
+### Set up a new machine
 
-### 1. Clone
+#### 1. Clone
 
 ```bash
 mkdir -p ~/Projects && git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles && cd ~/Projects/dotfiles
 ```
 
-### 2. Enable hooks
+#### 2. Enable hooks
 
 ```bash
 git config core.hooksPath .githooks
@@ -42,7 +65,7 @@ git config core.hooksPath .githooks
 Verify with `git config --get core.hooksPath` → `.githooks`. Repeat per fresh
 clone.
 
-### 3. Link helpers
+#### 3. Link helpers
 
 ```bash
 ./bin/link-bin-dotfiles
@@ -63,7 +86,7 @@ skips it with a warning rather than overwriting; reconcile by hand (move the
 machine's version into this checkout, or back it up and remove it) and
 re-run.
 
-### 4. Copy the configuration you want
+#### 4. Copy the configuration you want
 
 `cp -i` asks before replacing a file. Replace Kishore's name, email, and GNU
 Privacy Guard (GnuPG) key with your own first.
@@ -79,7 +102,7 @@ Ghostty and iTerm2 settings live under [`Library/`](Library/) at their macOS
 paths; copy them the same way if you use those terminals. OpenCode settings are
 linked by `update-skills` in the next step. Finish with `exec zsh`.
 
-### 5. Install the shared skills
+#### 5. Install the shared skills
 
 ```bash
 update-skills
@@ -95,7 +118,7 @@ agent homes. It refuses to replace files it does not own; a real `skills`
 directory is moved to a timestamped backup. Verify anytime with
 `update-skills --doctor` → `✔ Skills doctor passed`.
 
-### 6. Render the rules
+#### 6. Render the rules
 
 Run after any rule edit:
 
@@ -112,14 +135,15 @@ The root [`AGENTS.md`](AGENTS.md) is the only generated file.
 it. A rule edit is one commit here — every agent session in every repository
 reads it immediately.
 
-### 7. Register a repository
+#### 7. Register a repository
 
 Add its path and profile to `orly/repositories.json`. The profile declares the
 repository's commands (`conform`, `verify.*`) and optional `surfaces{user,docs}`
-prefixes for the docs gate. The repository keeps one hand-written `AGENTS.md`
-with project facts. No generated copies, no `.oracle/` directory.
+prefixes for the docs gate. This registers the repository for `orly gate`'s
+command resolution — it does not install anything there; run `orly init`
+inside that repository separately to materialise its rules.
 
-### 8. Gate the work
+#### 8. Gate the work
 
 ```bash
 orly gate
@@ -147,7 +171,7 @@ The override is an empty commit with an `Orly-Override` trailer — visible in
 the Pull Request, dead with the branch. Check the carrier anytime:
 `orly doctor` → `🟢 root AGENTS.md is current and every agent home links to it`.
 
-### 9. Write secret files (optional)
+#### 9. Write secret files (optional)
 
 ```bash
 provision-env-1password
@@ -166,7 +190,7 @@ copy per machine, zero per checkout. Requires `OP_SERVICE_ACCOUNT_TOKEN`
 exported; never commit or print it. Verify with
 `provision-env-1password --doctor`.
 
-### 10. Verify the rules
+#### 10. Verify the rules
 
 ```bash
 cd orly && bun install --frozen-lockfile && cd .. && make audit

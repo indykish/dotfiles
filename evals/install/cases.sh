@@ -334,3 +334,32 @@ PY
   if [[ "$out" != *"written"* ]]; then bad "$name" "update did not report what changed: $out"; return; fi
   ok "$name"
 }
+
+# The README's own claim: one command installs the harness anywhere. If the
+# harness-install section carries more than one fenced command block, the
+# "one command" claim in this milestone's own spec is false.
+install_readme_harness_section_is_one_command() {
+  local name="README's harness-install section is a single command block"
+  local section
+  section="$(awk '/^## Install the harness/{flag=1; next} /^## /{flag=0} flag' "$ROOT/README.md")"
+  if [[ -z "$section" ]]; then bad "$name" "no '## Install the harness' section found"; return; fi
+
+  local blocks
+  blocks="$(printf '%s\n' "$section" | grep -c '^```bash$')"
+  if [[ "$blocks" -ne 1 ]]; then bad "$name" "expected exactly 1 bash command block, found $blocks"; return; fi
+  printf '%s\n' "$section" | grep -q 'bunx @indykish/orly init' || { bad "$name" "the block is not the init command"; return; }
+  ok "$name"
+}
+
+# The architecture doc must record what it replaced, not just what exists now
+# — a reader hitting the old M01 framing elsewhere needs the pointer.
+install_architecture_doc_records_supersession() {
+  local name="ORLY_ARCHITECTURE.md names the lock, materialisation, and the superseded model"
+  local doc; doc="$ROOT/docs/ORLY_ARCHITECTURE.md"
+  local missing=""
+  grep -q "ruleset.lock" "$doc" || missing+="ruleset.lock "
+  grep -qi "materialis" "$doc" || missing+="materialise "
+  grep -qE "M01|thin distribution" "$doc" || missing+="superseded-model-reference "
+  if [[ -n "$missing" ]]; then bad "$name" "missing: $missing"; return; fi
+  ok "$name"
+}

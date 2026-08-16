@@ -157,8 +157,8 @@ Every rule citation currently names an absolute path under one home directory, a
 This repository now publishes an artifact other repositories depend on, and its tests currently run only on one laptop behind a hand-set `core.hooksPath`. One workflow runs the audit chain and the packaging boundary check on pull requests, so what ships has been proven somewhere other than the author's machine. Consumer repositories receive nothing here: their governance step is one line in their existing CI, decided at adoption. Alongside it the README's ten steps collapse to one command, with the personal-machine concerns (dotfile copies, skills overlay, vault provisioning) separated into an optional section a colleague can skip, and the architecture document records the inversion and names what it supersedes.
 
 - **Dimension 5.1** — the workflow runs the audit chain, fails on a seeded governance violation, and references no absolute developer path → Test `test_ci_gates_release_without_developer_paths`
-- **Dimension 5.2** — the README's harness install is a single command block, with machine setup in its own optional section → Test `test_readme_harness_install_is_one_command`
-- **Dimension 5.3** — the architecture document describes the repository-scoped model and names the superseded thin model → Test `test_architecture_doc_records_supersession`
+- **Dimension 5.2** — DONE — the README's harness install is a single command block, with machine setup in its own optional section → Test `test_readme_harness_install_is_one_command`
+- **Dimension 5.3** — DONE — the architecture document describes the repository-scoped model and names the superseded thin model → Test `test_architecture_doc_records_supersession`
 
 ## Interfaces
 
