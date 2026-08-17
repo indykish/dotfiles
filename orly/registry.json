@@ -120,6 +120,17 @@
         }
       ]
     },
+    "language.go": {
+      "extensions": [
+        ".go"
+      ],
+      "managed_files": [
+        {
+          "source": "orly/packs/language/go/rules.md",
+          "target": "dispatch/write_go.md"
+        }
+      ]
+    },
     "language.python": {
       "extensions": [
         ".py"

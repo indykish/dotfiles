@@ -45,7 +45,7 @@ REQUIRED_DISPATCH=(
   "write_zig" "write_ts_adhere_bun" "write_sql" "write_any"
   "write_spec" "write_http" "write_auth" "write_changelog"
   "write_documentation" "verify" "name_architecture" "edit_rules"
-  "write_rust" "write_python" "write_shell" "write_mdx"
+  "write_rust" "write_go" "write_python" "write_shell" "write_mdx"
   "lifecycle"
 )
 
@@ -93,6 +93,7 @@ DOTFILES_RESIDENT=(
   "dispatch/write_zig.md"
   "dispatch/write_ts_adhere_bun.md"
   "dispatch/write_rust.md"
+  "dispatch/write_go.md"
   "dispatch/write_python.md"
   "dispatch/write_shell.md"
   "dispatch/write_mdx.md"
