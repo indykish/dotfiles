@@ -17,7 +17,7 @@ on:
 # squash merge or a revert can defeat.
 permissions:
   contents: write # create the tag and the GitHub release
-  id-token: write # npm provenance attestation
+  id-token: write # OIDC identity for npm Trusted Publishing (and provenance)
 
 concurrency:
   group: release
@@ -86,24 +86,23 @@ jobs:
           bash /tmp/release-probe/package/bin/orly doctor
           echo "✓ the packed tarball installs and doctors clean"
 
-      # Same route as agentsfleet's @agentsfleet/cli job: the npm credential
-      # lives in 1Password, and CI holds only a service-account token. One
-      # secret to rotate instead of one per package, and the publish token is
-      # never a GitHub secret anyone with repo access can read.
-      - name: Load the npm token from 1Password
+      # Trusted Publishing (OpenID Connect), not a token. npm verifies this
+      # workflow's OIDC identity against the publisher configured on the
+      # package, so there is no NPM_TOKEN to store, expire, or rotate — the
+      # thing that makes agentsfleet's 1Password route a standing chore.
+      # `id-token: write` above is what mints the identity; provenance comes
+      # free with it rather than needing the flag.
+      #
+      # setup-node's bundled npm is older than the OIDC support, so the CLI is
+      # upgraded first. Publishing with an npm that predates 11.5.1 falls back
+      # to looking for a token and fails with a misleading auth error.
+      - name: Use an npm that speaks OIDC
         if: steps.published.outputs.already == 'false'
-        uses: 1password/load-secrets-action@v4
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          NPM_TOKEN: op://${{ vars.VAULT_PROD }}/npm-publish-token/credential
+        run: npm install -g npm@latest
 
       - name: Publish to npm
         if: steps.published.outputs.already == 'false'
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+        run: npm publish --access public
 
       - name: Tag the release and record it on GitHub
         if: steps.published.outputs.already == 'false'
