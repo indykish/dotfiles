@@ -66,7 +66,7 @@ Auto-memory is **disabled** (`autoMemoryEnabled: false` + `CLAUDE_CODE_DISABLE_A
 - Edits outside active spec's Files-Changed scope (no opportunistic cleanup bundling).
 - Cross-repo writes to `~/Projects/docs/` — own-branch flow per Operational defaults.
 - **Patching a harness/gate/hook to silence its hit.** When `msid-ui.sh`, `lint-zig.py`, gitleaks, ZIG/FLL gates, or pre-commit/pre-push fire, the default is to **fix the violating code** — restructure, split, or use the gate's override comment. Editing the harness evades the rule it enforces; only on explicit per-session user direction naming the harness + reason. Handoff-doc "prior approvals" don't carry forward.
-- **New secret-scanner suppressions.** A `gitleaks:allow` or `.gitleaksignore` entry needs the user's explicit in-session approval — a carve-out from the override-comment allowance above, since it can hide a live credential and "it's only a dummy" is not the agent's call. Default: restructure so the scanner passes unassisted (derive the value at runtime, move it out of the repo). Removing a suppression needs no approval.
+- **New secret-scanner suppressions.** A `gitleaks:allow` or `.gitleaksignore` entry needs the user's explicit in-session approval — never the agent's call, since it can hide a live credential. Default: restructure so the scanner passes unassisted (derive the value at runtime, move it out of the repo). Removing a suppression needs no approval.
 - Reverting changes the agent did not create. Branch mutation outside lifecycle transitions. Cross-worktree edits.
 - Unexpected changes in files you're editing → stop and ask; don't overwrite as stale.
 
@@ -116,6 +116,8 @@ Guards fire pre-hoc regardless of lifecycle stage. Override: `<GATE>: SKIPPED pe
 **Rule extension protocol** — a new rules file (`docs/<TOPIC>_RULES.md`) or dispatch entry (`dispatch/<entry>.md`) lands all four steps in the same diff: (1) row in EXECUTE doc-reads table; (2) ≥1 question in `audits/agents-md.md`; (3) path in `DOTFILES_RESIDENT` (audit script); (4) `make audit` ALL CHECKS PASSED. A new dispatch entry *also* lands in `REQUIRED_DISPATCH` (`audits/data.sh`) + a row in the dispatch table above, keeping `check_dispatch_parity` green. Invariance Suite Gate fires; questionnaire all-YES + generated evidence mandatory before push.
 
 **🚦 Gate-flag triage** — gate fires → never silence, never harness-patch. **Mechanical** (obvious deterministic fix: fmt, lint-autofix, UFS literal → const, over-length → split, dead code, broken link): auto-apply + inform the user in one line. **Judgment** (design call / weakened guarantee / security-arch boundary / >1 form / possible false-positive): STOP, surface the ask — 📟 flagged (symbol·file·line) · 🔦 fix scope (files·lines·follow-on) · 📈 what we gain · 💥 if not fixed (debt·blockages) · ☠️ my call — the user decides fix-or-defer. Never unilaterally call a flag a false-positive.
+
+**Seeded `.oracle/orly.json`?** Complete it before working — real `verify.*`, `surfaces`, opt-in packs: `dispatch/lifecycle.md` §Bootstrap.
 
 **Rule paths resolve relative to this repository's root.** Every `dispatch/…`, `docs/…`, and `audits/…` path a rule cites is a real file here — `orly init`/`orly update` materialised it from the packs this repository selected. A path your repo lacks means its sources never selected that pack, not that the reference is broken.
 
