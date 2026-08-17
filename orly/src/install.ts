@@ -3,8 +3,7 @@ import { dirname, extname, join, relative, resolve } from "node:path";
 
 import { UNSCOPED_ENVIRONMENT } from "./git_env";
 import { CONFIG_PATH, readConfig, seedConfig, selectPacks, writeConfig } from "./config";
-import { applyMode, buildLock, hashContent, LOCK_PATH, LockEntry, modeLabel, readLock, writeLock } from "./lockfile";
-import { assertWritableInside, isString, JsonObject, objectArray, objectValue, OrlyError, RulesModel, stringArray } from "./model";
+import { applyMode, assertWritableInside, hashContent, isString, JsonObject, modeLabel, objectArray, objectValue, OrlyError, RulesModel, stringArray } from "./model";
 import { referenceClosureErrors, renderProfileText } from "./references";
 import { Renderer } from "./render";
 
@@ -52,12 +51,10 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   requireWorkTree(targetRoot);
   const existing = await readConfig(targetRoot);
   const config = existing ?? await seedConfig(targetRoot);
-  const installed = await readLock(targetRoot);
-  const packs = selectPacks(model, targetRoot, config.packs, new Set(Object.keys(installed?.files ?? {})));
+  const packs = selectPacks(model, targetRoot, config.packs, new Set(config.managed));
 
   const planned = await planFiles(model, packs, config.commands);
-  const lock = installed;
-  const managed = new Set(Object.keys(lock?.files ?? {}));
+  const managed = new Set(config.managed);
   const refusals: InstallError[] = [];
   const written: string[] = [];
   const skipped: string[] = [];
@@ -67,11 +64,13 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
     if (escape) { refusals.push(escape); continue; }
     const path = join(targetRoot, file.target);
     if (!existsSync(path)) { written.push(file.target); continue; }
-    const actual = hashContent(await Bun.file(path).bytes());
-    if (actual === hashContent(file.content) && modeLabel(path) === file.mode) { skipped.push(file.target); continue; }
-    const recorded = lock?.files[file.target];
-    if (options.force || (recorded && recorded.sha256 === actual)) { written.push(file.target); continue; }
-    refusals.push(refusal(file.target, managed.has(file.target)));
+    // Already exactly what this run would write — leave it and say so.
+    if (hashContent(await Bun.file(path).bytes()) === hashContent(file.content) && modeLabel(path) === file.mode) { skipped.push(file.target); continue; }
+    // The lock is the record of authorship: a file orly wrote is orly's to
+    // replace, and git shows the replacement before it is committed. A file
+    // orly never wrote belongs to the repository and is never touched silently.
+    if (options.force || managed.has(file.target)) { written.push(file.target); continue; }
+    refusals.push(refusal(file.target, false));
   }
   if (options.installHooks) {
     const claim = hooksClaimedByAnother(targetRoot);
@@ -81,8 +80,8 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
       if (escape) refusals.push(escape);
     }
   }
-  const lockEscape = escapesTarget(targetRoot, LOCK_PATH, "lock");
-  if (lockEscape) refusals.push(lockEscape);
+  const configEscape = escapesTarget(targetRoot, CONFIG_PATH, "config");
+  if (configEscape) refusals.push(configEscape);
   if (refusals.length > 0) return { ok: false, packs, written: [], skipped, errors: refusals };
 
   const closure = await stageAndCommit(model, targetRoot, planned, written);
@@ -91,9 +90,10 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   const hooks = options.installHooks ? await installHooks(targetRoot) : { written: [], all: [] };
   written.push(...hooks.written);
   skipped.push(...hooks.all.filter((path) => !hooks.written.includes(path)));
-  const entries = await lockEntries(targetRoot, planned, hooks.all);
-  await writeLock(targetRoot, buildLock(options.orlyVersion, packs, entries));
-  if (!existing) { await writeConfig(targetRoot, config); written.push(CONFIG_PATH); }
+  // One file carries both halves: the repository's own fields pass through
+  // untouched, orly's two record what this run installed and wrote.
+  await writeConfig(targetRoot, { ...config, orly_version: options.orlyVersion, managed: [...planned.map((file) => file.target), ...hooks.all] });
+  if (!existing) written.push(CONFIG_PATH);
   return { ok: true, packs, written: written.sort(), skipped: skipped.sort(), errors: [] };
 }
 
@@ -130,7 +130,7 @@ function refusal(target: string, wasManaged: boolean): InstallError {
 // /tmp), and staging there turned every such install into a hard EXDEV
 // crash instead of the atomic move this function exists to guarantee.
 async function stageAndCommit(model: RulesModel, targetRoot: string, planned: PlannedFile[], written: string[]): Promise<InstallError[]> {
-  const stagingParent = join(targetRoot, dirname(LOCK_PATH));
+  const stagingParent = join(targetRoot, dirname(CONFIG_PATH));
   const stagingParentExisted = existsSync(stagingParent);
   mkdirSync(stagingParent, { recursive: true });
   const stage = mkdtempSync(join(stagingParent, STAGE_PREFIX));
@@ -140,7 +140,7 @@ async function stageAndCommit(model: RulesModel, targetRoot: string, planned: Pl
   // it and it is still empty on the failure path — a fresh empty directory
   // left behind is as much a footprint as a written file. The success path
   // must NOT run this: .oracle/ is still empty at this point (the caller
-  // writes ruleset.lock into it right after stageAndCommit returns), so an
+  // writes orly.json into it right after stageAndCommit returns), so an
   // unconditional check would delete a directory the next step needs.
   const cleanupStagingParentIfEmpty = () => {
     rmSync(stage, { recursive: true, force: true });
@@ -233,15 +233,6 @@ function hookScript(gate: string): string {
   ].join("\n");
 }
 
-async function lockEntries(targetRoot: string, planned: PlannedFile[], hooks: string[]): Promise<Record<string, LockEntry>> {
-  const entries: Record<string, LockEntry> = {};
-  for (const file of planned) entries[file.target] = { sha256: hashContent(file.content), mode: file.mode };
-  for (const target of hooks) {
-    const path = join(targetRoot, target);
-    entries[target] = { sha256: hashContent(await Bun.file(path).bytes()), mode: modeLabel(path) };
-  }
-  return entries;
-}
 
 // One entry per target, so two packs naming the same file collapse instead of
 // racing. Two packs naming DIFFERENT sources for one target is a registry bug

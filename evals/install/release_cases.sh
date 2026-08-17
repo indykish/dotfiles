@@ -86,7 +86,7 @@ install_update_repins_across_a_version_bump() {
   if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
 
   run_packed "$pkg" "$repo" init >/dev/null
-  local before; before="$(python3 -c "import json;print(json.load(open('$repo/.oracle/ruleset.lock'))['orly_version'])")"
+  local before; before="$(python3 -c "import json;print(json.load(open('$repo/.oracle/orly.json'))['orly_version'])")"
 
   # Simulate a newer engine: bump the packed copy's own version and touch a
   # managed file, so update has a real, detectable change to propagate.
@@ -100,7 +100,7 @@ PY
   printf '\n<!-- eval: newer engine content -->\n' >> "$pkg/orly/packs/language/rust/rules.md"
 
   local out; out="$(run_packed "$pkg" "$repo" update)"
-  local after; after="$(python3 -c "import json;print(json.load(open('$repo/.oracle/ruleset.lock'))['orly_version'])")"
+  local after; after="$(python3 -c "import json;print(json.load(open('$repo/.oracle/orly.json'))['orly_version'])")"
 
   if [[ "$before" == "$after" ]]; then bad "$name" "lock still pinned to $before after update"; return; fi
   if [[ "$after" != "0.4.1-test" ]]; then bad "$name" "lock repinned to '$after', not the newer engine"; return; fi
@@ -130,10 +130,10 @@ install_readme_harness_section_is_one_command() {
 # The architecture doc must record what it replaced, not just what exists now
 # — a reader hitting the old M01 framing elsewhere needs the pointer.
 install_architecture_doc_records_supersession() {
-  local name="ORLY_ARCHITECTURE.md names the lock, materialisation, and the superseded model"
+  local name="ORLY_ARCHITECTURE.md names the config, materialisation, and the superseded model"
   local doc; doc="$ROOT/docs/ORLY_ARCHITECTURE.md"
   local missing=""
-  grep -q "ruleset.lock" "$doc" || missing+="ruleset.lock "
+  grep -q "orly.json" "$doc" || missing+="orly.json "
   grep -qi "materialis" "$doc" || missing+="materialise "
   grep -qE "M01|thin distribution" "$doc" || missing+="superseded-model-reference "
   if [[ -n "$missing" ]]; then bad "$name" "missing: $missing"; return; fi

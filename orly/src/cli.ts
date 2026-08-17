@@ -2,10 +2,9 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { localSelection } from "./config";
+import { CONFIG_PATH, localSelection, managedDrift, readConfig, staleVersion } from "./config";
 import { GateReport, isGateName, recordOverride, runGate, runGates } from "./gates";
 import { install, InstallResult } from "./install";
-import { lockDrift, LOCK_PATH, readLock, staleVersion } from "./lockfile";
 import { isString, OrlyError, readJsonObject, RulesModel } from "./model";
 import { Renderer } from "./render";
 import { doctorAgentHomes, syncGlobal } from "./repository";
@@ -116,8 +115,7 @@ async function packageVersion(model: RulesModel): Promise<string> {
 async function materialise(model: RulesModel, args: string[], isInit: boolean): Promise<number> {
   model.validate();
   const targetRoot = projectRoot();
-  const lock = await readLock(targetRoot);
-  if (!isInit && !lock) throw new OrlyError(`no ${LOCK_PATH} here — run \`orly init\` first`);
+  if (!isInit && !(await readConfig(targetRoot))) throw new OrlyError(`no ${CONFIG_PATH} here — run \`orly init\` first`);
   const result = await install(model, {
     targetRoot,
     force: args.includes(FORCE_FLAG),
@@ -158,10 +156,10 @@ async function doctorGlobal(model: RulesModel): Promise<number> {
     return 1;
   }
   if (engine) console.log(`${PASS_GLYPH} root AGENTS.md is current and every agent home links to it`);
-  const lock = await readLock(projectRoot());
-  if (lock) console.log(`${PASS_GLYPH} this repository's installed ruleset matches ${LOCK_PATH}`);
-  else if (!engine) console.log(`${FAIL_GLYPH} no ${LOCK_PATH} here — run \`orly init\` first`);
-  return lock || engine ? 0 : 1;
+  const config = await readConfig(projectRoot());
+  if (config) console.log(`${PASS_GLYPH} this repository's installed ruleset matches ${CONFIG_PATH}`);
+  else if (!engine) console.log(`${FAIL_GLYPH} no ${CONFIG_PATH} here — run \`orly init\` first`);
+  return config || engine ? 0 : 1;
 }
 
 // A repository with no lock was never installed into — silence, not a finding.
@@ -169,10 +167,10 @@ async function doctorGlobal(model: RulesModel): Promise<number> {
 // are not the rules on disk.
 async function doctorInstall(model: RulesModel): Promise<string[]> {
   const targetRoot = projectRoot();
-  const lock = await readLock(targetRoot);
-  if (!lock) return [];
-  const stale = staleVersion(lock, await packageVersion(model));
-  return [...(await lockDrift(targetRoot, lock)), ...(stale ? [stale] : [])];
+  const config = await readConfig(targetRoot);
+  if (!config) return [];
+  const stale = staleVersion(config, await packageVersion(model));
+  return [...managedDrift(targetRoot, config), ...(stale ? [stale] : [])];
 }
 
 async function render(model: RulesModel, args: string[]): Promise<number> {
@@ -244,8 +242,8 @@ Gates (read-only; no PR without every criterion green or a recorded override):
 
 Install (the repository is the unit — no checkout of this package required):
   orly init [--force] [--no-hooks] [--json]
-                                    materialise rules, gates, hooks, the lock,
-                                    and a seeded .oracle/orly.json
+                                    materialise rules, gates, hooks, and a
+                                    seeded .oracle/orly.json
   orly update [--force] [--json]    re-materialise at the installed engine version
 
   orly doctor                       installed-ruleset drift and staleness

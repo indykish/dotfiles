@@ -129,7 +129,7 @@ install_materialises_a_fresh_repository() {
   if [[ "$out" != *"written"* ]]; then bad "$name" "init did not report success: $out"; return; fi
 
   local required missing=""
-  for required in "AGENTS.md" ".oracle/ruleset.lock" "dispatch/write_rust.md" "audits/ufs.sh" ".githooks/pre-commit"; do
+  for required in "AGENTS.md" ".oracle/orly.json" "dispatch/write_rust.md" "audits/ufs.sh" ".githooks/pre-commit"; do
     [[ -f "$repo/$required" ]] || missing+="$required "
   done
   if [[ -n "$missing" ]]; then bad "$name" "not materialised: $missing"; return; fi
@@ -205,26 +205,36 @@ install_installs_scoped_hooks() {
 # rotted in place with nothing reporting it. doctor must see it, init must
 # refuse it, and --force must be the only way through.
 install_doctor_reports_drift_and_init_refuses() {
-  local name="drift is reported by doctor, refused by init, and repaired by --force"
+  local name="a hand edit is replaced by update; a file orly never wrote is refused"
   local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"
   if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
 
   run_packed "$pkg" "$repo" init >/dev/null
   printf '\n# tampered\n' >> "$repo/dispatch/write_rust.md"
 
+  # An edit to a file orly wrote is not drift: this is a git repository, so the
+  # edit and its replacement both show in `git diff` before either is committed.
   local out; out="$(run_packed "$pkg" "$repo" doctor)"
-  if [[ "$out" != *"edited in place"* ]]; then bad "$name" "doctor missed the edit: $out"; return; fi
+  if [[ "$out" == *"missing"* ]]; then bad "$name" "doctor called an edit a missing file: $out"; return; fi
 
-  out="$(run_packed "$pkg" "$repo" init)"
-  if [[ "$out" != *"edited in place"* ]]; then bad "$name" "init did not refuse: $out"; return; fi
-  if grep -q "tampered" "$repo/dispatch/write_rust.md"; then :; else bad "$name" "refusal still overwrote the file"; return; fi
+  out="$(run_packed "$pkg" "$repo" update)"
+  if [[ "$out" != *"written"* ]]; then bad "$name" "update did not re-materialise: $out"; return; fi
+  if grep -q "tampered" "$repo/dispatch/write_rust.md"; then bad "$name" "update left the hand edit in place"; return; fi
 
-  run_packed "$pkg" "$repo" init --force >/dev/null
-  if grep -q "tampered" "$repo/dispatch/write_rust.md"; then bad "$name" "--force did not restore the file"; return; fi
+  # Deleting one IS drift — only orly can restore what only orly wrote.
+  rm "$repo/dispatch/write_rust.md"
   out="$(run_packed "$pkg" "$repo" doctor)"
-  if [[ "$out" == *"edited in place"* ]]; then bad "$name" "doctor still reports drift after --force"; return; fi
+  if [[ "$out" != *"missing"* ]]; then bad "$name" "doctor missed a deleted managed file: $out"; return; fi
+
+  # A file orly never wrote belongs to the repository and is never replaced.
+  local sb; sb="$(mk_repo)"
+  printf 'the repository own file\n' > "$sb/AGENTS.md"
+  out="$(run_packed "$pkg" "$sb" init)"
+  if [[ "$out" != *"orly did not write it"* ]]; then bad "$name" "init did not refuse a foreign file: $out"; return; fi
+  if ! grep -q "the repository own file" "$sb/AGENTS.md"; then bad "$name" "refusal still overwrote a foreign file"; return; fi
   ok "$name"
 }
+
 
 # A missing managed file is drift too — deletion must not read as "clean".
 install_doctor_reports_drift_on_deletion() {

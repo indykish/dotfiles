@@ -5,6 +5,13 @@ import { validateActiveRule, validateRelativePath } from "./validation";
 
 export type JsonObject = Record<string, unknown>;
 
+const HASH_ALGORITHM = "sha256";
+const HASH_ENCODING = "hex";
+const MODE_EXECUTABLE = "0755";
+const MODE_REGULAR = "0644";
+const EXECUTABLE_BITS = 0o755;
+const OCTAL = 8;
+
 const NON_EXECUTABLE_MODE = 0o644;
 const EXECUTABLE_MODE = 0o755;
 const JSON_EXTENSION = ".json";
@@ -183,6 +190,20 @@ export function stringArray(value: unknown, label: string): string[] {
 export function objectArray(value: unknown, label: string): JsonObject[] {
   if (!Array.isArray(value) || !value.every(isObject)) throw new OrlyError(`${label} must be an array of objects`);
   return value;
+}
+
+// What a materialised file is, reduced to the two properties that decide
+// whether it still is what orly wrote: its bytes and whether it is runnable.
+export function hashContent(content: string | Uint8Array): string {
+  return new Bun.CryptoHasher(HASH_ALGORITHM).update(content).digest(HASH_ENCODING);
+}
+
+export function modeLabel(path: string): string {
+  return normalizedMode(path) === EXECUTABLE_BITS ? MODE_EXECUTABLE : MODE_REGULAR;
+}
+
+export function applyMode(path: string, mode: string): void {
+  chmodSync(path, Number.parseInt(mode, OCTAL));
 }
 
 export function normalizedMode(path: string): number {

@@ -1,8 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, extname, join, relative } from "node:path";
 
-import { readLock } from "./lockfile";
-import { assertWritableInside, isObject, JsonObject, objectValue, OrlyError, readJsonObject, RulesModel, stringArray } from "./model";
+import { assertWritableInside, isObject, isString, JsonObject, objectValue, OrlyError, readJsonObject, RulesModel, stringArray } from "./model";
 import { validateCommands, validateSurfaces } from "./validation";
 
 const ORACLE_DIRECTORY = ".oracle";
@@ -14,6 +13,8 @@ const NEWLINE = "\n";
 const REGISTRY_PACKS_LABEL = "registry packs";
 const EXTENSIONS_FIELD = "extensions";
 const PACKS_FIELD = "packs";
+const VERSION_FIELD = "orly_version";
+const MANAGED_FIELD = "managed";
 const COMMANDS_FIELD = "commands";
 const CONFORM_COMMAND = "conform";
 const MAKE_COMMAND = "make";
@@ -51,11 +52,18 @@ const VERIFY_TARGETS: Array<[string, string[]]> = [
   ["verify.build", [BUILD_TARGET]],
 ];
 
+// One file per repository. Two regions, one owner each: `packs`, `commands` and
+// `surfaces` are the repository's answer and orly only ever reads them;
+// `orly_version` and `managed` are orly's record of what it installed and what
+// it wrote, rewritten on every install. A round-trip preserves the repository's
+// values exactly — they are data, not formatting.
 export type RepoConfig = {
   schema_version: number;
+  orly_version: string;
   packs: string[];
   commands: Record<string, string[][]>;
   surfaces: JsonObject | undefined;
+  managed: string[];
 };
 
 export function configPath(targetRoot: string): string {
@@ -92,19 +100,48 @@ function parseConfig(value: JsonObject): RepoConfig {
   if (value[COMMANDS_FIELD] !== undefined) validateCommands(CONFIG_PATH, value[COMMANDS_FIELD], errors);
   validateSurfaces(CONFIG_PATH, value.surfaces, errors);
   if (errors.length > 0) throw new OrlyError(errors.join("\n"));
+  const version = value[VERSION_FIELD];
   return {
     schema_version: CONFIG_SCHEMA_VERSION,
+    orly_version: isString(version) ? version : "",
     packs: stringArray(value[PACKS_FIELD] ?? [], `${CONFIG_PATH} ${PACKS_FIELD}`),
     commands: readCommands(value[COMMANDS_FIELD]),
     surfaces: isObject(value.surfaces) ? value.surfaces : undefined,
+    managed: stringArray(value[MANAGED_FIELD] ?? [], `${CONFIG_PATH} ${MANAGED_FIELD}`),
   };
 }
 
+// What orly installed here, and whether the engine has moved since.
+export function staleVersion(config: RepoConfig, installedVersion: string): string | undefined {
+  if (config.orly_version === installedVersion) return undefined;
+  return `ruleset was installed by orly ${config.orly_version || "an unrecorded version"}, installed engine is ${installedVersion} — run \`orly update\``;
+}
+
+// A managed file that is gone. Edits are not drift: the tree is a git
+// repository, so `git diff` shows a hand edit and shows `orly update` replacing
+// it, both before either is committed.
+export function managedDrift(targetRoot: string, config: RepoConfig): string[] {
+  return config.managed
+    .filter((relativePath) => !existsSync(join(targetRoot, relativePath)))
+    .map((relativePath) => `managed file is missing: ${relativePath} — run \`orly update\` to restore it`)
+    .sort();
+}
+
+// Key order is fixed so a rewrite produces a reviewable diff: orly's own two
+// fields sit at the ends, the repository's three in the middle, untouched.
 export async function writeConfig(targetRoot: string, config: RepoConfig): Promise<string> {
   assertWritableInside(targetRoot, CONFIG_PATH, "config");
   const path = configPath(targetRoot);
   mkdirSync(dirname(path), { recursive: true });
-  await Bun.write(path, `${JSON.stringify(config, undefined, JSON_INDENT)}${NEWLINE}`);
+  const ordered = {
+    schema_version: config.schema_version,
+    orly_version: config.orly_version,
+    packs: config.packs,
+    commands: config.commands,
+    ...(config.surfaces ? { surfaces: config.surfaces } : {}),
+    managed: [...config.managed].sort(),
+  };
+  await Bun.write(path, `${JSON.stringify(ordered, undefined, JSON_INDENT)}${NEWLINE}`);
   return path;
 }
 
@@ -112,7 +149,7 @@ export async function writeConfig(targetRoot: string, config: RepoConfig): Promi
 // from what the repository already builds with; an empty set is honest rather
 // than wrong, and says so in the gate's own failure message.
 export async function seedConfig(targetRoot: string): Promise<RepoConfig> {
-  return { schema_version: CONFIG_SCHEMA_VERSION, packs: [], commands: await sniffCommands(targetRoot), surfaces: undefined };
+  return { schema_version: CONFIG_SCHEMA_VERSION, orly_version: "", packs: [], commands: await sniffCommands(targetRoot), surfaces: undefined, managed: [] };
 }
 
 // What this repository installed and runs with, read from its own `.oracle/`.
@@ -120,8 +157,7 @@ export async function seedConfig(targetRoot: string): Promise<RepoConfig> {
 // checkout" asks the checkout instead, so the answer travels with the clone.
 export async function localSelection(model: RulesModel, targetRoot: string): Promise<{ packs: string[]; commands: Record<string, string[][]>; surfaces: JsonObject | undefined }> {
   const config = await readConfig(targetRoot);
-  const lock = await readLock(targetRoot);
-  return { packs: selectPacks(model, targetRoot, config?.packs ?? [], new Set(Object.keys(lock?.files ?? {}))), commands: config?.commands ?? {}, surfaces: config?.surfaces };
+  return { packs: selectPacks(model, targetRoot, config?.packs ?? [], new Set(config?.managed ?? [])), commands: config?.commands ?? {}, surfaces: config?.surfaces };
 }
 
 // Which packs this repository takes: every always-on pack, the language packs

@@ -31,8 +31,8 @@ unaffected by anything below.
 Every other repository gets its rules a different way: `orly init` materialises
 the packs its own sources select — rendered `AGENTS.md`, the rule docs, the gate
 scripts, the hooks that run them — into that repository, and writes
-`.oracle/ruleset.lock` recording the engine version and a content hash per
-file. `orly update` re-materialises against the currently installed engine
+`.oracle/orly.json` recording the engine version and every file it wrote,
+alongside the repository's own packs, commands, and surfaces. `orly update` re-materialises against the currently installed engine
 version; `orly doctor` reports drift between the lock and disk instead of
 silently tolerating it. A materialised repository needs no checkout of this
 one, on any machine, to read its own rules or run its own gates.

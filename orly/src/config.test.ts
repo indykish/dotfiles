@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { CONFIG_PATH, readConfig, readConfigSync, seedConfig, selectPacks } from "./config";
+import { CONFIG_PATH, managedDrift, readConfig, readConfigSync, seedConfig, selectPacks, staleVersion, writeConfig } from "./config";
 import { RulesModel } from "./model";
 
 const ROOT = resolve(import.meta.dir, "../..");
@@ -138,6 +138,86 @@ describe("readConfig", () => {
 
   test("an absent config is undefined, not an error — the normal pre-init state", async () => {
     expect(await readConfig(scratch())).toBeUndefined();
+  });
+});
+
+describe("staleVersion", () => {
+  test("a config installed by the running engine reports no staleness", async () => {
+    const config = { ...(await seedConfig(scratch())), orly_version: "0.4.0" };
+    expect(staleVersion(config, "0.4.0")).toBeUndefined();
+  });
+
+  test("an older install names both versions and the fix command", async () => {
+    const config = { ...(await seedConfig(scratch())), orly_version: "0.3.0" };
+    const message = staleVersion(config, "0.4.0");
+    expect(message).toContain("0.3.0");
+    expect(message).toContain("0.4.0");
+    expect(message).toContain("orly update");
+  });
+});
+
+describe("managedDrift", () => {
+  test("every managed file present reports no drift", async () => {
+    const root = scratch();
+    writeFileSync(join(root, "AGENTS.md"), "rules\n");
+    const config = { ...(await seedConfig(root)), managed: ["AGENTS.md"] };
+    expect(managedDrift(root, config)).toEqual([]);
+  });
+
+  // Edits are deliberately NOT drift: the tree is a git repository, so a hand
+  // edit and `orly update` replacing it both show in `git diff` first.
+  test("an edited managed file is not drift — git already shows it", async () => {
+    const root = scratch();
+    writeFileSync(join(root, "AGENTS.md"), "edited by hand\n");
+    const config = { ...(await seedConfig(root)), managed: ["AGENTS.md"] };
+    expect(managedDrift(root, config)).toEqual([]);
+  });
+
+  test("a deleted managed file is reported, sorted, with a recovery command", async () => {
+    const root = scratch();
+    const config = { ...(await seedConfig(root)), managed: ["zzz.md", "aaa.md"] };
+    const findings = managedDrift(root, config);
+    expect(findings).toHaveLength(2);
+    expect(findings[0]).toContain("aaa.md");
+    expect(findings[1]).toContain("zzz.md");
+    expect(findings[0]).toContain("orly update");
+  });
+});
+
+describe("writeConfig", () => {
+  // The whole point of folding the lock in: orly rewrites this file on every
+  // install, so the repository's own three fields must survive byte-for-byte.
+  test("a rewrite preserves the repository's fields and updates only orly's", async () => {
+    const root = scratch();
+    const mine = {
+      schema_version: 1,
+      orly_version: "0.3.0",
+      packs: ["persona.indy"],
+      commands: { conform: [["make", "audit"]] },
+      surfaces: { user: ["src/"], docs: ["docs/"] },
+      managed: ["AGENTS.md"],
+    };
+    await writeConfig(root, mine);
+    await writeConfig(root, { ...(await readConfig(root))!, orly_version: "0.4.0", managed: ["AGENTS.md", "dispatch/write_rust.md"] });
+
+    const after = await readConfig(root);
+    expect(after?.packs).toEqual(["persona.indy"]);
+    expect(after?.commands).toEqual({ conform: [["make", "audit"]] });
+    expect(after?.surfaces).toEqual({ user: ["src/"], docs: ["docs/"] });
+    expect(after?.orly_version).toBe("0.4.0");
+    expect(after?.managed).toEqual(["AGENTS.md", "dispatch/write_rust.md"]);
+  });
+
+  test("managed paths are sorted, so a rewrite diffs cleanly", async () => {
+    const root = scratch();
+    await writeConfig(root, { ...(await seedConfig(root)), managed: ["zzz.md", "aaa.md"] });
+    expect((await readConfig(root))?.managed).toEqual(["aaa.md", "zzz.md"]);
+  });
+
+  test("writeConfig creates the .oracle/ parent directory", async () => {
+    const root = scratch();
+    await writeConfig(root, await seedConfig(root));
+    expect(existsSync(join(root, CONFIG_PATH))).toBeTrue();
   });
 });
 

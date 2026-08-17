@@ -5,14 +5,14 @@ import { join } from "node:path";
 
 import { cleanupTemporaryDirectories, git, gitOutput, newRepository, ROOT } from "./gates_test_support";
 import { install } from "./install";
-import { readLock } from "./lockfile";
+import { readConfig } from "./config";
 import { RulesModel } from "./model";
 
 afterEach(cleanupTemporaryDirectories);
 
 
 describe("install", () => {
-  test("materialises the packs its own sources imply, hooks, and a lock into a fresh repository", async () => {
+  test("materialises the packs its own sources imply, hooks, and a config into a fresh repository", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
     await Bun.write(join(repo, "src/lib.rs"), "pub fn main() {}\n");
@@ -25,7 +25,7 @@ describe("install", () => {
     expect(existsSync(join(repo, "AGENTS.md"))).toBe(true);
     expect(existsSync(join(repo, "dispatch/write_rust.md"))).toBe(true);
     expect(existsSync(join(repo, ".githooks/pre-commit"))).toBe(true);
-    expect(existsSync(join(repo, ".oracle/ruleset.lock"))).toBe(true);
+    expect(existsSync(join(repo, ".oracle/orly.json"))).toBe(true);
   });
 
   test("a second install over the same target reports zero writes", async () => {
@@ -40,7 +40,7 @@ describe("install", () => {
     expect(second.skipped.length).toBeGreaterThan(0);
   });
 
-  test("refuses to overwrite a hand-edited managed file without --force, naming the offending path", async () => {
+  test("replaces a file it wrote, hand-edited or not — git shows the replacement", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
     await Bun.write(join(repo, "src/lib.rs"), "pub fn main() {}\n");
@@ -49,11 +49,25 @@ describe("install", () => {
 
     const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
+    expect(result.ok).toBe(true);
+    expect(result.written).toContain("dispatch/write_rust.md");
+    expect(await Bun.file(join(repo, "dispatch/write_rust.md")).text()).not.toBe("hand-edited\n");
+  });
+
+  // The other half of the same rule: authorship decides. A file orly never
+  // wrote is the repository's, and is never replaced without being asked twice.
+  test("refuses a file it never wrote, names it, and leaves the tree untouched", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    await Bun.write(join(repo, "src/lib.rs"), "pub fn main() {}\n");
+    await Bun.write(join(repo, "dispatch/write_rust.md"), "the repository's own file\n");
+
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
     expect(result.ok).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]?.path).toBe("dispatch/write_rust.md");
-    expect(result.errors[0]?.message).toContain("edited in place");
-    expect(await Bun.file(join(repo, "dispatch/write_rust.md")).text()).toBe("hand-edited\n");
+    expect(result.errors.some((error) => error.path === "dispatch/write_rust.md")).toBeTrue();
+    expect(await Bun.file(join(repo, "dispatch/write_rust.md")).text()).toBe("the repository's own file\n");
+    expect(existsSync(join(repo, "AGENTS.md"))).toBe(false);
   });
 
   test("--force overwrites a hand-edited managed file", async () => {
@@ -212,7 +226,7 @@ describe("install", () => {
 
       expect(result.ok).toBe(false);
       expect(result.errors.some((error) => error.message.includes("outside the target repository"))).toBe(true);
-      expect(existsSync(join(outside, "ruleset.lock"))).toBe(false);
+      expect(existsSync(join(outside, "orly.json"))).toBe(false);
     } finally {
       rmSync(outside, { recursive: true, force: true });
     }
@@ -240,7 +254,7 @@ describe("install", () => {
   // The bug this milestone's own atomicity test caught while fixing the
   // above: cleaning up an empty .oracle/ on a refused install must not also
   // fire on the success path, where .oracle/ is legitimately empty for one
-  // instant before the caller writes ruleset.lock into it.
+  // instant before the caller writes orly.json into it.
   test("a successful install leaves .oracle/ intact for the lock the caller writes next", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
@@ -248,21 +262,21 @@ describe("install", () => {
     const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
     expect(result.ok).toBe(true);
-    expect(existsSync(join(repo, ".oracle", "ruleset.lock"))).toBe(true);
+    expect(existsSync(join(repo, ".oracle", "orly.json"))).toBe(true);
   });
 
-  test("the written lock records a hash and mode for every materialised file", async () => {
+  test("the written config records the engine version and every materialised file", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();
     await Bun.write(join(repo, "src/lib.rs"), "pub fn main() {}\n");
 
     await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
 
-    const lock = await readLock(repo);
-    expect(lock).toBeDefined();
-    expect(lock?.packs).toContain("language.rust");
-    expect(lock?.files["dispatch/write_rust.md"]?.sha256.length).toBeGreaterThan(0);
-    expect(lock?.files["dispatch/write_rust.md"]?.mode).toBe("0644");
+    const config = await readConfig(repo);
+    expect(config).toBeDefined();
+    expect(config?.orly_version).toBe("0.4.0");
+    expect(config?.managed).toContain("dispatch/write_rust.md");
+    expect(config?.managed).toContain(".githooks/pre-commit");
   });
 
   test("refuses atomically when a selected pack's file cites a façade no selected pack provides", async () => {

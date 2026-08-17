@@ -16,7 +16,7 @@ bunx @indykish/orly init
 Materialises the rendered rule pages, the gate scripts, and git hooks for
 your language and domain — from `docs/greptile-learnings/RULES.md` for any
 source file down to language-specific façades — pinned by
-`.oracle/ruleset.lock`. No dotfiles checkout, no prepared `$HOME`, works the
+`.oracle/orly.json`. No dotfiles checkout, no prepared `$HOME`, works the
 same on a fresh machine, a Continuous Integration (CI) runner, or a remote
 fleet container. Which packs you get is read from your own sources — a Rust
 crate receives the Rust rules and never the Zig ones — and never includes
@@ -210,9 +210,9 @@ The renderer produces one artifact — the root [`AGENTS.md`](AGENTS.md) — and
 every agent home on this machine symlinks to it, so an edit here reaches every
 session in this checkout at once. Any other repository gets its own copy a
 different way: `orly init` materialises the rule pages and gate scripts its own
-sources select, pinned by `.oracle/ruleset.lock` and configured by
-`.oracle/orly.json`; `orly update` re-materialises against a newer engine
-version; `orly doctor` reports drift. Rule pages cite each other relative to the repository they were
+sources select, recorded and configured by one file, `.oracle/orly.json`;
+`orly update` re-materialises against a newer engine version; `orly doctor`
+reports drift. Rule pages cite each other relative to the repository they were
 materialised into, never through this checkout's path — `make audit`
 (`audits/rule-paths.sh`) fails on a citation that still does.
 
