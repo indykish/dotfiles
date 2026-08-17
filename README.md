@@ -1,12 +1,12 @@
 # dotfiles
 
-[![npm](https://img.shields.io/npm/v/@indykish/orly?label=%40indykish%2Forly)](https://www.npmjs.com/package/@indykish/orly)
+[![npm](https://img.shields.io/npm/v/@agentsfleet/orly?label=%40agentsfleet%2Forly)](https://www.npmjs.com/package/@agentsfleet/orly)
 [![coverage](https://codecov.io/gh/indykish/dotfiles/branch/master/graph/badge.svg)](https://codecov.io/gh/indykish/dotfiles)
 [![test](https://github.com/indykish/dotfiles/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/indykish/dotfiles/actions/workflows/test.yml)
 [![harness](https://github.com/indykish/dotfiles/actions/workflows/harness.yml/badge.svg?branch=master)](https://github.com/indykish/dotfiles/actions/workflows/harness.yml)
 
 The rules and gates that govern work across Kishore's repositories — packaged
-as `@indykish/orly`, installable into any repository — plus, separately, the
+as `@agentsfleet/orly`, installable into any repository — plus, separately, the
 personal macOS setup (shells, terminals, Git, four coding agents) Kishore runs
 this checkout for.
 
@@ -20,7 +20,7 @@ number, the workflow enforces it.
 In the repository you want rules and gates enforced in:
 
 ```bash
-bunx @indykish/orly init
+bunx @agentsfleet/orly init
 ```
 
 That is the whole install. It materialises the rule pages, the gate scripts,

@@ -273,7 +273,7 @@ function hookScript(gate: string): string {
     "      GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES",
     "",
     'if ! command -v orly >/dev/null 2>&1; then',
-    '    printf "orly: not on PATH — install it with `bun add -g @indykish/orly`, or delete this hook\\n" >&2',
+    '    printf "orly: not on PATH — install it with `bun add -g @agentsfleet/orly`, or delete this hook\\n" >&2',
     "    exit 1",
     "fi",
     "",

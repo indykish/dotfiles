@@ -130,7 +130,7 @@ install_readme_harness_section_is_one_command() {
   local blocks
   blocks="$(printf '%s\n' "$section" | grep -c '^```bash$')"
   if [[ "$blocks" -ne 1 ]]; then bad "$name" "expected exactly 1 bash command block, found $blocks"; return; fi
-  printf '%s\n' "$section" | grep -q 'bunx @indykish/orly init' || { bad "$name" "the block is not the init command"; return; }
+  printf '%s\n' "$section" | grep -q 'bunx @agentsfleet/orly init' || { bad "$name" "the block is not the init command"; return; }
   ok "$name"
 }
 
