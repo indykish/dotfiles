@@ -24,10 +24,25 @@ describe("orly command", () => {
     expect(result.stdout.toString().trim()).toBe(manifest.version);
   });
 
-  test("validates the registry", () => {
-    const result = Bun.spawnSync([COMMAND, "validate"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
+  // `validate` is gone: verifyRenders calls model.validate() before its own
+  // checks, so the verb was a strict subset of `verify` with a second name.
+  test("verify validates the registry on its way to the render checks", () => {
+    const result = Bun.spawnSync([COMMAND, "verify"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.toString().trim()).toBe("orly: registry valid");
+    expect(result.stdout.toString()).toContain("render.local.idempotent");
+  });
+
+  test("validate is not a verb", () => {
+    const result = Bun.spawnSync([COMMAND, "validate"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr.toString()).toContain("unknown command: validate");
+  });
+
+  test("verify needs no --all, because there was never a not-all", () => {
+    const result = Bun.spawnSync([COMMAND, "verify"], { cwd: ROOT, stdout: "pipe", stderr: "pipe" });
+
+    expect(result.exitCode).toBe(0);
   });
 });

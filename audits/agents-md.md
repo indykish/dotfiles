@@ -4,7 +4,7 @@ A three-part proof that generated `AGENTS.md` still holds the line after edits:
 
 1. **Deterministic layer** — `audits/agents-md.sh` (mechanical, fast, runs in `pre-commit`).
 2. **Prompt-invariance layer** — this file. A Large Language Model (LLM) agent reads `AGENTS.md` and answers every question below. Every answer must be **YES**. A NO means the ruleset regressed.
-3. **Evidence layer** — `orly verify --all --write-evidence` records the source commit, registry digest, profile checks, and prompt result.
+3. **Evidence layer** — `orly verify --write-evidence` records the source commit, registry digest, profile checks, and prompt result.
 
 Run this suite before and after an operating-model change. Both runs must produce the same all-YES result. A pass that flips to NO is a broken invariant.
 
@@ -388,7 +388,7 @@ comprehension layer closes that gap:
   non-compliant model. In the FULL graded run an absent or credit-blocked
   agent FAILS the gate — "every agent adheres" cannot be proven by an agent
   that never answered; smoke logs + excludes it, never silently.
-- **Evidence** — `orly verify --all --write-evidence` binds the result to the
+- **Evidence** — `orly verify --write-evidence` binds the result to the
   current source commit and registry digest; pre-push records the live result
   as `not-required` unless a manual `make llmevals` run supplied one.
 
@@ -400,7 +400,7 @@ After all questions answer YES and the report below is complete, generate the
 machine-readable evidence file:
 
 ```bash
-orly verify --all --write-evidence --llm-result pass
+orly verify --write-evidence --llm-result pass
 ```
 
 The evidence is local and ignored by Git. The pre-push hook regenerates it

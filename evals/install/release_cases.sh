@@ -26,12 +26,12 @@ install_refuses_outside_a_repository() {
 # that render sits in a package cache, so the links would resolve into a
 # directory the package manager may delete.
 install_authoring_verbs_refuse_from_a_published_payload() {
-  local name="sync, validate and verify refuse from a published payload and name the install verbs"
+  local name="verify refuses from a published payload and names the install verbs"
   local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"
   if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
 
   local verb out code
-  for verb in sync validate "verify --all"; do
+  for verb in verify; do
     # shellcheck disable=SC2086
     out="$(run_packed "$pkg" "$repo" $verb 2>&1)"; code=$?
     if [[ "$code" -eq 0 ]]; then bad "$name" "$verb succeeded from a payload"; return; fi
@@ -58,22 +58,25 @@ install_selects_packs_from_repository_sources() {
   ok "$name"
 }
 
-# The accepted-and-ignored --global flag was a leftover from the thin
-# distribution model. Rejected, not silently tolerated (RULE NDC).
-install_global_flag_rejected_and_unreferenced() {
-  local name="sync --global is rejected, and no tracked file references it"
+# `sync` and `render` are gone: `orly update` covers the engine checkout now
+# that same-path pack sources are skipped, and the preview rides on the command
+# being previewed. Deleted, not aliased (RULE NDC — no compatibility spellings).
+install_retired_verbs_are_gone_and_unreferenced() {
+  local name="sync and render are gone, and no tracked file still calls them"
   local pkg; pkg="$(packed_root)"
   if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
 
   local sb; sb="$(mk_sandbox)"
-  local out code
-  out="$(cd "$ROOT" && run_packed "$pkg" "$sb" sync --global 2>&1)"; code=$?
-  if [[ "$code" -eq 0 ]]; then bad "$name" "expected sync --global to fail"; return; fi
-  if [[ "$out" != *"orly sync"* ]]; then bad "$name" "error does not name sync: $out"; return; fi
+  local verb out code
+  for verb in sync render; do
+    out="$(cd "$ROOT" && run_packed "$pkg" "$sb" "$verb" 2>&1)"; code=$?
+    if [[ "$code" -eq 0 ]]; then bad "$name" "$verb still succeeds"; return; fi
+    if [[ "$out" != *"unknown command: $verb"* ]]; then bad "$name" "$verb did not report as unknown: $out"; return; fi
+  done
 
   local leaked
-  leaked="$(cd "$ROOT" && git grep -n -w -- '--global' -- . ':!docs/v1/done/*' ':!docs/v1/active/*' ':!evals/install/*' 2>/dev/null || true)"
-  if [[ -n "$leaked" ]]; then bad "$name" "tracked --global references remain: $(printf '%s' "$leaked" | head -1)"; return; fi
+  leaked="$(cd "$ROOT" && git grep -nE '(bin/)?orly (sync|render|validate)\b' -- . ':!docs/v1/done/*' ':!docs/v1/active/*' ':!evals/install/*' ':!SOUL_LOG.md' 2>/dev/null || true)"
+  if [[ -n "$leaked" ]]; then bad "$name" "tracked references to a retired verb remain: $(printf '%s' "$leaked" | head -1)"; return; fi
   ok "$name"
 }
 

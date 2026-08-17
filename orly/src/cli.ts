@@ -2,15 +2,13 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { CONFIG_PATH, localSelection, managedDrift, readConfig, staleVersion } from "./config";
+import { CONFIG_PATH, localSelection, managedDrift, readConfig, RepoConfig, seedConfig, selectPacks, staleVersion, writeConfig } from "./config";
 import { GateReport, isGateName, recordOverride, runGate, runGates } from "./gates";
 import { install, InstallResult } from "./install";
 import { isString, OrlyError, readJsonObject, RulesModel } from "./model";
 import { Renderer } from "./render";
-import { doctorAgentHomes, syncGlobal } from "./repository";
 import { verifyRenders, writeEvidence } from "./verify";
 
-const ALL_FLAG = "--all";
 const PASS_RESULT = "pass";
 const NOT_REQUIRED_RESULT = "not-required";
 const ACCEPT_DIRTY_FLAG = "--accept-dirty";
@@ -19,6 +17,8 @@ const PIPE_OUTPUT = "pipe";
 const PACKAGE_MANIFEST = "package.json";
 const FORCE_FLAG = "--force";
 const NO_HOOKS_FLAG = "--no-hooks";
+const WITH_FLAG = "--with";
+const DRY_RUN_FLAG = "--dry-run";
 const JSON_FLAG = "--json";
 const JSON_INDENT = 2;
 const PASS_GLYPH = "🟢";
@@ -46,28 +46,13 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
     return command ? 0 : 1;
   }
   if (command === "--version" || command === "-v") return printVersion(model);
-  if (command === "validate") {
-    requireEngineCheckout(model, command);
-    model.validate();
-    console.log("orly: registry valid");
-    return 0;
-  }
-  if (command === "sync") {
-    requireEngineCheckout(model, command);
-    model.validate();
-    requireNoArguments(rest, "sync renders the root rules: orly sync");
-    const links = await syncGlobal(model);
-    console.log(`${PASS_GLYPH} rules rendered to AGENTS.md; ${links.length} agent-home links current`);
-    return 0;
-  }
   if (command === "doctor") {
     model.validate();
-    requireNoArguments(rest, "doctor checks the root rules and home links: orly doctor");
+    requireNoArguments(rest, "doctor checks the installed ruleset: orly doctor");
     return doctorGlobal(model);
   }
   if (command === "init") return materialise(model, rest, true);
   if (command === "update") return materialise(model, rest, false);
-  if (command === "render") return render(model, rest);
   if (command === VERIFY_COMMAND) return verify(model, rest);
   if (command === "gate") return gate(model, rest);
   if (command === "override") return override(rest);
@@ -115,7 +100,13 @@ async function packageVersion(model: RulesModel): Promise<string> {
 async function materialise(model: RulesModel, args: string[], isInit: boolean): Promise<number> {
   model.validate();
   const targetRoot = projectRoot();
-  if (!isInit && !(await readConfig(targetRoot))) throw new OrlyError(`no ${CONFIG_PATH} here — run \`orly init\` first`);
+  const existing = await readConfig(targetRoot);
+  if (!isInit && !existing) throw new OrlyError(`no ${CONFIG_PATH} here — run \`orly init\` first`);
+  // An opt-in pack is a property of the repository, so it is recorded before
+  // the render rather than passed through it: the next `orly update` in a
+  // teammate's clone selects the same set with no flag to remember.
+  await recordOptIn(model, targetRoot, existing, optionalValues(args, WITH_FLAG));
+  if (args.includes(DRY_RUN_FLAG)) return preview(model, targetRoot);
   const result = await install(model, {
     targetRoot,
     force: args.includes(FORCE_FLAG),
@@ -145,21 +136,21 @@ function projectRoot(): string {
 }
 
 async function doctorGlobal(model: RulesModel): Promise<number> {
-  // The agent-home links are this machine's rule carrier and only exist in an
-  // orly checkout. From a published payload doctor reports on the repository
-  // the caller is standing in — the only thing that install owns there.
-  const engine = existsSync(join(model.root, ENGINE_MARKER));
-  const errors = engine ? await doctorAgentHomes(model) : [];
-  errors.push(...(await doctorInstall(model)));
+  // Every repository is the same case now: doctor reports on the ruleset
+  // installed where the caller is standing. There is no machine-level carrier
+  // to check — the rules ride in each repository's own commit.
+  const errors = await doctorInstall(model);
   if (errors.length > 0) {
     for (const error of errors) console.log(`${FAIL_GLYPH} ${error}`);
     return 1;
   }
-  if (engine) console.log(`${PASS_GLYPH} root AGENTS.md is current and every agent home links to it`);
   const config = await readConfig(projectRoot());
-  if (config) console.log(`${PASS_GLYPH} this repository's installed ruleset matches ${CONFIG_PATH}`);
-  else if (!engine) console.log(`${FAIL_GLYPH} no ${CONFIG_PATH} here — run \`orly init\` first`);
-  return config || engine ? 0 : 1;
+  if (!config) {
+    console.log(`${FAIL_GLYPH} no ${CONFIG_PATH} here — run \`orly init\` first`);
+    return 1;
+  }
+  console.log(`${PASS_GLYPH} this repository's installed ruleset matches ${CONFIG_PATH}`);
+  return 0;
 }
 
 // A repository with no lock was never installed into — silence, not a finding.
@@ -173,19 +164,31 @@ async function doctorInstall(model: RulesModel): Promise<string[]> {
   return [...managedDrift(targetRoot, config), ...(stale ? [stale] : [])];
 }
 
-async function render(model: RulesModel, args: string[]): Promise<number> {
-  model.validate();
-  const projectRootPath = optionalValue(args, "--project-root");
-  const target = projectRootPath ? resolve(projectRootPath) : model.root;
-  const local = await localSelection(model, target);
-  const text = await new Renderer(model).renderText(local.packs, local.commands, projectRootPath ? target : undefined);
+// What init would write, without writing it. Replaces the `render` verb: the
+// preview belongs on the command you are about to run, not beside it.
+async function preview(model: RulesModel, targetRoot: string): Promise<number> {
+  const local = await localSelection(model, targetRoot);
+  const text = await new Renderer(model).renderText(local.packs, local.commands);
   console.log(text);
   return 0;
 }
 
+// Opt-in packs never auto-select from file extensions, so naming one is the
+// only way it lands. Validated against the registry here, before anything is
+// recorded, so a typo names the available set instead of writing a config the
+// next command rejects.
+async function recordOptIn(model: RulesModel, targetRoot: string, existing: RepoConfig | undefined, requested: string[]): Promise<void> {
+  if (requested.length === 0) return;
+  const config = existing ?? await seedConfig(targetRoot);
+  const packs = new Set(config.packs);
+  for (const name of requested) packs.add(name);
+  // selectPacks throws OrlyError on an unknown name, listing what is available.
+  selectPacks(model, targetRoot, [...packs]);
+  await writeConfig(targetRoot, { ...config, packs: [...packs].sort() });
+}
+
 async function verify(model: RulesModel, args: string[]): Promise<number> {
   requireEngineCheckout(model, VERIFY_COMMAND);
-  if (!args.includes(ALL_FLAG)) throw new OrlyError("verify requires --all");
   const checks = await verifyRenders(model);
   for (const check of checks) console.log(`${check.result === PASS_RESULT ? PASS_GLYPH : FAIL_GLYPH} ${check.name}${check.detail ? `: ${check.detail}` : ""}`);
   if (args.includes("--write-evidence")) {
@@ -231,6 +234,18 @@ function optionalValue(args: string[], name: string): string | undefined {
   return index < 0 ? undefined : args[index + 1];
 }
 
+// Repeatable: `--with persona.indy --with product.agentsfleet` takes both.
+function optionalValues(args: string[], name: string): string[] {
+  const values: string[] = [];
+  for (const [index, argument] of args.entries()) {
+    if (argument !== name) continue;
+    const value = args[index + 1];
+    if (value === undefined || value.startsWith("-")) throw new OrlyError(`${name} requires a pack name`);
+    values.push(value);
+  }
+  return values;
+}
+
 function printHelp(): void {
   console.log(`orly — prove the boundary; carry the rules
 
@@ -241,18 +256,24 @@ Gates (read-only; no PR without every criterion green or a recorded override):
                                     empty commit with an Orly-Override trailer
 
 Install (the repository is the unit — no checkout of this package required):
-  orly init [--force] [--no-hooks] [--json]
+  orly init [--force] [--no-hooks] [--with <PACK>] [--dry-run] [--json]
                                     materialise rules, gates, hooks, and a
-                                    seeded .oracle/orly.json
-  orly update [--force] [--json]    re-materialise at the installed engine version
+                                    seeded .oracle/orly.json. A repository that
+                                    already has an AGENTS.md keeps it: orly's
+                                    rules land as AGENTS.orly.md, reached by a
+                                    pointer block in the file you own.
+  orly update [--force] [--with <PACK>] [--dry-run] [--json]
+                                    re-materialise at the installed engine version
 
-  orly doctor                       installed-ruleset drift and staleness
+  --with <PACK>                     record an opt-in pack (repeatable) in
+                                    .oracle/orly.json, so every clone selects it
+  --dry-run                         show what would be written; change nothing
+
+  orly doctor                       check this repository's installed rules
+                                    against what orly would write today
   orly --version                    the installed package version
 
 Ruleset authoring (an orly checkout only — refused from an installed package):
-  orly sync                         render the root rules + relink agent homes
-  orly render [--project-root <DIR>]
-                                    print a repository's render (stdout)
-  orly verify --all                 render determinism + root currency
-  orly validate                     registry shape`);
+  orly verify                       the rules render the same twice, and the
+                                    committed copy matches that render`);
 }
