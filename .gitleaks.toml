@@ -1,0 +1,33 @@
+# Extend the default ruleset — never replace it.
+#
+# This file previously carried an `[allowlist]` for `gstack/` and nothing else.
+# A repository config without `[extend]` REPLACES gitleaks' defaults, so that
+# version loaded zero rules and reported every scan clean in about a
+# millisecond. Measured against a seeded credential pair: "no leaks found" in
+# 2.78ms with it, "leaks found: 2" in 152ms with the defaults. Every gitleaks
+# run this repository gated on was a no-op. Keep these two lines first.
+#
+# Shape follows ~/Projects/agentsfleet/.gitleaks.toml.
+[extend]
+useDefault = true
+
+# Retired Oracle lock digests in history. `.oracle/ruleset.lock` was the
+# rule-content ledger — a map of rule path to the Secure Hash Algorithm 256-bit
+# (SHA-256) checksum of that rule's bytes. `generic-api-key` matches on entropy
+# alone, so a hex digest reads to it exactly like a credential. The file is
+# gone from the tree, but `gitleaks detect` scans every commit, so the finding
+# persists in history and this allowlist stays.
+#
+# Scoped to the one rule that misfires, and further scoped by path AND line
+# regex. A blanket path allowlist would also hide a real credential committed
+# to that same file; this cannot, because it only forgives lines shaped like a
+# path-to-digest mapping.
+[[rules]]
+id = "generic-api-key"
+
+  [rules.allowlist]
+  description = "Rule-content digests in the retired .oracle/ruleset.lock ledger — checksums of markdown and shell files, never credentials"
+  condition = "AND"
+  paths = ['''(^|/)\.oracle/ruleset\.lock$''']
+  regexTarget = "line"
+  regexes = ['''"(ruleset_digest|[^"]+\.(md|sh|json))":\s*"[0-9a-f]{64}"''']
