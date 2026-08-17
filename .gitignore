@@ -20,3 +20,4 @@ gstack/
 .llmevals-journal/
 .claude/scheduled_tasks.lock
 coverage/
+.npmrc

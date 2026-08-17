@@ -131,10 +131,13 @@ re-run.
 `cp -i` asks before replacing a file. Replace Kishore's name, email, and GNU
 Privacy Guard (GnuPG) key with your own first.
 
+There is no `.npmrc` here to copy: npm auth belongs to your machine, via
+`npm login`, and publishing runs on Trusted Publishing with no token at all.
+
 ```bash
 cp -i .zshrc ~/.zshrc && cp -i .zshenv ~/.zshenv
 cp -i .gitconfig ~/.gitconfig && cp -i .gitconfig-agentsfleet ~/.gitconfig-agentsfleet
-cp -i .gitignore_global ~/.gitignore_global && cp -i .npmrc ~/.npmrc
+cp -i .gitignore_global ~/.gitignore_global
 mkdir -p ~/.config/mise && cp -i .config/starship.toml ~/.config/starship.toml && cp -i .config/mise/config.toml ~/.config/mise/config.toml
 ```
 
