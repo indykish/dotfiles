@@ -144,20 +144,28 @@ update-skills
 
 Clones gstack to `~/.local/share/gstack`, installs its dependencies, and links
 the shared skills into each installed agent. It refuses to replace files it
-does not own; a real `skills` directory is moved to a timestamped backup. Verify anytime with
-`update-skills --doctor` → `✔ Skills doctor passed`.
+does not own; a real `skills` directory is moved to a timestamped backup.
+Verify anytime with `update-skills --doctor` → `✔ Skills doctor passed`.
+
+It deliberately does **not** link `kishore-spec-new`, `kishore-babysit-prs`,
+`write-unit-test`, or `write-integration-test`. Those ship in orly's
+`workflow.skills` pack and land in each repository at the version that
+repository pinned; linking them here too would register each name twice and
+let the two copies drift.
 
 #### 6. Render the rules
 
 Run after any rule edit. This checkout is an `orly` consumer like any other,
-so it uses the same verb every repository uses:
+so it uses the same verb every repository uses — with `--no-hooks`, because
+this checkout wrote its own `.githooks/` and orly refuses to replace hooks it
+did not write:
 
 ```bash
-orly update
+orly update --no-hooks
 ```
 
 ```text
-🟢 1 written, 0 already current (19 packs)
+🟢 0 written, 1 already current (19 packs)
 ```
 
 The root [`AGENTS.md`](AGENTS.md) is the only generated file here. Pack
