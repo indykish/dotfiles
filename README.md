@@ -26,17 +26,18 @@ nothing to install and nothing to remember. The one thing a clone cannot
 carry is `core.hooksPath` — it is local git config — so each person runs
 `orly init` once to arm the hooks.
 
-### If your repository already has an `AGENTS.md`
-
-It keeps it, under its own name, byte for byte:
+### Two files, always
 
 | File | Owner | On `orly update` |
 |---|---|---|
 | `AGENTS.md` | **yours** | untouched, except one delimited pointer block |
 | `AGENTS.orly.md` | orly | rewritten |
 
-If you have no `AGENTS.md`, orly's rules land under that name directly. Your
-own rules always win where the two disagree.
+If you already had an `AGENTS.md`, it keeps its name and its bytes and gains
+the pointer. If you had none, you get a stub with the pointer and room to
+write your own rules whenever you want them — the file is yours from the
+start, so nothing you add later is ever at risk. Your rules win where the two
+disagree.
 
 Nothing you wrote is replaced without you asking. A hook or a rule page orly
 did not write is refused, naming `--force` and `--no-hooks` as the ways

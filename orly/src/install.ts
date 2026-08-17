@@ -59,7 +59,7 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   const config = existing ?? await seedConfig(targetRoot);
   const packs = selectPacks(model, targetRoot, config.packs, new Set(config.managed));
 
-  const layout = await resolveLayout(targetRoot);
+  const layout = resolveLayout(model, targetRoot);
   const planned = await planFiles(model, packs, config.commands, targetRoot, layout.orlyFile);
   const managed = new Set(config.managed);
   const refusals: InstallError[] = [];
@@ -297,7 +297,7 @@ async function planFiles(model: RulesModel, packs: string[], commands: Record<st
       // original (skills/ into .claude/skills/). Skipping is what `orly sync`
       // used to buy, generalised past the same-path case.
       if (isBelow(resolved(path), resolved(targetRoot))) continue;
-      planned.set(entry.target, { target: entry.target, content: await managedContent(path, entry.target, entry.source, packs, known), mode: modeLabel(path) });
+      planned.set(entry.target, { target: entry.target, content: await managedContent(path, entry.target, entry.source, packs, known, orlyFile), mode: modeLabel(path) });
     }
   }
   const rendered = await new Renderer(model).renderText(packs, commands);
@@ -318,11 +318,17 @@ async function planFiles(model: RulesModel, packs: string[], commands: Record<st
 // checkout's own .oracle/orly.json predates managed tracking, so a
 // managed-based test would treat orly's own render as a stranger's file and
 // push it aside on the next update.
-async function resolveLayout(targetRoot: string): Promise<{ orlyFile: string; pointerHost?: string }> {
-  const agents = join(targetRoot, AGENTS_FILENAME);
-  if (!existsSync(agents)) return { orlyFile: AGENTS_FILENAME };
-  const text = await Bun.file(agents).text();
-  if (text.startsWith(GENERATED_BANNER)) return { orlyFile: AGENTS_FILENAME };
+function resolveLayout(model: RulesModel, targetRoot: string): { orlyFile: string; pointerHost?: string } {
+  // The checkout that authors the rules holds them as sources, not as an
+  // installed copy — the same reason pack files inside the target are skipped
+  // rather than written. Its AGENTS.md IS the render, and the payload ships it
+  // as the reference copy.
+  if (resolved(model.root) === resolved(targetRoot)) return { orlyFile: AGENTS_FILENAME };
+  // Everywhere else orly is a guest. It always takes AGENTS.orly.md and always
+  // leaves AGENTS.md to the repository, whether or not the repository has
+  // written one yet. One layout, so `update` never has to ask which mode it is
+  // in, and a repository that starts with no rules of its own still has the
+  // file to put them in when it wants them.
   return { orlyFile: ORLY_AGENTS_FILENAME, pointerHost: AGENTS_FILENAME };
 }
 
@@ -339,10 +345,32 @@ function pointerBlock(orlyFile: string): string {
   ].join(NEWLINE);
 }
 
+// What a repository with no rules of its own starts with: the pointer, and a
+// visible invitation to write here. Without the second line the stub reads as
+// an orly artifact and nobody touches it — which is the trap the single-file
+// layout had, moved one file over.
+function stubHost(block: string): string {
+  return [
+    "# Repository rules",
+    "",
+    block,
+    "",
+    "Write this repository's own rules below. orly never edits this file",
+    "outside the block above, so nothing here is lost to an `orly update`.",
+  ].join(NEWLINE);
+}
+
 async function upsertPointer(targetRoot: string, host: string, orlyFile: string): Promise<boolean> {
   const path = join(targetRoot, host);
-  const current = await Bun.file(path).text();
   const block = pointerBlock(orlyFile);
+  // No file, or one orly generated under an older layout where it owned this
+  // name. Neither holds a line the repository wrote, so both become the stub —
+  // which is the migration for anything installed before the split.
+  if (!existsSync(path) || (await Bun.file(path).text()).startsWith(GENERATED_BANNER)) {
+    await Bun.write(path, `${stubHost(block)}\n`);
+    return true;
+  }
+  const current = await Bun.file(path).text();
   const open = current.indexOf(POINTER_OPEN);
   const close = current.indexOf(POINTER_CLOSE);
   if (open >= 0 && close > open) {
@@ -366,11 +394,24 @@ function resolved(path: string): string {
 // Managed markdown is pack-filtered on the way in, exactly as a rendered core
 // document is. Copying it raw is how a Rust crate ends up holding a rule that
 // points at a Zig façade it will never receive.
-async function managedContent(path: string, target: string, source: string, packs: string[], known: Set<string>): Promise<Uint8Array> {
+async function managedContent(path: string, target: string, source: string, packs: string[], known: Set<string>, orlyFile: string): Promise<Uint8Array> {
   const bytes = await Bun.file(path).bytes();
   if (extname(target) !== MARKDOWN_EXTENSION) return bytes;
   const filtered = renderProfileText(new TextDecoder().decode(bytes), new Set(packs), known, source);
-  return new TextEncoder().encode(`${filtered}\n`);
+  return new TextEncoder().encode(`${retargetRulesCitations(filtered, orlyFile)}\n`);
+}
+
+// A rule page citing `AGENTS.md` means orly's rules, which is that file's name
+// only in the checkout that authors them. In a consumer they live in
+// AGENTS.orly.md and AGENTS.md belongs to the repository, so a citation left
+// alone would point every reader at the wrong half — and fail reference
+// closure, since the repository's own file is not orly's to promise.
+function retargetRulesCitations(text: string, orlyFile: string): string {
+  if (orlyFile === AGENTS_FILENAME) return text;
+  return text
+    .replaceAll(`](${AGENTS_FILENAME})`, `](${orlyFile})`)
+    .replaceAll(`](../${AGENTS_FILENAME})`, `](../${orlyFile})`)
+    .replaceAll(`\`${AGENTS_FILENAME}\``, `\`${orlyFile}\``);
 }
 
 // git canonicalises symlinks in --show-toplevel; targetRoot, as handed in by
