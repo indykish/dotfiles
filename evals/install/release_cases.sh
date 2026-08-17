@@ -21,6 +21,30 @@ install_refuses_outside_a_repository() {
 # A stranger's repository is the common case: nothing to register, no name to
 # pass. Pack selection reads the repository's own sources, so the Rust crate in
 # the fixture receives the Rust façade and never the Zig one.
+# The ruleset-authoring verbs operate on the engine's own sources; sync also
+# repoints this machine's agent homes at the render. From a published payload
+# that render sits in a package cache, so the links would resolve into a
+# directory the package manager may delete.
+install_authoring_verbs_refuse_from_a_published_payload() {
+  local name="sync, validate and verify refuse from a published payload and name the install verbs"
+  local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"
+  if [[ -z "$pkg" ]]; then bad "$name" "npm pack or extract failed"; return; fi
+
+  local verb out code
+  for verb in sync validate "verify --all"; do
+    # shellcheck disable=SC2086
+    out="$(run_packed "$pkg" "$repo" $verb 2>&1)"; code=$?
+    if [[ "$code" -eq 0 ]]; then bad "$name" "$verb succeeded from a payload"; return; fi
+    if [[ "$out" != *"orly init"* ]]; then bad "$name" "$verb did not name the install verbs: $out"; return; fi
+  done
+
+  # doctor keeps working: its install half is the consumer's business.
+  out="$(run_packed "$pkg" "$repo" doctor 2>&1)"
+  if [[ "$out" != *"orly init"* ]]; then bad "$name" "doctor did not report the missing install: $out"; return; fi
+  if [[ "$out" == *"agent home"* ]]; then bad "$name" "doctor graded agent-home links from a payload: $out"; return; fi
+  ok "$name"
+}
+
 install_selects_packs_from_repository_sources() {
   local name="init with no arguments selects packs from the repository's own sources"
   local pkg repo; pkg="$(packed_root)"; repo="$(mk_repo)"

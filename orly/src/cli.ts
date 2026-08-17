@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { localSelection } from "./config";
@@ -24,6 +25,8 @@ const JSON_INDENT = 2;
 const PASS_GLYPH = "🟢";
 const FAIL_GLYPH = "🔴";
 const PR_GATE = "pr";
+const ENGINE_MARKER = "evals/install/run.sh";
+const VERIFY_COMMAND = "verify";
 
 const { root, arguments: commandArguments } = parseRoot(Bun.argv.slice(2));
 
@@ -45,11 +48,13 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
   }
   if (command === "--version" || command === "-v") return printVersion(model);
   if (command === "validate") {
+    requireEngineCheckout(model, command);
     model.validate();
     console.log("orly: registry valid");
     return 0;
   }
   if (command === "sync") {
+    requireEngineCheckout(model, command);
     model.validate();
     requireNoArguments(rest, "sync renders the root rules: orly sync");
     const links = await syncGlobal(model);
@@ -64,7 +69,7 @@ async function run(model: RulesModel, args: string[]): Promise<number> {
   if (command === "init") return materialise(model, rest, true);
   if (command === "update") return materialise(model, rest, false);
   if (command === "render") return render(model, rest);
-  if (command === "verify") return verify(model, rest);
+  if (command === VERIFY_COMMAND) return verify(model, rest);
   if (command === "gate") return gate(model, rest);
   if (command === "override") return override(rest);
   throw new OrlyError(`unknown command: ${command}`);
@@ -142,15 +147,21 @@ function projectRoot(): string {
 }
 
 async function doctorGlobal(model: RulesModel): Promise<number> {
-  const errors = await doctorAgentHomes(model);
+  // The agent-home links are this machine's rule carrier and only exist in an
+  // orly checkout. From a published payload doctor reports on the repository
+  // the caller is standing in — the only thing that install owns there.
+  const engine = existsSync(join(model.root, ENGINE_MARKER));
+  const errors = engine ? await doctorAgentHomes(model) : [];
   errors.push(...(await doctorInstall(model)));
   if (errors.length > 0) {
     for (const error of errors) console.log(`${FAIL_GLYPH} ${error}`);
     return 1;
   }
-  console.log(`${PASS_GLYPH} root AGENTS.md is current and every agent home links to it`);
-  if (await readLock(projectRoot())) console.log(`${PASS_GLYPH} this repository's installed ruleset matches ${LOCK_PATH}`);
-  return 0;
+  if (engine) console.log(`${PASS_GLYPH} root AGENTS.md is current and every agent home links to it`);
+  const lock = await readLock(projectRoot());
+  if (lock) console.log(`${PASS_GLYPH} this repository's installed ruleset matches ${LOCK_PATH}`);
+  else if (!engine) console.log(`${FAIL_GLYPH} no ${LOCK_PATH} here — run \`orly init\` first`);
+  return lock || engine ? 0 : 1;
 }
 
 // A repository with no lock was never installed into — silence, not a finding.
@@ -175,6 +186,7 @@ async function render(model: RulesModel, args: string[]): Promise<number> {
 }
 
 async function verify(model: RulesModel, args: string[]): Promise<number> {
+  requireEngineCheckout(model, VERIFY_COMMAND);
   if (!args.includes(ALL_FLAG)) throw new OrlyError("verify requires --all");
   const checks = await verifyRenders(model);
   for (const check of checks) console.log(`${check.result === PASS_RESULT ? PASS_GLYPH : FAIL_GLYPH} ${check.name}${check.detail ? `: ${check.detail}` : ""}`);
@@ -184,6 +196,18 @@ async function verify(model: RulesModel, args: string[]): Promise<number> {
     console.log(`evidence: ${await writeEvidence(model, "dotfiles", checks, result)}`);
   }
   return checks.every((check) => check.result === PASS_RESULT) ? 0 : 1;
+}
+
+// Ruleset-authoring verbs operate on the engine's own sources and, in sync's
+// case, repoint this machine's agent homes at the render. From a published
+// payload that render lives in a package cache, so the links would resolve into
+// a directory the package manager may delete — the rules would vanish mid-
+// session. The marker is a file the payload allowlist deliberately excludes and
+// every checkout carries; `.git` would be wrong, since a CI job or an exported
+// tree is still the engine and a package cache never is.
+function requireEngineCheckout(model: RulesModel, command: string): void {
+  if (existsSync(join(model.root, ENGINE_MARKER))) return;
+  throw new OrlyError(`orly ${command} edits the ruleset itself and only runs in an orly checkout — from an installed package use \`orly init\`, \`orly update\`, \`orly doctor\`, or \`orly gate\``);
 }
 
 function parseRoot(args: string[]): { root: string; arguments: string[] } {
@@ -224,12 +248,13 @@ Install (the repository is the unit — no checkout of this package required):
                                     and a seeded .oracle/orly.json
   orly update [--force] [--json]    re-materialise at the installed engine version
 
-Rules (one render target — the root AGENTS.md every agent home links to):
+  orly doctor                       installed-ruleset drift and staleness
+  orly --version                    the installed package version
+
+Ruleset authoring (an orly checkout only — refused from an installed package):
   orly sync                         render the root rules + relink agent homes
-  orly doctor                       root currency + home links
   orly render [--project-root <DIR>]
                                     print a repository's render (stdout)
   orly verify --all                 render determinism + root currency
-  orly validate                     registry shape
-  orly --version                    the installed package version`);
+  orly validate                     registry shape`);
 }
