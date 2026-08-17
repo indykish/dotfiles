@@ -13,18 +13,48 @@ In the repository you want rules and gates enforced in:
 bunx @indykish/orly init
 ```
 
-Materialises the rendered rule pages, the gate scripts, and git hooks for
-your language and domain — from `docs/greptile-learnings/RULES.md` for any
-source file down to language-specific façades — pinned by
-`.oracle/orly.json`. No dotfiles checkout, no prepared `$HOME`, works the
-same on a fresh machine, a Continuous Integration (CI) runner, or a remote
-fleet container. Which packs you get is read from your own sources — a Rust
-crate receives the Rust rules and never the Zig ones — and never includes
-Kishore's address handles or agentsfleet's product surface. `orly init` also
-seeds `.oracle/orly.json` with the gate commands it can find in your Makefile
-or `package.json`; complete it, commit it, and every teammate shares it.
-`orly update` re-materialises against a newer engine version; `orly doctor`
-reports drift.
+That is the whole install. It materialises the rule pages, the gate scripts,
+the skills those rules name, and git hooks — for your languages, read from
+your own sources. A Rust crate receives the Rust rules and never the Zig
+ones. No checkout of this repository, no prepared `$HOME`; the same command
+works on a fresh machine, a Continuous Integration (CI) runner, or a remote
+container.
+
+**Everything it writes is meant to be committed.** That is how the rules
+reach your teammates: they clone and the rules are already there, with
+nothing to install and nothing to remember. The one thing a clone cannot
+carry is `core.hooksPath` — it is local git config — so each person runs
+`orly init` once to arm the hooks.
+
+### If your repository already has an `AGENTS.md`
+
+It keeps it, under its own name, byte for byte:
+
+| File | Owner | On `orly update` |
+|---|---|---|
+| `AGENTS.md` | **yours** | untouched, except one delimited pointer block |
+| `AGENTS.orly.md` | orly | rewritten |
+
+If you have no `AGENTS.md`, orly's rules land under that name directly. Your
+own rules always win where the two disagree.
+
+Nothing you wrote is replaced without you asking. A hook or a rule page orly
+did not write is refused, naming `--force` and `--no-hooks` as the ways
+forward, and a refused run leaves the repository exactly as it found it.
+
+### Then
+
+`orly init` seeds `.oracle/orly.json` with the gate commands it can find in
+your `Makefile` or `package.json`. Complete it, commit it, and every clone
+gates identically.
+
+| Command | Does |
+|---|---|
+| `orly gate` | run work → verify → pr; stop at the first red group |
+| `orly update` | re-materialise at a newer engine version |
+| `orly update --with <pack>` | take an opt-in pack, recorded for every clone |
+| `orly init --dry-run` | show what would be written; change nothing |
+| `orly doctor` | compare what is installed against what orly would write today |
 
 ## Kishore's own machine (optional)
 
@@ -111,33 +141,46 @@ update-skills
 ✔ Skills updated!
 ```
 
-Clones gstack to `~/.local/share/gstack`, installs its dependencies, links the
-shared skills into each installed agent, renders the root rules, and links the
-agent homes. It refuses to replace files it does not own; a real `skills`
-directory is moved to a timestamped backup. Verify anytime with
+Clones gstack to `~/.local/share/gstack`, installs its dependencies, and links
+the shared skills into each installed agent. It refuses to replace files it
+does not own; a real `skills` directory is moved to a timestamped backup. Verify anytime with
 `update-skills --doctor` → `✔ Skills doctor passed`.
 
 #### 6. Render the rules
 
-Run after any rule edit:
+Run after any rule edit. This checkout is an `orly` consumer like any other,
+so it uses the same verb every repository uses:
 
 ```bash
-orly sync
+orly update
 ```
 
 ```text
-🟢 rules rendered to AGENTS.md; 4 agent-home links current
+🟢 1 written, 0 already current (19 packs)
 ```
 
-The root [`AGENTS.md`](AGENTS.md) is the only generated file.
-`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, OpenCode, and Amp all symlink to
-it. A rule edit is one commit here — every agent session in every repository
-reads it immediately.
+The root [`AGENTS.md`](AGENTS.md) is the only generated file here. Pack
+sources that already live in this checkout are skipped rather than copied
+over themselves, which is why the same command that installs elsewhere also
+re-renders here. There are no symlinks into `$HOME`: every repository commits
+its own rules, this one included.
+
+Two machine-level helpers sit beside it, and neither is part of `orly` —
+they maintain *this* laptop, not any repository:
+
+```bash
+update-skills      # clone/refresh gstack, link the shared skills into each agent
+update-ai-tools    # upgrade claude, opencode, amp, @openai/codex, then the above
+```
+
+`update-ai-tools --doctor` runs the read-only checks. `orly update` is what
+touches rules; these two touch tooling. A contributor needs neither — the
+skills the rules name are installed into their repository by `orly init`.
 
 #### 7. Install into a repository
 
 ```bash
-cd ~/Projects/<repo> && orly init
+cd ~/Projects/<repo> && orly init --with persona.indy
 ```
 
 Materialises that repository's rules from its own sources and seeds
@@ -145,6 +188,10 @@ Materialises that repository's rules from its own sources and seeds
 real `conform`/`verify.*` set, and `surfaces.user`/`surfaces.docs` for the docs
 gate — then commit it. Nothing is registered anywhere; the repository carries
 its own answer, so a teammate's clone gates identically.
+
+`--with persona.indy` is what replaces the old global `~/.claude/CLAUDE.md`:
+opt-in packs never auto-select, so a stranger's repository never renders
+them, and naming it once records it for every clone.
 
 #### 8. Gate the work
 
@@ -171,8 +218,8 @@ orly override <CRITERION> --reason <REASON>
 ```
 
 The override is an empty commit with an `Orly-Override` trailer — visible in
-the Pull Request, dead with the branch. Check the carrier anytime:
-`orly doctor` → `🟢 root AGENTS.md is current and every agent home links to it`.
+the Pull Request, dead with the branch. Check what is installed anytime:
+`orly doctor` → `🟢 this repository's installed ruleset matches .oracle/orly.json`.
 
 #### 9. Write secret files (optional)
 
@@ -202,64 +249,6 @@ cd orly && bun install --frozen-lockfile && cd .. && make audit
 ```text
 ✅ ALL CHECKS PASSED
 ```
-
-## How the rules work
-
-[`orly/core/operating-model.md`](orly/core/operating-model.md) is the source.
-The renderer produces one artifact — the root [`AGENTS.md`](AGENTS.md) — and
-every agent home on this machine symlinks to it, so an edit here reaches every
-session in this checkout at once. Any other repository gets its own copy a
-different way: `orly init` materialises the rule pages and gate scripts its own
-sources select, recorded and configured by one file, `.oracle/orly.json`;
-`orly update` re-materialises against a newer engine version; `orly doctor`
-reports drift. Rule pages cite each other relative to the repository they were
-materialised into, never through this checkout's path — `make audit`
-(`audits/rule-paths.sh`) fails on a citation that still does.
-
-The dispatch index sends an agent to the smallest relevant rule page before an
-edit or claim:
-
-| Work | Rule page |
-|---|---|
-| Zig | [`dispatch/write_zig.md`](dispatch/write_zig.md) |
-| TypeScript or JavaScript | [`dispatch/write_ts_adhere_bun.md`](dispatch/write_ts_adhere_bun.md) |
-| SQL or schema | [`dispatch/write_sql.md`](dispatch/write_sql.md) |
-| Any source file | [`dispatch/write_any.md`](dispatch/write_any.md) |
-| Specs, docs, API prose, auth | matching `dispatch/write_*.md` |
-| Verification claims | [`dispatch/verify.md`](dispatch/verify.md) |
-| Architecture names and flows | [`dispatch/name_architecture.md`](dispatch/name_architecture.md) |
-| Rule changes | [`dispatch/edit_rules.md`](dispatch/edit_rules.md) |
-
-`make audit` proves the registry, rendering, rule invariants, and dispatch
-fixtures. Design detail: [`docs/ORLY_ARCHITECTURE.md`](docs/ORLY_ARCHITECTURE.md)
-and [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md).
-
-## Repository map
-
-| Path | Contents |
-|---|---|
-| [`AGENTS.md`](AGENTS.md) | Generated rules — the file every agent home links to. |
-| [`orly/`](orly/) | The gate engine, renderer, pack registry, and fixtures (Bun + TypeScript). |
-| [`SOUL.md`](SOUL.md) | Orly's judgment layer — reply-shape rules, reading-Indy defaults, pre-send checklist; rendered into `AGENTS.md` by `orly sync`. Each rule once; `AGENTS.md` holds the gates. |
-| [`SOUL_LOG.md`](SOUL_LOG.md) | The evidence behind `SOUL.md` — precedent log of Kishore's verbatim calls, opened on demand, appended at the moment of correction. |
-| [`dispatch/`](dispatch/) | Rule pages keyed to the work at hand. |
-| [`audits/`](audits/), [`evals/`](evals/) | Deterministic checks and their fixtures. |
-| [`docs/`](docs/) | Standards, templates, architecture notes, specs under `docs/v*/`. |
-| [`skills/`](skills/), `.unified-skills/` | Local skills and the generated shared set. |
-| [`bin/`](bin/) | Setup, linking, update, and doctor helpers. |
-| [`.githooks/`](.githooks/) | Pre-commit and pre-push checks. |
-| dotfiles proper | `.zshrc`, `.gitconfig`, `.tmux.conf`, agent settings, `Library/`. |
-
-## Maintenance
-
-```bash
-update-ai-tools
-```
-
-Updates `claude`, `opencode`, `amp`, and `@openai/codex`, relinks dotfiles,
-refreshes skills, renders the root rules, and verifies the links.
-`update-ai-tools --doctor` runs the read-only checks; non-zero exit means a
-missing link or stale root `AGENTS.md`.
 
 ## macOS process limits (optional)
 

@@ -301,6 +301,59 @@
           "target": "docs/VERIFY_TIERS.md"
         }
       ]
+    },
+    "workflow.skills": {
+      "extensions": [],
+      "managed_files": [
+        {
+          "source": "skills/kishore-spec-new/SKILL.md",
+          "target": ".claude/skills/kishore-spec-new/SKILL.md"
+        },
+        {
+          "source": "skills/kishore-spec-new/SKILL.md",
+          "target": ".agents/skills/kishore-spec-new/SKILL.md"
+        },
+        {
+          "source": "skills/kishore-spec-new/SKILL.md",
+          "target": ".opencode/skills/kishore-spec-new/SKILL.md"
+        },
+        {
+          "source": "skills/write-unit-test/SKILL.md",
+          "target": ".claude/skills/write-unit-test/SKILL.md"
+        },
+        {
+          "source": "skills/write-unit-test/SKILL.md",
+          "target": ".agents/skills/write-unit-test/SKILL.md"
+        },
+        {
+          "source": "skills/write-unit-test/SKILL.md",
+          "target": ".opencode/skills/write-unit-test/SKILL.md"
+        },
+        {
+          "source": "skills/write-integration-test/SKILL.md",
+          "target": ".claude/skills/write-integration-test/SKILL.md"
+        },
+        {
+          "source": "skills/write-integration-test/SKILL.md",
+          "target": ".agents/skills/write-integration-test/SKILL.md"
+        },
+        {
+          "source": "skills/write-integration-test/SKILL.md",
+          "target": ".opencode/skills/write-integration-test/SKILL.md"
+        },
+        {
+          "source": "skills/kishore-babysit-prs/SKILL.md",
+          "target": ".claude/skills/kishore-babysit-prs/SKILL.md"
+        },
+        {
+          "source": "skills/kishore-babysit-prs/SKILL.md",
+          "target": ".agents/skills/kishore-babysit-prs/SKILL.md"
+        },
+        {
+          "source": "skills/kishore-babysit-prs/SKILL.md",
+          "target": ".opencode/skills/kishore-babysit-prs/SKILL.md"
+        }
+      ]
     }
   },
   "rules": [

@@ -16,7 +16,7 @@ You are `Oracle`: deterministic, autonomous, command-line-first across plan/impl
 
 **Address tags.** Kishore: **🤠 Indy** (or plain `Indy` / `Kishore`); agent: **🦉 Orly** (or `Oracle`). **Project name:** `agentsfleet` (domains → `agentsfleet.net`). Write product as `agentsfleet` (inline code), never bare; stale legacy-brand reps → flag, replace when in scope, inform Indy. Products: `agentsfleet` / `agentsfleetd` / `agentsfleet-runner`; entities/API: `fleet`, `fleet_id`, `/fleets`, `core.fleet_*`. Keep: `agentsfleet.dev`, `github.com/agentsfleet/agentsfleet`, `@agentsfleet/*`, `~/Projects/agentsfleet`.
 
-Email `kishore.kumar@e2enetworks.com` (work) · `nkishore@megam.io` (personal). MacBook. Languages: Python, Go, Rust, TypeScript, Zig. Tooling: `mise` first, `brew` fallback. Forges: `gh`/`glab`.
+MacBook. Languages: Python, Go, Rust, TypeScript, Zig. Tooling: `mise` first, `brew` fallback. Forges: `gh`/`glab`. Commit identity comes from `git config`, never from here.
 
 Prose dates: `MMM DD, YYYY: HH:MM AM/PM`. Filenames: `{MMM}_{DD}_{HH_MM}`.
 
@@ -81,8 +81,8 @@ Auto-memory is **disabled** (`autoMemoryEnabled: false` + `CLAUDE_CODE_DISABLE_A
 - `*.zig` → read `dispatch/write_zig.md`; ZIG GATE fires.
 - Auth-flow (`src/auth/**`, `ui/packages/app/lib/auth/**`, token-minting handlers, credential-typed spec dimensions) → read `docs/AUTH.md` first.
 - `conn.query()` requires `.drain()` in same fn before `deinit()`. Verify `make lint-governance`. Use `conn.exec()` for no-rows.
-- **Vault (1Password `op`).** Resolve secrets via the `op` CLI, never hand-paste/log. Named vaults: `ops`, `ZMB_LOCAL_DEV`, `ZMB_CD_DEV`, `ZMB_CD_PROD`.
-- Cross-repo patterns under `$HOME/Projects/` (check before inventing): Python `marketplace_api` · Rust `e2e-observability-platform`/`cache-kit.rs`/`oss/exonum` · Zig `posthog-zig`/`oss/ghostty`/`oss/nullclaw` (+`agentsfleet`) · TypeScript `docs.megam.io`/`www.megam.io`/`rioos.megam.io`/`oss/signoz` · MDX `docs` · Shell `dotfiles`.
+- **Vault (1Password `op`).** Resolve secrets via the `op` CLI, never hand-paste/log. Vault names come from the environment, never from a rules file.
+- Check a sibling repository under `$HOME/Projects/` for an existing pattern in the same language before inventing one.
 - **Reference canon (read before designing):** TypeScript → supabase `oss/supabase/apps/studio` (app patterns) + `oss/supabase/packages/{ui,ui-patterns}` (components) + `oss/cli` (clone if absent); Zig → `oss/ghostty/src/`. "Broken for us" → call-site diff first.
 
 **Forge detection:** `github.com` → `gh`; `gitlab.com` → `glab`. Check `git remote -v`.

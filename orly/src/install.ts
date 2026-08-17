@@ -3,7 +3,7 @@ import { dirname, extname, join, relative, resolve } from "node:path";
 
 import { UNSCOPED_ENVIRONMENT } from "./git_env";
 import { CONFIG_PATH, readConfig, seedConfig, selectPacks, writeConfig } from "./config";
-import { applyMode, assertWritableInside, hashContent, isString, JsonObject, modeLabel, objectArray, objectValue, OrlyError, RulesModel, stringArray } from "./model";
+import { applyMode, assertWritableInside, hashContent, isBelow, isString, JsonObject, modeLabel, objectArray, objectValue, OrlyError, RulesModel, stringArray } from "./model";
 import { referenceClosureErrors, renderProfileText } from "./references";
 import { Renderer } from "./render";
 
@@ -17,6 +17,7 @@ const HOOKS_DIRECTORY = ".githooks";
 const REGISTRY_PACKS_LABEL = "registry packs";
 const STAGE_PREFIX = "orly-install-";
 const MARKDOWN_EXTENSION = ".md";
+const SKILLS_SEGMENT = "/skills/";
 const MODE_EXECUTABLE = "0755";
 const MODE_REGULAR = "0644";
 const GIT_COMMAND = "git";
@@ -76,6 +77,11 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
     // replace, and git shows the replacement before it is committed. A file
     // orly never wrote belongs to the repository and is never touched silently.
     if (options.force || managed.has(file.target)) { written.push(file.target); continue; }
+    // The generated banner is authorship evidence in its own right, and the
+    // only evidence available for a repository installed before managed[]
+    // tracked anything — this checkout among them. Without it, orly's own
+    // render reads as a stranger's file and every update refuses.
+    if (file.target === layout.orlyFile && (await Bun.file(path).text()).startsWith(GENERATED_BANNER)) { written.push(file.target); continue; }
     refusals.push(refusal(file.target, false));
   }
   if (options.installHooks) {
@@ -181,7 +187,14 @@ async function stageAndCommit(model: RulesModel, targetRoot: string, planned: Pl
       await Bun.write(path, file.content);
       applyMode(path, file.mode);
     }
-    const markdown = planned.filter((file) => extname(file.target) === MARKDOWN_EXTENSION).map((file) => join(stage, file.target));
+    // Skills are playbooks copied verbatim, not rule pages: one names the
+    // façade for every language it might be invoked in. Grading those citations
+    // would force a Go repository to take the Zig and TypeScript packs to
+    // satisfy a menu it will never read — the same reason a `docs/TEMPLATE.md`
+    // comment is exempt.
+    const markdown = planned
+      .filter((file) => extname(file.target) === MARKDOWN_EXTENSION && !file.target.includes(SKILLS_SEGMENT))
+      .map((file) => join(stage, file.target));
     const missing = await referenceClosureErrors(stage, markdown, targetRoot);
     if (missing.length > 0) {
       cleanupStagingParentIfEmpty();
@@ -277,11 +290,13 @@ async function planFiles(model: RulesModel, packs: string[], commands: Record<st
       if (claimed && claimed !== entry.source) throw new OrlyError(`packs disagree on ${entry.target}: ${claimed} and ${entry.source}`);
       sources.set(entry.target, entry.source);
       const path = join(model.root, entry.source);
-      // Installing into the engine checkout itself: source and target are the
-      // same file. Writing would replace a pack source with its own pack-
-      // filtered rendering — the repository would lose the markers that make
-      // filtering possible. Skipping is what `orly sync` used to buy.
-      if (samePath(path, join(targetRoot, entry.target))) continue;
+      // Installing into the checkout that owns the sources. Copying is for
+      // consumers: here the repository already has the file, and writing it
+      // would either replace a pack source with its own pack-filtered
+      // rendering (same path) or plant a second copy that drifts from the
+      // original (skills/ into .claude/skills/). Skipping is what `orly sync`
+      // used to buy, generalised past the same-path case.
+      if (isBelow(resolved(path), resolved(targetRoot))) continue;
       planned.set(entry.target, { target: entry.target, content: await managedContent(path, entry.target, entry.source, packs, known), mode: modeLabel(path) });
     }
   }
@@ -338,13 +353,6 @@ async function upsertPointer(targetRoot: string, host: string, orlyFile: string)
   }
   await Bun.write(path, `${current.replace(/\s*$/, "")}\n\n${block}\n`);
   return true;
-}
-
-// Two paths naming one file. realpath both sides where they exist: macOS puts
-// $TMPDIR and often a checkout behind a symlink, so a lexical compare misses
-// the identity it is here to catch.
-function samePath(left: string, right: string): boolean {
-  return resolved(left) === resolved(right);
 }
 
 function resolved(path: string): string {

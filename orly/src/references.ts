@@ -6,6 +6,7 @@ import { isBelow, OrlyError } from "./model";
 const PACK_LINE = /^(.*?)[ \t]*<!--[ \t]*oracle-packs:([^>]+)[ \t]*-->[ \t]*$/;
 const PACK_START = /^[ \t]*<!--[ \t]*oracle-packs:start ([^>]+)[ \t]*-->[ \t]*$/;
 const PACK_END = /^[ \t]*<!--[ \t]*oracle-packs:end[ \t]*-->[ \t]*$/;
+const CODE_FENCE = /^[ \t]*(?:```|~~~)/;
 const MARKDOWN_LINK = /\[[^\]]*\]\(([^)]+)\)/g;
 const DISPATCH_REFERENCE = /dispatch\/[A-Za-z0-9_.-]+\.md/g;
 const COMMENT_OPEN = "<!--";
@@ -77,8 +78,15 @@ export async function referenceClosureErrors(
     const relativeSource = relative(outputRoot, sourcePath).replaceAll("\\", "/");
     const content = await Bun.file(sourcePath).text();
     let inComment = false;
+    let inFence = false;
     for (const [index, line] of content.split(/\r?\n/).entries()) {
       const lineNumber = index + 1;
+      // A fenced block is a code sample, not prose citing a file. A shell
+      // one-liner carrying `sed -E 's#.*[:/]([^:/]+/[^/]+)$#\1#'` matches the
+      // markdown-link shape exactly, and grading it demanded a file named
+      // after the regex.
+      if (CODE_FENCE.test(line)) { inFence = !inFence; continue; }
+      if (inFence) continue;
       const commented = inComment;
       inComment = commentStateAfter(line, inComment);
       // A path inside an HTML comment is authoring guidance — `docs/TEMPLATE.md`

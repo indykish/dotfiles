@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "orly_version": "0.4.0",
   "packs": [
     "universal.authoring",
     "language.zig",
@@ -44,5 +45,8 @@
       "README.md",
       "docs/"
     ]
-  }
+  },
+  "managed": [
+    "AGENTS.md"
+  ]
 }

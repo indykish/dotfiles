@@ -13,8 +13,16 @@ install_package_allowlist_excludes_personal_files() {
   local paths; paths="$(packed_paths)"
   if [[ -z "$paths" ]]; then bad "$name" "npm pack produced no file list"; return; fi
 
+  # Only the skills the workflow.skills pack materialises may ship; any other
+  # skills/ entry is this laptop's, not the product's.
+  local straySkills
+  straySkills="$(printf '%s\n' "$paths" | grep -E '^skills/' | grep -vE '^skills/(write-unit-test|write-integration-test|kishore-spec-new|kishore-babysit-prs)/' || true)"
+  if [[ -n "$straySkills" ]]; then
+    bad "$name" "personal skills in payload: $(printf '%s' "$straySkills" | tr '\n' ' ')"; return
+  fi
+
   local leaked
-  leaked="$(printf '%s\n' "$paths" | grep -E '^(\.zshrc|\.zshenv|\.claude/|\.codex/|\.config/|Library/|skills/|evals/|SOUL_LOG\.md|\.gitconfig|\.tmux\.conf|\.npmrc|docs/v1/|Makefile)' || true)"
+  leaked="$(printf '%s\n' "$paths" | grep -E '^(\.zshrc|\.zshenv|\.claude/|\.codex/|\.config/|Library/|evals/|SOUL_LOG\.md|\.gitconfig|\.tmux\.conf|\.npmrc|docs/v1/|Makefile)' || true)"
   if [[ -n "$leaked" ]]; then
     bad "$name" "personal paths in payload: $(printf '%s' "$leaked" | tr '\n' ' ')"; return
   fi
