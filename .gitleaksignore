@@ -5,3 +5,16 @@
 # Feb 19, 2026: Hardcoded API key that was removed in later commit
 df44ade3c13cfb7b127bcc1a84af1542dabaa0a0:.config/opencode/opencode.json:generic-api-key:187
 df44ade3c13cfb7b127bcc1a84af1542dabaa0a0:.config/opencode/opencode.json:generic-api-key:233
+
+# Aug 17, 2026, approved by Indy in session. `.oracle/ruleset.lock` was the
+# rule-content ledger: a map of rule path → SHA-256 digest of that rule's bytes.
+# `generic-api-key` matches on entropy alone, so a hex digest reads to it
+# exactly like a credential. Both hits are digests, not secrets.
+#
+# These surfaced only once `.gitleaks.toml` was deleted. That file held nothing
+# but an `[allowlist]`, and a local config REPLACES the default ruleset unless
+# it carries `[extend] useDefault = true` — so gitleaks had been loading zero
+# rules and calling every scan clean. If you add a config back, extend the
+# defaults; do not replace them.
+2a2ba79815872ab47098bc2aa0a60250f6c5aa15:.oracle/ruleset.lock:generic-api-key:9
+2a2ba79815872ab47098bc2aa0a60250f6c5aa15:.oracle/ruleset.lock:generic-api-key:22
