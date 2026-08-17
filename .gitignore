@@ -19,3 +19,4 @@ gstack/
 .oracle/evidence.json
 .llmevals-journal/
 .claude/scheduled_tasks.lock
+coverage/

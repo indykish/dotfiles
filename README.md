@@ -1,9 +1,19 @@
 # dotfiles
 
+[![npm](https://img.shields.io/npm/v/@indykish/orly?label=%40indykish%2Forly)](https://www.npmjs.com/package/@indykish/orly)
+[![coverage](https://codecov.io/gh/indykish/dotfiles/branch/master/graph/badge.svg)](https://codecov.io/gh/indykish/dotfiles)
+[![test](https://github.com/indykish/dotfiles/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/indykish/dotfiles/actions/workflows/test.yml)
+[![harness](https://github.com/indykish/dotfiles/actions/workflows/harness.yml/badge.svg?branch=master)](https://github.com/indykish/dotfiles/actions/workflows/harness.yml)
+
 The rules and gates that govern work across Kishore's repositories — packaged
 as `@indykish/orly`, installable into any repository — plus, separately, the
 personal macOS setup (shells, terminals, Git, four coding agents) Kishore runs
 this checkout for.
+
+The npm badge is the released version: a merge to `master` that carries a new
+`package.json` version publishes it, tags it, and cuts a GitHub release.
+Coverage is gated at a 90% line floor in `test.yml` — the badge reports the
+number, the workflow enforces it.
 
 ## Install the harness
 

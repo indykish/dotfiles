@@ -1,0 +1,66 @@
+name: test
+
+on:
+  # Merges to master run too, so the default branch always carries a coverage
+  # number Codecov can diff a Pull Request against. Without it the first PR
+  # after a merge reports "no base" and the badge goes stale.
+  push:
+    branches: [master]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # master runs populate the Codecov base; cancelling one leaves the next PR
+  # with nothing to compare against. A superseded PR push has nothing worth
+  # finishing.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install orly dependencies
+        run: cd orly && bun install --frozen-lockfile --ignore-scripts
+
+      - name: Run the suite with coverage
+        run: cd orly && bun test src --coverage --coverage-reporter=lcov --coverage-reporter=text
+
+      # The floor is enforced here, not left to a badge. agentsfleet gates its
+      # Zig line coverage the same way: a number nobody fails on is decoration.
+      # 90 sits below today's ~93% with room for an honest dip, and far enough
+      # under it that a real regression still trips.
+      - name: Gate line coverage
+        run: |
+          LCOV=orly/coverage/lcov.info
+          test -f "$LCOV" || { echo "✗ no lcov.info — did the coverage reporter run?"; exit 1; }
+          HIT=$(grep -c '^DA:[0-9]*,[1-9]' "$LCOV" || true)
+          TOTAL=$(grep -c '^DA:' "$LCOV" || true)
+          [ "$TOTAL" -gt 0 ] || { echo "✗ lcov.info records no lines"; exit 1; }
+          PCT=$(( HIT * 100 / TOTAL ))
+          echo "line coverage: ${PCT}% (${HIT}/${TOTAL})"
+          if [ "$PCT" -lt 90 ]; then
+            echo "✗ line coverage ${PCT}% is below the 90% floor"
+            exit 1
+          fi
+          echo "✓ line coverage ${PCT}% clears the 90% floor"
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: orly/coverage/lcov.info
+          # Public repository: tokenless upload is supported. The secret is used
+          # when present so a fork or a rate-limited run still reports.
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
