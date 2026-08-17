@@ -130,6 +130,45 @@ describe("install", () => {
     expect(gitOutput(repo, "config", "--get", "core.hooksPath")).toBe("");
   });
 
+  test("a hook orly did not write is refused, not clobbered", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    const theirs = "#!/usr/bin/env bash\necho 'our precious hook'\n";
+    await Bun.write(join(repo, ".githooks/pre-commit"), theirs);
+
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: true, orlyVersion: "0.4.0" });
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.map((error) => error.path)).toContain(".githooks/pre-commit");
+    expect(await Bun.file(join(repo, ".githooks/pre-commit")).text()).toBe(theirs);
+    // A refusal leaves no footprint: the managed files never landed either.
+    expect(existsSync(join(repo, "AGENTS.md"))).toBe(false);
+  });
+
+  test("--force replaces a hook orly did not write", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    await Bun.write(join(repo, ".githooks/pre-commit"), "#!/usr/bin/env bash\necho 'ours'\n");
+
+    const result = await install(model, { targetRoot: repo, force: true, installHooks: true, orlyVersion: "0.4.0" });
+
+    expect(result.ok).toBe(true);
+    expect(await Bun.file(join(repo, ".githooks/pre-commit")).text()).toContain("orly gate work");
+  });
+
+  test("--no-hooks installs the rules over an existing hook without touching it", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    const theirs = "#!/usr/bin/env bash\necho 'ours'\n";
+    await Bun.write(join(repo, ".githooks/pre-commit"), theirs);
+
+    const result = await install(model, { targetRoot: repo, force: false, installHooks: false, orlyVersion: "0.4.0" });
+
+    expect(result.ok).toBe(true);
+    expect(await Bun.file(join(repo, ".githooks/pre-commit")).text()).toBe(theirs);
+    expect(existsSync(join(repo, "AGENTS.md"))).toBe(true);
+  });
+
   test("refuses to retarget a hooksPath already claimed by something else", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();

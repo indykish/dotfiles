@@ -59,12 +59,20 @@ function walkPackMarkers(
   return rendered;
 }
 
+// `fallbackRoot` is the repository the staged tree is about to land in. A file
+// the install skipped because its source and target are the same path — the
+// engine checkout updating itself — is absent from the stage but present in
+// that repository, and a citation of it resolves. Without the fallback, a
+// self-update fails closure against files it deliberately left alone.
 export async function referenceClosureErrors(
   outputRoot: string,
   renderedPaths: string[],
+  fallbackRoot?: string,
 ): Promise<string[]> {
   const errors = new Set<string>();
   const root = resolve(outputRoot);
+  const present = (path: string): boolean =>
+    existsSync(path) || (fallbackRoot !== undefined && existsSync(join(fallbackRoot, relative(root, path))));
   for (const sourcePath of renderedPaths.filter((path) => extname(path) === ".md").sort()) {
     const relativeSource = relative(outputRoot, sourcePath).replaceAll("\\", "/");
     const content = await Bun.file(sourcePath).text();
@@ -84,11 +92,11 @@ export async function referenceClosureErrors(
         if (!target) continue;
         const resolved = resolve(dirname(sourcePath), target);
         if (!isBelow(resolved, root)) errors.add(`snapshot reference escapes repository: ${relativeSource}:${lineNumber} -> ${rawTarget}`);
-        else if (!existsSync(resolved)) errors.add(`missing snapshot reference: ${relativeSource}:${lineNumber} -> ${rawTarget}`);
+        else if (!present(resolved)) errors.add(`missing snapshot reference: ${relativeSource}:${lineNumber} -> ${rawTarget}`);
       }
       for (const target of line.matchAll(DISPATCH_REFERENCE)) {
         const path = target[0];
-        if (!existsSync(join(outputRoot, path))) errors.add(`missing dispatch reference: ${relativeSource}:${lineNumber} -> ${path}`);
+        if (!present(join(outputRoot, path))) errors.add(`missing dispatch reference: ${relativeSource}:${lineNumber} -> ${path}`);
       }
     }
   }

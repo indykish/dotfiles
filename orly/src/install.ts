@@ -53,7 +53,7 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   const config = existing ?? await seedConfig(targetRoot);
   const packs = selectPacks(model, targetRoot, config.packs, new Set(config.managed));
 
-  const planned = await planFiles(model, packs, config.commands);
+  const planned = await planFiles(model, packs, config.commands, targetRoot);
   const managed = new Set(config.managed);
   const refusals: InstallError[] = [];
   const written: string[] = [];
@@ -75,9 +75,12 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   if (options.installHooks) {
     const claim = hooksClaimedByAnother(targetRoot);
     if (claim && !options.force) refusals.push(claim);
-    for (const [name] of HOOK_GATES) {
-      const escape = escapesTarget(targetRoot, `${HOOKS_DIRECTORY}/${name}`, HOOK_KIND);
-      if (escape) refusals.push(escape);
+    for (const [name, gate] of HOOK_GATES) {
+      const target = `${HOOKS_DIRECTORY}/${name}`;
+      const escape = escapesTarget(targetRoot, target, HOOK_KIND);
+      if (escape) { refusals.push(escape); continue; }
+      const authorship = await hookAuthorship(targetRoot, target, gate, managed, options.force);
+      if (authorship) refusals.push(authorship);
     }
   }
   const configEscape = escapesTarget(targetRoot, CONFIG_PATH, "config");
@@ -111,6 +114,21 @@ function escapesTarget(targetRoot: string, target: string, kind: string): Instal
   } catch (error) {
     return { path: target, message: error instanceof Error ? error.message : String(error), suggestion: "remove or fix the symlink in the target repository before installing" };
   }
+}
+
+// A hook is a managed file that happens to be generated rather than copied, and
+// it earns the same authorship rule: one orly wrote is orly's to replace, one
+// the repository wrote is the repository's. Without this, installHooks wrote
+// unconditionally — a repository whose own pre-commit ran its test suite lost
+// it to `orly init` silently, counted as an ordinary write in the success line.
+async function hookAuthorship(targetRoot: string, target: string, gate: string, managed: Set<string>, force: boolean): Promise<InstallError | undefined> {
+  if (force || managed.has(target)) return undefined;
+  const path = join(targetRoot, target);
+  if (!existsSync(path)) return undefined;
+  // Byte-identical to what this run would write: an install that predates hook
+  // tracking, not someone else's hook. Replacing it changes nothing.
+  if ((await Bun.file(path).text()) === hookScript(gate)) return undefined;
+  return { path: target, message: "a hook already exists here and orly did not write it", suggestion: "move it aside, re-run with --force to replace it, or use --no-hooks" };
 }
 
 function refusal(target: string, wasManaged: boolean): InstallError {
@@ -155,7 +173,7 @@ async function stageAndCommit(model: RulesModel, targetRoot: string, planned: Pl
       applyMode(path, file.mode);
     }
     const markdown = planned.filter((file) => extname(file.target) === MARKDOWN_EXTENSION).map((file) => join(stage, file.target));
-    const missing = await referenceClosureErrors(stage, markdown);
+    const missing = await referenceClosureErrors(stage, markdown, targetRoot);
     if (missing.length > 0) {
       cleanupStagingParentIfEmpty();
       return missing.map((message) => ({ path: AGENTS_FILENAME, message, suggestion: "select the pack that provides the cited file, or amend the citation" }));
@@ -237,7 +255,7 @@ function hookScript(gate: string): string {
 // One entry per target, so two packs naming the same file collapse instead of
 // racing. Two packs naming DIFFERENT sources for one target is a registry bug
 // and stops the install rather than letting pack order decide the winner.
-async function planFiles(model: RulesModel, packs: string[], commands: Record<string, string[][]>): Promise<PlannedFile[]> {
+async function planFiles(model: RulesModel, packs: string[], commands: Record<string, string[][]>, targetRoot: string): Promise<PlannedFile[]> {
   const registryPacks = objectValue(model.registry.packs, REGISTRY_PACKS_LABEL);
   const known = new Set(Object.keys(registryPacks));
   const planned = new Map<string, PlannedFile>();
@@ -250,12 +268,32 @@ async function planFiles(model: RulesModel, packs: string[], commands: Record<st
       if (claimed && claimed !== entry.source) throw new OrlyError(`packs disagree on ${entry.target}: ${claimed} and ${entry.source}`);
       sources.set(entry.target, entry.source);
       const path = join(model.root, entry.source);
+      // Installing into the engine checkout itself: source and target are the
+      // same file. Writing would replace a pack source with its own pack-
+      // filtered rendering — the repository would lose the markers that make
+      // filtering possible. Skipping is what `orly sync` used to buy.
+      if (samePath(path, join(targetRoot, entry.target))) continue;
       planned.set(entry.target, { target: entry.target, content: await managedContent(path, entry.target, entry.source, packs, known), mode: modeLabel(path) });
     }
   }
   const rendered = await new Renderer(model).renderText(packs, commands);
   planned.set(AGENTS_FILENAME, { target: AGENTS_FILENAME, content: new TextEncoder().encode(rendered), mode: MODE_REGULAR });
   return [...planned.values()].sort((left, right) => left.target.localeCompare(right.target));
+}
+
+// Two paths naming one file. realpath both sides where they exist: macOS puts
+// $TMPDIR and often a checkout behind a symlink, so a lexical compare misses
+// the identity it is here to catch.
+function samePath(left: string, right: string): boolean {
+  return resolved(left) === resolved(right);
+}
+
+function resolved(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
 }
 
 // Managed markdown is pack-filtered on the way in, exactly as a rendered core
