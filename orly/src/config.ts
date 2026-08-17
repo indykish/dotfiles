@@ -181,9 +181,15 @@ async function sniffCommands(targetRoot: string): Promise<Record<string, string[
   if (conform) commands[CONFORM_COMMAND] = [conform];
   for (const [key, candidates] of VERIFY_TARGETS) {
     const found = pick(candidates, make, scripts);
-    if (found) commands[key] = [found];
+    // A repository with only `lint` matches both conform and verify.lint. The
+    // gate would then run one command twice, in two tiers, for one signal.
+    if (found && !(conform && sameInvocation(found, conform))) commands[key] = [found];
   }
   return commands;
+}
+
+function sameInvocation(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((argument, index) => argument === right[index]);
 }
 
 function pick(candidates: string[], make: Set<string>, scripts: Set<string>): string[] | undefined {

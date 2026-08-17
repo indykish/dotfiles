@@ -78,6 +78,37 @@ describe("seedConfig", () => {
     expect(seed.commands["verify.unit"]).toEqual([["make", "test-unit-all"]]);
   });
 
+  test("maps package.json scripts when there is no Makefile", async () => {
+    const root = scratch();
+    writeFileSync(join(root, "package.json"), JSON.stringify({ scripts: { test: "vitest", build: "tsc" } }));
+
+    const seed = await seedConfig(root);
+
+    expect(seed.commands["verify.unit"]).toEqual([["bun", "run", "test"]]);
+    expect(seed.commands["verify.build"]).toEqual([["bun", "run", "build"]]);
+  });
+
+  // A repository whose only quality target is `lint` matches both CONFORM and
+  // verify.lint. Emitting both makes the gate run one command twice, in two
+  // tiers, for one signal.
+  test("a command that satisfies conform is not repeated as a verify tier", async () => {
+    const root = scratch();
+    writeFileSync(join(root, "package.json"), JSON.stringify({ scripts: { lint: "eslint ." } }));
+
+    const seed = await seedConfig(root);
+
+    expect(seed.commands.conform).toEqual([["bun", "run", "lint"]]);
+    expect(seed.commands["verify.lint"]).toBeUndefined();
+  });
+
+  test("a Makefile target beats a package.json script of the same name", async () => {
+    const root = scratch();
+    writeFileSync(join(root, "Makefile"), "test:\n\t@true\n");
+    writeFileSync(join(root, "package.json"), JSON.stringify({ scripts: { test: "vitest" } }));
+
+    expect((await seedConfig(root)).commands["verify.unit"]).toEqual([["make", "test"]]);
+  });
+
   test("a repository with no build files seeds no commands rather than wrong ones", async () => {
     expect((await seedConfig(scratch())).commands).toEqual({});
   });
