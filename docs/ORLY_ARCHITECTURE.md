@@ -14,7 +14,7 @@ orly/core/operating-model.md   orly/packs/**   orly/registry.json
                               │
           ┌───────────────────┴───────────────────┐
           │                                       │
-   orly sync                                orly gate
+   orly update                              orly gate
           │                                       │
    AGENTS.md (repo root)                  reads git + the tree,
           │                               runs the declared commands,

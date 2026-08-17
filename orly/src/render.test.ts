@@ -13,7 +13,7 @@ const CACHE_KIT_PACKS = ["universal.authoring", "language.rust", "language.shell
 const DOCS_PACKS = ["universal.authoring", "language.mdx", "domain.documentation", "domain.changelog"];
 const KERNEL_PACKS = ["universal.authoring", "language.zig", "language.rust", "domain.sql"];
 // This repository's own selection, as `.oracle/orly.json` declares it — the
-// root render must stay current against exactly what `orly sync` writes.
+// root render must stay current against exactly what `orly update` writes.
 const DOTFILES_PACKS = ["universal.authoring", "language.zig", "language.typescript", "language.javascript", "language.rust", "language.go", "language.python", "language.shell", "language.mdx", "domain.sql", "domain.http", "domain.auth", "domain.documentation", "domain.changelog", "workflow.specifications", "workflow.governance", "product.agentsfleet", "persona.indy", "workflow.skills"];
 const DOTFILES_COMMANDS = { conform: [["make", "audit"]], "verify.unit": [["bun", "test", "orly/src"]] };
 

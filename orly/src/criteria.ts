@@ -164,25 +164,3 @@ function runInvocations(root: string, invocations: unknown): Verdict {
   return { ok: true, detail: `${invocations.length} invocation(s) exit 0` };
 }
 
-// Every checkout git attaches to this repository — the main worktree first,
-// then each linked one. Asking git beats deriving the main checkout from the
-// common Git directory, which would assume the <toplevel>/.git layout and
-// break on bare mains and separate Git directories. Empty outside a
-// repository, leaving the caller comparing paths alone as it did before.
-function attachedCheckouts(root: string): string[] {
-  return gitOutput(root, WORKTREE_LIST)
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith(WORKTREE_PREFIX))
-    .map((line) => canonical(line.slice(WORKTREE_PREFIX.length).trim()));
-}
-
-// Compare canonical paths: git reports the symlink-resolved root while a
-// registered path may be written through a link, and this workspace is
-// symlink-heavy. Falling back to resolve() keeps a missing path comparable.
-function canonical(path: string): string {
-  try {
-    return realpathSync(path);
-  } catch {
-    return resolve(path);
-  }
-}

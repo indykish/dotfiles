@@ -1,5 +1,5 @@
-import { chmodSync, existsSync, lstatSync, readdirSync, realpathSync } from "node:fs";
-import { basename, dirname, isAbsolute, join, relative } from "node:path";
+import { chmodSync, existsSync, lstatSync, readdirSync, readlinkSync, realpathSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import { validateActiveRule, validateRelativePath } from "./validation";
 
@@ -60,6 +60,34 @@ export function assertWritableInside(root: string, relativeTarget: string, kind:
   const resolvedRoot = realpathSync(root);
   if (!isBelow(resolvedAncestor, resolvedRoot)) {
     throw new OrlyError(`refusing to write ${kind} outside the target repository: ${relativeTarget} resolves through a symlink to ${resolvedAncestor}`);
+  }
+  // The destination itself, not only the directory holding it. A symlinked
+  // *file* — a committed `AGENTS.md -> ../../elsewhere` — has an ancestor
+  // squarely inside the repository, so the check above passes and the write
+  // follows the link out. Every write orly makes goes through here, so this is
+  // the one place the file case has to be caught.
+  if (!isSymbolicLink(destination)) return;
+  const resolvedDestination = safeRealpath(destination);
+  if (resolvedDestination !== undefined && !isBelow(resolvedDestination, resolvedRoot)) {
+    throw new OrlyError(`refusing to write ${kind} outside the target repository: ${relativeTarget} is a symlink to ${resolvedDestination}`);
+  }
+}
+
+function isSymbolicLink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+// A dangling link resolves nowhere; judge it by where it points, not where it
+// lands, so a link to a not-yet-created file outside the repository still fails.
+function safeRealpath(path: string): string | undefined {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(dirname(path), readlinkSync(path));
   }
 }
 

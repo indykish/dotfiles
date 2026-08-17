@@ -102,11 +102,15 @@ async function materialise(model: RulesModel, args: string[], isInit: boolean): 
   const targetRoot = projectRoot();
   const existing = await readConfig(targetRoot);
   if (!isInit && !existing) throw new OrlyError(`no ${CONFIG_PATH} here — run \`orly init\` first`);
-  // An opt-in pack is a property of the repository, so it is recorded before
-  // the render rather than passed through it: the next `orly update` in a
+  const requested = optionalValues(args, WITH_FLAG);
+  // --dry-run changes nothing, and recording an opt-in pack is a change. It
+  // still previews as though the pack were taken, so what you see is what the
+  // real run would write.
+  if (args.includes(DRY_RUN_FLAG)) return preview(model, targetRoot, requested);
+  // Otherwise the pack is a property of the repository, recorded before the
+  // render rather than passed through it: the next `orly update` in a
   // teammate's clone selects the same set with no flag to remember.
-  await recordOptIn(model, targetRoot, existing, optionalValues(args, WITH_FLAG));
-  if (args.includes(DRY_RUN_FLAG)) return preview(model, targetRoot);
+  await recordOptIn(model, targetRoot, existing, requested);
   const result = await install(model, {
     targetRoot,
     force: args.includes(FORCE_FLAG),
@@ -166,9 +170,13 @@ async function doctorInstall(model: RulesModel): Promise<string[]> {
 
 // What init would write, without writing it. Replaces the `render` verb: the
 // preview belongs on the command you are about to run, not beside it.
-async function preview(model: RulesModel, targetRoot: string): Promise<number> {
+async function preview(model: RulesModel, targetRoot: string, requested: string[] = []): Promise<number> {
   const local = await localSelection(model, targetRoot);
-  const text = await new Renderer(model).renderText(local.packs, local.commands);
+  // selectPacks validates the requested names and unions them with what the
+  // repository's own sources select — the same call the real run makes, minus
+  // the write.
+  const packs = requested.length > 0 ? selectPacks(model, targetRoot, [...local.packs, ...requested]) : local.packs;
+  const text = await new Renderer(model).renderText(packs, local.commands);
   console.log(text);
   return 0;
 }

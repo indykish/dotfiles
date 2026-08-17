@@ -79,13 +79,18 @@ export async function referenceClosureErrors(
     const content = await Bun.file(sourcePath).text();
     let inComment = false;
     let inFence = false;
+    let fenceOpenedAt: number | undefined;
     for (const [index, line] of content.split(/\r?\n/).entries()) {
       const lineNumber = index + 1;
       // A fenced block is a code sample, not prose citing a file. A shell
       // one-liner carrying `sed -E 's#.*[:/]([^:/]+/[^/]+)$#\1#'` matches the
       // markdown-link shape exactly, and grading it demanded a file named
       // after the regex.
-      if (CODE_FENCE.test(line)) { inFence = !inFence; continue; }
+      if (CODE_FENCE.test(line)) {
+        fenceOpenedAt = inFence ? undefined : lineNumber;
+        inFence = !inFence;
+        continue;
+      }
       if (inFence) continue;
       const commented = inComment;
       inComment = commentStateAfter(line, inComment);
@@ -107,6 +112,9 @@ export async function referenceClosureErrors(
         if (!present(join(outputRoot, path))) errors.add(`missing dispatch reference: ${relativeSource}:${lineNumber} -> ${path}`);
       }
     }
+    // Failing open here would skip every citation after the stray fence and
+    // report clean, so an unbalanced fence is itself the finding.
+    if (inFence) errors.add(`unclosed code fence: ${relativeSource}:${fenceOpenedAt ?? 0} — every reference after it went ungraded`);
   }
   return [...errors].sort();
 }

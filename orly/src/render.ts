@@ -43,17 +43,6 @@ export class Renderer {
     return `${sections.filter(Boolean).join("\n\n---\n\n")}\n`;
   }
 
-  // Write the root AGENTS.md and prove reference closure against the live
-  // tree: every dispatch/doc path the render names must exist as a real file.
-  async renderRoot(packs: string[], commands: Record<string, string[][]> = {}): Promise<string> {
-    const target = join(this.model.root, AGENTS_FILENAME);
-    const text = await this.renderText(packs, commands);
-    await writeText(target, text);
-    const errors = await referenceClosureErrors(this.model.root, [target]);
-    if (errors.length > 0) throw new OrlyError(errors.join(NEWLINE));
-    return target;
-  }
-
   // Currency check: the committed root AGENTS.md must byte-match the render.
   async rootErrors(packs: string[], commands: Record<string, string[][]> = {}): Promise<string[]> {
     const target = join(this.model.root, AGENTS_FILENAME);
@@ -61,7 +50,7 @@ export class Renderer {
     if (lstatSync(target).isSymbolicLink()) return [`generated rules must be a real file: ${AGENTS_FILENAME}`];
     const expected = await this.renderText(packs, commands);
     const actual = await Bun.file(target).text();
-    if (expected !== actual) return [`generated rules are stale: run \`orly sync\``];
+    if (expected !== actual) return [`generated rules are stale: run \`orly update\``];
     return [];
   }
 

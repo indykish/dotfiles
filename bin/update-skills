@@ -15,8 +15,8 @@ GSTACK_REPO="https://github.com/garrytan/gstack.git"
 
 # Skills excluded from the overlay — duplicate families (the openclaw variants
 # of retro/investigate/office-hours/ceo-review shadow the plain-named skills
-# that are the actual invocation surface) and stacks unused on this machine
-# (ios-*). Every entry trims the always-in-context skill listing each agent
+# that are the actual invocation surface), stacks unused on this machine
+# (ios-*), and the four orly installs per-repository. Every entry trims the always-in-context skill listing each agent
 # carries per request; delete a name here and re-run update-skills to restore.
 SKILL_EXCLUDES=(
     gstack-openclaw-retro
@@ -28,6 +28,17 @@ SKILL_EXCLUDES=(
     ios-fix
     ios-qa
     ios-sync
+
+    # Owned by orly's workflow.skills pack, which materialises them into each
+    # repository (.claude/skills, .agents/skills, .opencode/skills) at the
+    # orly_version that repository pinned. Linking them here too registers the
+    # same skill name twice, and the two copies drift the moment a repository
+    # sits on an older engine than this checkout. The repository copy wins
+    # because it is the one versioned with the rules that name it.
+    kishore-spec-new
+    kishore-babysit-prs
+    write-unit-test
+    write-integration-test
 )
 
 # Agent configurations: "host_flag:config_dir:skills_subdir"
@@ -111,7 +122,10 @@ doctor_overlay() {
     doctor_executable "$HOME/.claude/skills/gstack/design/dist/design"
     doctor_executable "$HOME/.claude/skills/gstack/make-pdf/dist/pdf"
     doctor_file "$HOME/.claude/skills/design-shotgun/SKILL.md"
-    doctor_file "$HOME/.claude/skills/kishore-spec-new/SKILL.md"
+    # A dotfiles skill the overlay still owns. kishore-spec-new and its three
+    # siblings moved to orly's workflow.skills pack, so their absence here is
+    # the correct state, not a missing link.
+    doctor_file "$HOME/.claude/skills/handoff/SKILL.md"
 
     if [ -e "$SYSTEM_SKILLS" ] || [ -L "$SYSTEM_SKILLS" ]; then
         [ -d "$SYSTEM_SKILLS" ] || fail "Reserved system skills entry must be a directory: $SYSTEM_SKILLS"
@@ -129,7 +143,7 @@ source "$DOTFILES/bin/lib/playwright.sh"
 
 if [ "$DOCTOR_ONLY" -eq 1 ]; then
     doctor_overlay
-    "$DOTFILES/bin/orly" doctor
+    ( cd "$DOTFILES" && "$DOTFILES/bin/orly" doctor )
     ok "Skills doctor passed"
     exit 0
 fi
@@ -253,7 +267,9 @@ for agent_config in "${AGENTS[@]}"; do
     
 done
 
-"$DOTFILES/bin/orly" sync
+# The dotfiles checkout renders its own AGENTS.md through the same verb every
+# repository uses; --no-hooks because this checkout owns its .githooks/.
+( cd "$DOTFILES" && "$DOTFILES/bin/orly" update --no-hooks )
 
 # 5. Link opencode.json config (XDG Base Directory location)
 info "Linking opencode.json..."

@@ -75,7 +75,11 @@ install_retired_verbs_are_gone_and_unreferenced() {
   done
 
   local leaked
-  leaked="$(cd "$ROOT" && git grep -nE '(bin/)?orly (sync|render|validate)\b' -- . ':!docs/v1/done/*' ':!docs/v1/active/*' ':!evals/install/*' ':!SOUL_LOG.md' 2>/dev/null || true)"
+    # The pattern must survive a quoted path: `"$DOTFILES/bin/orly" sync` shipped
+  # green under an anchored `(bin/)?orly ` because of the closing quote.
+  # agents-md.md is excluded with the history files: the questionnaire has to
+  # name a retired verb to assert it is retired.
+  leaked="$(cd "$ROOT" && git grep -nE 'orly"? (sync|render|validate)([^a-z-]|$)' -- . ':!docs/v1/done/*' ':!docs/v1/active/*' ':!evals/install/*' ':!SOUL_LOG.md' ':!audits/agents-md.md' 2>/dev/null || true)"
   if [[ -n "$leaked" ]]; then bad "$name" "tracked references to a retired verb remain: $(printf '%s' "$leaked" | head -1)"; return; fi
   ok "$name"
 }

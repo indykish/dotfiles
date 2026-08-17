@@ -311,6 +311,52 @@ describe("install", () => {
   // rename all follow an existing symlink silently — without this refusal,
   // every managed file materialises through it into wherever the symlink
   // points, outside the repository entirely, with `ok: true` and no warning.
+  // Adversarial review found this: every other write was guarded, the pointer
+  // host was not, and it is the one write orly aims at a file it does not own.
+  // A committed `AGENTS.md -> ../outside/victim` carried the block out of the
+  // repository and reported a normal success.
+  test("refuses when the pointer host is a symlink escaping the target repository", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    const outside = mkdtempSync(join(tmpdir(), "orly-install-outside-"));
+    try {
+      const victim = join(outside, "victim.md");
+      await Bun.write(victim, "PRIVATE\n");
+      symlinkSync(victim, join(repo, "AGENTS.md"));
+
+      const result = await install(model, { targetRoot: repo, force: false, installHooks: false, orlyVersion: "0.4.0" });
+
+      expect(result.ok).toBe(false);
+      expect(result.errors.some((error) => error.message.includes("outside the target repository"))).toBe(true);
+      expect(await Bun.file(victim).text()).toBe("PRIVATE\n");
+      expect(existsSync(join(repo, "AGENTS.orly.md"))).toBe(false);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  // assertWritableInside validated only the parent directory, so a symlinked
+  // *file* passed: its ancestor is squarely inside the repository. --force
+  // skips the authorship check, which was the only thing catching it.
+  test("--force still refuses a hook that is a symlink out of the repository", async () => {
+    const model = await RulesModel.load(ROOT);
+    const repo = newRepository();
+    const outside = mkdtempSync(join(tmpdir(), "orly-install-outside-"));
+    try {
+      const victim = join(outside, "hookvictim");
+      await Bun.write(victim, "VICTIM\n");
+      mkdirSync(join(repo, ".githooks"), { recursive: true });
+      symlinkSync(victim, join(repo, ".githooks/pre-commit"));
+
+      const result = await install(model, { targetRoot: repo, force: true, installHooks: true, orlyVersion: "0.4.0" });
+
+      expect(result.ok).toBe(false);
+      expect(await Bun.file(victim).text()).toBe("VICTIM\n");
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
   test("refuses when a managed file's path is a symlink escaping the target repository", async () => {
     const model = await RulesModel.load(ROOT);
     const repo = newRepository();

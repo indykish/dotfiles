@@ -28,6 +28,7 @@ const GIT_CONFIG_SUBCOMMAND = "config";
 const HOOKS_PATH_KEY = "core.hooksPath";
 const MANAGED_FILE_KIND = "managed file";
 const HOOK_KIND = "hook";
+const POINTER_HOST_KIND = "pointer host";
 
 export type InstallError = { path: string; message: string; suggestion: string };
 
@@ -97,6 +98,14 @@ export async function install(model: RulesModel, options: InstallOptions): Promi
   }
   const configEscape = escapesTarget(targetRoot, CONFIG_PATH, "config");
   if (configEscape) refusals.push(configEscape);
+  // The pointer host is a write like any other, and the only one orly aims at
+  // a file it does not own — so it needs the guard most, not least. A committed
+  // AGENTS.md symlink pointing outside the repository otherwise carried the
+  // block wherever the link led, and reported it as an ordinary success.
+  if (layout.pointerHost) {
+    const hostEscape = escapesTarget(targetRoot, layout.pointerHost, POINTER_HOST_KIND);
+    if (hostEscape) refusals.push(hostEscape);
+  }
   if (refusals.length > 0) return { ok: false, packs, written: [], skipped, errors: refusals };
 
   const closure = await stageAndCommit(model, targetRoot, planned, written);
@@ -294,8 +303,8 @@ async function planFiles(model: RulesModel, packs: string[], commands: Record<st
       // consumers: here the repository already has the file, and writing it
       // would either replace a pack source with its own pack-filtered
       // rendering (same path) or plant a second copy that drifts from the
-      // original (skills/ into .claude/skills/). Skipping is what `orly sync`
-      // used to buy, generalised past the same-path case.
+      // original (skills/ into .claude/skills/). Skipping is what the retired
+      // sync verb used to buy, generalised past the same-path case.
       if (isBelow(resolved(path), resolved(targetRoot))) continue;
       planned.set(entry.target, { target: entry.target, content: await managedContent(path, entry.target, entry.source, packs, known, orlyFile), mode: modeLabel(path) });
     }
@@ -361,6 +370,10 @@ function stubHost(block: string): string {
 }
 
 async function upsertPointer(targetRoot: string, host: string, orlyFile: string): Promise<boolean> {
+  // Re-checked at the write, as every other destination is: the up-front
+  // refusal pass guards the plan, this guards the target that could have
+  // changed underneath the run.
+  assertWritableInside(targetRoot, host, POINTER_HOST_KIND);
   const path = join(targetRoot, host);
   const block = pointerBlock(orlyFile);
   // No file, or one orly generated under an older layout where it owned this
