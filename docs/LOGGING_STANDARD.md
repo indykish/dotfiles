@@ -25,7 +25,13 @@ The **LOGGING GATE** (`dispatch/write_any.md`, Logging Gate) sits on top of this
 Documented honestly, not aspirationally. Pre-M62 baseline (the fix-pass converges every existing emit toward §3 onward):
 
 - Zig calls are mostly `std.log.scoped(.tag).info(comptime fmt, args)` with positional `{s} {d}` placeholders. Severity choice is inconsistent: successful happy-path events sometimes log at `info`, sometimes are silent. Per-call migration to the structured `log.<level>("event", .{ .field = val })` form is in flight.
+
+> [DETERMINISTIC → LOG]
+
 - A small number of Zig sites use `std.debug.print` directly — bypasses the scope/level system entirely. Always a violation.
+
+> [UNENFORCED → umbrella pointer; enforcement lives in the tagged clauses §3 onward, not in this survey sentence itself]
+
 - The named module `log` (source: `src/lib/logging/mod.zig`) exposes `scoped(.tag)` returning a logger struct with `.err` / `.warn` / `.info` / `.debug` methods. M62 removed the older free-function helpers (`logErr` / `logErrWithHint` / `logWarnErr`) — there is no compat shim.
 - TypeScript (`cli/src/**`) calls `console.log`/`console.error` directly. No structure. No scope. No severity beyond err vs out.
 - Error-code embedding (`UZ-XXX-NNN`) appears on some `err` lines but not others. The registry (`src/agentsfleetd/errors/error_registry.zig`) is the source of truth, but enforcement is voluntary.
@@ -40,6 +46,8 @@ Every record is a single newline-terminated line in **logfmt**: space-separated 
 ```
 ts_ms=1715004901234 level=warn scope=executor event=tool_call_failed correlation_id=abc-123 error_code=UZ-EXEC-012 tool=bash duration_ms=1240 msg="tool returned non-zero"
 ```
+
+> [UNENFORCED → record shape is a runtime-rendered property; no linter parses emitted logfmt for key presence/order, and none of this section is checked by audits/logging.sh]
 
 **Required keys per record (in this order):**
 
@@ -68,6 +76,8 @@ ts_ms=1715004901234 level=warn scope=executor event=tool_call_failed correlation
 
 ## §4 · Severity contract
 
+> [UNENFORCED → the closed method set on LoggerFor (§7) blocks a sixth level at compile time; audits/logging.sh does not check level count]
+
 Five levels. Use them as defined; do not invent intermediate levels.
 
 | Level | When | Examples | Default visibility |
@@ -80,6 +90,8 @@ Five levels. Use them as defined; do not invent intermediate levels.
 
 `info` has three rules, in this order. The first is a duty to log, the second a
 licence, the third the only prohibition.
+
+> [JUDGMENT → BOUNDARY]
 
 **1. REQUIRED — bracket every boundary-crossing operation.** An operation that
 crosses a process, network, datastore, or subprocess boundary, or that bookends a
@@ -113,6 +125,8 @@ reaps 4,000 workspaces logs each one at `debug` and its outcome at `info`.
 
 ### `err` and `warn` are unconditional
 
+> [UNENFORCED → "always emitted" is a runtime filter-configuration property; nothing greps for a suppressed err/warn path]
+
 Both are **always emitted**, in every build and every environment, and there is
 no volume argument against either. If a code path can fail, its failure is
 logged — a silent `catch {}` on a path that can genuinely fail is the defect,
@@ -124,6 +138,8 @@ immediately before the exit, so the last line an operator reads is the reason.
 
 ### Detail and redaction
 
+> [UNENFORCED → broad principle; the M42_002 harness redacts executor-child stdout, not every log call site in the codebase]
+
 `info` carries the fields that make a significant event actionable — ids,
 counts, outcomes, durations, the resolved configuration source. It is not a bare
 event name. `debug` carries whatever it takes to diagnose: full payload shapes,
@@ -133,11 +149,17 @@ every branch taken, intermediate state.
 `trace`. "Exhaustive" describes *volume and breadth*, never permission to log a
 credential: a secret that only appears when debugging is on is still a secret in
 a log file, and debugging is on precisely when something is already going wrong.
+> [JUDGMENT → REDACT]
+
 Log the source (`source=env:OPENAI_API_KEY`), never the value, at every level.
+
+> [UNENFORCED → same closed-method-set reasoning as §4 — compile-time, not audits/logging.sh]
 
 `note` is **NOT** a level. Bun has it; we do not. Five levels only.
 
 ## §5 · Error-code embedding
+
+> [DETERMINISTIC → LOG]
 
 Every `err` and `warn` record that maps to a domain error MUST carry `error_code=UZ-XXX-NNN` where `UZ-XXX-NNN` is declared in `src/agentsfleetd/errors/error_registry.zig`.
 
@@ -150,11 +172,18 @@ System-level failures with no domain meaning (e.g. raw `EACCES` from a syscall b
 
 ## §6 · PII / secret discipline
 
+> [UNENFORCED → broad principle; no scan covers every log call site in the codebase for credential-shaped values]
+
 Inherits the redaction list from M42_002 (`src/runner/engine/runner_progress.zig`). Same secret values must not appear anywhere in log records.
+
+> [JUDGMENT → REDACT]
 
 - **Allocator outputs** (Postgres connection strings, Redis URLs, OAuth tokens, OpenAI keys) — never log. If a record needs to identify a config source, log the *source* (`source=env:OPENAI_API_KEY`), not the *value*.
 - **Tenant-supplied secrets** (workspace API keys, BYOK credentials) — redaction harness covers stdout/stderr from executor children. Log emit sites in this codebase MUST NOT bypass the harness.
 - **Stderr coverage gap** — today's redactor covers child stdout only. Closing this gap (extending to stderr) is part of M62_001's fix-pass, not a separate milestone.
+
+> [JUDGMENT → MSG-REVIEW]
+
 - **`msg=` fields** — values copy-pasted into `msg=` are the most common leak source. Audit script flags long `msg=` values; reviewer must verify they don't carry credentials.
 
 When in doubt, omit. A missing field is recoverable; a leaked secret is not.
@@ -181,6 +210,8 @@ log.warn("tool_call_failed", .{
 ```
 
 **Mechanics:**
+
+> [UNENFORCED → would need semantic call-site analysis; regex-based audits/logging.sh cannot distinguish manual string assembly from a helper call, and cannot see runtime env-var re-check behaviour]
 
 - `logging.scoped(.tag)` returns a type bound to that compile-time scope (the `.tag` is an enum literal). The returned type exposes `.err`, `.warn`, `.info`, `.debug` methods.
 - Each method takes a comptime `event: []const u8` (snake_case `verb_noun`) and an anonymous-struct of fields.
@@ -239,7 +270,11 @@ Colors: red `error`, dim parens. Rendering inspired by Bun's `SystemError.format
 
 Schema mirrors Bun's `SystemError` extern struct (`bun:src/bun.js/bindings/SystemError.zig:1`) — `{ code, message, ...context, hint?, docs? }`. Our `code` is `UZ-XXX-NNN` (registry-defined) rather than errno; the *shape* is what we mirror.
 
+> [DETERMINISTIC → LOG]
+
 **Logging emit sites** in `cli/src/**` use a thin Bun-runtime logger that produces logfmt records to `stderr`. `console.log` / `console.error` are forbidden in source per `dispatch/write_ts_adhere_bun.md` §10 — `logging.sh` enforces this for TS/JS.
+
+> [JUDGMENT → TS-STYLE]
 
 **Module-level error style** is governed by `dispatch/write_ts_adhere_bun.md` §9 (one style per module — throw OR Result, never both). The error type itself is the same:
 
@@ -265,6 +300,8 @@ In development (TTY attached, optional `AGENTSFLEET_LOG_PRETTY=1` env var): the 
 
 Mechanics:
 
+> [UNENFORCED → render-path architecture; a static scan cannot see how many times a record renders, and §9 is explicitly off the audit path by its own third bullet]
+
 - TTY check happens **once at process startup** (`isatty(stderr) && env.AGENTSFLEET_LOG_PRETTY != "0"`). Cached as a compile-once boolean.
 - A single sink picks the formatter at startup; from then on every record renders through the chosen formatter exactly once. **No strip step. No re-render.** The wire path never sees colors.
 - LOGGING GATE audits the **wire** format only. Pretty mode is post-hoc render and not on the audit path.
@@ -286,6 +323,8 @@ We borrowed pattern, not code. Concrete file:line references for traceability:
 Zero lines copied verbatim. The patterns above each compile to ~10–30 lines of our own Zig/TypeScript in idiomatic form.
 
 ## §10A · Tightening clauses (closures of common skip rationalizations)
+
+> [UNENFORCED → section pointer; each row below names its own enforcement — logging.sh, error-codes.sh, or the façade]
 
 Failure modes the audit script and reviewer must close. These are **not aspirational** — each closes a specific way an agent could otherwise dodge the rule.
 
@@ -336,4 +375,23 @@ immediately preceding the edit. Generic "scope creep" is not a valid reason — 
 - M42_002 redaction harness (`src/runner/engine/runner_progress.zig`) — secret-redaction precondition; this doc's §6 inherits.
 - Universal rules (RULE UFS, RULE TGU, RULE PRI, RULE FLL, RULE ORP, RULE TST-NAM) live in `docs/greptile-learnings/RULES.md`.
 - Length caps in `dispatch/write_any.md` (File & Function Length).
+
+> [JUDGMENT → SECTION-SCAN]
+
 - This file is the **wire-format and discipline layer** that those universal rules cannot express. Read it once at session start; on sub-task shape change, section-scan (`grep -n "^## "`) and re-read only the touched sections — never the full file again.
+
+## §14 · Enforcement tag glossary
+
+Every clause above carries a class tag. `docs/RULE_ENFORCEMENT.md` counts them;
+`audits/rule-ledger.sh --census` is the command that reads them. A tag alone on
+its line covers the clauses under it until the next heading.
+
+| Tag | Meaning | Where the verdict comes from |
+|---|---|---|
+| `[DETERMINISTIC → LOG]` | a script decides; no talking past it | `audits/logging.sh` — `std.debug.print` and `console.*` in non-test source block; missing `error_code=` on `std.log.{err,warn}` reports as INFO |
+| `[JUDGMENT → BOUNDARY]` | is this operation boundary-crossing, and is its `_started`/`_completed`\|`_failed` pair complete | the agent at write time; the reviewer at `/review` |
+| `[JUDGMENT → REDACT]` | is this value a secret, or the label of one | the agent at write time; the M42_002 harness covers only executor-child output |
+| `[JUDGMENT → MSG-REVIEW]` | does this `msg=` carry a credential | the reviewer; no length or content check runs today |
+| `[JUDGMENT → TS-STYLE]` | throw-style or Result-style for this module | `dispatch/write_ts_adhere_bun.md` §9, agent-decided |
+| `[JUDGMENT → SECTION-SCAN]` | which sections of this file the current sub-task needs | the agent; `audits/doc-read.sh` records façade reads, not delegated-doc reads |
+| `[UNENFORCED → reason]` | acknowledged prose; the reason states why no check exists | nothing — that is the point of the class |

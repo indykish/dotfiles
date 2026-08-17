@@ -9,6 +9,13 @@ import {
 
 afterEach(cleanupTemporaryDirectories);
 
+// The end-to-end walk drives the real command-line entry against real git
+// repositories — several dozen spawns, whose wall time tracks machine load
+// rather than anything the gates decide. Bun's 5s default made pre-commit red
+// on a busy laptop while every assertion still held; the clock moves, the
+// assertions do not.
+const END_TO_END_TIMEOUT_MS = 30_000;
+
 describe("gate groups", () => {
   test("run in order and stop at the first red group", async () => {
     const project = newSpecRepository();
@@ -175,5 +182,5 @@ describe("end to end", () => {
     expect(result.code).toBe(0);
     expect(orly(project, registry, "gate", "pr").code).toBe(0);
     expect(orly(project, registry, "gate", "nope").code).not.toBe(0);
-  });
+  }, END_TO_END_TIMEOUT_MS);
 });

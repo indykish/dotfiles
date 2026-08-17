@@ -184,7 +184,7 @@ Required: one-paragraph goal · explicit assumptions · file/task impact list ·
 ### EXECUTE
 
 Read what the selected dispatch names — **sectioned, not whole-file**: scan headers (`grep -nE "^##+ "`), read the sections the diff shape touches, cite them.
-The full `agentsfleet` trigger map lives in `~/Projects/dotfiles/docs/EXECUTE_DOC_READS.md`. At EXECUTE start read the **Rule-code gloss legend** of `docs/greptile-learnings/RULES.md` plus the sections named by the spec's "Applicable Rules" list — never the full file, which belongs to `/review`. On sub-task shape change, section-scan (`grep -n "^## "`) and re-read only the sections the new shape touches — never a full already-loaded file. DOC READ GATE emits one `📖 DOC READ: <path>` proof-line **per triggered document per turn**, before the turn's first triggering edit, citing the applied section or a cited skip; auto-mode and prior-turn reads never excuse the line — already-loaded sections are cited, not re-read.
+The full `agentsfleet` trigger map lives in `~/Projects/dotfiles/docs/EXECUTE_DOC_READS.md`. At EXECUTE start read the **Rule-code gloss legend** of `docs/greptile-learnings/RULES.md` plus the sections the spec's "Applicable Rules" names — never the full file (`/review`'s job). On sub-task shape change, section-scan (`grep -n "^## "`) and re-read only the sections the new shape touches. DOC READ GATE emits one `📖 DOC READ: <path>` proof-line **per triggered document per turn** before the turn's first triggering edit, citing the applied section or a cited skip; auto-mode and prior-turn reads never excuse it. **Record it, don't just claim it:** `bash audits/doc-read.sh log <path>` — any runtime; Claude Code's Read hook does it for you; pre-commit compares the record to the staged diff.
 
 Edit only approved scope; no opportunistic refactors. Stay in active worktree. Cross-repo writes to `~/Projects/docs/` need explicit per-session ask.
 
@@ -192,12 +192,12 @@ Edit only approved scope; no opportunistic refactors. Stay in active worktree. C
 
 ### CONFORM
 
-Runs after EXECUTE, before VERIFY. It invokes the active profile's `conform` commands and aggregates every gate verdict. Any 🔴 returns to EXECUTE; the lifecycle does not advance.
-The `agentsfleet` profile deliberately maps this stage to `make harness-verify`; the command name stays repository-local. Its full output block and combined end-of-turn awk audit details live in `~/Projects/dotfiles/docs/HARNESS_VERIFY_OUTPUT.md`. Required rows include FILE SHAPE, PUB GATE, LENGTH GATE, MILESTONE-ID GATE, ZIG GATE, UI GATE, DESIGN TOKEN GATE, UFS GATE, SCHEMA GUARD, GREPTILE GATE, Architecture consult, Coverage, and `/write-unit-test`.
+Runs after EXECUTE, before VERIFY. Invokes the active profile's `conform` commands and aggregates every gate verdict. Any 🔴 returns to EXECUTE; the lifecycle does not advance.
+The `agentsfleet` profile maps this stage to `make harness-verify`; its output block and end-of-turn audit detail live in `~/Projects/dotfiles/docs/HARNESS_VERIFY_OUTPUT.md`. Required rows: FILE SHAPE, PUB GATE, LENGTH GATE, MILESTONE-ID GATE, ZIG GATE, UI GATE, DESIGN TOKEN GATE, UFS GATE, SCHEMA GUARD, GREPTILE GATE, Architecture consult, Coverage, and `/write-unit-test`.
 
 ### VERIFY
 
-Run the active profile's verification commands from the repository-command table. Package-scoped commands do not replace a listed repository command.
+Run the active profile's verification commands from the repository-command table. A package-scoped command never replaces a listed one.
 The `agentsfleet` output block and exact tiers live in `~/Projects/dotfiles/docs/VERIFY_TIERS.md`. **FIRST: `/write-unit-test`** audits diff coverage. **LAST: the Test Delta row** compares against the CHORE(open) baseline; zero or negative unit growth on a code-adding diff needs justification or a return to EXECUTE. Paste memory-leak evidence into PR Session Notes or cite its Continuous Integration (CI) URL. After refactors, list newly dead code before removing it.
 
 ### REVIEW

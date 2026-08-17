@@ -1,5 +1,5 @@
-.PHONY: audit test-audit llmevals \
-        dispatch-coverage dispatch-evals dispatch-parity
+.PHONY: audit test-audit llmevals ledger \
+        dispatch-coverage dispatch-evals dispatch-parity ledger-evals
 
 # Run the deterministic audit chain (all green):
 #   1. Registry and profile validation.
@@ -13,6 +13,17 @@ audit:
 	@bash audits/agents-md.sh
 	@bash evals/dispatch/coverage.sh
 	@bash evals/dispatch/run.sh
+	@bash evals/ledger/run.sh
+	@bash audits/rule-ledger.sh --check
+
+# What each rule document actually enforces: one row per registered doc,
+# clause census by enforcement class. Reports; never gates on counts.
+ledger:
+	@bash audits/rule-ledger.sh --census
+
+# Ledger behaviour in isolation — fixture-pinned census and scoreboard cases.
+ledger-evals:
+	@bash evals/ledger/run.sh
 
 # Dispatch façade-pair coherence in isolation (tags ↔ checks ↔ fixtures ↔
 # probes ↔ leaf-helpers ↔ canonical gloss legend).

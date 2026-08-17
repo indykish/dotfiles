@@ -31,6 +31,12 @@ RULES="$ROOT/docs/greptile-learnings/RULES.md"
 EVALS="$ROOT/evals/dispatch/run.sh"
 PROBES="$ROOT/evals/llms/fixtures.jsonl"
 
+# The tag grammar is defined once, in the ledger library, and read by both
+# tiers. Two copies of one regex is how the docs tier learned about block-scoped
+# tags in M02_001 while this audit did not.
+# shellcheck source=audits/rule-ledger-lib.sh
+source "$SCR/rule-ledger-lib.sh"
+
 if [[ -t 1 ]]; then G=$'\033[32m'; R=$'\033[31m'; BO=$'\033[1m'; X=$'\033[0m'
 else G=''; R=''; BO=''; X=''; fi
 RC=0
@@ -39,12 +45,13 @@ okln() { printf '    %s🟢%s %s\n' "$G" "$X" "$1"; }
 sec()  { printf '\n%s%s%s\n' "$BO" "$1" "$X"; }
 
 # ---- extraction (grep -oE + sed; no awk — macOS BWK-awk portability) --------
-# Tag codes by kind. The legend placeholder [DETERMINISTIC → <CODE>] is excluded
-# automatically: '<' is not in the code character class.
-det_tags() { grep -hoE '\[DETERMINISTIC → [A-Z0-9_:-]+\]' "$RES"/*.md \
-  | sed -E 's/.* → ([A-Z0-9_:-]+)\]/\1/' | sort -u; }
-jud_tags() { grep -hoE '\[JUDGMENT → [A-Z0-9_:-]+\]' "$RES"/*.md \
-  | sed -E 's/.* → ([A-Z0-9_:-]+)\]/\1/' | sort -u; }
+# Tag codes by kind, using the shared grammar sourced above. The legend
+# placeholder [DETERMINISTIC → <CODE>] is excluded automatically: '<' is not in
+# the code character class.
+tag_codes() { grep -hoE "$1" "$RES"/*.md \
+  | sed -E 's/.* → ([A-Za-z0-9_:-]+)\]/\1/' | sort -u; }
+det_tags() { tag_codes "$DETERMINISTIC_TAG"; }
+jud_tags() { tag_codes "$JUDGMENT_TAG"; }
 # A code is exempt from check (a)/(c) if it is a stub or proposed marker.
 real() { grep -vE '^(TODO-CHECK|NEW:)'; }
 
