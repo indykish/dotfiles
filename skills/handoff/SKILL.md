@@ -53,7 +53,7 @@ A src/auth/register.tsx
 
 ### Branch/PR (GitHub) or Branch/MR (GitLab)
 - Branch: `feat/auth-flow`
-- PR/MR: #42 (draft)
+- PR/MR: #42 (ready)
 - CI: pending
 
 ### Running Processes

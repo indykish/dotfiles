@@ -41,5 +41,5 @@ make audit || exit 1
 # QUALITY, not distribution integrity. It is off the push path: run
 # `make llmevals` by hand, or `make llmevals CHECK=1` for the zero-token
 # fixture validation that `make audit` already covers.
-bin/orly verify --all --write-evidence --llm-result not-required || exit 1
+bin/orly verify --write-evidence --llm-result not-required || exit 1
 exit 0

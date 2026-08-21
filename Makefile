@@ -1,4 +1,4 @@
-.PHONY: audit test-audit llmevals ledger \
+.PHONY: audit test-audit llmevals ledger install-evals \
         dispatch-coverage dispatch-evals dispatch-parity ledger-evals
 
 # Run the deterministic audit chain (all green):
@@ -6,15 +6,20 @@
 #   2. Oracle rules unit tests and byte-stable rendering.
 #   3. AGENTS.md invariance and dispatch checks.
 audit:
-	@bin/orly validate
 	@cd orly && bun run typecheck && bun test src
-	@bin/orly verify --all
+	@bin/orly verify
 	@bash audits/ufs.sh --all
 	@bash audits/agents-md.sh
 	@bash evals/dispatch/coverage.sh
 	@bash evals/dispatch/run.sh
 	@bash evals/ledger/run.sh
 	@bash audits/rule-ledger.sh --check
+	@bash evals/install/run.sh
+
+# Installability in isolation — the payload boundary and a packed tarball
+# proving itself against a scratch HOME with no dotfiles checkout in reach.
+install-evals:
+	@bash evals/install/run.sh
 
 # What each rule document actually enforces: one row per registered doc,
 # clause census by enforcement class. Reports; never gates on counts.

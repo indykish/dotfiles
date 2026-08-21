@@ -15,11 +15,12 @@ are entering, not the whole file.
 1. Spec `docs/v*/pending/` → `active/`; `Status: IN_PROGRESS`; `Branch:` set.
 2. **Test Baseline** — run `make _lint_zig_test_depth`; copy the counts into the
    spec header as `**Test Baseline:** unit=<N> integration=<M>` (VERIFY's Test
-   Delta row compares against it; `~/Projects/dotfiles/docs/VERIFY_TIERS.md`
-   §Test delta).
+   Delta row compares against it; the product's verify-tiers reference, when
+   the repository carries one, names the §Test delta rule).
 3. Create the worktree; verify CWD is inside it (`pwd` + `git worktree list`).
 4. Commit the four steps on the feature branch. No code until the commit lands.
 
+<!-- oracle-packs:start product.agentsfleet -->
 ## Worktree recipe (agentsfleet)
 
 `git checkout main && git branch feat/mNN-name && git worktree add ../agentsfleet-mNN-name feat/mNN-name && cd ../agentsfleet-mNN-name && bun install && (cd cli && bun install && bun run build)`.
@@ -35,19 +36,38 @@ agent-home symlink and every consumer's `ORLY_ROOT` resolves to
 chain the hooks run spawns git against other directories. Under a hook that
 combination corrupted the real index and flipped `core.bare` (Aug 16, 2026).
 So: `git checkout -b feat/mNN-name` in `~/Projects/dotfiles` itself, and
-`orly sync --global` always renders the one true root. One stream at a time —
+`orly update` always renders the one true root. One stream at a time —
 a second concurrent agent coordinates in-session rather than forking a tree.
 This is the dotfiles exception; product repos keep the worktree recipe above.
+<!-- oracle-packs:end -->
 
 **Mid-stream spec → ask before hydrating (default: same tree).** A spec created
-inside an active worktree → ask Indy before spinning up a second one. Indy leans
+inside an active worktree → ask the user before spinning up a second one. Lean
 same tree: a second tree fragments the outcome and adds a PR to babysit.
 Complete the outcome in place; fold new scope into the current spec/PR (reopen
-`done/`→`active/` if closed) unless the work is genuinely disjoint AND Indy opts
+`done/`→`active/` if closed) unless the work is genuinely disjoint AND the user opts
 into a separate tree.
 
 ## Bootstrap & milestone gates
 
+- **Complete `.oracle/orly.json` on first sight.** `orly init` seeds it
+  mechanically — it reads the Makefile (following `include` one level) and
+  `package.json` scripts, matches a fixed list of target names, and writes what
+  it matched. It finds the obvious ones and misses the rest, and it never
+  guesses `surfaces`.
+  First session in a repository whose config is still that seed:
+  1. Read the build files properly. Fill every `verify.*` the repository really
+     has — the tiering is fixed (`conform` + `verify.unit` are the fast tier,
+     every other `verify.*` is slow and skips on prose-only branches).
+  2. Set `surfaces.user` and `surfaces.docs` to real path prefixes, or the docs
+     gate can never fire and a user-visible change ships undocumented.
+  3. Add any opt-in pack the repository's own sources cannot imply
+     (`persona.indy`, `product.agentsfleet`, `workflow.governance`), then run
+     `orly update` so they materialise.
+  4. Commit it. Every teammate and every later session reads this file, and
+     `orly` never rewrites it — so an edit here is permanent.
+  A seeded-but-uncompleted config is why `orly gate` reports a repository with
+  no declared commands: the fix is this list, not another `orly init`.
 - **Priming:** (1) Human runs `playbooks/founding/01_bootstrap/001_playbook.md`.
   (2) Agent runs `./playbooks/founding/02_preflight/00_gate.sh` (green before
   next). (3) Agent runs `playbooks/founding/03_priming_infra/001_playbook.md`.
@@ -64,10 +84,10 @@ into a separate tree.
 **Quality-ceiling line** — would it be more performant / leaner / a better user
 experience (fluid) / sounder under concurrency if built differently, and would a
 larger refactor beat the patch? Default solution-size ≈ problem-size; "yes" →
-surface option + cost, Kishore picks. Read docs when behavior is unclear.
+surface option + cost, the user picks. Read docs when behavior is unclear.
 
 **Surface-area checklist** — yes/no + reason each: OpenAPI changes (list paths)
-· `agentsfleet` CLI · user-facing docs at `docs.agentsfleet.net` · release notes
+· the product's CLI · user-facing docs · release notes
 / version bump · schema changes (≤100 lines/file, single-concern, update
 `schema/embed.zig` + migration array) · Schema Removal Guard output ·
 spec-vs-rules conflict (amend spec).
@@ -118,12 +138,12 @@ spec-vs-rules conflict (amend spec).
 
 Any claim that a spec Section/Dimension was "deferred to follow-up" — in
 `HANDOFF.md`, PR description, Session Notes, or chat — requires an
-**Indy-acked verbatim quote** in PR Session Notes (or spec Discovery). Format:
+**user-acked verbatim quote** in PR Session Notes (or spec Discovery). Format:
 `> Indy (YYYY-MM-DD HH:MM): "<verbatim ack>" — context: <which item, why>`.
 Agent-unilateral deferral = incomplete scope, not deferral; CHORE(close) blocks
 until the item lands or the quote is captured. **HANDOFF.md is a faithful state
 report** — a pickup agent reading a HANDOFF claiming items were deferred without
-ack-quotes must treat them as in-scope and surface the contradiction to Kishore
+ack-quotes must treat them as in-scope and surface the contradiction to the user
 before continuing.
 
 ## Pre-PR gates
@@ -150,7 +170,7 @@ runs (fix every failure your diff caused), greptile inline comments, and the
 PR-level summary thread — and stops on two consecutive empty polls with CI
 green. Never `gh pr checks --watch` for greptile.
 
-## LAND (after merge, or when Indy says merged)
+## LAND (after merge, or when the user confirms it merged)
 
 `git checkout <default> && git pull origin <default>`; prune the merged worktree
 and branch; `make down` where the repository defines it. Pending files → stash,

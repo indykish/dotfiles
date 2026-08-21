@@ -47,7 +47,7 @@ Concise bullet summary; include copy/paste tmux attach/capture commands when liv
 - Ahead of main by 2 commits (not pushed)
 
 ### CI/PR (GitHub) or CI/MR (GitLab)
-- PR/MR #42 (draft)
+- PR/MR #42 (ready)
 - Checks: pending (lint + test)
 
 ### tmux Sessions

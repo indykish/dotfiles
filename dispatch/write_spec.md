@@ -3,7 +3,7 @@
 This is the prose the AGENT reads **before writing or editing a spec** under
 `docs/v*/{pending,active,done}/`. It pairs with the deterministic half
 `audits/spec-template.sh`, which runs in `make lint`. (This is the former Spec Template gate absorbed into
-the dispatch model — `~/Projects/dotfiles/docs/TEMPLATE.md` remains the canonical section source.)
+the dispatch model — `docs/TEMPLATE.md` remains the canonical section source.)
 
 **Signal legend:**
 
@@ -15,7 +15,7 @@ the dispatch model — `~/Projects/dotfiles/docs/TEMPLATE.md` remains the canoni
 ## Trigger — every Edit/Write to
 
 - Any spec under `docs/v*/{pending,active,done}/**/*.md`.
-- `~/Projects/dotfiles/docs/TEMPLATE.md` itself.
+- `docs/TEMPLATE.md` itself.
 - Any `*.md` whose body carries the spec frontmatter pattern (`^**Milestone:** M\d+`).
 
 **Override:** `SPEC TEMPLATE GATE: SKIPPED per user override (reason: ...)`.
@@ -25,7 +25,7 @@ preference.
 
 ## What this covers
 
-**Family 1 — prohibited patterns (negative space).** `~/Projects/dotfiles/docs/TEMPLATE.md`
+**Family 1 — prohibited patterns (negative space).** `docs/TEMPLATE.md`
 "Prohibited" forbids: time/effort estimates, effort columns, complexity ratings,
 percentage-complete fields, assigned owners, implementation dates. Specs created
 from the template don't carry the Prohibited section forward — only the body
@@ -92,6 +92,6 @@ Incident-derived rules the deterministic half can't check — apply while writin
 
 ## Family
 
-- `~/Projects/dotfiles/docs/TEMPLATE.md` — canonical Prohibited section + required sections.
+- `docs/TEMPLATE.md` — canonical Prohibited section + required sections.
 - `kishore-spec-new` skill — creates specs from the template; inserts the banner.
 - `audits/spec-template.sh` — mechanical regex enforcement, runs in `make lint`.

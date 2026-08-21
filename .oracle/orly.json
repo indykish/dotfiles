@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
-  "name": "dotfiles",
+  "orly_version": "0.5.0",
   "packs": [
     "universal.authoring",
     "language.zig",
     "language.typescript",
     "language.javascript",
     "language.rust",
+    "language.go",
     "language.python",
     "language.shell",
     "language.mdx",
@@ -15,10 +16,10 @@
     "domain.auth",
     "domain.documentation",
     "domain.changelog",
-    "domain.architecture",
     "workflow.specifications",
     "workflow.governance",
-    "product.agentsfleet"
+    "product.agentsfleet",
+    "persona.indy"
   ],
   "commands": {
     "conform": [
@@ -44,5 +45,8 @@
       "README.md",
       "docs/"
     ]
-  }
+  },
+  "managed": [
+    "AGENTS.md"
+  ]
 }

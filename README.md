@@ -1,21 +1,84 @@
 # dotfiles
 
-macOS setup for shells, terminals, Git, and four coding agents — plus the
-rules and gates that govern work across Kishore's repositories.
+[![npm](https://img.shields.io/npm/v/@agentsfleet/orly?label=%40agentsfleet%2Forly)](https://www.npmjs.com/package/@agentsfleet/orly)
+[![coverage](https://codecov.io/gh/indykish/dotfiles/branch/master/graph/badge.svg)](https://codecov.io/gh/indykish/dotfiles)
+[![test](https://github.com/indykish/dotfiles/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/indykish/dotfiles/actions/workflows/test.yml)
+[![harness](https://github.com/indykish/dotfiles/actions/workflows/harness.yml/badge.svg?branch=master)](https://github.com/indykish/dotfiles/actions/workflows/harness.yml)
+
+The rules and gates that govern work across Kishore's repositories — packaged
+as `@agentsfleet/orly`, installable into any repository — plus, separately, the
+personal macOS setup (shells, terminals, Git, four coding agents) Kishore runs
+this checkout for.
+
+The npm badge is the released version: a merge to `master` that carries a new
+`package.json` version publishes it, tags it, and cuts a GitHub release.
+Coverage is gated at a 90% line floor in `test.yml` — the badge reports the
+number, the workflow enforces it.
+
+## Install the harness
+
+In the repository you want rules and gates enforced in:
+
+```bash
+bunx @agentsfleet/orly init
+```
+
+That is the whole install. It materialises the rule pages, the gate scripts,
+the skills those rules name, and git hooks — for your languages, read from
+your own sources. A Rust crate receives the Rust rules and never the Zig
+ones. No checkout of this repository, no prepared `$HOME`; the same command
+works on a fresh machine, a Continuous Integration (CI) runner, or a remote
+container.
+
+**Everything it writes is meant to be committed.** That is how the rules
+reach your teammates: they clone and the rules are already there, with
+nothing to install and nothing to remember. The one thing a clone cannot
+carry is `core.hooksPath` — it is local git config — so each person runs
+`orly init` once to arm the hooks.
+
+### Two files, always
+
+| File | Owner | On `orly update` |
+|---|---|---|
+| `AGENTS.md` | **yours** | untouched, except one delimited pointer block |
+| `AGENTS.orly.md` | orly | rewritten |
+
+If you already had an `AGENTS.md`, it keeps its name and its bytes and gains
+the pointer. If you had none, you get a stub with the pointer and room to
+write your own rules whenever you want them — the file is yours from the
+start, so nothing you add later is ever at risk. Your rules win where the two
+disagree.
+
+Nothing you wrote is replaced without you asking. A hook or a rule page orly
+did not write is refused, naming `--force` and `--no-hooks` as the ways
+forward, and a refused run leaves the repository exactly as it found it.
+
+### Then
+
+`orly init` seeds `.oracle/orly.json` with the gate commands it can find in
+your `Makefile` or `package.json`. Complete it, commit it, and every clone
+gates identically.
+
+| Command | Does |
+|---|---|
+| `orly gate` | run work → verify → pr; stop at the first red group |
+| `orly update` | re-materialise at a newer engine version |
+| `orly update --with <pack>` | take an opt-in pack, recorded for every clone |
+| `orly init --dry-run` | show what would be written; change nothing |
+| `orly doctor` | compare what is installed against what orly would write today |
+
+## Kishore's own machine (optional)
+
+Nothing below this line is needed to use the harness in another repository.
+It sets up *this* checkout as Kishore's personal dotfiles + rule source: shell,
+Git, tmux, Starship, mise, Ghostty, iTerm2, and four coding agents' settings,
+plus the helpers that link, update, and doctor them.
 
 Helpers assume the clone lives at `~/Projects/dotfiles`. Defaults name
 Kishore's directories, keys, and email. Read each step before running it on
 another machine.
 
-## What you get
-
-- Shell, Git, tmux, Starship, mise, Ghostty, and iTerm2 settings.
-- Settings for Claude, Codex, OpenCode, and Amp.
-- Shared skills from [gstack](https://github.com/garrytan/gstack) plus [`skills/`](skills/).
-- The [`AGENTS.md`](AGENTS.md) operating model, rule pages, gates, and checks.
-- Helpers to link files, update agent tools, and write secrets from 1Password.
-
-## Before you begin
+### Before you begin
 
 ```bash
 brew install bun coreutils starship mise 1password-cli
@@ -25,15 +88,15 @@ You also need macOS with Zsh and Git, access to
 [indykish/dotfiles](https://github.com/indykish/dotfiles), and any coding
 agents already installed. Back up configuration you want to keep.
 
-## Set up a new machine
+### Set up a new machine
 
-### 1. Clone
+#### 1. Clone
 
 ```bash
 mkdir -p ~/Projects && git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles && cd ~/Projects/dotfiles
 ```
 
-### 2. Enable hooks
+#### 2. Enable hooks
 
 ```bash
 git config core.hooksPath .githooks
@@ -42,7 +105,7 @@ git config core.hooksPath .githooks
 Verify with `git config --get core.hooksPath` → `.githooks`. Repeat per fresh
 clone.
 
-### 3. Link helpers
+#### 3. Link helpers
 
 ```bash
 ./bin/link-bin-dotfiles
@@ -63,15 +126,18 @@ skips it with a warning rather than overwriting; reconcile by hand (move the
 machine's version into this checkout, or back it up and remove it) and
 re-run.
 
-### 4. Copy the configuration you want
+#### 4. Copy the configuration you want
 
 `cp -i` asks before replacing a file. Replace Kishore's name, email, and GNU
 Privacy Guard (GnuPG) key with your own first.
 
+There is no `.npmrc` here to copy: npm auth belongs to your machine, via
+`npm login`, and publishing runs on Trusted Publishing with no token at all.
+
 ```bash
 cp -i .zshrc ~/.zshrc && cp -i .zshenv ~/.zshenv
 cp -i .gitconfig ~/.gitconfig && cp -i .gitconfig-agentsfleet ~/.gitconfig-agentsfleet
-cp -i .gitignore_global ~/.gitignore_global && cp -i .npmrc ~/.npmrc
+cp -i .gitignore_global ~/.gitignore_global
 mkdir -p ~/.config/mise && cp -i .config/starship.toml ~/.config/starship.toml && cp -i .config/mise/config.toml ~/.config/mise/config.toml
 ```
 
@@ -79,7 +145,7 @@ Ghostty and iTerm2 settings live under [`Library/`](Library/) at their macOS
 paths; copy them the same way if you use those terminals. OpenCode settings are
 linked by `update-skills` in the next step. Finish with `exec zsh`.
 
-### 5. Install the shared skills
+#### 5. Install the shared skills
 
 ```bash
 update-skills
@@ -89,37 +155,67 @@ update-skills
 ✔ Skills updated!
 ```
 
-Clones gstack to `~/.local/share/gstack`, installs its dependencies, links the
-shared skills into each installed agent, renders the root rules, and links the
-agent homes. It refuses to replace files it does not own; a real `skills`
-directory is moved to a timestamped backup. Verify anytime with
-`update-skills --doctor` → `✔ Skills doctor passed`.
+Clones gstack to `~/.local/share/gstack`, installs its dependencies, and links
+the shared skills into each installed agent. It refuses to replace files it
+does not own; a real `skills` directory is moved to a timestamped backup.
+Verify anytime with `update-skills --doctor` → `✔ Skills doctor passed`.
 
-### 6. Render the rules
+It deliberately does **not** link `kishore-spec-new`, `kishore-babysit-prs`,
+`write-unit-test`, or `write-integration-test`. Those ship in orly's
+`workflow.skills` pack and land in each repository at the version that
+repository pinned; linking them here too would register each name twice and
+let the two copies drift.
 
-Run after any rule edit:
+#### 6. Render the rules
+
+Run after any rule edit. This checkout is an `orly` consumer like any other,
+so it uses the same verb every repository uses — with `--no-hooks`, because
+this checkout wrote its own `.githooks/` and orly refuses to replace hooks it
+did not write:
 
 ```bash
-orly sync
+orly update --no-hooks
 ```
 
 ```text
-🟢 rules rendered to AGENTS.md; 4 agent-home links current
+🟢 0 written, 1 already current (19 packs)
 ```
 
-The root [`AGENTS.md`](AGENTS.md) is the only generated file.
-`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, OpenCode, and Amp all symlink to
-it. A rule edit is one commit here — every agent session in every repository
-reads it immediately.
+The root [`AGENTS.md`](AGENTS.md) is the only generated file here. Pack
+sources that already live in this checkout are skipped rather than copied
+over themselves, which is why the same command that installs elsewhere also
+re-renders here. There are no symlinks into `$HOME`: every repository commits
+its own rules, this one included.
 
-### 7. Register a repository
+Two machine-level helpers sit beside it, and neither is part of `orly` —
+they maintain *this* laptop, not any repository:
 
-Add its path and profile to `orly/repositories.json`. The profile declares the
-repository's commands (`conform`, `verify.*`) and optional `surfaces{user,docs}`
-prefixes for the docs gate. The repository keeps one hand-written `AGENTS.md`
-with project facts. No generated copies, no `.oracle/` directory.
+```bash
+update-skills      # clone/refresh gstack, link the shared skills into each agent
+update-ai-tools    # upgrade claude, opencode, amp, @openai/codex, then the above
+```
 
-### 8. Gate the work
+`update-ai-tools --doctor` runs the read-only checks. `orly update` is what
+touches rules; these two touch tooling. A contributor needs neither — the
+skills the rules name are installed into their repository by `orly init`.
+
+#### 7. Install into a repository
+
+```bash
+cd ~/Projects/<repo> && orly init --with persona.indy
+```
+
+Materialises that repository's rules from its own sources and seeds
+`.oracle/orly.json` with the gate commands it finds. Complete that file — the
+real `conform`/`verify.*` set, and `surfaces.user`/`surfaces.docs` for the docs
+gate — then commit it. Nothing is registered anywhere; the repository carries
+its own answer, so a teammate's clone gates identically.
+
+`--with persona.indy` is what replaces the old global `~/.claude/CLAUDE.md`:
+opt-in packs never auto-select, so a stranger's repository never renders
+them, and naming it once records it for every clone.
+
+#### 8. Gate the work
 
 ```bash
 orly gate
@@ -129,7 +225,7 @@ orly gate
 🔆 gate work
    🟢 git.branch: on feat/example
    🟢 git.tree: clean (active spec excluded)
-   🟢 repo.profile: agentsfleet -> agentsfleet
+   🟢 repo.config: 6 command(s) declared
 ...
 🟢 PR boundary open — CHORE(close) is the next motion
 ```
@@ -144,10 +240,10 @@ orly override <CRITERION> --reason <REASON>
 ```
 
 The override is an empty commit with an `Orly-Override` trailer — visible in
-the Pull Request, dead with the branch. Check the carrier anytime:
-`orly doctor` → `🟢 root AGENTS.md is current and every agent home links to it`.
+the Pull Request, dead with the branch. Check what is installed anytime:
+`orly doctor` → `🟢 this repository's installed ruleset matches .oracle/orly.json`.
 
-### 9. Write secret files (optional)
+#### 9. Write secret files (optional)
 
 ```bash
 provision-env-1password
@@ -166,7 +262,7 @@ copy per machine, zero per checkout. Requires `OP_SERVICE_ACCOUNT_TOKEN`
 exported; never commit or print it. Verify with
 `provision-env-1password --doctor`.
 
-### 10. Verify the rules
+#### 10. Verify the rules
 
 ```bash
 cd orly && bun install --frozen-lockfile && cd .. && make audit
@@ -175,63 +271,6 @@ cd orly && bun install --frozen-lockfile && cd .. && make audit
 ```text
 ✅ ALL CHECKS PASSED
 ```
-
-## How the rules work
-
-[`orly/core/operating-model.md`](orly/core/operating-model.md) is the source.
-The renderer produces one artifact — the root [`AGENTS.md`](AGENTS.md) — and
-every agent home symlinks to it. Consumer repositories carry no copies; gates
-and rule pages resolve from this checkout, cited everywhere through the
-`~/Projects/dotfiles/` anchor. Sessions in any repository read them without a
-prompt: `.claude/settings.json` ships the allow-rule
-`Read(~/Projects/dotfiles/**)` (propagated to `~/.claude/settings.json` by the
-copy step above), and `make audit` (`audits/rule-paths.sh`) fails when the
-grant or an anchored citation drifts.
-
-The dispatch index sends an agent to the smallest relevant rule page before an
-edit or claim:
-
-| Work | Rule page |
-|---|---|
-| Zig | [`dispatch/write_zig.md`](dispatch/write_zig.md) |
-| TypeScript or JavaScript | [`dispatch/write_ts_adhere_bun.md`](dispatch/write_ts_adhere_bun.md) |
-| SQL or schema | [`dispatch/write_sql.md`](dispatch/write_sql.md) |
-| Any source file | [`dispatch/write_any.md`](dispatch/write_any.md) |
-| Specs, docs, API prose, auth | matching `dispatch/write_*.md` |
-| Verification claims | [`dispatch/verify.md`](dispatch/verify.md) |
-| Architecture names and flows | [`dispatch/name_architecture.md`](dispatch/name_architecture.md) |
-| Rule changes | [`dispatch/edit_rules.md`](dispatch/edit_rules.md) |
-
-`make audit` proves the registry, rendering, rule invariants, and dispatch
-fixtures. Design detail: [`docs/ORLY_ARCHITECTURE.md`](docs/ORLY_ARCHITECTURE.md)
-and [`docs/DISPATCH_ARCHITECTURE.md`](docs/DISPATCH_ARCHITECTURE.md).
-
-## Repository map
-
-| Path | Contents |
-|---|---|
-| [`AGENTS.md`](AGENTS.md) | Generated rules — the file every agent home links to. |
-| [`orly/`](orly/) | The gate engine, renderer, profiles, and fixtures (Bun + TypeScript). |
-| [`SOUL.md`](SOUL.md) | Orly's judgment layer — reply-shape rules, reading-Indy defaults, pre-send checklist; rendered into `AGENTS.md` by `orly sync`. Each rule once; `AGENTS.md` holds the gates. |
-| [`SOUL_LOG.md`](SOUL_LOG.md) | The evidence behind `SOUL.md` — precedent log of Kishore's verbatim calls, opened on demand, appended at the moment of correction. |
-| [`dispatch/`](dispatch/) | Rule pages keyed to the work at hand. |
-| [`audits/`](audits/), [`evals/`](evals/) | Deterministic checks and their fixtures. |
-| [`docs/`](docs/) | Standards, templates, architecture notes, specs under `docs/v*/`. |
-| [`skills/`](skills/), `.unified-skills/` | Local skills and the generated shared set. |
-| [`bin/`](bin/) | Setup, linking, update, and doctor helpers. |
-| [`.githooks/`](.githooks/) | Pre-commit and pre-push checks. |
-| dotfiles proper | `.zshrc`, `.gitconfig`, `.tmux.conf`, agent settings, `Library/`. |
-
-## Maintenance
-
-```bash
-update-ai-tools
-```
-
-Updates `claude`, `opencode`, `amp`, and `@openai/codex`, relinks dotfiles,
-refreshes skills, renders the root rules, and verifies the links.
-`update-ai-tools --doctor` runs the read-only checks; non-zero exit means a
-missing link or stale root `AGENTS.md`.
 
 ## macOS process limits (optional)
 

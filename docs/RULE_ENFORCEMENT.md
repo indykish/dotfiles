@@ -12,7 +12,7 @@ regenerates this file and fails on any difference. To update it, run
 | `docs/DOCUMENTATION_RULES.md` | — | 0 | 0 | 0/20 | latent |
 | `docs/LIFECYCLE_PATTERNS.md` | — | 0 | 0 | 0/22 | mechanical |
 | `docs/CHANGELOG_VOICE.md` | — | 0 | 0 | 0/3 | latent |
-| `docs/VERIFY_TIERS.md` | — | 0 | 0 | 0/4 | latent |
+| `docs/VERIFY_TIERS.md` | — | 0 | 0 | 0/4 | uncited |
 | `docs/greptile-learnings/RULES.md` | — | 0 | 0 | 0/113 | mechanical |
 | **corpus** | | | | **26/278** | |
 

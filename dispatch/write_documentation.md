@@ -1,8 +1,9 @@
 # write_documentation.md — published-documentation dispatch
 
-Read `~/Projects/dotfiles/docs/DOCUMENTATION_RULES.md` before
+Read `docs/DOCUMENTATION_RULES.md` before
 writing customer-facing documentation. This general rule runs before narrower
-guides such as `~/Projects/dotfiles/docs/CHANGELOG_VOICE.md` and before prose about the dispatch model.
+guides selected by domain-specific packs (changelog voice, when selected) and
+before prose about the dispatch model.
 
 ## Trigger
 
@@ -10,14 +11,16 @@ guides such as `~/Projects/dotfiles/docs/CHANGELOG_VOICE.md` and before prose ab
 - Editing a reusable `snippets/*.mdx` fragment.
 - Editing public OpenAPI summaries, descriptions, examples, options, or errors.
 - Editing a customer-facing readme or reference page.
-- Editing `~/Projects/dotfiles/docs/CHANGELOG_VOICE.md` or `docs/DISPATCH_ARCHITECTURE.md`.
+<!-- oracle-packs:start domain.changelog -->
+- Editing `docs/CHANGELOG_VOICE.md` or `docs/DISPATCH_ARCHITECTURE.md`.
 
 `changelog.mdx` history remains excluded from the general page shape. New
 changelog entries read this dispatch first, then `write_changelog.md`.
+<!-- oracle-packs:end -->
 
 ## Required order
 
-1. Read `~/Projects/dotfiles/docs/DOCUMENTATION_RULES.md` and identify the page scope.
+1. Read `docs/DOCUMENTATION_RULES.md` and identify the page scope.
 2. Read the repository glossary and content boundaries.
 3. Verify claims against runtime code, OpenAPI, and command help.
 4. Write the smallest complete page.
@@ -25,18 +28,18 @@ changelog entries read this dispatch first, then `write_changelog.md`.
 
 ## Enforcement
 
-🟣 **Delegated.** Each repository owns its checker because a fresh clone must not
-depend on files in a developer's home directory. Dotfiles owns the rule and the
-read trigger. Repository hooks own mechanical enforcement.
+🟣 **Delegated.** Each repository owns its checker: rules resolve from this
+repository's own `docs/`, materialised here by `orly init`. Dotfiles owns the
+rule and the read trigger. Repository hooks own mechanical enforcement.
 
 Before committing, cite the applied Documentation (DOC) rule identifiers:
 
 ```text
-📖 DOC READ: ~/Projects/dotfiles/docs/DOCUMENTATION_RULES.md — scope <page|fragment|OpenAPI|changelog>; DOC-<rules applied>
+📖 DOC READ: docs/DOCUMENTATION_RULES.md — scope <page|fragment|OpenAPI|changelog>; DOC-<rules applied>
 ```
 
 ## Family
 
-- `~/Projects/dotfiles/docs/DOCUMENTATION_RULES.md` — general customer-documentation rules.
+- `docs/DOCUMENTATION_RULES.md` — general customer-documentation rules.
 - Selected changelog and HTTP packs provide their narrower archive, voice, and
   API design rules.

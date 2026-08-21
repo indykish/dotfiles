@@ -1,9 +1,16 @@
-import { chmodSync, existsSync, lstatSync, readdirSync } from "node:fs";
-import { basename, join } from "node:path";
+import { chmodSync, existsSync, lstatSync, readdirSync, readlinkSync, realpathSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
-import { validateActiveRule, validateCommands, validateRelativePath, validateSurfaces } from "./validation";
+import { validateActiveRule, validateRelativePath } from "./validation";
 
 export type JsonObject = Record<string, unknown>;
+
+const HASH_ALGORITHM = "sha256";
+const HASH_ENCODING = "hex";
+const MODE_EXECUTABLE = "0755";
+const MODE_REGULAR = "0644";
+const EXECUTABLE_BITS = 0o755;
+const OCTAL = 8;
 
 const NON_EXECUTABLE_MODE = 0o644;
 const EXECUTABLE_MODE = 0o755;
@@ -15,58 +22,97 @@ const REGISTRY_RULES_LABEL = "registry rules";
 const CORE_DOCUMENTS_LABEL = "core documents";
 const MANAGED_FILES_LABEL = "managed files";
 const ACTIVE_STATE = "active";
+const PARENT_SEGMENT = "..";
 
 export class OrlyError extends Error {}
+
+// The one boundary check every filesystem-writing path in orly relies on —
+// previously three independent copies (repository.ts, references.ts, and an
+// install.ts symlink-escape check found by adversarial review), which is
+// itself a risk: a security check that can drift out of sync across copies.
+export function isBelow(path: string, root: string): boolean {
+  const candidate = relative(root, path);
+  return candidate === "" || (!candidate.startsWith(PARENT_SEGMENT) && !isAbsolute(candidate));
+}
+
+// A destination a caller has not yet written may not exist; find the nearest
+// ancestor that does, so its real (symlink-resolved) location can be checked
+// before anything is created under it.
+export function nearestExistingAncestor(path: string): string {
+  let current = path;
+  while (!existsSync(current)) {
+    const parent = dirname(current);
+    if (parent === current) return current;
+    current = parent;
+  }
+  return current;
+}
+
+// A committed symlink inside a target repository — planted by that
+// repository's own author, not the invoking user — otherwise lets any
+// materialising write follow it and land outside the target entirely.
+// mkdirSync/writeFile/rename all follow symlinks silently; this must run
+// before every one of them, not just once at the top of an operation.
+export function assertWritableInside(root: string, relativeTarget: string, kind: string): void {
+  const destination = join(root, relativeTarget);
+  const ancestor = nearestExistingAncestor(dirname(destination));
+  const resolvedAncestor = realpathSync(ancestor);
+  const resolvedRoot = realpathSync(root);
+  if (!isBelow(resolvedAncestor, resolvedRoot)) {
+    throw new OrlyError(`refusing to write ${kind} outside the target repository: ${relativeTarget} resolves through a symlink to ${resolvedAncestor}`);
+  }
+  // The destination itself, not only the directory holding it. A symlinked
+  // *file* — a committed `AGENTS.md -> ../../elsewhere` — has an ancestor
+  // squarely inside the repository, so the check above passes and the write
+  // follows the link out. Every write orly makes goes through here, so this is
+  // the one place the file case has to be caught.
+  if (!isSymbolicLink(destination)) return;
+  const resolvedDestination = safeRealpath(destination);
+  if (resolvedDestination !== undefined && !isBelow(resolvedDestination, resolvedRoot)) {
+    throw new OrlyError(`refusing to write ${kind} outside the target repository: ${relativeTarget} is a symlink to ${resolvedDestination}`);
+  }
+}
+
+function isSymbolicLink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+// A dangling link resolves nowhere; judge it by where it points, not where it
+// lands, so a link to a not-yet-created file outside the repository still fails.
+function safeRealpath(path: string): string | undefined {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(dirname(path), readlinkSync(path));
+  }
+}
 
 export class RulesModel {
   readonly root: string;
   readonly registry: JsonObject;
-  readonly profiles: Record<string, JsonObject>;
-  readonly repositories: JsonObject;
 
   constructor(
     root: string,
     registry: JsonObject,
-    profiles: Record<string, JsonObject>,
-    repositories: JsonObject,
   ) {
     this.root = root;
     this.registry = registry;
-    this.profiles = profiles;
-    this.repositories = repositories;
   }
 
   static async load(root: string): Promise<RulesModel> {
     const registry = await readJsonObject(join(root, "orly/registry.json"));
-    const profiles: Record<string, JsonObject> = {};
-    const profileRoot = join(root, "orly/profiles");
-    for (const filename of readdirSync(profileRoot).filter((name) => name.endsWith(JSON_EXTENSION)).sort()) {
-      profiles[basename(filename, JSON_EXTENSION)] = await readJsonObject(join(profileRoot, filename));
-    }
-    const repositories = await readJsonObject(join(root, "orly/repositories.json"));
-    return new RulesModel(root, registry, profiles, repositories);
+    return new RulesModel(root, registry);
   }
 
   validate(): void {
     const errors: string[] = [];
     this.validateRegistry(errors);
-    this.validateProfiles(errors);
     this.validateRules(errors);
-    this.validateRepositories(errors);
     if (errors.length > 0) throw new OrlyError(errors.join("\n"));
-  }
-
-  profile(name: string): JsonObject {
-    const profile = this.profiles[name];
-    if (!profile) throw new OrlyError(`unknown profile: ${name}`);
-    return profile;
-  }
-
-  repository(name: string): JsonObject {
-    const repositories = objectValue(this.repositories.repositories, REPOSITORIES_LABEL);
-    const repository = repositories[name];
-    if (!isObject(repository)) throw new OrlyError(`unknown repository: ${name}`);
-    return repository;
   }
 
   private validateRegistry(errors: string[]): void {
@@ -102,32 +148,6 @@ export class RulesModel {
     }
   }
 
-  private validateProfiles(errors: string[]): void {
-    const packs = isObject(this.registry.packs) ? this.registry.packs : {};
-    for (const [name, profile] of Object.entries(this.profiles)) {
-      if (profile.schema_version !== 1) errors.push(`profile ${name} schema_version must equal 1`);
-      if (profile.name !== name) errors.push(`profile ${name} name must match its filename`);
-      if (!Array.isArray(profile.packs)) {
-        errors.push(`profile ${name} packs must be an array`);
-        continue;
-      }
-      const owners = new Map<string, string>();
-      for (const packName of profile.packs) {
-        if (!isString(packName) || !isObject(packs[packName])) {
-          errors.push(`profile ${name} selects unknown pack ${String(packName)}`);
-          continue;
-        }
-        for (const extension of stringArray(packs[packName].extensions, `pack ${packName} extensions`)) {
-          const previous = owners.get(extension);
-          if (previous) errors.push(`profile ${name} extension ${extension} has two owners: ${previous}, ${packName}`);
-          owners.set(extension, packName);
-        }
-      }
-      validateCommands(name, profile.commands, errors);
-      validateSurfaces(name, profile.surfaces, errors);
-    }
-  }
-
   private validateRules(errors: string[]): void {
     if (!Array.isArray(this.registry.rules)) {
       errors.push("registry rules must be an array");
@@ -149,23 +169,7 @@ export class RulesModel {
       keys.add(key);
       if (![ACTIVE_STATE, "draft", "retired"].includes(String(value.state))) errors.push(`rule ${key} has invalid state`);
       if (!isString(value.pack) || !(value.pack in packs)) errors.push(`rule ${key} selects unknown pack ${String(value.pack)}`);
-      if (value.state === ACTIVE_STATE) validateActiveRule(key, value, this.profiles, this.root, errors);
-    }
-  }
-
-  private validateRepositories(errors: string[]): void {
-    if (this.repositories.schema_version !== 1) errors.push("repositories schema_version must equal 1");
-    if (!isObject(this.repositories.repositories)) {
-      errors.push("repositories must be an object");
-      return;
-    }
-    for (const [name, value] of Object.entries(this.repositories.repositories)) {
-      if (!isObject(value)) {
-        errors.push(`repository ${name} must be an object`);
-        continue;
-      }
-      if (!isString(value.profile) || !this.profiles[value.profile]) errors.push(`repository ${name} selects unknown profile`);
-      if (!isString(value.path) || value.path.length === 0) errors.push(`repository ${name} path must be a string`);
+      if (value.state === ACTIVE_STATE) validateActiveRule(key, value, this.root, errors);
     }
   }
 
@@ -179,6 +183,10 @@ export class RulesModel {
   }
 }
 
+// The published package ships no repositories.json — it names only this
+// machine's own checkouts, which a stranger's install has no use for and
+// this repo's owner has no reason to publish. Its absence is the normal
+// case for anyone but the engine's own maintainer, not a broken install.
 export async function readJsonObject(path: string): Promise<JsonObject> {
   try {
     const value: unknown = await Bun.file(path).json();
@@ -210,6 +218,20 @@ export function stringArray(value: unknown, label: string): string[] {
 export function objectArray(value: unknown, label: string): JsonObject[] {
   if (!Array.isArray(value) || !value.every(isObject)) throw new OrlyError(`${label} must be an array of objects`);
   return value;
+}
+
+// What a materialised file is, reduced to the two properties that decide
+// whether it still is what orly wrote: its bytes and whether it is runnable.
+export function hashContent(content: string | Uint8Array): string {
+  return new Bun.CryptoHasher(HASH_ALGORITHM).update(content).digest(HASH_ENCODING);
+}
+
+export function modeLabel(path: string): string {
+  return normalizedMode(path) === EXECUTABLE_BITS ? MODE_EXECUTABLE : MODE_REGULAR;
+}
+
+export function applyMode(path: string, mode: string): void {
+  chmodSync(path, Number.parseInt(mode, OCTAL));
 }
 
 export function normalizedMode(path: string): number {

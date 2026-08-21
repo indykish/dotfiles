@@ -4,4 +4,5 @@ Use standard-library parsers for structured input. Keep resource ownership in
 context managers. Validate data at parse boundaries and preserve specific
 exception classes until the caller can decide how to respond.
 
-The repository profile owns formatting, linting, type checking, and tests.
+The repository owns formatting, linting, type checking, and tests — it declares
+them in `.oracle/orly.json`.

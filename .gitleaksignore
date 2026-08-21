@@ -5,3 +5,13 @@
 # Feb 19, 2026: Hardcoded API key that was removed in later commit
 df44ade3c13cfb7b127bcc1a84af1542dabaa0a0:.config/opencode/opencode.json:generic-api-key:187
 df44ade3c13cfb7b127bcc1a84af1542dabaa0a0:.config/opencode/opencode.json:generic-api-key:233
+
+# Prefer a scoped rule allowlist in `.gitleaks.toml` over an entry here. A
+# fingerprint is pinned to one commit, so it silently stops applying the moment
+# history is rewritten, and it records no reason. The `.oracle/ruleset.lock`
+# digests that briefly sat here now live in `.gitleaks.toml` as a path- and
+# line-scoped allowlist on `generic-api-key`, matching agentsfleet.
+#
+# The df44ade3 entries above stay as fingerprints: that commit holds a real
+# credential, and forgiving a shape rather than an exact commit would be the
+# wrong tool for it.

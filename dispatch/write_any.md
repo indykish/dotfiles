@@ -7,7 +7,7 @@ diff shape touches, and cite them in the proof-line; on sub-task shape change
 re-scan and read only newly-touched sections — never re-read the full file
 within a session.
 
-This is the prose the AGENT consults before writing ANY source file (`*.zig` / `*.ts` / `*.tsx` / `*.js` / `*.jsx` / `*.py` / `*.rs` / `*.go` / `*.sh` / `*.sql`). These are the language-agnostic authoring invariants that apply identically to every surface — literal hygiene, length, observability, milestone-free naming, dead-code/legacy. They fire IN ADDITION to the language façade (`write_zig` / `write_ts_adhere_bun` / `write_sql`), not instead of it. It pairs with the deterministic façade `dispatch/write_any.sh`. Nine dissolving gate cards are merged verbatim below (headings demoted one level, each subsection tagged); the durable rule catalogue stays in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` (retained), which the Greptile Gate audits. Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
+This is the prose the AGENT consults before writing ANY source file (`*.zig` / `*.ts` / `*.tsx` / `*.js` / `*.jsx` / `*.py` / `*.rs` / `*.go` / `*.sh` / `*.sql`). These are the language-agnostic authoring invariants that apply identically to every surface — literal hygiene, length, observability, milestone-free naming, dead-code/legacy. They fire IN ADDITION to the language façade (`write_zig` / `write_ts_adhere_bun` / `write_sql`), not instead of it. It pairs with the deterministic façade `dispatch/write_any.sh`. Nine dissolving gate cards are merged verbatim below (headings demoted one level, each subsection tagged); the durable rule catalogue stays in `docs/greptile-learnings/RULES.md` (retained), which the Greptile Gate audits. Mechanical thresholds live once in the `.sh`; this file references rule codes, never restates the numbers.
 
 **Signal legend** (printed by `write_any.sh`):
 
@@ -50,7 +50,7 @@ Nine cross-cutting gate cards dissolve into this façade. Each is preserved verb
 > [DETERMINISTIC → FLL]
 
 
-**Family:** Universal length discipline. **Source:** `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` RULE FLL (File & Function Length).
+**Family:** Universal length discipline. **Source:** `docs/greptile-learnings/RULES.md` RULE FLL (File & Function Length).
 
 **Caps:** file ≤ 350 lines · function ≤ 50 lines · method ≤ 70 lines.
 
@@ -59,7 +59,7 @@ Nine cross-cutting gate cards dissolve into this façade. Each is preserved verb
 **Triggers** — every Write/Edit that net-adds lines to a source file:
 `.zig`, `.js`, `.ts`, `.tsx`, `.jsx`, `.py`, `.rs`, `.go`, `.sh`, `.sql`, `.yaml`/`.toml` (when carrying code). If the file extension is ambiguous, the gate FIRES by default — opt-out requires the user override below.
 
-**Exempt:** `vendor/`, `node_modules/`, `third_party/` (upstream); `.md` files; **everything under `docs/**`** (documentation tree — any extension); published API artefacts under `public/` (loose ≤ 400-line advisory on path YAMLs); per-repo extensions in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`. **Test files are NOT exempt** — a test file over the cap splits by concern like any other; the self-audit below and `dispatch_length_gate` both count them, and an exclusion added to one surface but not the other is how a 418-line test file hid.
+**Exempt:** `vendor/`, `node_modules/`, `third_party/` (upstream); `.md` files; **everything under `docs/**`** (documentation tree — any extension); published API artefacts under `public/` (loose ≤ 400-line advisory on path YAMLs); per-repo extensions in `docs/greptile-learnings/RULES.md`. **Test files are NOT exempt** — a test file over the cap splits by concern like any other; the self-audit below and `dispatch_length_gate` both count them, and an exclusion added to one surface but not the other is how a 418-line test file hid.
 
 **Override:** `LENGTH GATE: SKIPPED per user override (reason: ...)` immediately preceding the edit.
 
@@ -116,12 +116,13 @@ shebang and is the authoritative check.
 
 `dispatch_length_gate` enforces only the **file** cap (FLL). The **fn ≤ 50 / method ≤ 70** sub-cap is mechanizable but has no leaf wired — flagged TODO-CHECK and named explicitly (not folded into the 350 file cap), per the dispatch acceptance criteria (§13).
 
+<!-- oracle-packs:start product.agentsfleet -->
 ### Logging Gate (LOGGING GATE)
 
 > [DETERMINISTIC → LOG]
 
 
-**Family:** Observability discipline. **Source:** `~/Projects/dotfiles/docs/LOGGING_STANDARD.md`.
+**Family:** Observability discipline. **Source:** `docs/LOGGING_STANDARD.md`.
 
 **Triggers** — every `Edit`/`Write` that adds, removes, or changes a log emit:
 
@@ -135,7 +136,7 @@ shebang and is the authoritative check.
 
 > [DETERMINISTIC → LOG]
 
-`~/Projects/dotfiles/docs/LOGGING_STANDARD.md` codifies the wire format (logfmt), severity ladder, error-code embedding, scope discipline, and PII redaction. Drift is silent until incident response hits ungreppable logs at 3 AM.
+`docs/LOGGING_STANDARD.md` codifies the wire format (logfmt), severity ladder, error-code embedding, scope discipline, and PII redaction. Drift is silent until incident response hits ungreppable logs at 3 AM.
 
 #### Pre-edit check
 
@@ -172,7 +173,7 @@ Full multi-line block fires when a sub-rule reports a violation:
 
 ```
 LOGGING GATE: <file>
-  ~/Projects/dotfiles/docs/LOGGING_STANDARD.md sections consulted: §3 (wire format), §4 (severity), §5 (error codes), §6 (PII), §7 (zig binding) | §8 (TS binding), §10A (tightenings)
+  docs/LOGGING_STANDARD.md sections consulted: §3 (wire format), §4 (severity), §5 (error codes), §6 (PII), §7 (zig binding) | §8 (TS binding), §10A (tightenings)
   Wire format: <logfmt ✓ | violation: <where>>
   Required keys: <ts_ms,level,scope,event present ✓ | violation: <missing>>
   Severity choice: <within rules ✓ | violation: <e.g. info on per-iteration path>>
@@ -199,17 +200,18 @@ LOGGING GATE: <file>
 
 > [DETERMINISTIC → LOG]
 
-- `~/Projects/dotfiles/docs/LOGGING_STANDARD.md` — full standard, including §10A tightenings.
+- `docs/LOGGING_STANDARD.md` — full standard, including §10A tightenings.
 - Selected language façades carry their language-specific logging discipline;
   this gate supplies the shared checks.
 - the Error Registry Gate section of this façade — pairs with this gate on `error_code=` audits.
+<!-- oracle-packs:end -->
 
 ### Milestone-ID Gate (MILESTONE ID)
 
 > [DETERMINISTIC → MSID]
 
 
-**Family:** Source-rot prevention. **Source:** `AGENTS.md` (project-side guard). Related: **RULE TST-NAM** (test identifiers are milestone-free) in `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`.
+**Family:** Source-rot prevention. **Source:** `AGENTS.md` (project-side guard). Related: **RULE TST-NAM** (test identifiers are milestone-free) in `docs/greptile-learnings/RULES.md`.
 
 **Triggers — before saving any file matching:**
 
@@ -248,12 +250,13 @@ If any match, **strip the reference before saving.** Rewrite to describe the cod
 
 Covered by the combined awk audit in the AGENTS.md CONFORM section.
 
+<!-- oracle-packs:start product.agentsfleet -->
 ### Error Registry Gate (ERROR REGISTRY GATE)
 
 > [DETERMINISTIC → ERR]
 
 
-**Family:** Observability discipline. **Source:** `~/Projects/dotfiles/docs/LOGGING_STANDARD.md` §5; canonical registry in `src/errors/error_registry.zig` (per-project, not in dotfiles).
+**Family:** Observability discipline. **Source:** `docs/LOGGING_STANDARD.md` §5; canonical registry in `src/errors/error_registry.zig` (per-project, not in dotfiles).
 
 **Triggers** — every `Edit`/`Write` that:
 
@@ -281,7 +284,7 @@ Every `err`/`warn` log mapping to a domain failure must carry an `error_code=UZ-
 | Registry entry with no references in `src/**` or `agentsfleet/**` | Informational — declared-but-unreferenced (dead code). |
 | Reference in source with no registry entry | Blocking — used-but-undeclared (orphan). |
 | HTTP error response | Body includes `code: "UZ-XXX-NNN"`. |
-| `agentsfleet` error output | Human format: `error UZ-XXX-NNN: <message> (<context>)`. JSON format: `{ "code": "UZ-XXX-NNN", "message": ..., ... }` per `~/Projects/dotfiles/docs/LOGGING_STANDARD.md` §8. |
+| `agentsfleet` error output | Human format: `error UZ-XXX-NNN: <message> (<context>)`. JSON format: `{ "code": "UZ-XXX-NNN", "message": ..., ... }` per `docs/LOGGING_STANDARD.md` §8. |
 
 #### Required output (default — one line)
 
@@ -326,10 +329,11 @@ ERROR REGISTRY GATE: <file>
 
 > [DETERMINISTIC → ERR]
 
-- `~/Projects/dotfiles/docs/LOGGING_STANDARD.md` §5 — error-code embedding rules in log records.
+- `docs/LOGGING_STANDARD.md` §5 — error-code embedding rules in log records.
 - the Logging Gate section of this façade — pairs with this gate on `error_code=` audits.
-- `~/Projects/dotfiles/docs/REST_API_DESIGN_GUIDELINES.md` — HTTP error response shape includes `code`.
-- `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` RULE ORP — orphan sweep on rename/delete.
+- `docs/REST_API_DESIGN_GUIDELINES.md` — HTTP error response shape includes `code`.
+- `docs/greptile-learnings/RULES.md` RULE ORP — orphan sweep on rename/delete.
+<!-- oracle-packs:end -->
 
 ### UFS Gate (Unified Form for Symbols)
 
@@ -448,7 +452,7 @@ Indy's M66_001 §3 tail surfaced the failure clearly: `RULE UFS` lived as a sing
 > [JUDGMENT → GRP]
 
 
-**Family:** Universal coding-rules audit. **Source:** `~/Projects/dotfiles/docs/greptile-learnings/RULES.md`.
+**Family:** Universal coding-rules audit. **Source:** `docs/greptile-learnings/RULES.md`.
 
 **Triggers:** fires twice per work unit — (1) per EXECUTE iteration when diff languages change (new layer/language enters the diff); (2) end-of-turn, before claiming complete.
 
@@ -458,7 +462,7 @@ Indy's M66_001 §3 tail surfaced the failure clearly: `RULE UFS` lived as a sing
 
 > [JUDGMENT → GRP]
 
-`~/Projects/dotfiles/docs/greptile-learnings/RULES.md` is the universal coding-rules catalogue. The agent failure mode is grepping the spec verbatim instead of grepping the rules; this gate makes the rule audit a printable artefact.
+`docs/greptile-learnings/RULES.md` is the universal coding-rules catalogue. The agent failure mode is grepping the spec verbatim instead of grepping the rules; this gate makes the rule audit a printable artefact.
 
 #### Common rules referenced
 
@@ -520,7 +524,7 @@ String-literals audit: <N literals scanned, M violations>
 > [JUDGMENT → NLR]
 
 
-**Family:** Legacy-control. Sibling rules: **RULE NDC** (no dead code at write time), **RULE NLG** (no new legacy framing pre-v2.0.0), **Legacy-Design Consult Guard** (judgment calls on whole subsystems). **Source:** `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` RULE NLR.
+**Family:** Legacy-control. Sibling rules: **RULE NDC** (no dead code at write time), **RULE NLG** (no new legacy framing pre-v2.0.0), **Legacy-Design Consult Guard** (judgment calls on whole subsystems). **Source:** `docs/greptile-learnings/RULES.md` RULE NLR.
 
 **Triggers:** any Edit/Write to a file containing pre-existing legacy framing or dead code.
 
@@ -601,7 +605,7 @@ If any of these patterns is in play, surface it via the NLR DECISION block. The 
 > [JUDGMENT → NLG]
 
 
-**Family:** Legacy-control. Sibling rules: **RULE NDC**, **RULE NLR**, **Legacy-Design Consult Guard**. **Source:** `~/Projects/dotfiles/docs/greptile-learnings/RULES.md` RULE NLG.
+**Family:** Legacy-control. Sibling rules: **RULE NDC**, **RULE NLR**, **Legacy-Design Consult Guard**. **Source:** `docs/greptile-learnings/RULES.md` RULE NLG.
 
 **Triggers:** introducing any new `legacy_*` name, `V2`-twin type, `if (legacy_caller)` branch, backward-compat shim, command-line alias for an old verb or flag, "rejecting legacy X" prose, or violation tracking-list while `cat VERSION` < `2.0.0`.
 
@@ -650,7 +654,7 @@ NLG: <file>:<line> | new legacy framing: <description> | action: rename | sugges
 
 > [JUDGMENT → NLG]
 
-`~/Projects/dotfiles/docs/greptile-learnings/RULES.md` RULE NLG.
+`docs/greptile-learnings/RULES.md` RULE NLG.
 
 ### Legacy-Design Consult Guard
 

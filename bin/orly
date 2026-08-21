@@ -12,4 +12,15 @@ while [ -L "$SOURCE_PATH" ]; do
 done
 
 ROOT="$(cd -P "$(dirname "$SOURCE_PATH")/.." && pwd)"
+
+# The package ships TypeScript sources and runs them directly; without Bun the
+# exec below would die as a bare "command not found" with no route forward.
+if ! command -v bun >/dev/null 2>&1; then
+    printf 'orly: bun is required to run this command, and it is not on PATH.\n' >&2
+    printf '  mise:  mise use -g bun@latest\n' >&2
+    printf '  brew:  brew install oven-sh/bun/bun\n' >&2
+    printf '  curl:  curl -fsSL https://bun.sh/install | bash\n' >&2
+    exit 1
+fi
+
 exec bun "$ROOT/orly/src/cli.ts" --root "$ROOT" "$@"

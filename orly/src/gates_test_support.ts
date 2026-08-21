@@ -2,11 +2,12 @@
 // Extracted per dispatch/write_any.md §Splitting conventions: inline test
 // support is the first cut on an over-long file, because coverage instruments
 // count harness code written inline as product.
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { isObject, RulesModel } from "./model";
+import { CONFIG_PATH } from "./config";
+import { RulesModel } from "./model";
 
 const GIT = "git";
 const QUIET = "-q";
@@ -22,7 +23,7 @@ const SPEC_GATE_SCRIPT = `${AUDITS_DIR}/spec-template.sh`;
 
 export const ROOT = resolve(import.meta.dir, "../..");
 export const SPEC_RELATIVE = "docs/v1/active/M99_001_P2_CLI_FIXTURE.md";
-export const FIXTURE_PROFILE = { schema_version: 1, name: FIXTURE, packs: [], commands: { conform: [[TRUE_COMMAND]], "verify.unit": [[TRUE_COMMAND]] } };
+export const FIXTURE_CONFIG = { schema_version: 1, packs: [], commands: { conform: [[TRUE_COMMAND]], "verify.unit": [[TRUE_COMMAND]] } };
 
 const temporaryDirectories: string[] = [];
 const GIT_SCOPE_VARIABLES = ["GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_PREFIX", "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES"];
@@ -50,15 +51,29 @@ export function orly(project: string, registry: string, ...args: string[]): { co
   return { code: result.exitCode, output: `${result.stdout.toString()}${result.stderr.toString()}` };
 }
 
-// A minimal registry root: the gate verbs read repositories + profiles and
+// A minimal registry root: the gate verbs read the repository's own config and
 // never render, so the full pack inventory is not needed.
 export function fixtureRegistry(project: string): string {
   const root = temporaryDirectory();
-  mkdirSync(join(root, "orly/profiles"), { recursive: true });
+  mkdirSync(join(root, "orly"), { recursive: true });
   Bun.write(join(root, "orly/registry.json"), JSON.stringify({ schema_version: 1, core_documents: [], packs: {}, rules: [] }));
-  Bun.write(join(root, "orly/profiles/fixture.json"), JSON.stringify(FIXTURE_PROFILE));
-  Bun.write(join(root, "orly/repositories.json"), JSON.stringify({ schema_version: 1, repositories: { fixture: { path: project, profile: FIXTURE } } }));
+  writeFixtureConfig(project);
   return root;
+}
+
+// The gate resolves commands from `.oracle/orly.json` in the repository under
+// test, so every fixture repository carries one.
+export function writeFixtureConfig(project: string, surfaces?: { user: string[]; docs: string[] }, extraCommands?: Record<string, string[][]>): void {
+  const config: Record<string, unknown> = structuredClone(FIXTURE_CONFIG);
+  if (surfaces) config.surfaces = surfaces;
+  if (extraCommands) config.commands = { ...(config.commands as Record<string, unknown>), ...extraCommands };
+  mkdirSync(join(project, ".oracle"), { recursive: true });
+  writeFileSync(join(project, CONFIG_PATH), JSON.stringify(config, undefined, 2));
+  // Committed, exactly as a real repository carries it: a linked worktree gets
+  // its rules config from the checkout, and an uncommitted one would also make
+  // every git.tree criterion read dirty.
+  git(project, ADD, CONFIG_PATH);
+  git(project, COMMIT, QUIET, MESSAGE, "chore: orly config");
 }
 
 export async function modelFor(
@@ -66,16 +81,8 @@ export async function modelFor(
   surfaces?: { user: string[]; docs: string[] },
   extraCommands?: Record<string, string[][]>,
 ): Promise<RulesModel> {
-  const source = await RulesModel.load(ROOT);
-  const repositories = structuredClone(source.repositories);
-  const profiles = structuredClone(source.profiles);
-  if (!isObject(repositories.repositories)) throw new Error("repositories missing");
-  repositories.repositories.fixture = { path: project, profile: FIXTURE };
-  const fixture = structuredClone(FIXTURE_PROFILE) as Record<string, unknown>;
-  if (surfaces) fixture.surfaces = surfaces;
-  if (extraCommands) fixture.commands = { ...(fixture.commands as Record<string, unknown>), ...extraCommands };
-  profiles.fixture = fixture;
-  return new RulesModel(source.root, source.registry, profiles, repositories);
+  writeFixtureConfig(project, surfaces, extraCommands);
+  return RulesModel.load(ROOT);
 }
 
 export function newRepository(): string {

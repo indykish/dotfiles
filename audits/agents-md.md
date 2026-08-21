@@ -4,7 +4,7 @@ A three-part proof that generated `AGENTS.md` still holds the line after edits:
 
 1. **Deterministic layer** — `audits/agents-md.sh` (mechanical, fast, runs in `pre-commit`).
 2. **Prompt-invariance layer** — this file. A Large Language Model (LLM) agent reads `AGENTS.md` and answers every question below. Every answer must be **YES**. A NO means the ruleset regressed.
-3. **Evidence layer** — `orly verify --all --write-evidence` records the source commit, registry digest, profile checks, and prompt result.
+3. **Evidence layer** — `orly verify --write-evidence` records the source commit, registry digest, profile checks, and prompt result.
 
 Run this suite before and after an operating-model change. Both runs must produce the same all-YES result. A pass that flips to NO is a broken invariant.
 
@@ -179,6 +179,7 @@ The questionnaire is organised by scenario. Each scenario corresponds to a momen
 |---|---|---|
 | 12.1 | Does auto-mode autonomy require BOTH auto-mode-active AND (active spec OR forward-looking start instruction) before commit/push/PR proceed without re-asking? | YES |
 | 12.2 | Do action-triggered guards still block under auto mode (autonomy bypasses none)? | YES |
+| 12.3 | Under standing authorization, does `gh pr create` default to `--draft`, requiring the user to explicitly ask for a ready PR? | NO |
 
 ### Scenario 13 — Ruleset changes (Invariance Suite meta-gate)
 
@@ -326,9 +327,9 @@ siblings.
 | # | Question | Expected |
 |---|---|---|
 | 26.1 | Is `orly/registry.json` the canonical profile and pack registry, with `orly/core/operating-model.md` as the global operating-model source? | YES |
-| 26.2 | Do agent-home links (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, OpenCode) point at the rendered root `AGENTS.md` in `~/Projects/dotfiles`, making a new global render immediately visible to installed agents? | YES |
-| 26.3 | Do consumer repositories carry **no** orly-managed files — one hand-authored `AGENTS.md` plus gate scripts resolved from `ORLY_ROOT` — rather than tracked rule snapshots, a committed ruleset ledger, or symbolic links into dotfiles? | YES |
-| 26.4 | Does `orly sync --global` render only the root `AGENTS.md` and relink the agent homes, with no per-repository synchronization or adoption verb, and never mutate a consumer repository or sibling worktree? | YES |
+| 26.2 | Is every repository's rule set carried by its own commit — `AGENTS.orly.md` beside the repository's own `AGENTS.md` — with **no** symlink from any agent home into this checkout, so a teammate's clone is governed without installing anything? | YES |
+| 26.3 | Do consumer repositories carry their orly-managed files as tracked, committed snapshots — rule pages, gate scripts, skills, hooks, and `.oracle/orly.json` — rather than resolving them from `ORLY_ROOT` or a symlink into dotfiles? | YES |
+| 26.4 | Are `orly sync`, `orly render`, and `orly validate` gone — `orly update` covering this checkout because pack sources living inside the target are skipped, `orly init --dry-run` covering the preview, and `orly verify` validating the registry on its way through — with every verb run from inside the repository it acts on? | YES |
 | 26.5 | Does the `agentsfleet` profile map CONFORM to `make harness-verify` while VERIFY remains behavior proof? | YES |
 | 26.6 | Does `README.md` document initialization, explicit synchronization, status, and doctor commands for new repositories? | YES |
 | 26.7 | Does `orly gate pr` discover a spec closed to `done/` on the branch (its `Branch:` header names the branch) and run the spec criteria — including `spec.moved`, `spec.baseline`, `spec.ordering`, and `spec.deferrals` — instead of skip-passing as spec-less? | YES |
@@ -344,9 +345,9 @@ both must hold in every session, in every worktree, after every restart.
 
 | # | Question | Expected |
 |---|---|---|
-| 27.1 | Does AGENTS.md state that every `dispatch/…`, `docs/…`, and `audits/…` rule path resolves from `~/Projects/dotfiles/` — consumer repos carry no copies — so a rule path the current repository lacks is read from dotfiles rather than declared missing? | YES |
+| 27.1 | Does AGENTS.md state that every `dispatch/…`, `docs/…`, and `audits/…` rule path resolves inside **this** repository, materialised by `orly init`/`update` from the packs its own sources selected — so a path the repository lacks means its sources never selected that pack, not a broken reference? | YES |
 | 27.2 | Is the dotfiles read pre-authorized for every session by the settings allow-rule `Read(~/Projects/dotfiles/**)` (repo template `.claude/settings.json`, propagated to `~/.claude/settings.json`), so reachability never depends on a permission prompt? | YES |
-| 27.3 | Must dotfiles-resident rule docs be cited through the `~/Projects/dotfiles/` anchor in dispatch façades, `docs/TEMPLATE.md`, `docs/EXECUTE_DOC_READS.md`, and spec Applicable-Rules lists (product-repo paths stay bare), with `audits/rule-paths.sh` failing `make audit` on an unanchored reference? | YES |
+| 27.3 | Must rule docs be cited relative to the installing repository — never through the `~/Projects/dotfiles/` anchor — in dispatch façades, `docs/TEMPLATE.md`, `docs/EXECUTE_DOC_READS.md`, and spec Applicable-Rules lists, with `audits/rule-paths.sh` failing `make audit` on an **anchored** reference in any surface `orly init` materialises (engine-only files exempt)? | YES |
 
 ### Scenario 28 — Rule-enforcement ledger & recorded doc reads
 
@@ -387,7 +388,7 @@ comprehension layer closes that gap:
   non-compliant model. In the FULL graded run an absent or credit-blocked
   agent FAILS the gate — "every agent adheres" cannot be proven by an agent
   that never answered; smoke logs + excludes it, never silently.
-- **Evidence** — `orly verify --all --write-evidence` binds the result to the
+- **Evidence** — `orly verify --write-evidence` binds the result to the
   current source commit and registry digest; pre-push records the live result
   as `not-required` unless a manual `make llmevals` run supplied one.
 
@@ -399,7 +400,7 @@ After all questions answer YES and the report below is complete, generate the
 machine-readable evidence file:
 
 ```bash
-orly verify --all --write-evidence --llm-result pass
+orly verify --write-evidence --llm-result pass
 ```
 
 The evidence is local and ignored by Git. The pre-push hook regenerates it

@@ -32,7 +32,7 @@ describe("gate groups", () => {
     const project = newSpecRepository();
     const model = await modelFor(project);
 
-    expect(names(runGate(model, project, "work"))).toEqual(["git.branch", "git.tree", "repo.profile"]);
+    expect(names(runGate(model, project, "work"))).toEqual(["git.branch", "git.tree", "repo.config"]);
     expect(names(runGate(model, project, "verify"))).toEqual(["cmd.conform", "cmd.verify.unit", "spec.dimensions"]);
     expect(names(runGate(model, project, "pr"))).toEqual([
       "docs.updated", "git.pushed", "git.tree", "spec.baseline", "spec.deferrals", "spec.dimensions", "spec.gate",
@@ -52,19 +52,19 @@ describe("gate groups", () => {
 });
 
 describe("repository resolution", () => {
-  test("a linked worktree resolves to the profile its registered checkout declares", async () => {
+  test("a linked worktree resolves the config its checkout committed", async () => {
     const project = newSpecRepository();
     const model = await modelFor(project);
     const worktree = join(temporaryDirectory(), "stream");
     git(project, "worktree", "add", "-q", "-b", "feat/stream", worktree);
 
-    const profile = runGate(model, worktree, "work").results.find((result) => result.name === "repo.profile");
+    const config = runGate(model, worktree, "work").results.find((result) => result.name === "repo.config");
 
-    expect(profile?.ok).toBeTrue();
-    expect(profile?.detail).toBe("fixture -> fixture");
+    expect(config?.ok).toBeTrue();
+    expect(config?.detail).toBe("2 command(s) declared");
   });
 
-  test("the profile's commands run in the worktree, not in the registered checkout", async () => {
+  test("the declared commands run in the worktree, not in the main checkout", async () => {
     const project = newSpecRepository();
     const model = await modelFor(project, undefined, { conform: [["test", "-f", "stream-only.txt"]] });
     const worktree = join(temporaryDirectory(), "stream");
@@ -75,15 +75,15 @@ describe("repository resolution", () => {
     expect(runGate(model, project, "verify").results.find((result) => result.name === "cmd.conform")?.ok).toBeFalse();
   });
 
-  test("an unrelated repository is still unregistered", async () => {
+  test("a repository with no orly config is red, and names the install command", async () => {
     const project = newSpecRepository();
     const model = await modelFor(project);
     const stranger = newRepository();
 
-    const profile = runGate(model, stranger, "work").results.find((result) => result.name === "repo.profile");
+    const config = runGate(model, stranger, "work").results.find((result) => result.name === "repo.config");
 
-    expect(profile?.ok).toBeFalse();
-    expect(profile?.detail).toContain("not registered");
+    expect(config?.ok).toBeFalse();
+    expect(config?.detail).toContain("orly init");
   });
 });
 

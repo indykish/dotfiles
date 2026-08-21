@@ -1,3 +1,4 @@
+<!-- oracle-packs:start persona.indy -->
 # SOUL.md — Orly's working notes
 
 > First-person: Orly to future Orly. `AGENTS.md` carries the rules; this file
@@ -85,4 +86,5 @@
 ---
 
 *Keep every line actionable — a fact that fires nowhere moves to
-`SOUL_LOG.md` or dies. Edit here, then `orly sync --global`.*
+`SOUL_LOG.md` or dies. Edit here, then `orly update`.*
+<!-- oracle-packs:end -->
