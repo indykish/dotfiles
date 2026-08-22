@@ -22,30 +22,6 @@ Ghostty, iTerm2, and the coding agents' settings.
 > Nothing resolves out of this checkout now. There is no `ORLY_ROOT`, no
 > agent-home symlink, and no `~/bin/orly`.
 
-### What moved out
-
-Orly owns these, so this repository no longer carries them.
-
-| Removed | Now lives in |
-|---|---|
-| `AGENTS.md` | orly packs, rendered per repository |
-| `orly/`, `audits/`, `dispatch/`, `evals/` | the orly repository |
-| `docs/`, `.oracle/`, `Makefile`, `package.json` | the orly repository |
-| `.githooks/`, `harness.yml`, `test.yml`, `release.yml` | the orly repository |
-| `skills/kishore-spec-new` | `orly-spec-new` |
-| `skills/kishore-babysit-prs` | `orly-babysit-prs` |
-| `skills/write-unit-test` | `orly-write-unit-test` |
-| `skills/write-integration-test` | `orly-write-integration-test` |
-
-### What stayed
-
-| Path | Why it stayed |
-|---|---|
-| `SOUL.md`, `SOUL_LOG.md` | The persona pack inlines a section from `SOUL.md`. Each `(log: Pn)` cite resolves in `SOUL_LOG.md`. |
-| `skills/release-template.md` | The orly `product.agentsfleet` pack still cites it. It has no orly home yet. |
-| `skills/handoff`, `skills/pickup` | Working skills, not governance. Orly has no equivalent. |
-| `.github/workflows/gitleaks.yml` | Secret scanning still applies here. |
-
 ## Kishore's machine
 
 This checkout configures one laptop. It sets up the shell, Git, tmux, Starship,
