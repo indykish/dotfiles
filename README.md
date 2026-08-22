@@ -46,24 +46,23 @@ agents already installed. Back up configuration you want to keep.
 git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles
 ```
 
-#### 2. Link helpers
+#### 2. Link the configs
 
 ```bash
-./bin/link-bin-dotfiles
+ln -sfn ~/Projects/dotfiles/.tmux.conf ~/.tmux.conf
+ln -sfn ~/Projects/dotfiles/.claude/settings.json ~/.claude/settings.json
+ln -sfn ~/Projects/dotfiles/.codex/config.toml ~/.codex/config.toml
+ln -sfn ~/Projects/dotfiles/.config/amp/settings.json ~/.config/amp/settings.json
+ln -sfn ~/Projects/dotfiles/.config/opencode/opencode.json ~/.config/opencode/opencode.json
+ln -sfn ~/Projects/dotfiles/bin/provision-env-1password ~/bin/provision-env-1password
 ```
-
-```text
-✔ dotfiles links complete
-```
-
-Symlinks the agent configs and puts the helper scripts on `~/bin`, which the
-supplied `.zshrc` keeps on your `PATH`.
 
 Symlinked, not copied: a `/model` switch or a newly trusted Codex directory
-lands in this checkout as a change to commit. Real content already at one of
-those paths is skipped with a warning; move or back it up, then rerun.
+lands in this checkout as a change to commit. Back up anything real already at
+one of those paths — `ln -sfn` replaces it.
 
-Install orly separately: `npm install --global @agentsfleet/orly`.
+Keep `~/bin` on your `PATH`; the supplied `.zshrc` does. Install orly
+separately: `npm install --global @agentsfleet/orly`.
 
 #### 3. Copy the configuration you want
 
@@ -81,29 +80,24 @@ mkdir -p ~/.config/mise && cp -i .config/starship.toml ~/.config/starship.toml &
 ```
 
 Ghostty and iTerm2 settings live under [`Library/`](Library/) at their macOS
-paths; copy them the same way if you use those terminals. OpenCode settings are
-linked by `update-skills` in the next step. Finish with `exec zsh`.
+paths; copy them the same way if you use those terminals. Finish with `exec zsh`.
 
 #### 4. Install the shared skills
 
 ```bash
-update-skills
+cd ~/.local/share/gstack && ./setup --host auto
 ```
 
 ```text
-✔ Skills updated!
+✔ gstack installed
 ```
 
-Clones gstack to `~/.local/share/gstack`, installs its dependencies, and links
-the shared skills into each installed agent. It refuses to replace files it
-does not own; a real `skills` directory is moved to a timestamped backup.
-Verify anytime with `update-skills --doctor` → `✔ Skills doctor passed`.
+gstack installs its own skills per agent. `--host auto` covers every agent it
+finds; name one with `--host claude`, `--host codex`, or `--host opencode`.
 
-It deliberately does **not** link the governance skills. Those ship in orly's `workflow.skills` pack as `orly-spec-new`,
-`orly-babysit-prs`, `orly-write-unit-test`, and
-`orly-write-integration-test`. Each repository gets the version it pinned.
-Linking them here too would register each name twice and let the copies
-drift.
+Governance skills do not come from here. They ship in orly's `workflow.skills`
+pack as `orly-spec-new`, `orly-babysit-prs`, `orly-write-unit-test`, and
+`orly-write-integration-test`, and each repository gets the version it pinned.
 
 #### 5. Write secret files (optional)
 
