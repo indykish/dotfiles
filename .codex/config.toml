@@ -1,5 +1,5 @@
-model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
+model = "gpt-5.6-luna"
+model_reasoning_effort = "medium"
 tool_output_token_limit = 25000
 # Leave room for native compaction near the 272–273k context window.
 # Formula: 273000 - (tool_output_token_limit + 15000)
@@ -115,6 +115,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/Users/kishore/Projects/image-builder"]
+trust_level = "trusted"
+
+[projects."/Users/kishore/Projects/orly"]
 trust_level = "trusted"
 
 [tui]
