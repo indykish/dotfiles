@@ -216,6 +216,16 @@
             "command": "/Users/kishore/.config/iterm2/cc-status"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/kishore/.local/share/gstack/hosts/claude/hooks/timeline-stop-hook",
+            "timeout": 5
+          }
+        ],
+        "_gstack_source": "gstack-timeline-stop"
       }
     ],
     "StopFailure": [
@@ -253,9 +263,19 @@
     "type": "command",
     "command": "bash ~/.claude/statusline-script.sh"
   },
-  "enabledPlugins": {},
+  "enabledPlugins": {
+    "rust-analyzer-lsp@claude-plugins-official": true
+  },
   "alwaysThinkingEnabled": true,
   "effortLevel": "xhigh",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "medium"
+    },
+    "claude-fable-5": {
+      "effortLevel": "xhigh"
+    }
+  },
   "tui": "fullscreen",
   "autoMemoryEnabled": false,
   "skipWorkflowUsageWarning": true,
