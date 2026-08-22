@@ -22,39 +22,11 @@ Ghostty, iTerm2, and the coding agents' settings.
 > Nothing resolves out of this checkout now. There is no `ORLY_ROOT`, no
 > agent-home symlink, and no `~/bin/orly`.
 
-### What moved out
-
-Orly owns these, so this repository no longer carries them.
-
-| Removed | Now lives in |
-|---|---|
-| `AGENTS.md` | orly packs, rendered per repository |
-| `orly/`, `audits/`, `dispatch/`, `evals/` | the orly repository |
-| `docs/`, `.oracle/`, `Makefile`, `package.json` | the orly repository |
-| `.githooks/`, `harness.yml`, `test.yml`, `release.yml` | the orly repository |
-| `skills/kishore-spec-new` | `orly-spec-new` |
-| `skills/kishore-babysit-prs` | `orly-babysit-prs` |
-| `skills/write-unit-test` | `orly-write-unit-test` |
-| `skills/write-integration-test` | `orly-write-integration-test` |
-
-### What stayed
-
-| Path | Why it stayed |
-|---|---|
-| `SOUL.md`, `SOUL_LOG.md` | The persona pack inlines a section from `SOUL.md`. Each `(log: Pn)` cite resolves in `SOUL_LOG.md`. |
-| `skills/release-template.md` | The orly `product.agentsfleet` pack still cites it. It has no orly home yet. |
-| `skills/handoff`, `skills/pickup` | Working skills, not governance. Orly has no equivalent. |
-| `.github/workflows/gitleaks.yml` | Secret scanning still applies here. |
-
 ## Kishore's machine
 
-This checkout configures one laptop. It sets up the shell, Git, tmux, Starship,
-mise, Ghostty, iTerm2, and four coding agents' settings. It also installs the
-helpers that link, update, and check them.
-
-Helpers assume the clone lives at `~/Projects/dotfiles`. Defaults name
-Kishore's directories, keys, and email. Read each step before running it on
-another machine.
+Sets up the shell, Git, tmux, Starship, mise, Ghostty, iTerm2, and four coding
+agents. Defaults name Kishore's paths, keys, and email, and assume the clone
+sits at `~/Projects/dotfiles`.
 
 ### Before you begin
 
@@ -71,7 +43,7 @@ agents already installed. Back up configuration you want to keep.
 #### 1. Clone
 
 ```bash
-mkdir -p ~/Projects && git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles && cd ~/Projects/dotfiles
+git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles
 ```
 
 #### 2. Link helpers
@@ -84,16 +56,14 @@ mkdir -p ~/Projects && git clone git@github.com:indykish/dotfiles.git ~/Projects
 ✔ dotfiles links complete
 ```
 
-Links `~/.tmux.conf`, `~/.claude/settings.json`, `~/.codex/config.toml`,
-`~/.config/amp/settings.json`, `update-skills`, `update-ai-tools`,
-`provision-env-1password`, `link-bin-dotfiles` into `~/bin`. Keep `~/bin` on
-your `PATH`; the supplied `.zshrc` does. Install `orly` separately with
-`npm install --global @agentsfleet/orly`. Agent settings are symlinked, not
-copied. A `/model` switch or a newly trusted Codex project directory lands in
-this checkout like an `AGENTS.md` rule edit. On a machine that already has real
-content at one of those three paths, `link-bin-dotfiles` skips it with a warning
-rather than overwriting. Move the machine's version into this checkout, or back
-it up and remove it, then rerun the command.
+Symlinks the agent configs and puts the helper scripts on `~/bin`, which the
+supplied `.zshrc` keeps on your `PATH`.
+
+Symlinked, not copied: a `/model` switch or a newly trusted Codex directory
+lands in this checkout as a change to commit. Real content already at one of
+those paths is skipped with a warning; move or back it up, then rerun.
+
+Install orly separately: `npm install --global @agentsfleet/orly`.
 
 #### 3. Copy the configuration you want
 

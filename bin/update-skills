@@ -6,7 +6,6 @@ set -euo pipefail
 # points at the link, not the checkout. $ORLY_ROOT stays honoured as an
 # override for a clone that does not sit at the default path.
 DOTFILES="${ORLY_ROOT:-$HOME/Projects/dotfiles}"
-DOTFILES_SKILLS="$DOTFILES/skills"
 UNIFIED_SKILLS="$DOTFILES/.unified-skills"
 SYSTEM_SKILLS="$UNIFIED_SKILLS/.system"
 GSTACK_DIR="$HOME/.local/share/gstack"
@@ -121,11 +120,6 @@ doctor_overlay() {
     doctor_executable "$HOME/.claude/skills/gstack/design/dist/design"
     doctor_executable "$HOME/.claude/skills/gstack/make-pdf/dist/pdf"
     doctor_file "$HOME/.claude/skills/design-shotgun/SKILL.md"
-    # A dotfiles skill the overlay still owns. kishore-spec-new and its three
-    # siblings moved to orly's workflow.skills pack, so their absence here is
-    # the correct state, not a missing link.
-    doctor_file "$HOME/.claude/skills/handoff/SKILL.md"
-
     if [ -e "$SYSTEM_SKILLS" ] || [ -L "$SYSTEM_SKILLS" ]; then
         [ -d "$SYSTEM_SKILLS" ] || fail "Reserved system skills entry must be a directory: $SYSTEM_SKILLS"
         ok "Reserved agent-managed system skills directory: $SYSTEM_SKILLS"
@@ -225,16 +219,6 @@ done
 for skill_dir in "$GSTACK_DIR"/browser-skills/*/ "$GSTACK_DIR"/openclaw/skills/*/; do
     [ -d "$skill_dir" ] || continue
     link_skill_dir "${skill_dir%/}"
-done
-
-# Overlay dotfiles custom skills last; they take precedence on name collisions.
-for skill_dir in "$DOTFILES_SKILLS"/*/; do
-    [ -d "$skill_dir" ] || continue
-    skill_name="$(basename "$skill_dir")"
-
-    rm -f "$OVERLAY_TMP/$skill_name"
-    ln -snf "$skill_dir" "$OVERLAY_TMP/$skill_name"
-    ok "Dotfiles skill overlay: $skill_name → $skill_dir"
 done
 
 rm -rf "$UNIFIED_SKILLS"
