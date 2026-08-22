@@ -24,13 +24,9 @@ Ghostty, iTerm2, and the coding agents' settings.
 
 ## Kishore's machine
 
-This checkout configures one laptop. It sets up the shell, Git, tmux, Starship,
-mise, Ghostty, iTerm2, and four coding agents' settings. It also installs the
-helpers that link, update, and check them.
-
-Helpers assume the clone lives at `~/Projects/dotfiles`. Defaults name
-Kishore's directories, keys, and email. Read each step before running it on
-another machine.
+Sets up the shell, Git, tmux, Starship, mise, Ghostty, iTerm2, and four coding
+agents. Defaults name Kishore's paths, keys, and email, and assume the clone
+sits at `~/Projects/dotfiles`.
 
 ### Before you begin
 
@@ -47,7 +43,7 @@ agents already installed. Back up configuration you want to keep.
 #### 1. Clone
 
 ```bash
-mkdir -p ~/Projects && git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles && cd ~/Projects/dotfiles
+git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles
 ```
 
 #### 2. Link helpers
@@ -60,16 +56,14 @@ mkdir -p ~/Projects && git clone git@github.com:indykish/dotfiles.git ~/Projects
 ✔ dotfiles links complete
 ```
 
-Links `~/.tmux.conf`, `~/.claude/settings.json`, `~/.codex/config.toml`,
-`~/.config/amp/settings.json`, `update-skills`, `update-ai-tools`,
-`provision-env-1password`, `link-bin-dotfiles` into `~/bin`. Keep `~/bin` on
-your `PATH`; the supplied `.zshrc` does. Install `orly` separately with
-`npm install --global @agentsfleet/orly`. Agent settings are symlinked, not
-copied. A `/model` switch or a newly trusted Codex project directory lands in
-this checkout like an `AGENTS.md` rule edit. On a machine that already has real
-content at one of those three paths, `link-bin-dotfiles` skips it with a warning
-rather than overwriting. Move the machine's version into this checkout, or back
-it up and remove it, then rerun the command.
+Symlinks the agent configs and puts the helper scripts on `~/bin`, which the
+supplied `.zshrc` keeps on your `PATH`.
+
+Symlinked, not copied: a `/model` switch or a newly trusted Codex directory
+lands in this checkout as a change to commit. Real content already at one of
+those paths is skipped with a warning; move or back it up, then rerun.
+
+Install orly separately: `npm install --global @agentsfleet/orly`.
 
 #### 3. Copy the configuration you want
 
