@@ -21,13 +21,11 @@ Links:
   ~/.codex/config.toml
   ~/.config/amp/settings.json
   ~/bin/link-bin-dotfiles
-  ~/bin/orly
   ~/bin/update-skills
   ~/bin/provision-env-1password
   ~/bin/update-ai-tools
 
-Also removes old ~/bin/sync-* and ~/bin/upgrade-ai-tools links when they point
-back into this dotfiles repo.
+Also removes obsolete helper links when they point back into this dotfiles repo.
 --doctor verifies the expected links and old-name removals without changing them.
 EOF
 }
@@ -53,13 +51,13 @@ DOTFILE_LINKS=(
 
 BIN_LINKS=(
   "bin/link-bin-dotfiles:$HOME/bin/link-bin-dotfiles"
-  "bin/orly:$HOME/bin/orly"
   "bin/update-skills:$HOME/bin/update-skills"
   "bin/provision-env-1password:$HOME/bin/provision-env-1password"
   "bin/update-ai-tools:$HOME/bin/update-ai-tools"
 )
 
 LEGACY_BIN_LINKS=(
+  "$HOME/bin/orly"
   "$HOME/bin/sync-dotfiles"
   "$HOME/bin/sync-agents"
   "$HOME/bin/sync-skills"

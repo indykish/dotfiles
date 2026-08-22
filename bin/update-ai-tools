@@ -25,7 +25,7 @@ case "${1:-}" in
   --doctor)
     ~/bin/link-bin-dotfiles --doctor
     ~/bin/update-skills --doctor
-    ~/bin/orly doctor
+    orly doctor
     exit 0
     ;;
 esac
@@ -69,8 +69,8 @@ info "🔄 Running update-skills to keep skills updated..."
 
 echo ""
 info "🔎 Checking the root rules and agent-home links..."
-if [[ -x "$HOME/bin/orly" ]]; then
-  ~/bin/orly doctor
+if command -v orly >/dev/null 2>&1; then
+  orly doctor
 else
-  warn "orly not found in ~/bin/ — run link-bin-dotfiles first"
+  warn "orly not found on PATH — run: npm install --global @agentsfleet/orly"
 fi
