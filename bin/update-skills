@@ -2,10 +2,9 @@
 # update-skills — install gstack, then generate one symlink overlay for all agents.
 set -euo pipefail
 
-# $ORLY_ROOT is the repo-wide convention for locating this checkout (AGENTS.md
-# §Action-Triggered Guards; agentsfleet's harness.mk uses the same default).
 # Not derived from $0: this script is symlinked into ~/bin, so BASH_SOURCE
-# points at the link, not the checkout.
+# points at the link, not the checkout. $ORLY_ROOT stays honoured as an
+# override for a clone that does not sit at the default path.
 DOTFILES="${ORLY_ROOT:-$HOME/Projects/dotfiles}"
 DOTFILES_SKILLS="$DOTFILES/skills"
 UNIFIED_SKILLS="$DOTFILES/.unified-skills"
@@ -143,7 +142,6 @@ source "$DOTFILES/bin/lib/playwright.sh"
 
 if [ "$DOCTOR_ONLY" -eq 1 ]; then
     doctor_overlay
-    ( cd "$DOTFILES" && "$DOTFILES/bin/orly" doctor )
     ok "Skills doctor passed"
     exit 0
 fi
@@ -266,10 +264,6 @@ for agent_config in "${AGENTS[@]}"; do
     ok "Linked $agent_skills_dir → $UNIFIED_SKILLS"
     
 done
-
-# The dotfiles checkout renders its own AGENTS.md through the same verb every
-# repository uses; --no-hooks because this checkout owns its .githooks/.
-( cd "$DOTFILES" && "$DOTFILES/bin/orly" update --no-hooks )
 
 # 5. Link opencode.json config (XDG Base Directory location)
 info "Linking opencode.json..."
