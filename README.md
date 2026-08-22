@@ -5,6 +5,36 @@
 [![test](https://github.com/indykish/dotfiles/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/indykish/dotfiles/actions/workflows/test.yml)
 [![harness](https://github.com/indykish/dotfiles/actions/workflows/harness.yml/badge.svg?branch=master)](https://github.com/indykish/dotfiles/actions/workflows/harness.yml)
 
+> [!IMPORTANT]
+> **The governance moved to [github.com/agentsfleet/orly](https://github.com/agentsfleet/orly) — this repository is being sunset.**
+>
+> The rules, the gate scripts, and the skills they name are no longer authored
+> here. They are authored in the `orly` repository and published as
+> `@agentsfleet/orly`; a consuming repository gets them with `bunx
+> @agentsfleet/orly init`, which commits them into that repository. Nothing
+> resolves out of this checkout any more — no `ORLY_ROOT`, no agent-home
+> symlink, no `~/bin` link.
+>
+> **What moved:** `AGENTS.md` (the rendered global model) and the four
+> governance skills — `kishore-spec-new`, `kishore-babysit-prs`,
+> `write-unit-test`, `write-integration-test`. They live in the orly packs now
+> and materialise as `orly-spec-new`, `orly-babysit-prs`, `orly-write-unit-test`,
+> and `orly-write-integration-test`.
+>
+> **What remains, and why:**
+>
+> | Path | Why it is still here |
+> |---|---|
+> | `SOUL.md`, `SOUL_LOG.md` | Source of the persona pack's inlined section; the log is the evidence every `(log: Pn)` cite resolves to. |
+> | `skills/release-template.md` | Still cited by the orly `product.agentsfleet` pack; it has no orly home yet. |
+> | `skills/handoff`, `skills/pickup` | Not governance — working skills with no orly equivalent. |
+> | `.unified-skills/` | Local, untracked agent-home fan-out. Not part of this repository's tracked content. |
+> | Everything else | The personal macOS setup — shells, terminals, Git, agent configs. That is what this checkout is for now. |
+>
+> The `package.json` here is a stale `@agentsfleet/orly` copy that the orly
+> repository has since superseded. Do not bump or publish it from this
+> repository.
+
 The rules and gates that govern work across Kishore's repositories — packaged
 as `@agentsfleet/orly`, installable into any repository — plus, separately, the
 personal macOS setup (shells, terminals, Git, four coding agents) Kishore runs
