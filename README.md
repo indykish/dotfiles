@@ -131,6 +131,12 @@ printf '%s\n' 'ulimit -u 8192' 'ulimit -n 65536' >> ~/.zshenv && exec zsh
 
 Repeated runs append duplicate lines; inspect both files first.
 
+## Upgrade the agents
+
+```bash
+claude upgrade; opencode upgrade; amp update; npm i -g @openai/codex
+```
+
 ## Undo
 
 Links are symbolic. Inspect, then remove:
