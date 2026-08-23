@@ -88,17 +88,6 @@ paths; copy them the same way if you use those terminals. Finish with `exec zsh`
 cd ~/.local/share/gstack && ./setup --host auto
 ```
 
-```text
-✔ gstack installed
-```
-
-gstack installs its own skills per agent. `--host auto` covers every agent it
-finds; name one with `--host claude`, `--host codex`, or `--host opencode`.
-
-Governance skills do not come from here. They ship in orly's `workflow.skills`
-pack as `orly-spec-new`, `orly-babysit-prs`, `orly-write-unit-test`, and
-`orly-write-integration-test`, and each repository gets the version it pinned.
-
 #### 5. Write secret files (optional)
 
 ```bash
@@ -130,6 +119,12 @@ printf '%s\n' 'ulimit -u 8192' 'ulimit -n 65536' >> ~/.zshenv && exec zsh
 ```
 
 Repeated runs append duplicate lines; inspect both files first.
+
+## Upgrade the agents
+
+```bash
+claude upgrade; opencode upgrade; amp update; npm i -g @openai/codex
+```
 
 ## Undo
 
