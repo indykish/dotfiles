@@ -224,8 +224,7 @@
             "command": "/Users/kishore/.local/share/gstack/hosts/claude/hooks/timeline-stop-hook",
             "timeout": 5
           }
-        ],
-        "_gstack_source": "gstack-timeline-stop"
+        ]
       }
     ],
     "StopFailure": [
@@ -270,7 +269,7 @@
   "effortLevel": "xhigh",
   "modelSettings": {
     "claude-opus-5": {
-      "effortLevel": "medium"
+      "effortLevel": "high"
     },
     "claude-fable-5": {
       "effortLevel": "xhigh"
