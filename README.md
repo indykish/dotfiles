@@ -100,10 +100,10 @@ provision-env-1password
 
 Writes `~/.config/agentsfleet/.env`, `~/.config/e2e/.env`,
 `~/.config/agentsfleet/ui.env.local`, and
-`~/.config/agentsfleet/runner.env.local` from 1Password vaults with mode
-`600`. The two `*.env.local` files are the machine-level sources that the
-agentsfleet repo's `post-checkout` hook symlinks into every worktree — one
-copy per machine, zero per checkout. Requires `OP_SERVICE_ACCOUNT_TOKEN`
+`~/.config/agentsfleet/runner.env.local`, and
+`~/.config/agentsfleet/agentsfleetd.env.local` from 1Password vaults with mode
+`600`. The shared `.env` exports paths to those three files, so tests in any
+worktree can read the machine-level sources directly. Requires `OP_SERVICE_ACCOUNT_TOKEN`
 exported; never commit or print it. Verify with
 `provision-env-1password --doctor`.
 
@@ -140,4 +140,3 @@ into it — remove those links first.
 ## License
 
 [MIT](LICENSE)
-
