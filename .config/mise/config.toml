@@ -1,5 +1,5 @@
 [tools]
-ansible = { version = "latest", pipx_args = "--include-deps", uvx = "false" }
+ansible = { version = "latest", pipx_args = "--include-deps", uvx = false, expose = [] }
 "aqua:temporalio/cli" = "latest"
 aws = { version = "latest", symlink_bins = "true" }
 bun = "latest"
