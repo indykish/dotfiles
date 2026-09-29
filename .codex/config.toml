@@ -1,4 +1,4 @@
-model = "gpt-5.6-sol"
+model = "gpt-6-sol"
 model_reasoning_effort = "high"
 tool_output_token_limit = 25000
 # Leave room for native compaction near the 272–273k context window.
@@ -124,10 +124,12 @@ trust_level = "trusted"
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining", "five-hour-limit", "used-tokens", "pull-request-number", "permissions", "task-progress"]
 status_line_use_colors = true
 theme = "monokai-extended-origin"
+screen_reader_detection_done = true
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
 "gpt-5.6-sol" = 4
+gpt-6-astra = 4
 
 [desktop]
 appearanceLightCodeThemeId = "codex"
