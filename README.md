@@ -107,6 +107,14 @@ worktree can read the machine-level sources directly. Requires `OP_SERVICE_ACCOU
 exported; never commit or print it. Verify with
 `provision-env-1password --doctor`.
 
+The generated `~/.config/agentsfleet/.env` also carries the development
+Grafana observability connection: `GRAFANA_SERVER`, `GRAFANA_TOKEN`,
+`GRAFANA_DEV_NAMESPACE`, `GRAFANA_DEV_PROMETHEUS_DATASOURCE_UID`, and
+`GRAFANA_DEV_LOKI_DATASOURCE_UID`. These
+come from `ZMB_CD_DEV/agentsfleet-fleets-investigation-service-token`; the
+first two are the environment variables used by Grafana's `gcx` command-line
+interface for log and metric queries.
+
 ## macOS process limits (optional)
 
 Only if you see `fork: resource temporarily unavailable`:
