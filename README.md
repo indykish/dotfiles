@@ -107,6 +107,14 @@ copy per machine, zero per checkout. Requires `OP_SERVICE_ACCOUNT_TOKEN`
 exported; never commit or print it. Verify with
 `provision-env-1password --doctor`.
 
+The generated `~/.config/agentsfleet/.env` also carries the development
+Grafana observability connection: `GRAFANA_SERVER`, `GRAFANA_TOKEN`,
+`GRAFANA_DEV_NAMESPACE`, `GRAFANA_DEV_PROMETHEUS_DATASOURCE_UID`, and
+`GRAFANA_DEV_LOKI_DATASOURCE_UID`. These
+come from `ZMB_CD_DEV/agentsfleet-fleets-investigation-service-token`; the
+first two are the environment variables used by Grafana's `gcx` command-line
+interface for log and metric queries.
+
 ## macOS process limits (optional)
 
 Only if you see `fork: resource temporarily unavailable`:
@@ -140,4 +148,3 @@ into it — remove those links first.
 ## License
 
 [MIT](LICENSE)
-
