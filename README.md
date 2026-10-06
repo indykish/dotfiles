@@ -65,10 +65,8 @@ cp -i .config/mise/config.toml ~/.config/mise/
 exec zsh
 ```
 
-Then install orly with `bun add -g @agentsfleet/orly`.
-
-For iTerm2, quit it and run this from Terminal.app:
-`defaults import com.googlecode.iterm2 ~/Projects/dotfiles/Library/Preferences/com.googlecode.iterm2.plist`
+Then install orly with `bun add -g @agentsfleet/orly`, and set the iTerm2
+profile font to MesloLGS NF 13.
 
 ### 4. Write secret files (optional)
 
