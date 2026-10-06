@@ -39,28 +39,26 @@ git clone git@github.com:indykish/dotfiles.git ~/Projects/dotfiles
 cd ~/Projects/dotfiles
 ```
 
-### 2. Link the agent and tmux configs
+### 2. Link the configs
 
 ```bash
-for f in .tmux.conf .claude/settings.json .codex/config.toml \
-  .config/amp/settings.json .config/opencode/opencode.json bin/provision-env-1password; do
+for f in .zshrc .zshenv .tmux.conf .config/starship.toml .config/mise/config.toml \
+  .claude/settings.json .codex/config.toml .config/amp/settings.json \
+  .config/opencode/opencode.json bin/provision-env-1password; do
   mkdir -p ~/"$(dirname "$f")" && ln -sfn "$PWD/$f" ~/"$f"
 done
 ```
 
-Symlinks, so a setting an agent changes shows up here as a diff to commit.
+Symlinks, so changes you or an installer make show up here as a diff to commit.
 `ln -sfn` replaces whatever is already at the target; back it up first.
 
-### 3. Copy the rest and install tools
+### 3. Copy the Git config and install tools
 
 Change the name and emails in `.gitconfig` and `.gitconfig-agentsfleet` first.
 `cp -i` asks before overwriting.
 
 ```bash
-cp -i .zshrc .zshenv .gitconfig .gitconfig-agentsfleet .gitignore_global ~/
-mkdir -p ~/.config/mise
-cp -i .config/starship.toml ~/.config/
-cp -i .config/mise/config.toml ~/.config/mise/
+cp -i .gitconfig .gitconfig-agentsfleet .gitignore_global ~/
 ~/.local/bin/mise install
 exec zsh
 ```

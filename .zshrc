@@ -22,11 +22,13 @@ export GPG_KEY_ID=72980C0F4BF701C8
 # --- agentsfleet dev defaults ---
 export AGENTSFLEET_STATE_DIR=/tmp/agentsfleet-local-test
 export AGENTSFLEET_API_URL=http://localhost:3000
-export AGENTSFLEET_POSTHOG_ENABLED=false
+export AGENTSFLEET_TELEMETRY_DISABLED=1
 
 # --- Aliases ---
 alias ls='ls -G'
-alias claude-e2e="CLAUDE_CONFIG_DIR=~/.claude-e2e claude"
+alias claude='CLAUDE_CONFIG_DIR=$HOME/.claude $HOME/.local/bin/claude'
+alias claude2='CLAUDE_CONFIG_DIR=$HOME/.claude2 $HOME/.local/bin/claude'
+alias codex='codex --no-alt-screen'
 # Fix TERM for SSH connections to servers without ghostty terminfo
 alias ssh='TERM=xterm-256color ssh'
 
@@ -71,3 +73,13 @@ fi
 # Added by flyctl installer
 export FLYCTL_INSTALL="/Users/kishore/.fly"
 export PATH="$FLYCTL_INSTALL/bin:$PATH"
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+fpath=(~/.grok/completions/zsh $fpath)
+autoload -Uz compinit && compinit -C
+# <<< grok installer <<<
+
+# >>> railway initialize >>>
+[[ -s "$HOME/.railway/env" ]] && source "$HOME/.railway/env"
+# <<< railway initialize <<<

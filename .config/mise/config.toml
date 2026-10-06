@@ -21,7 +21,7 @@ protoc = "latest"
 python = "3.14"
 ripgrep = "latest"
 ruby = "3.4.8"
-rust = "1.97.1"
+rust = "1.99.0"
 shfmt = "latest"
 shellcheck = "latest"
 starship = "latest"
@@ -33,18 +33,27 @@ usage = "latest"
 protobuf = "latest"
 glab = { version = "latest", exe = "glab" }
 tmux = "latest"
-node = "24"
+node = "26"
 yarn = "latest"
 actionlint = "latest"
 gitleaks = "latest"
-pnpm = "latest"
 1password-cli = "latest"
 cloudflared = "latest"
 "go:github.com/rakyll/hey" = "latest"
 yamllint = "latest"
+postgres = "latest"
+"npm:pnpm" = "latest"
+"github:grafana/gcx" = "latest"
+gh = "latest"
+yq = "latest"
+flyctl = "latest"
+oha = "latest"
+direnv = "latest"
+"github:planetscale/cli" = "latest"
+"cargo:cargo-mutants" = "latest"
 
 [settings]
-idiomatic_version_file_enable_tools = ["python"]
+idiomatic_version_file_enable_tools = ["python", "rust"]
 
 [settings.status]
 show_tools = true
