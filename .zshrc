@@ -23,16 +23,6 @@ export GPG_KEY_ID=72980C0F4BF701C8
 export AGENTSFLEET_STATE_DIR=/tmp/agentsfleet-local-test
 export AGENTSFLEET_API_URL=http://localhost:3000
 export AGENTSFLEET_TELEMETRY_DISABLED=1
-# Agent build policy (Tarzy review 2026-10-11): sccache warms registry-dep
-# builds across disposable per-worktree targets (2GB LRU); incremental off
-# keeps targets small; debug=1 keeps file:line in panics/backtraces.
-# Delete each task's target when it finishes.
-export CARGO_PROFILE_DEV_DEBUG=1
-export CARGO_PROFILE_TEST_DEBUG=1
-export CARGO_INCREMENTAL=0
-export RUSTC_WRAPPER=sccache
-export SCCACHE_DIR="$HOME/.cache/agentsfleet-sccache"
-export SCCACHE_CACHE_SIZE=2G
 
 # --- Aliases ---
 alias ls='ls -G'
