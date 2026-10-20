@@ -1,7 +1,7 @@
 [tools]
 "aqua:temporalio/cli" = "latest"
 aws = { version = "latest", symlink_bins = "true" }
-bun = "latest"
+bun = "1.4.3"
 caddy = "latest"
 cfssl = "latest"
 cmake = "3.31.12"
@@ -19,7 +19,7 @@ maven = "latest"
 mc = "latest"
 python = "3.14"
 ripgrep = "latest"
-rust = "1.99.0"
+rust = "1.99.1"
 shfmt = "latest"
 shellcheck = "latest"
 starship = "latest"
