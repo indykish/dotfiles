@@ -1,7 +1,7 @@
 [tools]
 "aqua:temporalio/cli" = "latest"
 aws = { version = "latest", symlink_bins = "true" }
-bun = "1.4.3"
+bun = "1.4.4"
 caddy = "latest"
 cfssl = "latest"
 cmake = "3.31.12"
