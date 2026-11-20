@@ -1,7 +1,7 @@
 [tools]
 "aqua:temporalio/cli" = "latest"
 aws = { version = "latest", symlink_bins = "true" }
-bun = "1.4.4"
+bun = "1.4.5"
 caddy = "latest"
 cfssl = "latest"
 cmake = "3.31.12"
@@ -19,7 +19,7 @@ maven = "latest"
 mc = "latest"
 python = "3.14"
 ripgrep = "latest"
-rust = "1.99.1"
+rust = "1.100.0"
 shfmt = "latest"
 shellcheck = "latest"
 starship = "latest"
@@ -48,6 +48,7 @@ direnv = "latest"
 sccache = "latest"
 muse = { version = "latest", bin = "muse", checksum_expr = '"sha256:" + fromJSON(body).artifacts[(arch == "x64" ? "x86" : "aarch64") + "_" + os].checksum', checksum_url = "https://lookaside.facebook.com/lookaside/muse/download/?channel=muse&version={{ version }}&file=manifest.json", platforms = { windows-arm64 = { bin = "muse.exe", url = "https://lookaside.facebook.com/lookaside/muse/download/?channel=muse&version={{ version }}&file=muse-aarch64-windows.exe" }, windows-x64 = { bin = "muse.exe", url = "https://lookaside.facebook.com/lookaside/muse/download/?channel=muse&version={{ version }}&file=muse-x86-windows.exe" } }, url = 'https://lookaside.facebook.com/lookaside/muse/download/?channel=muse&version={{ version }}&file=muse-{{ arch(x64="x86", arm64="aarch64") }}-{{ os() }}', version_json_path = ".version", version_list_url = "https://api.meta.ai/muse-code/channels/muse-stable" }
 gemini = { version = "latest", allow_builds = ["@github/keytar", "node-pty"] }
+"cargo:cargo-shear" = "1.14.0"
 
 [settings]
 idiomatic_version_file_enable_tools = ["python", "rust"]
