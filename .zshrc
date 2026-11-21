@@ -19,10 +19,16 @@ export CLICOLOR=1
 export GOPATH="${HOME}/code/go"
 export GPG_KEY_ID=72980C0F4BF701C8
 
-# --- agentsfleet dev defaults ---
-export AGENTSFLEET_STATE_DIR=/tmp/agentsfleet-local-test
-export AGENTSFLEET_API_URL=http://localhost:3000
-export AGENTSFLEET_TELEMETRY_DISABLED=1
+# --- agentsfleet ---
+# No AGENTSFLEET_* exports here. The command-line interface reads the API URL
+# from the credential it stores in ~/.config/agentsfleet/credentials.json, and
+# telemetry consent from ~/.config/agentsfleet/telemetry.json. Setting
+# AGENTSFLEET_API_URL here overrides the stored URL and silently retargets the
+# CLI at whichever deployment it names.
+#
+# The unset clears overrides a parent environment may still export; the local
+# test lane's own paths arrive from ~/.config/agentsfleet/.env instead.
+unset AGENTSFLEET_API_URL AGENTSFLEET_STATE_DIR AGENTSFLEET_TELEMETRY_DISABLED
 
 # --- Aliases ---
 alias ls='ls -G'
